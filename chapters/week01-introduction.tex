@@ -1,0 +1,1321 @@
+%% ========================================================================
+%% Chapter 1: Pengenalan Sistem Operasi & Instalasi
+%% ========================================================================
+
+\chapter{Pengenalan Sistem Operasi \& Instalasi}
+\label{ch:introduction}
+
+\begin{abstract}
+Bab ini memperkenalkan konsep fundamental sistem operasi, arsitektur kernel, perbandingan sistem operasi modern, serta proses instalasi dan konfigurasi sistem operasi dengan fokus praktis menggunakan Linux.
+\end{abstract}
+
+%% ========================================================================
+%% SESSION 1-2: KONSEP DASAR & ARSITEKTUR OS
+%% ========================================================================
+
+%% ------------------------------------------------------------------------
+\section{Definisi dan Fungsi Sistem Operasi}
+\label{sec:os-basics}
+
+Sistem operasi adalah perangkat lunak sistem yang mengelola sumber daya perangkat keras komputer dan menyediakan layanan umum untuk program aplikasi. Sistem operasi bertindak sebagai perantara antara pengguna dengan perangkat keras komputer.
+
+\subsection{Peran Ganda Sistem Operasi}
+
+Sistem operasi memiliki dua peran utama:
+
+\begin{enumerate}
+    \item \textbf{Resource Manager} --- Mengelola dan mengalokasikan sumber daya sistem (CPU, memory, disk, I/O devices) secara efisien dan adil antar berbagai program yang berjalan.
+
+    \item \textbf{Extended Machine} --- Menyediakan abstraksi dari hardware yang kompleks, memberikan interface yang lebih mudah digunakan untuk programmer dan pengguna.
+\end{enumerate}
+
+\begin{notebox}
+Tanpa sistem operasi, setiap program harus memiliki driver sendiri untuk setiap perangkat keras, yang sangat tidak efisien dan sulit dipelihara.
+\end{notebox}
+
+\subsection{Fungsi Utama Sistem Operasi}
+
+Sistem operasi modern memiliki lima fungsi utama:
+
+\subsubsection{Process Management}
+
+Sistem operasi bertanggung jawab untuk:
+\begin{itemize}
+    \item \textbf{Process scheduling} --- Menentukan proses mana yang mendapat CPU time
+    \item \textbf{Process creation dan termination} --- Membuat dan mengakhiri proses
+    \item \textbf{Process synchronization} --- Mengkoordinasikan multiple processes
+    \item \textbf{Inter-process communication (IPC)} --- Memfasilitasi komunikasi antar proses
+\end{itemize}
+
+Contoh implementasi:
+\begin{itemize}
+    \item \textbf{Windows}: Task Manager menampilkan proses yang berjalan dan penggunaan sumber daya
+    \item \textbf{Linux}: Perintah \cmd{ps}, \cmd{top}, dan \cmd{htop} untuk memantau proses
+    \item \textbf{macOS}: Activity Monitor untuk mengelola proses
+\end{itemize}
+
+\subsubsection{Memory Management}
+
+Fungsi memory management meliputi:
+\begin{itemize}
+    \item \textbf{Memory allocation} --- Memberikan memori ke proses yang membutuhkan
+    \item \textbf{Virtual memory} --- Menggunakan disk sebagai extension dari RAM
+    \item \textbf{Memory protection} --- Mencegah satu proses mengakses memori proses lain
+    \item \textbf{Paging dan swapping} --- Teknik untuk optimasi penggunaan memori
+\end{itemize}
+
+\begin{examplebox}[Virtual Memory]
+Ketika RAM penuh, sistem operasi memindahkan sebagian data ke disk (swap space di Linux, pagefile di Windows) sehingga aplikasi dapat terus berjalan, meskipun dengan kinerja yang lebih lambat.
+\end{examplebox}
+
+\subsubsection{File Management}
+
+Sistem operasi menyediakan:
+\begin{itemize}
+    \item \textbf{Organisasi file system} --- Struktur hirarkis (direktori, subdirektori)
+    \item \textbf{Operasi file} --- Membuat, membaca, menulis, menghapus file
+    \item \textbf{Kontrol akses} --- Izin (permissions) untuk keamanan
+    \item \textbf{Mounting file system} --- Mengintegrasikan perangkat penyimpanan ke sistem
+\end{itemize}
+
+Contoh file systems:
+\begin{itemize}
+    \item Windows: NTFS (New Technology File System)
+    \item macOS: APFS (Apple File System)
+    \item Linux: ext4, XFS, Btrfs
+\end{itemize}
+
+\subsubsection{I/O Management}
+
+Manajemen Input/Output mencakup:
+\begin{itemize}
+    \item \textbf{Device drivers} --- Perangkat lunak untuk berkomunikasi dengan perangkat keras
+    \item \textbf{Buffering} --- Penyimpanan sementara untuk kelancaran operasi I/O
+    \item \textbf{Interrupt handling} --- Merespon sinyal dari perangkat keras
+    \item \textbf{Spooling} --- Antrean untuk perangkat seperti printer
+\end{itemize}
+
+\subsubsection{Security dan Protection}
+
+Aspek keamanan meliputi:
+\begin{itemize}
+    \item \textbf{Authentication} --- Verifikasi identitas pengguna (password, biometrik)
+    \item \textbf{Authorization} --- Kontrol akses ke sumber daya berdasarkan izin (permissions)
+    \item \textbf{Encryption} --- Proteksi data (BitLocker di Windows, FileVault di macOS)
+    \item \textbf{Auditing} --- Pencatatan aktivitas sistem untuk pemantauan keamanan
+\end{itemize}
+
+%% ------------------------------------------------------------------------
+\section{Jenis dan Kategori Sistem Operasi}
+\label{sec:os-categories}
+
+Sistem operasi dapat dikategorikan berdasarkan berbagai kriteria:
+
+\subsection{Berdasarkan Platform}
+
+\begin{description}
+    \item[Desktop OS] Dirancang untuk komputer pribadi dengan antarmuka pengguna yang ramah. Contoh: Windows 10/11, macOS, Ubuntu Desktop, Linux Mint.
+
+    \item[Server OS] Dioptimasi untuk menjalankan layanan dan melayani banyak klien. Biasanya tanpa GUI atau dengan GUI minimal. Contoh: Windows Server, Ubuntu Server, Red Hat Enterprise Linux, FreeBSD.
+
+    \item[Mobile OS] Dirancang untuk smartphone dan tablet dengan antarmuka sentuh dan efisiensi daya. Contoh: Android, iOS, HarmonyOS.
+
+    \item[Real-Time OS (RTOS)] Untuk sistem tertanam (embedded systems) dengan batasan waktu yang ketat. Digunakan di otomotif, kontrol industri, perangkat medis. Contoh: FreeRTOS, VxWorks, QNX.
+
+    \item[Embedded OS] Untuk perangkat dengan sumber daya terbatas (IoT, router, perangkat pintar). Contoh: Embedded Linux, Windows IoT.
+\end{description}
+
+\subsection{Perbandingan Sistem Operasi Populer}
+
+Tabel~\ref{tab:os-comparison} menunjukkan perbandingan sistem operasi modern yang paling banyak digunakan.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Perbandingan Sistem Operasi Modern}
+    \label{tab:os-comparison}
+    \begin{tabular}{@{}lllll@{}}
+        \toprule
+        \textbf{OS} & \textbf{Kernel Type} & \textbf{Primary Use} & \textbf{License} & \textbf{Market Share} \\
+        \midrule
+        Windows & Hybrid & Desktop/Business & Proprietary & Desktop: 75\% \\
+        macOS & Hybrid (XNU) & Creative/Dev & Proprietary & Desktop: 15\% \\
+        Linux & Monolithic & Server/Dev & Open Source & Server: 60\% \\
+        Android & Linux-based & Mobile & Open Source & Mobile: 70\% \\
+        iOS & Hybrid (XNU) & Mobile & Proprietary & Mobile: 28\% \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{tipbox}
+Pemilihan sistem operasi bergantung pada kebutuhan:
+\begin{itemize}
+    \item \textbf{Gaming \& Aplikasi Bisnis}: Windows (kompatibilitas terbaik)
+    \item \textbf{Pekerjaan Kreatif}: macOS (standar industri untuk video/audio editing)
+    \item \textbf{Server \& Cloud}: Linux (stabilitas, keamanan, tanpa biaya lisensi)
+    \item \textbf{Development}: macOS atau Linux (tools berbasis Unix)
+\end{itemize}
+\end{tipbox}
+
+%% ------------------------------------------------------------------------
+\section{Arsitektur Kernel Sistem Operasi}
+\label{sec:kernel-architecture}
+
+Kernel adalah inti dari sistem operasi yang memiliki kontrol penuh atas seluruh sistem. Kernel menyediakan abstraksi antara hardware dan software.
+
+\subsection{Apa itu Kernel?}
+
+\textbf{Kernel} adalah program yang selalu berjalan (resident) di memori dan memiliki akses eksklusif ke perangkat keras. Kernel bertanggung jawab untuk:
+
+\begin{itemize}
+    \item Manajemen proses tingkat rendah (low-level)
+    \item Manajemen memori
+    \item Device drivers
+    \item System calls
+    \item Penanganan interrupt
+\end{itemize}
+
+\subsection{Kernel Space vs User Space}
+
+Sistem operasi modern memisahkan memori menjadi dua area:
+
+\begin{description}
+    \item[Kernel Space (Ring 0)] Area memori dengan privilege tertinggi. Hanya kode kernel yang berjalan di sini. Akses penuh ke semua perangkat keras dan memori.
+
+    \item[User Space (Ring 3)] Area memori untuk aplikasi pengguna. Akses terbatas ke perangkat keras. Harus melalui system calls untuk mengakses layanan kernel.
+\end{description}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[node distance=1.8cm, scale=0.95]
+        % User Space
+        \node[draw, rectangle, minimum width=11cm, minimum height=1.5cm, fill=blue!10, align=center] (user) {
+            \textbf{User Space (Ring 3)}\\[0.2em]
+            \small Applications: Browser, Text Editor, Media Player
+        };
+
+        % System Call Interface
+        \node[draw, rectangle, minimum width=11cm, minimum height=0.8cm, below=1cm of user, fill=yellow!20] (syscall) {\textbf{System Call Interface}};
+
+        % Kernel Space
+        \node[draw, rectangle, minimum width=11cm, minimum height=2cm, below=1cm of syscall, fill=red!10, align=center] (kernel) {
+            \textbf{Kernel Space (Ring 0)}\\[0.2em]
+            \small Process Scheduler, Memory Manager, File Systems, Device Drivers
+        };
+
+        % Hardware
+        \node[draw, rectangle, minimum width=11cm, minimum height=1.2cm, below=1cm of kernel, fill=gray!20, align=center] (hw) {
+            \textbf{Hardware}\\[0.2em]
+            \small CPU, RAM, Disk, Network, GPU
+        };
+
+        % Arrows
+        \draw[->, thick] (user.south) -- (syscall.north) node[midway, right, font=\tiny] {System Calls};
+        \draw[->, thick] (syscall.south) -- (kernel.north);
+        \draw[->, thick] (kernel.south) -- (hw.north) node[midway, right, font=\tiny] {Direct Access};
+    \end{tikzpicture}
+    \caption{Arsitektur Layer Sistem Operasi}
+    \label{fig:os-layers}
+\end{figure}
+
+\begin{notebox}
+\textbf{Protection Rings}: x86 architecture memiliki 4 privilege levels (Ring 0-3), tapi modern OS hanya menggunakan Ring 0 (kernel) dan Ring 3 (user). Ring 1 dan 2 jarang digunakan.
+\end{notebox}
+
+\subsection{Jenis Arsitektur Kernel}
+
+\subsubsection{Monolithic Kernel}
+
+\textbf{Karakteristik:}
+\begin{itemize}
+    \item Semua layanan (file system, device drivers, manajemen memori) berjalan di kernel space
+    \item Binary tunggal yang besar
+    \item Pemanggilan fungsi langsung antar komponen (cepat)
+\end{itemize}
+
+\textbf{Keuntungan:}
+\begin{itemize}
+    \item \textbf{Kinerja tinggi} --- Tidak ada overhead untuk context switching
+    \item \textbf{Komunikasi efisien} --- Pemanggilan fungsi lebih cepat dari IPC
+    \item \textbf{Desain lebih sederhana} --- Semua dalam satu address space
+\end{itemize}
+
+\textbf{Kerugian:}
+\begin{itemize}
+    \item \textbf{Keandalan} --- Bug di satu driver dapat menyebabkan crash seluruh sistem
+    \item \textbf{Keamanan} --- Permukaan serangan lebih luas
+    \item \textbf{Pemeliharaan} --- Sulit untuk mengisolasi dan debug
+\end{itemize}
+
+\textbf{Contoh:} Linux, traditional Unix, BSD
+
+\subsubsection{Microkernel}
+
+\textbf{Karakteristik:}
+\begin{itemize}
+    \item Kernel minimal dengan hanya layanan esensial (IPC, penjadwalan dasar, memori tingkat rendah)
+    \item Sebagian besar layanan (file systems, drivers, network stack) di user space
+    \item Message passing untuk komunikasi antar komponen
+\end{itemize}
+
+\textbf{Keuntungan:}
+\begin{itemize}
+    \item \textbf{Keandalan} --- Crash layanan tidak mempengaruhi kernel
+    \item \textbf{Keamanan} --- Permukaan serangan lebih kecil, isolasi lebih baik
+    \item \textbf{Modular} --- Mudah menambah/menghapus layanan
+    \item \textbf{Cocok untuk real-time} --- Perilaku yang dapat diprediksi
+\end{itemize}
+
+\textbf{Kerugian:}
+\begin{itemize}
+    \item \textbf{Overhead kinerja} --- Context switches dan IPC lebih lambat
+    \item \textbf{Kompleksitas} --- Message passing menambah kompleksitas
+\end{itemize}
+
+\textbf{Contoh:} MINIX 3, QNX, seL4, L4 family
+
+\subsubsection{Hybrid Kernel}
+
+\textbf{Karakteristik:}
+\begin{itemize}
+    \item Mengkombinasikan ide dari monolithic dan microkernel
+    \item Beberapa layanan di kernel space untuk kinerja
+    \item Beberapa layanan di user space untuk modularitas
+    \item Keseimbangan antara kecepatan dan keandalan
+\end{itemize}
+
+\textbf{Contoh:}
+\begin{itemize}
+    \item \textbf{Windows NT kernel} --- Digunakan di Windows, Xbox
+    \item \textbf{macOS XNU (X is Not Unix)} --- Mach microkernel + BSD components
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \resizebox{0.85\textwidth}{!}{%
+    \begin{tikzpicture}
+        % Monolithic
+        \node[draw, rectangle, minimum width=3.5cm, minimum height=5cm] (mono) at (0,0) {};
+        \node[above] at (mono.north) {\textbf{Monolithic}};
+        \node[draw, fill=red!20, minimum width=3cm, minimum height=4.5cm] at (mono.center) {};
+        \node[text width=2.5cm, align=center] at (mono.center) {Kernel\\[0.5em]All Services};
+        \node[below=0.1cm of mono.south, text width=3.5cm, align=center, font=\small] {Linux, BSD};
+
+        % Microkernel
+        \node[draw, rectangle, minimum width=3.5cm, minimum height=5cm] (micro) at (5,0) {};
+        \node[above] at (micro.north) {\textbf{Microkernel}};
+        \node[draw, fill=red!20, minimum width=3cm, minimum height=1cm] at (micro.center) {\small Minimal Kernel};
+        \node[draw, fill=blue!20, minimum width=3cm, minimum height=1.2cm] at ([yshift=1.5cm]micro.center) {\small Services};
+        \node[below=0.1cm of micro.south, text width=3.5cm, align=center, font=\small] {MINIX, QNX};
+
+        % Hybrid
+        \node[draw, rectangle, minimum width=3.5cm, minimum height=5cm] (hybrid) at (10,0) {};
+        \node[above] at (hybrid.north) {\textbf{Hybrid}};
+        \node[draw, fill=red!20, minimum width=3cm, minimum height=2.5cm] at ([yshift=-0.5cm]hybrid.center) {\small Kernel + Some};
+        \node[draw, fill=blue!20, minimum width=3cm, minimum height=1.2cm] at ([yshift=1.3cm]hybrid.center) {\small Services};
+        \node[below=0.1cm of hybrid.south, text width=3.5cm, align=center, font=\small] {Windows, macOS};
+    \end{tikzpicture}%
+    }
+    \caption{Perbandingan Arsitektur Kernel}
+    \label{fig:kernel-comparison}
+\end{figure}
+
+\subsection{Perbandingan Arsitektur Kernel}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Comparison of Kernel Architectures}
+    \label{tab:kernel-comparison}
+    \begin{tabular}{@{}llll@{}}
+        \toprule
+        \textbf{Aspek} & \textbf{Monolithic} & \textbf{Microkernel} & \textbf{Hybrid} \\
+        \midrule
+        Performance & Excellent & Good & Very Good \\
+        Reliability & Moderate & Excellent & Good \\
+        Security & Moderate & Excellent & Good \\
+        Complexity & Moderate & High & High \\
+        Maintainability & Moderate & Good & Moderate \\
+        Examples & Linux, BSD & QNX, MINIX & Windows, macOS \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{examplebox}[Tanenbaum-Torvalds Debate (1992)]
+Perdebatan famous antara Andrew Tanenbaum (creator of MINIX, microkernel) dan Linus Torvalds (creator of Linux, monolithic):
+
+\textbf{Tanenbaum}: "Linux is obsolete" - argued monolithic kernels are outdated
+
+\textbf{Torvalds}: Defended pragmatic monolithic design - performance dan simplicity
+
+\textbf{Outcome}: Both approaches have merits. Linux dominates servers dengan monolithic-modular design, sementara QNX microkernel dominates automotive systems.
+\end{examplebox}
+
+\subsection{System Calls}
+
+\textbf{System call} adalah interface antara user space program dan kernel services. Ini adalah controlled entry point ke kernel.
+
+\textbf{Kategori System Calls:}
+\begin{enumerate}
+    \item \textbf{Process Control}: \cmd{fork()}, \cmd{exec()}, \cmd{exit()}, \cmd{wait()}
+    \item \textbf{File Management}: \cmd{open()}, \cmd{read()}, \cmd{write()}, \cmd{close()}
+    \item \textbf{Device Management}: \cmd{ioctl()}, \cmd{read()}, \cmd{write()}
+    \item \textbf{Information Maintenance}: \cmd{getpid()}, \cmd{time()}, \cmd{uname()}
+    \item \textbf{Communication}: \cmd{pipe()}, \cmd{socket()}, \cmd{send()}, \cmd{receive()}
+\end{enumerate}
+
+\begin{examplebox}[System Call Flow]
+Ketika program membuka file dengan \cmd{fopen()} di C:
+
+\begin{enumerate}
+    \item Application calls library function \cmd{fopen()}
+    \item Library function calls system call \cmd{open()}
+    \item CPU switches to kernel mode (Ring 0)
+    \item Kernel validates parameters dan permissions
+    \item Kernel interacts dengan file system dan disk driver
+    \item Kernel returns file descriptor
+    \item CPU switches back to user mode (Ring 3)
+    \item Control returns to application
+\end{enumerate}
+
+Proses ini sama conceptually di semua OS, tapi implementation details berbeda.
+\end{examplebox}
+
+%% ========================================================================
+%% SESSION 2: SEJARAH & EKOSISTEM OS
+%% ========================================================================
+
+%% ------------------------------------------------------------------------
+\section{Evolusi Sistem Operasi}
+\label{sec:os-history}
+
+\subsection{Timeline Singkat}
+
+Perkembangan sistem operasi telah melalui beberapa era penting:
+
+\begin{description}
+    \item[1950s--1960s: Era Awal] Batch processing systems, program cards, no interactive computing. Contoh: IBM 701, UNIVAC.
+
+    \item[1960s: Time-Sharing] CTSS (Compatible Time-Sharing System) di MIT - multiple users sharing computer time. Multics project (ambitious tapi gagal, inspires Unix).
+
+    \item[1969: Lahirnya Unix] Ken Thompson dan Dennis Ritchie di Bell Labs menciptakan Unix. Simple, portable (ditulis dalam C), filosofi "do one thing well".
+
+    \item[1980s: Era PC] MS-DOS (1981) untuk IBM PC. Apple Macintosh (1984) dengan GUI. Windows 1.0 (1985) sebagai shell di atas DOS.
+
+    \item[1991: Linux] Linus Torvalds, mahasiswa dari Finland, merilis Linux kernel 0.01. Free, open source, Unix-compatible.
+
+    \item[1993: Windows NT] Microsoft merilis Windows NT dengan hybrid kernel architecture untuk enterprise market.
+
+    \item[2001: Mac OS X] Apple merilis macOS X berbasis Darwin (BSD Unix + Mach microkernel). UNIX certified.
+
+    \item[2000s: Modern Era] Windows XP unifies consumer dan NT lines. Linux dominates server market. Open source momentum.
+
+    \item[2007--2008: Mobile Revolution] iOS (2007) dan Android (2008) mendefinisikan ulang computing dengan mobile-first approach.
+
+    \item[2010s: Cloud Era] Linux dominates cloud computing (AWS, Google Cloud, Azure). Containers (Docker) revolutionize deployment.
+
+    \item[2020s: Current] Hybrid computing, ARM processors (Apple Silicon), WSL brings Linux to Windows, security-focused development.
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section{Ekosistem Sistem Operasi Modern}
+\label{sec:os-ecosystem}
+
+\subsection{Windows Ecosystem}
+
+\textbf{Platform:}
+\begin{itemize}
+    \item \textbf{Windows 10/11} - Consumer dan Professional editions
+    \item \textbf{Windows Server} - Enterprise server OS
+    \item \textbf{Windows IoT} - Embedded dan industrial devices
+\end{itemize}
+
+\textbf{Karakteristik:}
+\begin{itemize}
+    \item Desktop market dominance (75\% market share)
+    \item Excellent backward compatibility
+    \item Large software ecosystem
+    \item Enterprise integration (Active Directory, Group Policy)
+    \item Gaming support terbaik
+\end{itemize}
+
+\textbf{Teknologi:}
+\begin{itemize}
+    \item Filesystem: NTFS
+    \item Package management: Microsoft Store, winget, Chocolatey
+    \item Development: Visual Studio, .NET, PowerShell
+    \item Virtualization: Hyper-V
+\end{itemize}
+
+\subsection{macOS Ecosystem}
+
+\textbf{Karakteristik:}
+\begin{itemize}
+    \item Premium hardware-software integration (Apple Silicon)
+    \item UNIX certified (POSIX compliant)
+    \item Excellent for creative professionals
+    \item iOS/iPadOS ecosystem integration
+    \item Developer-friendly (Unix tools + graphical environment)
+\end{itemize}
+
+\textbf{Teknologi:}
+\begin{itemize}
+    \item Filesystem: APFS (Apple File System)
+    \item Package management: App Store, Homebrew
+    \item Development: Xcode, Swift, Objective-C
+    \item Security: Gatekeeper, FileVault, Secure Enclave
+\end{itemize}
+
+\subsection{Linux Ecosystem}
+
+\textbf{Distribusi Linux:}
+
+Linux bukan single OS, tapi collection of distributions yang share Linux kernel tapi berbeda dalam package management, default software, dan target audience.
+
+\textbf{Family Utama:}
+\begin{itemize}
+    \item \textbf{Debian Family} - Ubuntu, Debian, Linux Mint
+    \begin{itemize}
+        \item Package management: APT (dpkg)
+        \item Stability-focused, large repository
+        \item Popular untuk desktop dan server
+    \end{itemize}
+
+    \item \textbf{Red Hat Family} - Fedora, RHEL, CentOS Stream, Rocky Linux, AlmaLinux
+    \begin{itemize}
+        \item Package management: DNF/YUM (RPM)
+        \item Enterprise-oriented
+        \item Cutting-edge technologies
+    \end{itemize}
+
+    \item \textbf{Independent} - Arch Linux, Gentoo, Slackware
+    \begin{itemize}
+        \item Rolling release atau highly customizable
+        \item Advanced users
+        \item DIY philosophy
+    \end{itemize}
+\end{itemize}
+
+\textbf{Mengapa Linux untuk Praktik?}
+
+\begin{enumerate}
+    \item \textbf{Open Source} - Gratis, source code available untuk learning
+    \item \textbf{Educational} - Transparent, excellent documentation
+    \item \textbf{Industry Relevance} - Dominates server, cloud, supercomputers
+    \begin{itemize}
+        \item 100\% of TOP500 supercomputers run Linux
+        \item 90\% of public cloud workloads
+        \item Most web servers
+    \end{itemize}
+    \item \textbf{Skills Transferable} - Unix concepts apply to macOS, BSDs
+    \item \textbf{Career Value} - High demand for Linux skills in DevOps, SRE, cloud engineering
+    \item \textbf{Flexibility} - Complete control, customization
+    \item \textbf{Legal} - Can install unlimited copies untuk learning
+\end{enumerate}
+
+\begin{notebox}
+Concepts yang dipelajari di Linux applicable ke semua Unix-like systems karena POSIX compliance. Skills seperti shell scripting, file permissions, process management work di Linux, macOS, dan BSDs.
+\end{notebox}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Perbandingan Distribusi Linux Populer}
+    \label{tab:linux-distros}
+    \begin{tabular}{@{}llll@{}}
+        \toprule
+        \textbf{Distribusi} & \textbf{Base} & \textbf{Package Manager} & \textbf{Target User} \\
+        \midrule
+        Ubuntu & Debian & APT & Beginners, General \\
+        Debian & Independent & APT & Stability, Servers \\
+        Fedora & Red Hat & DNF & Developers, Latest Tech \\
+        CentOS Stream & Red Hat & DNF & Enterprise, Testing \\
+        Arch Linux & Independent & Pacman & Advanced, Customization \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+%% ========================================================================
+%% SESSION 3-4: INSTALASI SISTEM OPERASI
+%% ========================================================================
+
+%% ------------------------------------------------------------------------
+\section{Instalasi Sistem Operasi}
+\label{sec:os-installation}
+
+\subsection{Konsep Instalasi Universal}
+
+Instalasi sistem operasi meliputi tahapan umum berikut, berlaku untuk semua OS:
+
+\begin{enumerate}
+    \item \textbf{Persiapan} - Unduh ISO, buat media bootable, backup data
+    \item \textbf{Boot} - Konfigurasi BIOS/UEFI, boot dari media instalasi
+    \item \textbf{Partisi} - Alokasi ruang disk, buat partisi
+    \item \textbf{Instalasi} - Salin file sistem, instal bootloader
+    \item \textbf{Konfigurasi} - Buat pengguna, konfigurasi jaringan, pengaturan awal
+\end{enumerate}
+
+\subsection{BIOS vs UEFI}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Comparison: BIOS vs UEFI}
+    \label{tab:bios-uefi}
+    \begin{tabular}{@{}lll@{}}
+        \toprule
+        \textbf{Aspect} & \textbf{BIOS (Legacy)} & \textbf{UEFI (Modern)} \\
+        \midrule
+        Introduced & 1970s & 2000s \\
+        Boot Mode & 16-bit & 32-bit/64-bit \\
+        Partition Table & MBR & GPT \\
+        Disk Limit & 2 TB & 9.4 ZB \\
+        Boot Time & Slower & Faster \\
+        Secure Boot & No & Yes \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{warningbox}
+Modern systems (post-2010) umumnya menggunakan UEFI. Secure Boot harus disabled atau configured untuk install beberapa Linux distros.
+\end{warningbox}
+
+\subsection{Metode Deployment}
+
+\subsubsection{Virtual Machine (Recommended untuk Learning)}
+
+\textbf{Keuntungan:}
+\begin{itemize}
+    \item Safe experimentation - tidak affect host system
+    \item Snapshots untuk easy recovery
+    \item Multiple OS secara parallel
+    \item No hardware risk
+\end{itemize}
+
+\textbf{Software:}
+\begin{itemize}
+    \item VirtualBox (free, cross-platform)
+    \item VMware Workstation Player (free)
+    \item QEMU/KVM (Linux native, free)
+    \item Hyper-V (Windows built-in)
+\end{itemize}
+
+\subsubsection{Dual Boot}
+
+Install multiple OS pada satu machine. User memilih OS saat boot.
+
+\textbf{Use case:} Native performance, hardware access, production use
+
+\textbf{Risk:} Partition errors, bootloader conflicts, data loss jika tidak careful
+
+\subsubsection{Bare Metal}
+
+Single OS installation, full hardware control.
+
+\textbf{Use case:} Production servers, dedicated workstations
+
+\subsection{Praktik: Instalasi Ubuntu Server 22.04 LTS}
+
+\subsubsection{Prerequisites}
+
+\begin{itemize}
+    \item VirtualBox installed di host machine
+    \item Ubuntu Server 22.04 LTS ISO downloaded dari \url{https://ubuntu.com/download/server}
+    \item Minimum 2GB RAM, 25GB disk space untuk VM
+\end{itemize}
+
+\begin{tipbox}
+Ubuntu Server dipilih karena:
+\begin{itemize}
+    \item LTS (Long Term Support) - 5 years updates
+    \item Industry standard untuk servers
+    \item Excellent documentation
+    \item Large community support
+\end{itemize}
+\end{tipbox}
+
+\subsubsection{Step-by-Step Installation}
+
+\textbf{1. Create Virtual Machine}
+
+\begin{enumerate}
+    \item Buka VirtualBox, klik \keystroke{New}
+    \item Name: \texttt{Ubuntu-Server-Lab}
+    \item Type: Linux, Version: Ubuntu (64-bit)
+    \item Memory: 2048 MB (2 GB RAM)
+    \item Hard disk: Create virtual hard disk
+    \begin{itemize}
+        \item Type: VDI (VirtualBox Disk Image)
+        \item Storage: Dynamically allocated
+        \item Size: 25 GB
+    \end{itemize}
+\end{enumerate}
+
+\textbf{2. Configure VM Settings}
+
+\begin{itemize}
+    \item Settings → Storage → Controller: IDE → Add optical drive
+    \item Select Ubuntu Server ISO
+    \item Network: NAT atau Bridged (untuk network access)
+\end{itemize}
+
+\textbf{3. Boot and Install}
+
+\begin{enumerate}
+    \item Start VM, akan boot dari ISO
+    \item Select language: English
+    \item Keyboard configuration: sesuai keyboard anda
+    \item Network configuration:
+    \begin{itemize}
+        \item DHCP (automatic) - recommended untuk beginning
+        \item Atau configure static IP (advanced)
+    \end{itemize}
+    \item Proxy: Leave blank (unless needed)
+    \item Mirror: Default Ubuntu archive mirror
+\end{enumerate}
+
+\textbf{4. Partitioning}
+
+Pilihan partitioning:
+
+\textbf{Option 1: Guided - use entire disk (Recommended untuk beginners)}
+\begin{itemize}
+    \item Automatic partitioning
+    \item Sets up /, /boot/efi, dan swap
+    \item Simple, fast
+\end{itemize}
+
+\textbf{Option 2: Custom storage layout (Advanced)}
+\begin{itemize}
+    \item Manual partition creation
+    \item Dijelaskan detail di section~\ref{sec:disk-partitioning}
+\end{itemize}
+
+\textbf{5. Profile Setup}
+
+\begin{lstlisting}[language=bash, caption={User account information}]
+Your name: John Doe
+Your server's name: ubuntu-server
+Pick a username: john
+Choose a password: [strong password]
+Confirm your password: [repeat password]
+\end{lstlisting}
+
+\textbf{6. SSH Setup}
+
+\begin{itemize}
+    \item Install OpenSSH server: \textbf{YES} (highly recommended)
+    \item Import SSH identity: No (skip untuk now)
+\end{itemize}
+
+\begin{notebox}
+OpenSSH server memungkinkan remote access ke server via terminal. Essential untuk production servers.
+\end{notebox}
+
+\textbf{7. Featured Server Snaps}
+
+Optional packages:
+\begin{itemize}
+    \item Docker - container runtime
+    \item Microk8s - Kubernetes
+    \item (Skip untuk basic installation)
+\end{itemize}
+
+\textbf{8. Installation Progress}
+
+\begin{itemize}
+    \item Installation akan download dan install packages (~15-20 minutes)
+    \item Wait hingga "Installation complete!" muncul
+    \item Select "Reboot Now"
+    \item Remove installation media (VirtualBox auto-ejects)
+\end{itemize}
+
+\textbf{9. First Login}
+
+\begin{lstlisting}[language=bash, caption={Login dan verify installation}]
+# Login dengan username yang dibuat
+ubuntu-server login: john
+Password: [enter password]
+
+# Verify system information
+$ uname -r
+5.15.0-56-generic
+
+$ cat /etc/os-release
+NAME="Ubuntu"
+VERSION="22.04.1 LTS (Jammy Jellyfish)"
+
+$ ip a
+# Should show network interfaces dengan IP address
+\end{lstlisting}
+
+\begin{examplebox}[Snapshot VM]
+Setelah instalasi successful, create snapshot di VirtualBox:
+\begin{enumerate}
+    \item Power off VM
+    \item VirtualBox → VM → Snapshots → Take
+    \item Name: "Fresh Install"
+\end{enumerate}
+
+Ini memungkinkan restore ke state bersih kapanpun dibutuhkan.
+\end{examplebox}
+
+%% ========================================================================
+%% SESSION 4-5: PARTISI DAN FILESYSTEM
+%% ========================================================================
+
+%% ------------------------------------------------------------------------
+\section{Partisi Disk dan Sistem File}
+\label{sec:disk-partitioning}
+
+\subsection{Konsep Partisi}
+
+\textbf{Partisi} adalah logical division dari physical disk. Setiap partisi diperlakukan sebagai independent storage unit oleh OS.
+
+\textbf{Mengapa perlu partisi?}
+\begin{itemize}
+    \item \textbf{Organization} - Separate OS, user data, applications
+    \item \textbf{Multi-OS} - Install multiple OS pada satu disk
+    \item \textbf{Backup/Recovery} - Easier to backup specific partitions
+    \item \textbf{Security} - Isolate data dengan different permissions
+    \item \textbf{Performance} - Optimize different workload types
+\end{itemize}
+
+\subsection{Partition Tables}
+
+\subsubsection{MBR (Master Boot Record)}
+
+\textbf{Legacy scheme} - digunakan dengan BIOS:
+\begin{itemize}
+    \item Maximum 4 primary partitions
+    \item Extended partition dapat contain multiple logical partitions
+    \item Maximum disk size: 2 TB
+    \item Partition table size: 64 bytes
+\end{itemize}
+
+\subsubsection{GPT (GUID Partition Table)}
+
+\textbf{Modern scheme} - digunakan dengan UEFI:
+\begin{itemize}
+    \item Praktis unlimited partitions (128 di Windows/Linux)
+    \item Maximum disk size: 9.4 ZB (zettabytes)
+    \item Redundant partition tables untuk reliability
+    \item Required untuk UEFI Secure Boot
+    \item Backward compatible dengan BIOS (Protective MBR)
+\end{itemize}
+
+\subsection{Skema Partisi Linux}
+
+\subsubsection{Minimum Partitioning}
+
+\begin{lstlisting}[caption={Minimal partition scheme}]
+/           20 GB     ext4      Root filesystem
+swap        2-4 GB    swap      Virtual memory
+\end{lstlisting}
+
+\subsubsection{Recommended Partitioning}
+
+\begin{lstlisting}[caption={Recommended partition scheme}]
+/boot/efi   512 MB    FAT32     EFI System Partition (UEFI)
+/boot       1 GB      ext4      Kernel dan bootloader
+/           20 GB     ext4      Root filesystem
+/home       50+ GB    ext4      User data
+swap        4 GB      swap      Virtual memory
+\end{lstlisting}
+
+\textbf{Penjelasan Mount Points:}
+
+\begin{description}
+    \item[\texttt{/}] (root) Sistem files, installed programs, configurations
+    \item[\texttt{/boot}] Kernel, initramfs, GRUB bootloader
+    \item[\texttt{/boot/efi}] EFI bootloader (UEFI systems only)
+    \item[\texttt{/home}] User directories dan personal data
+    \item[\texttt{swap}] Virtual memory, hibernation support
+\end{description}
+
+\begin{tipbox}
+\textbf{Why separate \texttt{/home}?}
+
+Benefits:
+\begin{itemize}
+    \item Reinstall OS tanpa lose user data
+    \item Easier backup (backup only \texttt{/home})
+    \item Upgrade distro dengan preserve settings
+    \item Different filesystem atau encryption untuk data
+\end{itemize}
+\end{tipbox}
+
+\subsection{Swap Space}
+
+\textbf{Swap} adalah disk space used sebagai extension dari RAM (virtual memory).
+
+\textbf{When is swap used?}
+\begin{itemize}
+    \item Saat RAM penuh, inactive pages moved to swap
+    \item Hibernation (suspend-to-disk) - save RAM contents to swap
+\end{itemize}
+
+\textbf{Swap Sizing Guidelines:}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Rekomendasi Ukuran Swap}
+    \label{tab:swap-sizing}
+    \begin{tabular}{@{}ll@{}}
+        \toprule
+        \textbf{RAM Size} & \textbf{Swap Size} \\
+        \midrule
+        $\leq$ 2 GB & 2x RAM \\
+        2--8 GB & Same as RAM \\
+        $>$ 8 GB & 4--8 GB fixed \\
+        Hibernation needed & RAM size + 2 GB \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{warningbox}
+  Swap bukanlah pengganti RAM yang tidak mencukupi. Menambahkan RAM jauh lebih efektif daripada membuat swap yang besar.
+\end{warningbox}
+
+\subsection{Filesystem Types}
+
+\subsubsection{Cross-Platform Comparison}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Perbandingan Filesystem}
+    \label{tab:filesystem-comparison}
+    \begin{tabular}{@{}lllll@{}}
+        \toprule
+        \textbf{Filesystem} & \textbf{Platform} & \textbf{Max File} & \textbf{Journaling} & \textbf{Use Case} \\
+        \midrule
+        NTFS & Windows & 16 TB & Yes & Windows system \\
+        APFS & macOS & 8 EB & CoW & Modern macOS \\
+        ext4 & Linux & 16 TB & Yes & Linux default \\
+        XFS & Linux & 8 EB & Yes & Large files \\
+        Btrfs & Linux & 16 EB & CoW & Advanced features \\
+        exFAT & Universal & 16 EB & No & USB drives \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{Linux Filesystems}
+
+\textbf{ext4 (Fourth Extended Filesystem)}
+\begin{itemize}
+    \item Default untuk most Linux distributions
+    \item Mature, stable, well-tested
+    \item Journaling untuk crash recovery
+    \item Good performance untuk general use
+\end{itemize}
+
+\noindent
+\textbf{XFS}
+\begin{itemize}
+    \item High-performance filesystem
+    \item Excellent untuk large files dan parallel I/O
+    \item Default di Red Hat Enterprise Linux
+    \item Cannot shrink (only grow)
+\end{itemize}
+
+\noindent
+\textbf{Btrfs (B-tree filesystem)}
+\begin{itemize}
+    \item Modern copy-on-write filesystem
+    \item Built-in snapshots dan compression
+    \item RAID support
+    \item Still maturing (production-ready di openSUSE)
+\end{itemize}
+
+\subsection{Praktik: Manual Partitioning}
+
+Untuk advanced users, manual partitioning allows full control.
+
+Durante Ubuntu installation, select "Custom storage layout":
+
+\begin{lstlisting}[caption={Example manual partition layout}]
+Device      Size    Type    Mount Point    Filesystem
+/dev/sda1   512 MB  EFI     /boot/efi      FAT32
+/dev/sda2   1 GB    ext4    /boot          ext4
+/dev/sda3   20 GB   ext4    /              ext4
+/dev/sda4   50 GB   ext4    /home          ext4
+/dev/sda5   4 GB    swap    [swap]         swap
+\end{lstlisting}
+
+\subsubsection{Post-Installation Filesystem Commands}
+
+\begin{lstlisting}[language=bash, caption={Filesystem verification dan management}]
+# Check disk usage
+df -h
+
+# Check disk partitions
+lsblk
+sudo fdisk -l
+
+# Check filesystem type
+lsblk -f
+blkid
+
+# Mount additional filesystem manually
+sudo mkdir /mnt/data
+sudo mount /dev/sdb1 /mnt/data
+
+# Permanent mount - edit /etc/fstab
+cat /etc/fstab
+# Format: <device> <mount point> <type> <options> <dump> <pass>
+
+# UUID-based mount (preferred)
+UUID=xxx-xxx-xxx  /data  ext4  defaults  0  2
+\end{lstlisting}
+
+\begin{notebox}
+\textbf{UUID vs Device Names}
+
+Use UUID instead of \texttt{/dev/sdX} di fstab karena:
+\begin{itemize}
+    \item Device names can change (sda → sdb jika add disk)
+    \item UUID adalah persistent identifier
+    \item More reliable untuk production systems
+\end{itemize}
+
+Get UUID: \cmd{blkid} atau \cmd{lsblk -f}
+\end{notebox}
+
+%% ========================================================================
+%% SESSION 5-6: POST-INSTALLATION & SUMMARY
+%% ========================================================================
+
+%% ------------------------------------------------------------------------
+\section{Konfigurasi Post-Installation}
+\label{sec:post-installation}
+
+Setelah instalasi completed, several konfigurasi penting harus dilakukan.
+
+\subsection{System Updates}
+
+\textbf{Mengapa penting?}
+\begin{itemize}
+    \item Security patches untuk vulnerabilities
+    \item Bug fixes dan stability improvements
+    \item New features dan driver updates
+\end{itemize}
+
+\begin{lstlisting}[language=bash, caption={Update sistem Ubuntu/Debian}]
+# Update package lists from repositories
+sudo apt update
+
+# Upgrade installed packages to latest versions
+sudo apt upgrade
+
+# Full system upgrade (handles dependencies)
+sudo apt full-upgrade
+
+# Remove packages yang tidak dibutuhkan
+sudo apt autoremove
+
+# Clean package cache
+sudo apt clean
+\end{lstlisting}
+
+\subsection{Software Installation Essentials}
+
+\begin{lstlisting}[language=bash, caption={Install essential development tools}]
+# Development tools
+sudo apt install -y build-essential
+
+# Version control
+sudo apt install -y git
+
+# Network utilities
+sudo apt install -y curl wget net-tools
+
+# Text editors
+sudo apt install -y vim nano
+
+# System monitoring
+sudo apt install -y htop iotop
+
+# Complete essentials in one command
+sudo apt install -y \
+    build-essential \
+    git \
+    curl \
+    wget \
+    vim \
+    htop \
+    tree \
+    net-tools \
+    openssh-server
+\end{lstlisting}
+
+\subsection{Verifikasi Koneksi Jaringan}
+
+Pastikan sistem dapat terhubung ke internet.
+
+\begin{lstlisting}[language=bash, caption={Check network status}]
+# Check IP address
+ip addr show
+
+# Test internet connectivity
+ping -c 4 google.com
+
+# Check DNS
+cat /etc/resolv.conf
+\end{lstlisting}
+
+\begin{tipbox}
+Jika menggunakan VirtualBox, pastikan network adapter di-set ke "NAT" atau "Bridged Adapter" untuk koneksi internet.
+\end{tipbox}
+
+\subsection{Akses SSH (Opsional)}
+
+Jika ingin remote access ke server melalui SSH (jika sudah terinstall saat instalasi):
+
+\begin{lstlisting}[language=bash, caption={Check SSH status}]
+# Check if SSH installed dan running
+sudo systemctl status ssh
+
+# Get IP address untuk remote access
+ip addr show
+\end{lstlisting}
+
+\begin{examplebox}[Remote Login via SSH]
+Dari komputer lain pada jaringan yang sama:
+\begin{lstlisting}[language=bash]
+ssh username@192.168.1.100
+\end{lstlisting}
+
+Ganti alamat IP dengan alamat IP server.
+\end{examplebox}
+
+\subsection{Menampilkan Informasi Sistem}
+
+\subsubsection{Install Neofetch}
+
+Neofetch adalah tool populer untuk menampilkan informasi sistem dengan visual yang menarik.
+
+\begin{lstlisting}[language=bash, caption={Install neofetch}]
+# Install neofetch
+sudo apt install -y neofetch
+
+# Run neofetch
+neofetch
+\end{lstlisting}
+
+Neofetch akan menampilkan:
+\begin{itemize}
+    \item Logo distro Linux
+    \item Informasi OS (distro, versi, kernel)
+    \item CPU dan memory usage
+    \item Disk space
+    \item Uptime sistem
+    \item Dan informasi lainnya dalam format yang mudah dibaca
+\end{itemize}
+
+\begin{tipbox}
+Add \cmd{neofetch} ke file \file{\textasciitilde/.bashrc} agar otomatis tampil setiap login:
+\begin{lstlisting}[language=bash]
+echo "neofetch" >> ~/.bashrc
+\end{lstlisting}
+\end{tipbox}
+
+\subsubsection{Perintah Informasi Sistem Dasar}
+
+\begin{lstlisting}[language=bash, caption={Perintah informasi sistem dasar}]
+# Informasi OS
+cat /etc/os-release
+hostnamectl
+
+# Versi kernel
+uname -r
+
+# Informasi CPU
+lscpu
+
+# Informasi memory
+free -h
+
+# Informasi disk
+df -h
+lsblk
+
+# System uptime
+uptime
+
+# Who is logged in
+who
+\end{lstlisting}
+
+\begin{examplebox}[Praktik: Explore System Info]
+Coba jalankan perintah berikut dan perhatikan output:
+\begin{enumerate}
+    \item \cmd{neofetch} -- Tampilan lengkap dengan visual
+    \item \cmd{free -h} -- Check RAM usage
+    \item \cmd{df -h} -- Check disk space
+    \item \cmd{lscpu} -- Detail CPU
+    \item \cmd{uptime} -- Berapa lama sistem running
+\end{enumerate}
+\end{examplebox}
+
+%% ------------------------------------------------------------------------
+\section{Rangkuman}
+\label{sec:summary}
+
+Dalam bab ini, kita telah mempelajari konsep fundamental sistem operasi dan praktik instalasi:
+
+\subsection{Konsep Sistem Operasi}
+
+\begin{itemize}
+    \item \textbf{Definisi}: OS adalah resource manager dan extended machine
+    \item \textbf{Fungsi Utama}: Process, Memory, File, I/O Management, dan Security
+    \item \textbf{Jenis OS}: Desktop, Server, Mobile, Real-Time, Embedded
+    \item \textbf{Kernel Architectures}:
+    \begin{itemize}
+        \item Monolithic (Linux) - Performance
+        \item Microkernel (QNX) - Reliability
+        \item Hybrid (Windows, macOS) - Balance
+    \end{itemize}
+    \item \textbf{System Calls}: Interface between user space dan kernel services
+\end{itemize}
+
+\subsection{Perbandingan Sistem Operasi}
+
+\begin{itemize}
+    \item \textbf{Windows}: Desktop dominance, gaming, business software
+    \item \textbf{macOS}: Creative professionals, hardware integration
+    \item \textbf{Linux}: Server dominance, open source, flexibility
+    \item \textbf{Android/iOS}: Mobile platforms
+\end{itemize}
+
+\subsection{Practical Skills}
+
+\begin{itemize}
+    \item Installation process (VM setup, Ubuntu Server)
+    \item Partitioning concepts (MBR vs GPT, partition schemes)
+    \item Filesystem understanding (ext4, swap, mount points)
+    \item Post-installation: system updates dan basic configuration
+    \item System information gathering dengan neofetch dan basic commands
+\end{itemize}
+
+\subsection{Key Takeaways}
+
+\begin{enumerate}
+    \item OS concepts are universal - applicable across platforms
+    \item Linux excellent untuk learning: open, free, industry-relevant
+    \item Virtual machines provide safe learning environment
+    \item Proper partitioning important untuk flexibility dan recovery
+    \item System updates should be performed regularly
+    \item Basic system monitoring tools membantu understanding system state
+\end{enumerate}
+
+%% ------------------------------------------------------------------------
+\section{Latihan}
+\label{sec:exercises}
+
+\subsection{Latihan Konseptual}
+
+\begin{exercisebox}[1.1]
+Jelaskan 5 fungsi utama sistem operasi dengan contoh konkret dari minimal 2 OS berbeda (Windows, macOS, atau Linux).
+\end{exercisebox}
+
+\begin{exercisebox}[1.2]
+Kapan sebaiknya menggunakan Windows vs Linux vs macOS? Analisis berdasarkan use case: gaming, development, server, creative work, dan enterprise.
+\end{exercisebox}
+
+\subsection{Latihan Praktikal}
+
+\begin{exercisebox}[1.3]
+Install Ubuntu Server 22.04 LTS di VirtualBox dengan langkah berikut:
+\begin{enumerate}
+    \item Download Ubuntu Server ISO dari website resmi
+    \item Create VM baru di VirtualBox (RAM: 2GB, Disk: 25GB)
+    \item Install dengan automatic partitioning (guided)
+    \item Buat user account dengan password yang kuat
+    \item Reboot dan login ke sistem
+    \item Dokumentasikan proses instalasi dengan screenshot key steps
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[1.4]
+Setelah instalasi Ubuntu Server, lakukan tasks berikut:
+\begin{enumerate}
+    \item Update package list: \cmd{sudo apt update}
+    \item Upgrade packages: \cmd{sudo apt upgrade}
+    \item Install neofetch: \cmd{sudo apt install neofetch}
+    \item Jalankan neofetch dan screenshot hasilnya
+    \item Check disk usage dengan \cmd{df -h}
+    \item Check memory dengan \cmd{free -h}
+    \item Dokumentasikan output dari setiap command
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[1.5]
+Eksplorasi sistem yang baru diinstall:
+\begin{enumerate}
+    \item Tampilkan informasi OS: \cmd{cat /etc/os-release}
+    \item Tampilkan versi kernel: \cmd{uname -r}
+    \item List partisi: \cmd{lsblk}
+    \item Check network connectivity: \cmd{ping -c 4 google.com}
+    \item Install dan jalankan \cmd{htop} untuk melihat resource usage
+    \item Buat laporan singkat tentang konfigurasi sistem Anda
+\end{enumerate}
+\end{exercisebox}
+
+\subsection{Latihan Refleksi}
+
+\begin{exercisebox}[1.6]
+Ceritakan pengalaman Anda dengan sistem operasi:
+\begin{enumerate}
+    \item Sistem operasi apa yang Anda gunakan sehari-hari? (Windows, macOS, Linux, atau lainnya)
+    \item Berapa lama Anda menggunakan sistem operasi tersebut?
+    \item Apa yang Anda sukai dari sistem operasi tersebut?
+    \item Apa tantangan atau masalah yang pernah Anda hadapi?
+    \item Apakah Anda pernah menggunakan sistem operasi lain? Bandingkan pengalaman Anda.
+    \item Setelah mempelajari bab ini, apakah ada sistem operasi lain yang ingin Anda coba? Mengapa?
+\end{enumerate}
+Tulis refleksi Anda dalam 300-500 kata disertai dengan dokumentasi.
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
+\section{Referensi}
+\label{sec:references}
+
+\subsection{Buku Rekomendasi}
+
+\begin{itemize}
+    \item \textbf{Operating System Concepts (10th Ed)} - Silberschatz, Galvin, Gagne \\
+    Classic textbook untuk OS theory
+
+    \item \textbf{Modern Operating Systems (4th Ed)} - Andrew Tanenbaum \\
+    Comprehensive OS concepts dengan implementation details
+
+    \item \textbf{How Linux Works (3rd Ed)} - Brian Ward \\
+    Practical guide untuk understanding Linux internals
+
+    \item \textbf{The Linux Command Line (2nd Ed)} - William Shotts \\
+    Excellent resource untuk command-line mastery
+
+    \item \textbf{UNIX and Linux System Administration Handbook (5th Ed)} - Nemeth et al. \\
+    Industry standard untuk system administration
+\end{itemize}
+
+\subsection{Online Resources}
+
+\textbf{Documentation:}
+\begin{itemize}
+    \item Linux Foundation: \url{https://www.linuxfoundation.org}
+    \item Ubuntu Documentation: \url{https://ubuntu.com/server/docs}
+    \item Arch Wiki: \url{https://wiki.archlinux.org} (excellent cross-distro reference)
+    \item Red Hat Documentation: \url{https://access.redhat.com/documentation}
+\end{itemize}
+
+\textbf{Interactive Learning:}
+\begin{itemize}
+    \item Linux Journey: \url{https://linuxjourney.com}
+    \item OverTheWire Bandit: \url{https://overthewire.org/wargames/bandit/}
+    \item edX: Introduction to Linux (LFS101x)
+\end{itemize}
+
+\textbf{Official Sites:}
+\begin{itemize}
+    \item The Linux Kernel: \url{https://www.kernel.org}
+    \item Microsoft Docs: \url{https://docs.microsoft.com}
+    \item Apple Developer: \url{https://developer.apple.com/documentation}
+\end{itemize}
+

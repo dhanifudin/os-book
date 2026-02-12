@@ -1,0 +1,138 @@
+%% ========================================================================
+%% Buku Sistem Operasi
+%% Template LaTeX untuk Buku Teks Akademik
+%% Ukuran Kertas: A4
+%% ========================================================================
+
+\documentclass[
+    a4paper,          % Ukuran kertas A4
+    12pt,             % Ukuran font
+    twoside,          % Untuk pencetakan dua sisi
+    openright,        % Bab baru dimulai di halaman kanan
+    bibliography=totoc, % Daftar pustaka masuk ke daftar isi
+]{scrbook}            % KOMA-Script book class (lebih fleksibel)
+
+%% ========================================================================
+%% Preamble: Package dan Konfigurasi
+%% ========================================================================
+\input{preamble}
+
+%% ========================================================================
+%% Informasi Buku
+%% ========================================================================
+\title{Sistem Operasi}
+\subtitle{Panduan Komprehensif untuk Mahasiswa}
+\author{Tim Penulis}
+\date{\today}
+\publishers{Jurusan Teknologi Informasi}
+
+%% ========================================================================
+%% Mulai Dokumen
+%% ========================================================================
+\begin{document}
+
+%% ------------------------------------------------------------------------
+%% Front Matter (Halaman Depan)
+%% ------------------------------------------------------------------------
+\frontmatter
+
+% Halaman Judul
+\input{frontmatter/titlepage}
+
+% Halaman Hak Cipta
+\input{frontmatter/copyright}
+
+% Kata Pengantar
+\input{frontmatter/preface}
+
+% Daftar Isi
+\tableofcontents
+
+% Daftar Gambar (opsional)
+\listoffigures
+
+% Daftar Tabel (opsional)
+\listoftables
+
+% Daftar Kode (opsional)
+\lstlistoflistings
+
+%% ------------------------------------------------------------------------
+%% Main Matter (Isi Utama Buku)
+%% ------------------------------------------------------------------------
+\mainmatter
+
+%% Bagian I: Fundamental Sistem Operasi
+\part{Fundamental Sistem Operasi}
+
+% Minggu 1: Pengenalan Sistem Operasi & Instalasi
+\input{chapters/week01-introduction}
+
+% Minggu 2: Manajemen Perangkat Keras & Perintah Dasar
+\input{chapters/week02-hardware-and-basic-commands}
+
+% Minggu 3: Dasar Input/Output (I/O)
+\input{chapters/week03-basic-io}
+
+%% Bagian II: Manajemen File dan Proses
+\part{Manajemen File dan Proses}
+
+% Minggu 5: Struktur Direktori & Operasi File
+\input{chapters/week05-directory-structure}
+
+% Minggu 6: Manajemen Proses
+\input{chapters/week06-process-management}
+
+%% Bagian III: Bash Shell dan Scripting
+\part{Bash Shell dan Scripting}
+
+% Minggu 7: Bash Shell
+\input{chapters/week07-bash-shell}
+
+% Minggu 9: Pemrograman Bash
+\input{chapters/week09-bash-programming}
+
+%% Bagian IV: Manajemen Sistem Lanjutan
+\part{Manajemen Sistem Lanjutan}
+
+% Minggu 10: Manajemen Memori & System Call
+\input{chapters/week10-memory-and-syscalls}
+
+% Minggu 11: Manajemen File & User/Group
+\input{chapters/week11-file-and-user-management}
+
+% Minggu 12: Manajemen Layanan (Services)
+\input{chapters/week12-service-management}
+
+% Minggu 13: Manajemen Aplikasi
+\input{chapters/week13-application-management}
+
+% Minggu 14: Backup dan Pemulihan Sistem
+\input{chapters/week14-backup-and-recovery}
+
+%% ------------------------------------------------------------------------
+%% Appendices (Lampiran)
+%% ------------------------------------------------------------------------
+\appendix
+
+% Lampiran A: Referensi Perintah Linux
+\input{appendices/command-reference}
+
+% Lampiran B: Solusi Latihan
+\input{appendices/exercise-solutions}
+
+% Lampiran C: Glossary
+\input{appendices/glossary}
+
+%% ------------------------------------------------------------------------
+%% Back Matter (Halaman Belakang)
+%% ------------------------------------------------------------------------
+\backmatter
+
+% Daftar Pustaka
+\printbibliography[heading=bibintoc, title={Daftar Pustaka}]
+
+% Indeks
+\printindex
+
+\end{document}

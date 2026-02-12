@@ -1,0 +1,47 @@
+# ========================================================================
+# latexmk Configuration File
+# ========================================================================
+
+# Use pdflatex by default
+$pdf_mode = 1;
+
+# Use biber for bibliography
+$bibtex_use = 2;
+
+# PDF viewer configuration
+$pdf_previewer = 'zathura %O %S';
+
+# Enable continuous preview mode to use the configured viewer
+$preview_mode = 1;
+
+# Extra pdflatex options
+$pdflatex = 'pdflatex -interaction=nonstopmode -file-line-error %O %S';
+
+# Enable shell escape if needed (for minted, etc)
+# Uncomment jika menggunakan package yang memerlukan shell escape
+# $pdflatex = 'pdflatex -shell-escape -interaction=nonstopmode -file-line-error %O %S';
+
+# Clean extra extensions
+$clean_ext = 'aux bbl bcf blg fdb_latexmk fls lof log lot out run.xml synctex.gz toc idx ilg ind lol nav snm vrb';
+
+# Force biber to run
+$biber = 'biber %O %S';
+
+# Maximum number of runs
+$max_repeat = 5;
+
+# Remove output directory on clean
+$out_dir = '';
+
+# Generate PDF using pdflatex
+$postscript_mode = 0;
+$dvi_mode = 0;
+
+# Warnings
+$warnings_as_errors = 0;
+
+# Files to watch for changes (in addition to .tex files)
+@default_files = ('main.tex');
+
+# Extra file extensions to clean
+push @generated_exts, 'synctex.gz', 'run.xml', 'bcf', 'nav', 'snm', 'vrb', 'lol';
