@@ -272,7 +272,7 @@ lsblk
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[2.6]
+\begin{exercisebox}[2.3]
 Dari output \texttt{ls -l}, jelaskan perbedaan penanda file untuk block device dan character device. (Hint: karakter pertama pada permission string)
 \end{exercisebox}
 
@@ -347,196 +347,6 @@ less data.log
 \end{enumerate}
 
 %% ------------------------------------------------------------------------
-\subsection*{Konsep Permission Linux}
-\label{subsec:permission-concept}
-
-\subsubsection*{Mengapa Permission Penting?}
-Pada sistem operasi Linux, hampir semua administrasi berhubungan dengan file: konfigurasi di \texttt{/etc}, log di \texttt{/var/log},
-data aplikasi, hingga skrip otomasi. \textbf{Permission} menentukan \textit{siapa boleh melakukan apa} terhadap file/direktori. Metode ini penting untuk menjaga keamanan sistem operasi terlebih yang digunakan sebagai server.
-Kesalahan permission bisa menyebabkan,
-\begin{itemize}
-  \item service gagal start (tidak bisa membaca file konfigurasi),
-  \item kebocoran data (file sensitif bisa dibaca user lain),
-  \item masalah eksekusi (script tidak bisa dijalankan).
-\end{itemize}
-
-\subsubsection*{Tiga Kategori Subjek: User, Group, Others}
-Setiap file/direktori punya 3 kategori pelaku akses:
-\begin{itemize}
-  \item \textbf{User (u)}: pemilik file (owner).
-  \item \textbf{Group (g)}: grup pemilik file.
-  \item \textbf{Others (o)}: semua user lain (sering disebut public).
-\end{itemize}
-Saat Anda menjalankan \texttt{ls -l}, Linux menampilkan permission untuk tiga kategori tersebut secara berurutan.
-
-\subsubsection*{Tiga Jenis Hak Akses: r, w, x}
-\begin{itemize}
-  \item \textbf{r} (read): boleh membaca isi file / melihat daftar isi direktori.
-  \item \textbf{w} (write): boleh mengubah isi file / membuat-menghapus entry di direktori.
-  \item \textbf{x} (execute): boleh mengeksekusi file (script/binary) / masuk (traverse) ke direktori.
-\end{itemize}
-
-\begin{examplebox}[Contoh Output \texttt{ls -l}]
-\begin{lstlisting}[language=bash]
--rw-r--r-- 1 ubuntu ubuntu  120 Feb 14 10:20 notes.txt
-drwxr-x--- 2 ubuntu admin  4096 Feb 14 10:21 mydir
-\end{lstlisting}
-
-\textbf{Cara membacanya:}
-\begin{itemize}
-  \item Karakter pertama: tipe (\texttt{-} file biasa, \texttt{d} direktori).
-  \item 9 karakter berikutnya dibagi 3 grup: \texttt{u g o}
-  \item \texttt{rw-} (user) berarti owner boleh read+write, tidak execute.
-  \item \texttt{r--} (group) berarti group hanya read.
-  \item \texttt{r--} (others) berarti semua user lain hanya read.
-\end{itemize}
-\end{examplebox}
-
-\subsubsection*{Mode Angka (Octal) untuk Permission}
-Selain format simbol (\texttt{rwx}), permission sering ditulis dalam bentuk angka (octal):
-\begin{itemize}
-  \item \textbf{r = 4}, \textbf{w = 2}, \textbf{x = 1}
-  \item Total per kategori adalah penjumlahan nilai yang aktif.
-\end{itemize}
-
-\begin{table}[h]
-\centering
-\begin{tabular}{c c c}
-\hline
-\textbf{Simbol} & \textbf{Nilai} & \textbf{Keterangan} \\
-\hline
-r-- & 4 & read saja \\
--w- & 2 & write saja \\
---x & 1 & execute saja \\
-rw- & 6 & read + write \\
-r-x & 5 & read + execute \\
--wx & 3 & write + execute \\
-rwx & 7 & read + write + execute \\
-\hline
-\end{tabular}
-\caption{Konversi permission simbol ke angka}
-\end{table}
-
-\begin{examplebox}[Contoh Konversi]
-\texttt{rw-r--r--} = \texttt{644} karena:
-\begin{itemize}
-  \item user: \texttt{rw-} = 4+2 = 6
-  \item group: \texttt{r--} = 4
-  \item others: \texttt{r--} = 4
-\end{itemize}
-
-\texttt{rwxr-x---} = \texttt{750} karena:
-\begin{itemize}
-  \item user: \texttt{rwx} = 7
-  \item group: \texttt{r-x} = 5
-  \item others: \texttt{---} = 0
-\end{itemize}
-\end{examplebox}
-
-\subsubsection*{chmod Simbol vs Angka}
-Ada dua cara umum mengubah permission dengan \texttt{chmod}:
-\begin{itemize}
-  \item \textbf{Simbol}: mudah untuk perubahan kecil, contoh \texttt{chmod u+x file.sh}
-  \item \textbf{Angka}: cepat dan konsisten, contoh \texttt{chmod 640 secret.txt}
-\end{itemize}
-
-\begin{lstlisting}[language=bash, caption={Contoh penggunaan chmod simbol dan angka}]
-# Tambah execute untuk owner
-chmod u+x script.sh
-
-# Set permission persis: user rw, group r, others tidak ada akses
-chmod 640 secret.txt
-
-# Set direktori agar hanya owner bisa akses penuh
-chmod 700 private_dir
-\end{lstlisting}
-
-\begin{notebox}
-Khusus direktori: hak \texttt{x} berarti boleh ``masuk'' ke direktori (traverse).
-Tanpa \texttt{x}, Anda tidak bisa \texttt{cd} ke direktori tersebut walaupun punya \texttt{r}.
-\end{notebox}
-
-\subsubsection*{Latihan Sederhana}
-\begin{enumerate}
-  \item Buat file latihan dan lihat permission default:
-\begin{lstlisting}[language=bash]
-touch perm_demo.txt
-ls -l perm_demo.txt
-\end{lstlisting}
-
-  \item Ubah permission menjadi \texttt{640} dan verifikasi:
-\begin{lstlisting}[language=bash]
-chmod 640 perm_demo.txt
-ls -l perm_demo.txt
-\end{lstlisting}
-
-  \item Jawab: setelah \texttt{640}, siapa yang boleh baca? siapa yang boleh tulis? siapa yang tidak punya akses?
-\end{enumerate}
-
-
-\subsection*{Praktikum 2.9 --- Permission Dasar (chmod/chown)}
-\textbf{Tujuan:} memahami izin akses file dan dampaknya.
-
-\textbf{Fungsi singkat:}
-\begin{itemize}
-    \item \texttt{chmod}: mengubah permission (rwx) file/direktori.
-    \item \texttt{chown}: mengubah owner dan group.
-\end{itemize}
-
-\textbf{Langkah-langkah:}
-\begin{enumerate}
-    \item Lihat permission saat ini:
-\begin{lstlisting}[language=bash, caption={Melihat permission file}]
-ls -l notes.txt
-\end{lstlisting}
-
-    \item Tambahkan hak eksekusi (untuk demo), lalu cek perubahan:
-\begin{lstlisting}[language=bash, caption={Mengubah permission dengan chmod}]
-chmod +x notes.txt
-ls -l notes.txt
-\end{lstlisting}
-
-    \item Kembalikan seperti semula:
-\begin{lstlisting}[language=bash, caption={Mengembalikan permission}]
-chmod -x notes.txt
-ls -l notes.txt
-\end{lstlisting}
-\end{enumerate}
-
-\begin{exercisebox}[2.9]
-Jelaskan arti tiga kelompok permission pada output \texttt{ls -l} (owner, group, others) dan arti \texttt{r}, \texttt{w}, \texttt{x}.
-\end{exercisebox}
-
-\subsection*{Praktikum 2.10 --- Redirection, Pipe, dan tee}
-\textbf{Tujuan:} mengalirkan output antar perintah (fondasi manipulasi teks).
-
-\textbf{Fungsi singkat:}
-\begin{itemize}
-    \item \texttt{>} menulis ulang file, \texttt{>>} menambah ke akhir file.
-    \item \texttt{|} mengalirkan output perintah A menjadi input perintah B.
-    \item \texttt{tee} menulis output ke file \textbf{dan} tetap menampilkan di terminal.
-\end{itemize}
-
-\textbf{Langkah-langkah:}
-\begin{enumerate}
-    \item Buat file hasil output:
-\begin{lstlisting}[language=bash, caption={Redirect output ke file}]
-ls -lah > list.txt
-cat list.txt
-\end{lstlisting}
-
-    \item Gunakan pipe untuk filter:
-\begin{lstlisting}[language=bash, caption={Pipe untuk filter output}]
-ls -lah | grep ".txt"
-\end{lstlisting}
-
-    \item Gunakan tee untuk simpan output filter:
-\begin{lstlisting}[language=bash, caption={tee untuk simpan dan tampilkan output}]
-ls -lah | grep ".txt" | tee filtered.txt
-\end{lstlisting}
-\end{enumerate}
-
-%% ------------------------------------------------------------------------
 \section{Manipulasi Teks}
 \label{sec:text-manipulation}
 
@@ -549,7 +359,7 @@ adalah tools untuk menyaring, mengubah, dan meringkas teks secara cepat.
 \texttt{grep} digunakan untuk mencari baris yang cocok dengan pola (pattern) di file atau stream.
 Sangat berguna untuk mencari error pada log atau mencari konfigurasi tertentu.
 
-\subsubsection*{Praktikum 2.11 --- Pencarian Pola dengan grep}
+\subsubsection*{Praktikum 2.9 --- Pencarian Pola dengan grep}
 \textbf{Langkah-langkah:}
 \begin{enumerate}
     \item Cari baris yang mengandung \texttt{ERROR} pada \texttt{data.log}:
@@ -573,7 +383,7 @@ grep -v "INFO" data.log
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[2.11]
+\begin{exercisebox}[2.4]
 Gunakan \texttt{grep} untuk menampilkan hanya baris yang mengandung \texttt{INFO} atau \texttt{WARN} dari \texttt{data.log}.
 (Hint: gunakan \texttt{grep -E} dengan pola alternatif)
 \end{exercisebox}
@@ -583,7 +393,7 @@ Gunakan \texttt{grep} untuk menampilkan hanya baris yang mengandung \texttt{INFO
 \texttt{sed} adalah stream editor untuk melakukan transformasi teks, terutama substitusi (cari-ganti).
 Umum dipakai untuk memperbarui konfigurasi atau melakukan normalisasi output.
 
-\subsubsection*{Praktikum 2.12 --- Substitusi dengan sed (Aman di File Latihan)}
+\subsubsection*{Praktikum 2.10 --- Substitusi dengan sed (Aman di File Latihan)}
 \textbf{Langkah-langkah:}
 \begin{enumerate}
     \item Siapkan file konfigurasi latihan:
@@ -624,7 +434,7 @@ Gunakan \texttt{sed -i} dengan hati-hati jika mengedit file sistem. Untuk admini
 \texttt{awk} digunakan untuk memproses teks berbasis kolom/field. Sangat efektif untuk meringkas output perintah seperti \texttt{df}, \texttt{ps},
 atau file berformat kolom.
 
-\subsubsection*{Praktikum 2.13 --- Ekstraksi Kolom dengan awk}
+\subsubsection*{Praktikum 2.11 --- Ekstraksi Kolom dengan awk}
 \textbf{Langkah-langkah:}
 \begin{enumerate}
     \item Lihat output \texttt{df -h}:
@@ -660,7 +470,7 @@ Linux menggunakan \textbf{sinyal} untuk mengontrol proses, misalnya:
 \subsubsection*{Fungsi ps}
 \texttt{ps} menampilkan snapshot proses pada saat perintah dijalankan. Berguna untuk mencari PID, melihat pemakaian CPU/MEM, dan memfilter proses tertentu.
 
-\subsubsection*{Praktikum 2.14 --- Melihat Proses dengan ps}
+\subsubsection*{Praktikum 2.12 --- Melihat Proses dengan ps}
 \textbf{Langkah-langkah:}
 \begin{enumerate}
     \item Tampilkan semua proses (format BSD):
@@ -679,7 +489,7 @@ ps aux | grep -i sshd
 \texttt{top} menampilkan pemakaian resource secara real-time: CPU, memori, serta proses paling berat.
 Ini alat cepat untuk diagnosis ``server terasa lambat''.
 
-\subsubsection*{Praktikum 2.15 --- Monitoring Real-time dengan top}
+\subsubsection*{Praktikum 2.13 --- Monitoring Real-time dengan top}
 \textbf{Langkah-langkah:}
 \begin{enumerate}
     \item Jalankan \texttt{top}:
@@ -702,7 +512,7 @@ sudo apt install -y htop btop
 \texttt{kill} mengirim sinyal ke proses berdasarkan PID. Sinyal yang dikirimkan merupakan sinyal untuk menghentikan proses.
 Sinyal default adalah \texttt{SIGTERM}.
 
-\subsubsection*{Praktikum 2.16 --- Menghentikan Proses dengan kill}
+\subsubsection*{Praktikum 2.14 --- Menghentikan Proses dengan kill}
 \textbf{Langkah-langkah:}
 \begin{enumerate}
     \item Jalankan proses dummy di background:
@@ -753,7 +563,7 @@ Pemantauan sistem berfokus pada tiga pertanyaan praktis:
 \end{itemize}
 
 
-\subsection*{Praktikum 2.17 --- Cek Disk, Load, dan Service}
+\subsection*{Praktikum 2.15 --- Cek Disk, Load, dan Service}
 \textbf{Langkah-langkah:}
 \begin{enumerate}
     \item Cek penggunaan disk:
@@ -782,7 +592,7 @@ journalctl -xe | tail -n 50
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 2.18 --- Monitoring Port dan Koneksi (Network Basics)}
+\subsection*{Praktikum 2.16 --- Monitoring Port dan Koneksi (Network Basics)}
 \textbf{Tujuan:} melihat interface, routing, dan port yang sedang listen (berguna untuk troubleshooting service).
 
 \textbf{Langkah-langkah:}
@@ -803,7 +613,7 @@ sudo ss -tulpn
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[2.18]
+\begin{exercisebox}[2.5]
 Pilih satu port yang listening dari output \texttt{ss -tulpn}, lalu tuliskan service/proses yang membukanya. Jelaskan kegunaan port tersebut secara singkat.
 \end{exercisebox}
 
