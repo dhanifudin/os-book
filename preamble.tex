@@ -15,15 +15,12 @@
 %% ------------------------------------------------------------------------
 \usepackage[indonesian,english]{babel}  % Dukungan bahasa Indonesia
 
-%% Language flags - set by main-id.tex or main-en.tex before loading preamble
-%% Default to Indonesian for backward compatibility if not set
-\ifx\ifIndonesian\undefined
-    \newif\ifIndonesian
-    \newif\ifEnglish
-    \Indonesiantrue
-    \Englishfalse
-    \selectlanguage{indonesian}
-\fi
+%% Language flags - MUST be set by main-id.tex or main-en.tex before loading preamble
+%% \newif\ifIndonesian
+%% \newif\ifEnglish
+%% Then set \Indonesiantrue or \Englishtrue
+%%
+%% The flags control all language-specific elements below
 
 %% Konfigurasi istilah bahasa - conditional based on language
 \ifIndonesian
