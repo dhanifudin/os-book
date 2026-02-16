@@ -340,18 +340,18 @@ Sistem operasi modern memisahkan memori menjadi dua area:
 \end{table}
 
 \begin{examplebox}[Tanenbaum-Torvalds Debate (1992)]
-Perdebatan famous antara Andrew Tanenbaum (creator of MINIX, microkernel) dan Linus Torvalds (creator of Linux, monolithic):
+Perdebatan terkenal antara Andrew Tanenbaum (pencipta MINIX, microkernel) dan Linus Torvalds (pencipta Linux, monolithic):
 
 \textbf{Tanenbaum}: "Linux is obsolete" - argued monolithic kernels are outdated
 
-\textbf{Torvalds}: Defended pragmatic monolithic design - performance dan simplicity
+\textbf{Torvalds}: Defended pragmatic monolithic design - performance and simplicity
 
-\textbf{Outcome}: Both approaches have merits. Linux dominates servers dengan monolithic-modular design, sementara QNX microkernel dominates automotive systems.
+\textbf{Outcome}: Kedua pendekatan tersebut memiliki kelebihan masing-masing. Linux mendominasi servers dengan desain monolithic-modular, sementara QNX microkernel mendominasi automotive systems.
 \end{examplebox}
 
 \subsection{System Calls}
 
-\textbf{System call} adalah interface antara user space program dan kernel services. Ini adalah controlled entry point ke kernel.
+\textbf{System call} adalah mekanisme yang disediakan kernel agar program di user space dapat meminta layanan dari kernel. System calls adalah satu-satunya cara bagi aplikasi untuk berinteraksi dengan hardware melalui kernel.
 
 \textbf{Kategori System Calls:}
 \begin{enumerate}
@@ -376,7 +376,7 @@ Ketika program membuka file dengan \cmd{fopen()} di C:
     \item Control returns to application
 \end{enumerate}
 
-Proses ini sama conceptually di semua OS, tapi implementation details berbeda.
+Proses ini sama secara koneptual di semua OS, tetapi detil implementasi berbeda.
 \end{examplebox}
 
 %% ========================================================================
@@ -394,25 +394,25 @@ Perkembangan sistem operasi telah melalui beberapa era penting:
 \begin{description}
     \item[1950s--1960s: Era Awal] Batch processing systems, program cards, no interactive computing. Contoh: IBM 701, UNIVAC.
 
-    \item[1960s: Time-Sharing] CTSS (Compatible Time-Sharing System) di MIT - multiple users sharing computer time. Multics project (ambitious tapi gagal, inspires Unix).
+    \item[1960s: Time-Sharing] CTSS (Compatible Time-Sharing System) di MIT - banyak pengguna berbagi waktu komputer. Proyek Multics (ambisius namun gagal, menginspirasi Unix).
 
-    \item[1969: Lahirnya Unix] Ken Thompson dan Dennis Ritchie di Bell Labs menciptakan Unix. Simple, portable (ditulis dalam C), filosofi "do one thing well".
+    \item[1969: Lahirnya Unix] Ken Thompson dan Dennis Ritchie di Bell Labs menciptakan Unix. Sederhana, portabel (ditulis dalam C), dengan filosofi "do one thing well".
 
     \item[1980s: Era PC] MS-DOS (1981) untuk IBM PC. Apple Macintosh (1984) dengan GUI. Windows 1.0 (1985) sebagai shell di atas DOS.
 
     \item[1991: Linux] Linus Torvalds, mahasiswa dari Finland, merilis Linux kernel 0.01. Free, open source, Unix-compatible.
 
-    \item[1993: Windows NT] Microsoft merilis Windows NT dengan hybrid kernel architecture untuk enterprise market.
+    \item[1993: Windows NT] Microsoft merilis Windows NT dengan arsitektur hybrid kernel untuk pasar enterprise.
 
-    \item[2001: Mac OS X] Apple merilis macOS X berbasis Darwin (BSD Unix + Mach microkernel). UNIX certified.
+    \item[2001: Mac OS X] Apple merilis macOS X berbasis Darwin (BSD Unix + Mach microkernel). Bersertifikasi UNIX.
 
-    \item[2000s: Modern Era] Windows XP unifies consumer dan NT lines. Linux dominates server market. Open source momentum.
+    \item[2000s: Era Modern] Windows XP menyatukan lini consumer dan NT. Linux mendominasi pasar server. Momentum open source meningkat.
 
-    \item[2007--2008: Mobile Revolution] iOS (2007) dan Android (2008) mendefinisikan ulang computing dengan mobile-first approach.
+    \item[2007--2008: Revolusi Mobile] iOS (2007) dan Android (2008) mendefinisikan ulang komputasi dengan pendekatan mobile-first.
 
-    \item[2010s: Cloud Era] Linux dominates cloud computing (AWS, Google Cloud, Azure). Containers (Docker) revolutionize deployment.
+    \item[2010s: Era Cloud] Linux mendominasi cloud computing (AWS, Google Cloud, Azure). Container (Docker) merevolusi deployment.
 
-    \item[2020s: Current] Hybrid computing, ARM processors (Apple Silicon), WSL brings Linux to Windows, security-focused development.
+    \item[2020s: Saat Ini] Komputasi hybrid, prosesor ARM (Apple Silicon), WSL membawa Linux ke Windows, pengembangan fokus keamanan.
 \end{description}
 
 %% ------------------------------------------------------------------------
@@ -430,11 +430,11 @@ Perkembangan sistem operasi telah melalui beberapa era penting:
 
 \textbf{Karakteristik:}
 \begin{itemize}
-    \item Desktop market dominance (75\% market share)
-    \item Excellent backward compatibility
-    \item Large software ecosystem
-    \item Enterprise integration (Active Directory, Group Policy)
-    \item Gaming support terbaik
+    \item Dominasi pasar desktop (pangsa pasar 75\%)
+    \item Backward compatibility yang sangat baik
+    \item Ekosistem perangkat lunak yang luas
+    \item Integrasi enterprise (Active Directory, Group Policy)
+    \item Dukungan gaming terbaik
 \end{itemize}
 
 \textbf{Teknologi:}
@@ -449,10 +449,10 @@ Perkembangan sistem operasi telah melalui beberapa era penting:
 
 \textbf{Karakteristik:}
 \begin{itemize}
-    \item Premium hardware-software integration (Apple Silicon)
-    \item UNIX certified (POSIX compliant)
-    \item Excellent for creative professionals
-    \item iOS/iPadOS ecosystem integration
+    \item Integrasi hardware-software premium (Apple Silicon)
+    \item Bersertifikasi UNIX (POSIX compliant)
+    \item Sangat baik untuk profesional kreatif
+    \item Integrasi ekosistem iOS/iPadOS
     \item Developer-friendly (Unix tools + graphical environment)
 \end{itemize}
 
@@ -468,7 +468,7 @@ Perkembangan sistem operasi telah melalui beberapa era penting:
 
 \textbf{Distribusi Linux:}
 
-Linux bukan single OS, tapi collection of distributions yang share Linux kernel tapi berbeda dalam package management, default software, dan target audience.
+Linux bukan sistem operasi tunggal, melainkan kumpulan distribusi yang berbagi Linux kernel namun berbeda dalam package management, default software, dan target audience.
 
 \textbf{Family Utama:}
 \begin{itemize}
@@ -582,10 +582,10 @@ Modern systems (post-2010) umumnya menggunakan UEFI. Secure Boot harus disabled 
 
 \textbf{Keuntungan:}
 \begin{itemize}
-    \item Safe experimentation - tidak affect host system
-    \item Snapshots untuk easy recovery
-    \item Multiple OS secara parallel
-    \item No hardware risk
+    \item Eksperimen yang aman - tidak mempengaruhi host system
+    \item Snapshot untuk recovery yang mudah
+    \item Menjalankan multiple OS secara paralel
+    \item Tidak ada risiko hardware
 \end{itemize}
 
 \textbf{Software:}
@@ -600,15 +600,15 @@ Modern systems (post-2010) umumnya menggunakan UEFI. Secure Boot harus disabled 
 
 Install multiple OS pada satu machine. User memilih OS saat boot.
 
-\textbf{Use case:} Native performance, hardware access, production use
+\textbf{Use case:} Performa native, akses hardware, penggunaan production
 
-\textbf{Risk:} Partition errors, bootloader conflicts, data loss jika tidak careful
+\textbf{Risiko:} Kesalahan partisi, konflik bootloader, kehilangan data jika tidak hati-hati
 
 \subsubsection{Bare Metal}
 
 Single OS installation, full hardware control.
 
-\textbf{Use case:} Production servers, dedicated workstations
+\textbf{Use case:} Server production, workstation khusus
 
 \subsection{Praktik: Instalasi Ubuntu Server 22.04 LTS}
 
@@ -652,7 +652,7 @@ Ubuntu Server dipilih karena:
 \begin{itemize}
     \item Settings → Storage → Controller: IDE → Add optical drive
     \item Select Ubuntu Server ISO
-    \item Network: NAT atau Bridged (untuk network access)
+    \item Network: NAT atau Bridged (untuk akses jaringan)
 \end{itemize}
 
 \textbf{3. Boot and Install}
@@ -660,13 +660,13 @@ Ubuntu Server dipilih karena:
 \begin{enumerate}
     \item Start VM, akan boot dari ISO
     \item Select language: English
-    \item Keyboard configuration: sesuai keyboard anda
+    \item Keyboard configuration: sesuai keyboard Anda
     \item Network configuration:
     \begin{itemize}
-        \item DHCP (automatic) - recommended untuk beginning
-        \item Atau configure static IP (advanced)
+        \item DHCP (automatic) - direkomendasikan untuk pemula
+        \item Atau konfigurasi static IP (advanced)
     \end{itemize}
-    \item Proxy: Leave blank (unless needed)
+    \item Proxy: Kosongkan (kecuali diperlukan)
     \item Mirror: Default Ubuntu archive mirror
 \end{enumerate}
 
@@ -674,11 +674,11 @@ Ubuntu Server dipilih karena:
 
 Pilihan partitioning:
 
-\textbf{Option 1: Guided - use entire disk (Recommended untuk beginners)}
+\textbf{Option 1: Guided - use entire disk (Direkomendasikan untuk pemula)}
 \begin{itemize}
     \item Automatic partitioning
-    \item Sets up /, /boot/efi, dan swap
-    \item Simple, fast
+    \item Mengatur /, /boot/efi, dan swap
+    \item Sederhana dan cepat
 \end{itemize}
 
 \textbf{Option 2: Custom storage layout (Advanced)}
@@ -720,10 +720,10 @@ Optional packages:
 \textbf{8. Installation Progress}
 
 \begin{itemize}
-    \item Installation akan download dan install packages (~15-20 minutes)
-    \item Wait hingga "Installation complete!" muncul
-    \item Select "Reboot Now"
-    \item Remove installation media (VirtualBox auto-ejects)
+    \item Instalasi akan mengunduh dan memasang paket (~15-20 menit)
+    \item Tunggu hingga "Installation complete!" muncul
+    \item Pilih "Reboot Now"
+    \item Keluarkan media instalasi (VirtualBox otomatis mengeluarkannya)
 \end{itemize}
 
 \textbf{9. First Login}
@@ -746,14 +746,14 @@ $ ip a
 \end{lstlisting}
 
 \begin{examplebox}[Snapshot VM]
-Setelah instalasi successful, create snapshot di VirtualBox:
+Setelah instalasi berhasil, buat snapshot di VirtualBox:
 \begin{enumerate}
-    \item Power off VM
+    \item Matikan VM
     \item VirtualBox → VM → Snapshots → Take
     \item Name: "Fresh Install"
 \end{enumerate}
 
-Ini memungkinkan restore ke state bersih kapanpun dibutuhkan.
+Ini memungkinkan restore ke kondisi bersih kapanpun dibutuhkan.
 \end{examplebox}
 
 %% ========================================================================
@@ -770,11 +770,11 @@ Ini memungkinkan restore ke state bersih kapanpun dibutuhkan.
 
 \textbf{Mengapa perlu partisi?}
 \begin{itemize}
-    \item \textbf{Organization} - Separate OS, user data, applications
-    \item \textbf{Multi-OS} - Install multiple OS pada satu disk
-    \item \textbf{Backup/Recovery} - Easier to backup specific partitions
-    \item \textbf{Security} - Isolate data dengan different permissions
-    \item \textbf{Performance} - Optimize different workload types
+    \item \textbf{Organisasi} - Memisahkan OS, data pengguna, aplikasi
+    \item \textbf{Multi-OS} - Instalasi multiple OS pada satu disk
+    \item \textbf{Backup/Recovery} - Lebih mudah untuk backup partisi tertentu
+    \item \textbf{Keamanan} - Mengisolasi data dengan permission yang berbeda
+    \item \textbf{Performa} - Optimasi untuk jenis workload yang berbeda
 \end{itemize}
 
 \subsection{Partition Tables}
@@ -783,10 +783,10 @@ Ini memungkinkan restore ke state bersih kapanpun dibutuhkan.
 
 \textbf{Legacy scheme} - digunakan dengan BIOS:
 \begin{itemize}
-    \item Maximum 4 primary partitions
-    \item Extended partition dapat contain multiple logical partitions
-    \item Maximum disk size: 2 TB
-    \item Partition table size: 64 bytes
+    \item Maksimum 4 primary partitions
+    \item Extended partition dapat berisi multiple logical partitions
+    \item Ukuran disk maksimum: 2 TB
+    \item Ukuran partition table: 64 bytes
 \end{itemize}
 
 \subsubsection{GPT (GUID Partition Table)}
@@ -794,9 +794,9 @@ Ini memungkinkan restore ke state bersih kapanpun dibutuhkan.
 \textbf{Modern scheme} - digunakan dengan UEFI:
 \begin{itemize}
     \item Praktis unlimited partitions (128 di Windows/Linux)
-    \item Maximum disk size: 9.4 ZB (zettabytes)
+    \item Ukuran disk maksimum: 9.4 ZB (zettabytes)
     \item Redundant partition tables untuk reliability
-    \item Required untuk UEFI Secure Boot
+    \item Diperlukan untuk UEFI Secure Boot
     \item Backward compatible dengan BIOS (Protective MBR)
 \end{itemize}
 
@@ -830,14 +830,14 @@ swap        4 GB      swap      Virtual memory
 \end{description}
 
 \begin{tipbox}
-\textbf{Why separate \texttt{/home}?}
+\textbf{Mengapa memisahkan \texttt{/home}?}
 
-Benefits:
+Keuntungan:
 \begin{itemize}
-    \item Reinstall OS tanpa lose user data
-    \item Easier backup (backup only \texttt{/home})
-    \item Upgrade distro dengan preserve settings
-    \item Different filesystem atau encryption untuk data
+    \item Reinstall OS tanpa kehilangan data pengguna
+    \item Backup lebih mudah (backup hanya \texttt{/home})
+    \item Upgrade distro dengan mempertahankan pengaturan
+    \item Filesystem berbeda atau enkripsi untuk data
 \end{itemize}
 \end{tipbox}
 
@@ -845,10 +845,10 @@ Benefits:
 
 \textbf{Swap} adalah disk space used sebagai extension dari RAM (virtual memory).
 
-\textbf{When is swap used?}
+\textbf{Kapan swap digunakan?}
 \begin{itemize}
-    \item Saat RAM penuh, inactive pages moved to swap
-    \item Hibernation (suspend-to-disk) - save RAM contents to swap
+    \item Saat RAM penuh, inactive pages dipindahkan ke swap
+    \item Hibernation (suspend-to-disk) - menyimpan konten RAM ke swap
 \end{itemize}
 
 \textbf{Swap Sizing Guidelines:}
@@ -899,35 +899,35 @@ Benefits:
 
 \textbf{ext4 (Fourth Extended Filesystem)}
 \begin{itemize}
-    \item Default untuk most Linux distributions
-    \item Mature, stable, well-tested
+    \item Default untuk sebagian besar distribusi Linux
+    \item Matang, stabil, dan teruji dengan baik
     \item Journaling untuk crash recovery
-    \item Good performance untuk general use
+    \item Performa baik untuk penggunaan umum
 \end{itemize}
 
 \noindent
 \textbf{XFS}
 \begin{itemize}
-    \item High-performance filesystem
-    \item Excellent untuk large files dan parallel I/O
+    \item Filesystem berkinerja tinggi
+    \item Sangat baik untuk large files dan parallel I/O
     \item Default di Red Hat Enterprise Linux
-    \item Cannot shrink (only grow)
+    \item Tidak dapat diperkecil (hanya diperbesar)
 \end{itemize}
 
 \noindent
 \textbf{Btrfs (B-tree filesystem)}
 \begin{itemize}
-    \item Modern copy-on-write filesystem
-    \item Built-in snapshots dan compression
-    \item RAID support
-    \item Still maturing (production-ready di openSUSE)
+    \item Filesystem copy-on-write modern
+    \item Snapshot dan kompresi built-in
+    \item Dukungan RAID
+    \item Masih dalam pematangan (production-ready di openSUSE)
 \end{itemize}
 
 \subsection{Praktik: Manual Partitioning}
 
-Untuk advanced users, manual partitioning allows full control.
+Untuk pengguna advanced, manual partitioning memberikan kontrol penuh.
 
-Durante Ubuntu installation, select "Custom storage layout":
+Selama instalasi Ubuntu, pilih "Custom storage layout":
 
 \begin{lstlisting}[caption={Example manual partition layout}]
 Device      Size    Type    Mount Point    Filesystem
@@ -967,14 +967,14 @@ UUID=xxx-xxx-xxx  /data  ext4  defaults  0  2
 \begin{notebox}
 \textbf{UUID vs Device Names}
 
-Use UUID instead of \texttt{/dev/sdX} di fstab karena:
+Gunakan UUID daripada \texttt{/dev/sdX} di fstab karena:
 \begin{itemize}
-    \item Device names can change (sda → sdb jika add disk)
+    \item Device names dapat berubah (sda → sdb jika menambah disk)
     \item UUID adalah persistent identifier
-    \item More reliable untuk production systems
+    \item Lebih reliable untuk production systems
 \end{itemize}
 
-Get UUID: \cmd{blkid} atau \cmd{lsblk -f}
+Dapatkan UUID: \cmd{blkid} atau \cmd{lsblk -f}
 \end{notebox}
 
 %% ========================================================================
@@ -985,7 +985,7 @@ Get UUID: \cmd{blkid} atau \cmd{lsblk -f}
 \section{Konfigurasi Post-Installation}
 \label{sec:post-installation}
 
-Setelah instalasi completed, several konfigurasi penting harus dilakukan.
+Setelah instalasi selesai, beberapa konfigurasi penting harus dilakukan.
 
 \subsection{System Updates}
 
@@ -997,19 +997,19 @@ Setelah instalasi completed, several konfigurasi penting harus dilakukan.
 \end{itemize}
 
 \begin{lstlisting}[language=bash, caption={Update sistem Ubuntu/Debian}]
-# Update package lists from repositories
+# Update package lists dari repositories
 sudo apt update
 
-# Upgrade installed packages to latest versions
+# Upgrade paket yang terinstal ke versi terbaru
 sudo apt upgrade
 
-# Full system upgrade (handles dependencies)
+# Full system upgrade (menangani dependencies)
 sudo apt full-upgrade
 
-# Remove packages yang tidak dibutuhkan
+# Hapus paket yang tidak dibutuhkan
 sudo apt autoremove
 
-# Clean package cache
+# Bersihkan package cache
 sudo apt clean
 \end{lstlisting}
 
@@ -1196,12 +1196,12 @@ Dalam bab ini, kita telah mempelajari konsep fundamental sistem operasi dan prak
 \subsection{Key Takeaways}
 
 \begin{enumerate}
-    \item OS concepts are universal - applicable across platforms
-    \item Linux excellent untuk learning: open, free, industry-relevant
-    \item Virtual machines provide safe learning environment
-    \item Proper partitioning important untuk flexibility dan recovery
-    \item System updates should be performed regularly
-    \item Basic system monitoring tools membantu understanding system state
+    \item Konsep OS bersifat universal - berlaku di berbagai platform
+    \item Linux sangat baik untuk pembelajaran: terbuka, gratis, relevan dengan industri
+    \item Virtual machines menyediakan lingkungan pembelajaran yang aman
+    \item Partisi yang tepat penting untuk fleksibilitas dan recovery
+    \item System updates harus dilakukan secara berkala
+    \item Basic system monitoring tools membantu memahami kondisi sistem
 \end{enumerate}
 
 %% ------------------------------------------------------------------------
@@ -1223,12 +1223,12 @@ Kapan sebaiknya menggunakan Windows vs Linux vs macOS? Analisis berdasarkan use 
 \begin{exercisebox}[1.3]
 Install Ubuntu Server 22.04 LTS di VirtualBox dengan langkah berikut:
 \begin{enumerate}
-    \item Download Ubuntu Server ISO dari website resmi
-    \item Create VM baru di VirtualBox (RAM: 2GB, Disk: 25GB)
+    \item Unduh Ubuntu Server ISO dari website resmi
+    \item Buat VM baru di VirtualBox (RAM: 2GB, Disk: 25GB)
     \item Install dengan automatic partitioning (guided)
     \item Buat user account dengan password yang kuat
     \item Reboot dan login ke sistem
-    \item Dokumentasikan proses instalasi dengan screenshot key steps
+    \item Dokumentasikan proses instalasi dengan screenshot langkah-langkah kunci
 \end{enumerate}
 \end{exercisebox}
 
