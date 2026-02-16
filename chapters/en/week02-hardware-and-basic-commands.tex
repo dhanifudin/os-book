@@ -1,0 +1,673 @@
+%% ========================================================================
+%% Chapter 2: Hardware Management & Basic Commands
+%% ========================================================================
+
+\chapter{Hardware Management \& Basic Operating System Commands}
+\label{ch:hardware-and-basic-commands}
+
+\begin{abstract}
+This chapter discusses how Linux detects and manages hardware, kernel modules,
+device drivers, and essential Linux terminal commands for Ubuntu Server 22.04 practicum.
+The main focus of this chapter is practical skills: identifying devices,
+checking drivers/kernel modules, understanding devices in \texttt{/dev}, performing text manipulation
+with \texttt{grep/sed/awk}, managing processes, and monitoring system conditions.
+\end{abstract}
+
+%% ------------------------------------------------------------------------
+\section{Hardware Detection in Linux}
+\label{sec:hardware-detection}
+
+\subsection*{How Does Linux Detect Hardware?}
+Hardware is an important component in operating system usage. Ensuring that hardware is readable by the operating system is essential. In the process, we often add new hardware to our computers, both on personal computers (PCs) and on servers. Therefore, it's important to know whether the hardware we install has been detected by the operating system. In addition to ensuring hardware is read correctly, we can also find out which I/O section the hardware is attached to. We also need to ensure that the installed driver is appropriate.
+
+In Linux operating systems, hardware device information can be seen through several process stages: the
+\textbf{kernel} performs device enumeration/scanning (e.g., PCI/USB/storage), displays information through \textbf{sysfs} (\texttt{/sys}),
+then \textbf{udev} creates device nodes in \textbf{/dev}. After completing this chapter, you should be able to:
+\begin{itemize}
+    \item \textbf{View device lists} (e.g., NIC, disk, USB) using commands like \texttt{lspci/lsusb/lsblk}.
+    \item \textbf{View drivers/modules} that handle devices (e.g., kernel module name) from \texttt{lspci -k} or \texttt{lsmod} output.
+    \item \textbf{View detection traces} in kernel logs with \texttt{dmesg} or \texttt{journalctl -k}.
+\end{itemize}
+
+\subsection*{Command Functions Used}
+The following are commonly used commands for hardware detection:
+\begin{itemize}
+    \item \texttt{lscpu}: displays CPU architecture, number of cores/threads, virtualization features, etc.
+    \item \texttt{free -h}: summary of RAM and swap usage in human-readable format.
+    \item \texttt{lspci}: list of PCI devices (e.g., GPU, NIC, controller).
+    \item \texttt{lsusb}: list of USB devices.
+    \item \texttt{lsblk}: list of block devices (disk/partition) with mount points and filesystem.
+    \item \texttt{blkid}: displays UUID/TYPE filesystem of a device.
+    \item \texttt{dmesg}: displays kernel messages (including device detection at boot).
+    \item \texttt{journalctl -k}: displays kernel log based on systemd journal.
+\end{itemize}
+
+\begin{tipbox}
+Some commands may require additional packages. On Ubuntu Server 22.04, you can install these important utilities:
+\begin{lstlisting}[language=bash]
+sudo apt update
+sudo apt install -y pciutils usbutils lshw dmidecode
+\end{lstlisting}
+\end{tipbox}
+
+\subsection*{Lab 2.1 --- Identifying CPU and Memory}
+\textbf{Objective:} understand CPU specifications and memory conditions on server/VM.
+
+\textbf{Steps:}
+\begin{enumerate}
+    \item Display CPU information:
+\begin{lstlisting}[language=bash, caption={View CPU information}]
+lscpu
+\end{lstlisting}
+
+    \item Display memory summary:
+\begin{lstlisting}[language=bash, caption={View memory usage}]
+free -h
+\end{lstlisting}
+
+    \item (Optional) check hardware information from DMI/BIOS (requires sudo):
+\begin{lstlisting}[language=bash, caption={DMI information (optional)}]
+sudo dmidecode -t system
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[2.1]
+Note: (1) number of CPU(s), cores/threads, (2) total RAM, (3) total swap. Explain the difference between RAM vs swap in 2--3 sentences.
+\end{exercisebox}
+
+\subsection*{Lab 2.2 --- Identifying PCI/USB Devices and Drivers}
+\textbf{Objective:} recognize PCI/USB devices and view the drivers/modules used.
+
+\begin{notebox}
+If you are using VirtualBox, you need to go through the process of \textbf{mounting} USB devices from the host computer so they can be read by the operating system in VirtualBox.
+\end{notebox}
+
+\textbf{Steps:}
+\begin{enumerate}
+    \item View list of PCI devices:
+\begin{lstlisting}[language=bash, caption={List of PCI devices (brief)}]
+lspci
+\end{lstlisting}
+
+    \item View PCI devices with kernel drivers used:
+\begin{lstlisting}[language=bash, caption={View PCI device drivers}]
+lspci -nnk
+\end{lstlisting}
+
+    \item Focus on NIC (Ethernet) to find driver module:
+\begin{lstlisting}[language=bash, caption={Find NIC info and its driver}]
+lspci -nnk | grep -A3 -i ethernet
+\end{lstlisting}
+
+    \item View USB devices:
+\begin{lstlisting}[language=bash, caption={List of USB devices}]
+lsusb
+\end{lstlisting}
+
+    \item View USB topology (tree):
+\begin{lstlisting}[language=bash, caption={USB device topology}]
+lsusb -t
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[2.2]
+Find 1 PCI device (e.g., NIC) and write: \textit{Vendor:Device ID} (hexadecimal number), kernel driver/module name, and brief description of its function.
+\end{exercisebox}
+
+\subsection*{Lab 2.3 --- Identifying Storage and Filesystem}
+\textbf{Objective:} understand disks/partitions and installed filesystems.
+
+\textbf{Steps:}
+\begin{enumerate}
+    \item View list of disks/partitions:
+\begin{lstlisting}[language=bash, caption={View block devices and filesystem}]
+lsblk -f
+\end{lstlisting}
+
+    \item Display UUID and filesystem type:
+\begin{lstlisting}[language=bash, caption={View filesystem UUID}]
+sudo blkid
+\end{lstlisting}
+
+    \item View mount point for root filesystem:
+\begin{lstlisting}[language=bash, caption={View device for root filesystem}]
+findmnt /
+\end{lstlisting}
+\end{enumerate}
+
+\begin{examplebox}[Quick Interpretation]
+If \texttt{findmnt /} shows root is on \texttt{/dev/sda2}, then in \texttt{lsblk -f} you can see the filesystem type (e.g., ext4)
+and the partition's UUID. UUID is important for mount configuration in \texttt{/etc/fstab}.
+\end{examplebox}
+
+
+%% ------------------------------------------------------------------------
+\section{Kernel Modules and Device Drivers}
+\label{sec:kernel-modules}
+
+\subsection*{Core Concept: Kernel Modules}
+\textbf{Kernel modules} are kernel components that can be loaded or unloaded while the system is running.
+Many device drivers (e.g., NIC, certain filesystems) are available as modules to keep the kernel flexible and the core kernel size efficient.
+
+On Ubuntu, modules are usually stored at:
+\begin{lstlisting}[language=bash, caption={Kernel module location}]
+/lib/modules/$(uname -r)/
+\end{lstlisting}
+
+\subsection*{Command Functions Used}
+\begin{itemize}
+    \item \texttt{uname -r}: view the currently running kernel version.
+    \item \texttt{lsmod}: list of currently active kernel modules.
+    \item \texttt{modinfo <module>}: module details (description, parameters, .ko file, dependencies).
+    \item \texttt{modprobe <module>}: load module with its dependencies.
+    \item \texttt{modprobe -r <module>}: unload module (if safe and not currently in use).
+\end{itemize}
+
+\begin{warningbox}
+Don't try to unload modules related to storage, filesystem, or network that are currently in use (e.g., disk driver module, \texttt{ext4}, NIC module),
+as it can cause the system to hang or SSH connection to drop.
+\end{warningbox}
+
+\subsection*{Lab 2.4 --- Viewing Active Modules and Their Information}
+\textbf{Objective:} get to know active modules and their relationship with devices.
+
+\textbf{Steps:}
+\begin{enumerate}
+    \item Check kernel version:
+\begin{lstlisting}[language=bash, caption={Check kernel version}]
+uname -r
+\end{lstlisting}
+
+    \item Display list of active modules:
+\begin{lstlisting}[language=bash, caption={List of active modules}]
+lsmod | head
+\end{lstlisting}
+
+    \item Choose one module (safe example: \texttt{loop}) and view its details:
+\begin{lstlisting}[language=bash, caption={Module details with modinfo}]
+modinfo loop
+\end{lstlisting}
+
+    \item Load module (if not already active), then verify:
+\begin{lstlisting}[language=bash, caption={Load module and verify}]
+sudo modprobe loop
+lsmod | grep -i loop
+\end{lstlisting}
+
+    \item (Optional) view recent kernel messages:
+\begin{lstlisting}[language=bash, caption={Check recent kernel log}]
+dmesg -T | tail -n 20
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Lab 2.5 --- Auto-load and Blacklist Configuration}
+\textbf{Objective:} understand how to make modules automatically load or be blocked.
+
+\textbf{Configuration functions:}
+\begin{itemize}
+    \item \texttt{/etc/modules-load.d/*.conf}: list of modules to load at boot.
+    \item \texttt{/etc/modprobe.d/*.conf}: modprobe rules, including module blacklist.
+\end{itemize}
+
+\textbf{Demo steps (using safe module, example \texttt{loop}):}
+\begin{enumerate}
+    \item Create auto-load file:
+\begin{lstlisting}[language=bash, caption={Add module for auto-load (demo)}]
+echo "loop" | sudo tee /etc/modules-load.d/loop.conf
+\end{lstlisting}
+
+    \item Simulate verification (without reboot) by ensuring module is already active:
+\begin{lstlisting}[language=bash, caption={Verify active module}]
+lsmod | grep -i loop
+\end{lstlisting}
+
+    \item (Optional, concept) blacklist module:
+\begin{lstlisting}[language=bash, caption={Example module blacklist (don't apply carelessly)}]
+# echo "blacklist loop" | sudo tee /etc/modprobe.d/blacklist-loop.conf
+\end{lstlisting}
+\end{enumerate}
+
+\begin{notebox}
+Auto-load and blacklist are often used to: avoid driver conflicts, disable unnecessary modules, or implement security policies.
+\end{notebox}
+
+%% ------------------------------------------------------------------------
+\section{File System and /dev in Linux}
+\label{sec:dev-filesystem}
+
+\subsection*{Concept: /dev as Device Node}
+The \texttt{/dev} folder contains \textbf{device nodes} (special files) that represent devices.
+There are two main categories:
+\begin{itemize}
+    \item \textbf{Block device}: block-based access (e.g., disk \texttt{/dev/sda}, partition \texttt{/dev/sda1}).
+    \item \textbf{Character device}: character stream-based access (e.g., terminal \texttt{/dev/tty}, serial device).
+\end{itemize}
+
+\subsection*{Command Functions Used}
+\begin{itemize}
+    \item \texttt{ls -l /dev/...}: view file type and major/minor number.
+    \item \texttt{lsblk}: view disk/partition mapping and mount points.
+    \item \texttt{udevadm info}: view udev attributes of a device node.
+    \item \texttt{udevadm monitor}: monitor events when devices appear/disappear.
+\end{itemize}
+
+\subsection*{Lab 2.6 --- Recognizing Block vs Character Device}
+\textbf{Objective:} differentiate between disk devices vs terminal.
+
+\textbf{Steps:}
+\begin{enumerate}
+    \item View details of a disk (adjust to your device, e.g., \texttt{sda}):
+\begin{lstlisting}[language=bash, caption={View disk device node details}]
+ls -l /dev/sda
+\end{lstlisting}
+
+    \item View terminal device details:
+\begin{lstlisting}[language=bash, caption={View terminal device node details}]
+ls -l /dev/tty
+\end{lstlisting}
+
+    \item View disks and partitions to relate with \texttt{/dev}:
+\begin{lstlisting}[language=bash, caption={Disk/partition mapping}]
+lsblk
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[2.3]
+From \texttt{ls -l} output, explain the difference in file markers for block device and character device. (Hint: first character in permission string)
+\end{exercisebox}
+
+\subsection*{Lab 2.7 --- Viewing udev Information}
+\textbf{Objective:} view metadata used by udev to create device nodes.
+
+\textbf{Steps:}
+\begin{enumerate}
+    \item Check udev attributes for disk:
+\begin{lstlisting}[language=bash, caption={View udev attributes for disk}]
+udevadm info --query=all --name=/dev/sda | head -n 30
+\end{lstlisting}
+
+    \item (Optional) monitor udev events (run, then plug/unplug USB on physical machine):
+\begin{lstlisting}[language=bash, caption={Monitor udev events (optional)}]
+sudo udevadm monitor
+\end{lstlisting}
+\end{enumerate}
+
+%% ------------------------------------------------------------------------
+\section{Basic Linux Terminal Commands}
+\label{sec:basic-commands}
+
+\subsection*{Concept: Terminal as Administration Interface}
+In Linux operating systems, especially those used on servers, including Ubuntu Server, the terminal is the main administration interface. Mastery of terminal usage is crucial because the terminal is the main interface for accessing the operating system. Basic terminal skills that are \textbf{mandatory} to master are:
+directory navigation, file operations, reading files/logs, understanding permissions, and using command help.
+
+\subsection*{Command Functions Used}
+\begin{itemize}
+    \item Navigation: \texttt{pwd}, \texttt{ls}, \texttt{cd}
+    \item File/directory operations: \texttt{mkdir}, \texttt{touch}, \texttt{cp}, \texttt{mv}, \texttt{rm}
+    \item Reading files: \texttt{cat}, \texttt{less}, \texttt{head}, \texttt{tail}
+    \item Help: \texttt{man}, \texttt{--help}, \texttt{apropos}
+    \item Redirection \& pipe: \texttt{>}, \texttt{>>}, \texttt{2>}, \texttt{|}, \texttt{tee}
+\end{itemize}
+
+\begin{warningbox}
+The \texttt{rm -rf} command can delete directories and their contents without confirmation. For practicum, get used to using \texttt{rm -ri}
+or ensure the path you're deleting is correct.
+\end{warningbox}
+
+\subsection*{Lab 2.8 --- Creating Lab Workspace}
+\textbf{Objective:} create a safe work area for all exercises in this chapter.
+
+\textbf{Steps:}
+\begin{enumerate}
+    \item Create lab directory and enter it:
+\begin{lstlisting}[language=bash, caption={Create lab workspace}]
+mkdir -p ~/praktikum-os/week02
+cd ~/praktikum-os/week02
+pwd
+\end{lstlisting}
+
+    \item Create some sample files:
+\begin{lstlisting}[language=bash, caption={Create sample files}]
+touch notes.txt data.log config.txt
+ls -lah
+\end{lstlisting}
+
+    \item Fill sample log file (simulation):
+\begin{lstlisting}[language=bash, caption={Fill sample log file}]
+echo "INFO: service started" >> data.log
+echo "WARN: disk usage high" >> data.log
+echo "ERROR: failed to connect" >> data.log
+cat data.log
+\end{lstlisting}
+
+    \item Read file with \texttt{less}:
+\begin{lstlisting}[language=bash, caption={Read file with less}]
+less data.log
+\end{lstlisting}
+\end{enumerate}
+
+%% ------------------------------------------------------------------------
+\section{Text Manipulation}
+\label{sec:text-manipulation}
+
+\subsection*{Concept: Administrative Data = Text}
+Many Linux administration activities produce text, such as logs, configurations, command output. Tools like \texttt{grep}, \texttt{sed}, and \texttt{awk}
+are tools for filtering, modifying, and summarizing text quickly.
+
+\subsection{grep Command}
+\subsubsection*{grep Function}
+\texttt{grep} is used to search for lines that match a pattern in files or streams.
+Very useful for finding errors in logs or finding specific configurations.
+
+\subsubsection*{Lab 2.9 --- Pattern Searching with grep}
+\textbf{Steps:}
+\begin{enumerate}
+    \item Search for lines containing \texttt{ERROR} in \texttt{data.log}:
+\begin{lstlisting}[language=bash, caption={Simple grep}]
+grep "ERROR" data.log
+\end{lstlisting}
+
+    \item Search without case sensitivity:
+\begin{lstlisting}[language=bash, caption={Case-insensitive grep}]
+grep -i "error" data.log
+\end{lstlisting}
+
+    \item Display line numbers:
+\begin{lstlisting}[language=bash, caption={grep with line numbers}]
+grep -n "WARN" data.log
+\end{lstlisting}
+
+    \item Display lines that \textbf{don't} match (invert match):
+\begin{lstlisting}[language=bash, caption={grep invert match}]
+grep -v "INFO" data.log
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[2.4]
+Use \texttt{grep} to display only lines containing \texttt{INFO} or \texttt{WARN} from \texttt{data.log}.
+(Hint: use \texttt{grep -E} with alternative pattern)
+\end{exercisebox}
+
+\subsection{sed Command}
+\subsubsection*{sed Function}
+\texttt{sed} is a stream editor for performing text transformations, especially substitution (find-replace).
+Commonly used to update configurations or perform output normalization.
+
+\subsubsection*{Lab 2.10 --- Substitution with sed (Safe on Practice File)}
+\textbf{Steps:}
+\begin{enumerate}
+    \item Prepare practice config file:
+\begin{lstlisting}[language=bash, caption={Create practice config file}]
+cat > config.txt << 'EOF'
+PORT=8080
+MODE=dev
+SERVICE_NAME=myserver
+EOF
+cat config.txt
+\end{lstlisting}
+
+    \item Replace \texttt{dev} with \texttt{prod} (without modifying original file):
+\begin{lstlisting}[language=bash, caption={sed substitution without in-place}]
+sed 's/MODE=dev/MODE=prod/' config.txt
+\end{lstlisting}
+
+    \item Apply changes directly to file (\texttt{-i}):
+\begin{lstlisting}[language=bash, caption={sed in-place}]
+sed -i 's/MODE=dev/MODE=prod/' config.txt
+cat config.txt
+\end{lstlisting}
+
+    \item Replace all word occurrences (\texttt{g} for global), example change \texttt{myserver} to \texttt{node}:
+\begin{lstlisting}[language=bash, caption={sed global replacement}]
+sed -i 's/myserver/node/g' config.txt
+cat config.txt
+\end{lstlisting}
+\end{enumerate}
+
+\begin{warningbox}
+Use \texttt{sed -i} carefully when editing system files. For real administration, safe practice is to make backups:
+\texttt{sed -i.bak 's/old/new/g' file.conf}
+\end{warningbox}
+
+\subsection{awk Command}
+\subsubsection*{awk Function}
+\texttt{awk} is used to process text based on columns/fields. Very effective for summarizing output from commands like \texttt{df}, \texttt{ps},
+or column-formatted files.
+
+\subsubsection*{Lab 2.11 --- Column Extraction with awk}
+\textbf{Steps:}
+\begin{enumerate}
+    \item View \texttt{df -h} output:
+\begin{lstlisting}[language=bash, caption={df -h output}]
+df -h
+\end{lstlisting}
+
+    \item Extract filesystem and usage percentage columns:
+\begin{lstlisting}[language=bash, caption={awk print specific columns}]
+df -h | awk 'NR==1 {print $1, $5, $6} NR>1 {print $1, $5, $6}'
+\end{lstlisting}
+
+    \item Filter only disk usage above 80\%:
+\begin{lstlisting}[language=bash, caption={awk filter by condition}]
+df -h | awk 'NR==1 || ($5+0) > 80 {print $1, $5, $6}'
+\end{lstlisting}
+\end{enumerate}
+
+
+%% ------------------------------------------------------------------------
+\section{Process Management}
+\label{sec:process-commands}
+
+\subsection*{Concept: Processes, PID, and Signals}
+Every running program is represented as a \textbf{process} with a \textbf{PID} (Process ID).
+Linux uses \textbf{signals} to control processes, for example:
+\begin{itemize}
+    \item \texttt{SIGTERM} (15): requests process to stop gracefully.
+    \item \texttt{SIGKILL} (9): forces process to stop immediately (force).
+\end{itemize}
+
+\subsection{ps Command}
+\subsubsection*{ps Function}
+\texttt{ps} displays a snapshot of processes at the time the command is run. Useful for finding PID, viewing CPU/MEM usage, and filtering specific processes.
+
+\subsubsection*{Lab 2.12 --- Viewing Processes with ps}
+\textbf{Steps:}
+\begin{enumerate}
+    \item Display all processes (BSD format):
+\begin{lstlisting}[language=bash, caption={ps aux}]
+ps aux | head
+\end{lstlisting}
+
+    \item Search for specific process (e.g., \texttt{sshd}):
+\begin{lstlisting}[language=bash, caption={Filter process with grep}]
+ps aux | grep -i sshd
+\end{lstlisting}
+\end{enumerate}
+
+\subsection{top Command}
+\subsubsection*{top Function}
+\texttt{top} displays resource usage in real-time: CPU, memory, and heaviest processes.
+This is a quick tool for diagnosing ``server feels slow''.
+
+\subsubsection*{Lab 2.13 --- Real-time Monitoring with top}
+\textbf{Steps:}
+\begin{enumerate}
+    \item Run \texttt{top}:
+\begin{lstlisting}[language=bash, caption={Running top}]
+top
+\end{lstlisting}
+
+    \item Observe load average values, CPU usage, and top processes. Press \texttt{q} to exit.
+\end{enumerate}
+
+\begin{tipbox}
+As alternatives, you can use \texttt{htop} or \texttt{btop}. Both tools are more comfortable to use visually.
+\begin{lstlisting}[language=bash]
+sudo apt install -y htop btop
+\end{lstlisting}
+\end{tipbox}
+
+\subsection{kill Command}
+\subsubsection*{kill Function}
+\texttt{kill} sends signals to processes based on PID. The signal sent is a signal to stop the process.
+The default signal is \texttt{SIGTERM}.
+
+\subsubsection*{Lab 2.14 --- Stopping Process with kill}
+\textbf{Steps:}
+\begin{enumerate}
+    \item Run dummy process in background:
+\begin{lstlisting}[language=bash, caption={Create dummy process}]
+sleep 300 &
+\end{lstlisting}
+
+    \item Find PID of \texttt{sleep} process:
+\begin{lstlisting}[language=bash, caption={Find sleep PID}]
+ps aux | grep -E "sleep 300" | grep -v grep
+\end{lstlisting}
+
+    \item Stop with \texttt{SIGTERM}:
+\begin{lstlisting}[language=bash, caption={Send SIGTERM}]
+kill <YOUR_PID>
+\end{lstlisting}
+
+    \item Verify process has stopped:
+\begin{lstlisting}[language=bash, caption={Verify process has stopped}]
+ps aux | grep -E "sleep 300" | grep -v grep
+\end{lstlisting}
+
+    \item (Optional) If process is difficult to stop and you need to stop it, use \texttt{SIGKILL}:
+\begin{lstlisting}[language=bash, caption={Send SIGKILL (optional)}]
+kill -9 <YOUR_PID>
+\end{lstlisting}
+\end{enumerate}
+
+%% ------------------------------------------------------------------------
+\section{System Monitoring}
+\label{sec:system-monitoring}
+
+\subsection*{Concept: Server ``Health Check''}
+System monitoring focuses on three practical questions:
+\begin{enumerate}
+    \item Is CPU/memory under heavy load?
+    \item Is disk nearly full?
+    \item Are important services running normally and do logs show no errors?
+\end{enumerate}
+
+\subsection*{Command Functions Used}
+\begin{itemize}
+    \item Disk: \texttt{df -h} (capacity), \texttt{du -sh} (directory size).
+    \item Load \& memory: \texttt{uptime}, \texttt{free -h}.
+    \item Network (brief): \texttt{ip a}, \texttt{ip r}, \texttt{ss -tulpn}.
+    \item Service: \texttt{systemctl status}, \texttt{systemctl --failed}.
+    \item Log: \texttt{journalctl -xe}, \texttt{journalctl -u <service>}.
+\end{itemize}
+
+
+\subsection*{Lab 2.15 --- Check Disk, Load, and Service}
+\textbf{Steps:}
+\begin{enumerate}
+    \item Check disk usage:
+\begin{lstlisting}[language=bash, caption={Check disk capacity}]
+df -h
+\end{lstlisting}
+
+    \item Find large directories (example in \texttt{/var}):
+\begin{lstlisting}[language=bash, caption={Check directory size (example /var)}]
+sudo du -sh /var/* 2>/dev/null | sort -h | tail -n 10
+\end{lstlisting}
+
+    \item Check load and uptime:
+\begin{lstlisting}[language=bash, caption={Check load average}]
+uptime
+\end{lstlisting}
+
+    \item Check failed services:
+\begin{lstlisting}[language=bash, caption={Failed services}]
+systemctl --failed
+\end{lstlisting}
+
+    \item Get recent error logs (if there are problem indications):
+\begin{lstlisting}[language=bash, caption={Recent error logs}]
+journalctl -xe | tail -n 50
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Lab 2.16 --- Monitoring Ports and Connections (Network Basics)}
+\textbf{Objective:} view interfaces, routing, and listening ports (useful for service troubleshooting).
+
+\textbf{Steps:}
+\begin{enumerate}
+    \item View interfaces and IP:
+\begin{lstlisting}[language=bash, caption={Check IP address}]
+ip a
+\end{lstlisting}
+
+    \item View routing table:
+\begin{lstlisting}[language=bash, caption={Check routing}]
+ip r
+\end{lstlisting}
+
+    \item View listening ports:
+\begin{lstlisting}[language=bash, caption={Check listening ports}]
+sudo ss -tulpn
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[2.5]
+Choose one listening port from \texttt{ss -tulpn} output (e.g., port 22), then write the service/process that opens it. Briefly explain the use of that port.
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
+\section{Summary}
+\begin{itemize}
+    \item Linux detects devices through the kernel, sysfs (\texttt{/sys}), udev, and creates device nodes in \texttt{/dev}.
+    \item Utilities like \texttt{lspci/lsusb/lsblk} help identify devices; \texttt{lspci -k} helps view drivers/modules.
+    \item Kernel modules can be viewed with \texttt{lsmod}, analyzed with \texttt{modinfo}, and managed with \texttt{modprobe}.
+    \item \texttt{/dev} contains device nodes (block vs character device) for device interaction.
+    \item Basic terminal commands and pipe/redirection concepts are the foundation of server administration.
+    \item \texttt{grep/sed/awk} facilitate searching, modifying, and summarizing text/logs.
+    \item \texttt{ps/top/kill} are used for process observation and sending termination signals.
+    \item System monitoring includes disk (\texttt{df/du}), load (\texttt{uptime}), service (\texttt{systemctl}), and log (\texttt{journalctl}).
+\end{itemize}
+
+%% ------------------------------------------------------------------------
+\section{Exercises}
+
+\begin{exercisebox}[2.A]
+Run \texttt{lspci -nnk}. Choose 1 PCI device and write: device name, vendor:device ID, and kernel driver in use.
+\end{exercisebox}
+
+\begin{exercisebox}[2.B]
+Determine root filesystem device with \texttt{findmnt /}. Then match with \texttt{lsblk -f} and write the filesystem type and its UUID.
+\end{exercisebox}
+
+\begin{exercisebox}[2.C]
+Create a \texttt{server.log} file containing at least 10 lines with word variations: INFO, WARN, ERROR. Use \texttt{grep} to display only ERROR lines.
+\end{exercisebox}
+
+\begin{exercisebox}[2.D]
+Use \texttt{sed} to replace all words \texttt{server} with \texttt{node} in the practice file. Show before and after.
+\end{exercisebox}
+
+\begin{exercisebox}[2.E]
+Use \texttt{df -h} then \texttt{awk} to display filesystems with disk usage above 70\%.
+\end{exercisebox}
+
+\begin{exercisebox}[2.F]
+Run \texttt{sleep 600 \&}. Find its PID with \texttt{ps}. Stop with \texttt{SIGTERM}. Explain the difference between SIGTERM vs SIGKILL.
+\end{exercisebox}
+
+\begin{exercisebox}[2.G]
+Use \texttt{systemctl --failed}. If none failed, choose one active service (e.g., \texttt{ssh}) and display its status and last 30 log lines.
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
+\section{Additional References}
+
+\begin{itemize}
+    \item Manual pages: \texttt{man lspci}, \texttt{man lsusb}, \texttt{man lsblk}, \texttt{man modprobe}, \texttt{man journalctl}, \texttt{man systemctl}
+    \item William E. Shotts, \textit{The Linux Command Line} (command line basics and text processing)
+    \item Ubuntu Server Documentation (systemd service administration and log troubleshooting)
+\end{itemize}
+
+%% ------------------------------------------------------------------------

@@ -1,0 +1,1320 @@
+%% ========================================================================
+%% Chapter 1: Introduction to Operating Systems & Installation
+%% ========================================================================
+
+\chapter{Introduction to Operating Systems \& Installation}
+\label{ch:introduction}
+
+\begin{abstract}
+This chapter introduces fundamental operating system concepts, kernel architecture, comparison of modern operating systems, and the installation and configuration process with a practical focus on Linux.
+\end{abstract}
+
+%% ========================================================================
+%% SESSION 1-2: BASIC CONCEPTS & OS ARCHITECTURE
+%% ========================================================================
+
+%% ------------------------------------------------------------------------
+\section{Definition and Functions of Operating Systems}
+\label{sec:os-basics}
+
+An operating system is system software that manages computer hardware resources and provides common services for application programs. The operating system acts as an intermediary between users and computer hardware.
+
+\subsection{Dual Role of Operating Systems}
+
+Operating systems have two main roles:
+
+\begin{enumerate}
+    \item \textbf{Resource Manager} --- Manages and allocates system resources (CPU, memory, disk, I/O devices) efficiently and fairly among various running programs.
+
+    \item \textbf{Extended Machine} --- Provides abstraction from complex hardware, offering a more user-friendly interface for programmers and users.
+\end{enumerate}
+
+\begin{notebox}
+Without an operating system, every program would need its own driver for each piece of hardware, which would be very inefficient and difficult to maintain.
+\end{notebox}
+
+\subsection{Main Functions of Operating Systems}
+
+Modern operating systems have five main functions:
+
+\subsubsection{Process Management}
+
+The operating system is responsible for:
+\begin{itemize}
+    \item \textbf{Process scheduling} --- Determining which process gets CPU time
+    \item \textbf{Process creation and termination} --- Creating and ending processes
+    \item \textbf{Process synchronization} --- Coordinating multiple processes
+    \item \textbf{Inter-process communication (IPC)} --- Facilitating communication between processes
+\end{itemize}
+
+Implementation examples:
+\begin{itemize}
+    \item \textbf{Windows}: Task Manager displays running processes and resource usage
+    \item \textbf{Linux}: Commands \cmd{ps}, \cmd{top}, and \cmd{htop} for monitoring processes
+    \item \textbf{macOS}: Activity Monitor for managing processes
+\end{itemize}
+
+\subsubsection{Memory Management}
+
+Memory management functions include:
+\begin{itemize}
+    \item \textbf{Memory allocation} --- Allocating memory to processes that need it
+    \item \textbf{Virtual memory} --- Using disk as an extension of RAM
+    \item \textbf{Memory protection} --- Preventing one process from accessing another process's memory
+    \item \textbf{Paging and swapping} --- Techniques for optimizing memory usage
+\end{itemize}
+
+\begin{examplebox}[Virtual Memory]
+When RAM is full, the operating system moves some data to disk (swap space in Linux, pagefile in Windows) so applications can continue running, albeit with slower performance.
+\end{examplebox}
+
+\subsubsection{File Management}
+
+The operating system provides:
+\begin{itemize}
+    \item \textbf{File system organization} --- Hierarchical structure (directories, subdirectories)
+    \item \textbf{File operations} --- Creating, reading, writing, deleting files
+    \item \textbf{Access control} --- Permissions for security
+    \item \textbf{Mounting file systems} --- Integrating storage devices into the system
+\end{itemize}
+
+File system examples:
+\begin{itemize}
+    \item Windows: NTFS (New Technology File System)
+    \item macOS: APFS (Apple File System)
+    \item Linux: ext4, XFS, Btrfs
+\end{itemize}
+
+\subsubsection{I/O Management}
+
+Input/Output management includes:
+\begin{itemize}
+    \item \textbf{Device drivers} --- Software for communicating with hardware
+    \item \textbf{Buffering} --- Temporary storage for smooth I/O operations
+    \item \textbf{Interrupt handling} --- Responding to signals from hardware
+    \item \textbf{Spooling} --- Queuing for devices like printers
+\end{itemize}
+
+\subsubsection{Security and Protection}
+
+Security aspects include:
+\begin{itemize}
+    \item \textbf{Authentication} --- User identity verification (password, biometrics)
+    \item \textbf{Authorization} --- Access control to resources based on permissions
+    \item \textbf{Encryption} --- Data protection (BitLocker in Windows, FileVault in macOS)
+    \item \textbf{Auditing} --- Recording system activities for security monitoring
+\end{itemize}
+
+%% ------------------------------------------------------------------------
+\section{Types and Categories of Operating Systems}
+\label{sec:os-categories}
+
+Operating systems can be categorized based on various criteria:
+
+\subsection{By Platform}
+
+\begin{description}
+    \item[Desktop OS] Designed for personal computers with user-friendly interfaces. Examples: Windows 10/11, macOS, Ubuntu Desktop, Linux Mint.
+
+    \item[Server OS] Optimized for running services and serving many clients. Usually without GUI or with minimal GUI. Examples: Windows Server, Ubuntu Server, Red Hat Enterprise Linux, FreeBSD.
+
+    \item[Mobile OS] Designed for smartphones and tablets with touch interfaces and power efficiency. Examples: Android, iOS, HarmonyOS.
+
+    \item[Real-Time OS (RTOS)] For embedded systems with strict time constraints. Used in automotive, industrial control, medical devices. Examples: FreeRTOS, VxWorks, QNX.
+
+    \item[Embedded OS] For devices with limited resources (IoT, routers, smart devices). Examples: Embedded Linux, Windows IoT.
+\end{description}
+
+\subsection{Comparison of Popular Operating Systems}
+
+Table~\ref{tab:os-comparison} shows a comparison of the most widely used modern operating systems.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Comparison of Modern Operating Systems}
+    \label{tab:os-comparison}
+    \begin{tabular}{@{}lllll@{}}
+        \toprule
+        \textbf{OS} & \textbf{Kernel Type} & \textbf{Primary Use} & \textbf{License} & \textbf{Market Share} \\
+        \midrule
+        Windows & Hybrid & Desktop/Business & Proprietary & Desktop: 75\% \\
+        macOS & Hybrid (XNU) & Creative/Dev & Proprietary & Desktop: 15\% \\
+        Linux & Monolithic & Server/Dev & Open Source & Server: 60\% \\
+        Android & Linux-based & Mobile & Open Source & Mobile: 70\% \\
+        iOS & Hybrid (XNU) & Mobile & Proprietary & Mobile: 28\% \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{tipbox}
+Operating system selection depends on needs:
+\begin{itemize}
+    \item \textbf{Gaming \& Business Applications}: Windows (best compatibility)
+    \item \textbf{Creative Work}: macOS (industry standard for video/audio editing)
+    \item \textbf{Server \& Cloud}: Linux (stability, security, no license costs)
+    \item \textbf{Development}: macOS or Linux (Unix-based tools)
+\end{itemize}
+\end{tipbox}
+
+%% ------------------------------------------------------------------------
+\section{Kernel Architecture of Operating Systems}
+\label{sec:kernel-architecture}
+
+The kernel is the core of an operating system that has full control over the entire system. The kernel provides abstraction between hardware and software.
+
+\subsection{What is a Kernel?}
+
+The \textbf{kernel} is a program that is always running (resident) in memory and has exclusive access to hardware. The kernel is responsible for:
+
+\begin{itemize}
+    \item Low-level process management
+    \item Memory management
+    \item Device drivers
+    \item System calls
+    \item Interrupt handling
+\end{itemize}
+
+\subsection{Kernel Space vs User Space}
+
+Modern operating systems separate memory into two areas:
+
+\begin{description}
+    \item[Kernel Space (Ring 0)] Memory area with the highest privilege. Only kernel code runs here. Full access to all hardware and memory.
+
+    \item[User Space (Ring 3)] Memory area for user applications. Limited access to hardware. Must go through system calls to access kernel services.
+\end{description}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[node distance=1.8cm, scale=0.95]
+        % User Space
+        \node[draw, rectangle, minimum width=11cm, minimum height=1.5cm, fill=blue!10, align=center] (user) {
+            \textbf{User Space (Ring 3)}\\[0.2em]
+            \small Applications: Browser, Text Editor, Media Player
+        };
+
+        % System Call Interface
+        \node[draw, rectangle, minimum width=11cm, minimum height=0.8cm, below=1cm of user, fill=yellow!20] (syscall) {\textbf{System Call Interface}};
+
+        % Kernel Space
+        \node[draw, rectangle, minimum width=11cm, minimum height=2cm, below=1cm of syscall, fill=red!10, align=center] (kernel) {
+            \textbf{Kernel Space (Ring 0)}\\[0.2em]
+            \small Process Scheduler, Memory Manager, File Systems, Device Drivers
+        };
+
+        % Hardware
+        \node[draw, rectangle, minimum width=11cm, minimum height=1.2cm, below=1cm of kernel, fill=gray!20, align=center] (hw) {
+            \textbf{Hardware}\\[0.2em]
+            \small CPU, RAM, Disk, Network, GPU
+        };
+
+        % Arrows
+        \draw[->, thick] (user.south) -- (syscall.north) node[midway, right, font=\tiny] {System Calls};
+        \draw[->, thick] (syscall.south) -- (kernel.north);
+        \draw[->, thick] (kernel.south) -- (hw.north) node[midway, right, font=\tiny] {Direct Access};
+    \end{tikzpicture}
+    \caption{Operating System Layer Architecture}
+    \label{fig:os-layers}
+\end{figure}
+
+\begin{notebox}
+\textbf{Protection Rings}: x86 architecture has 4 privilege levels (Ring 0-3), but modern OSes only use Ring 0 (kernel) and Ring 3 (user). Rings 1 and 2 are rarely used.
+\end{notebox}
+
+\subsection{Types of Kernel Architecture}
+
+\subsubsection{Monolithic Kernel}
+
+\textbf{Characteristics:}
+\begin{itemize}
+    \item All services (file system, device drivers, memory management) run in kernel space
+    \item Single large binary
+    \item Direct function calls between components (fast)
+\end{itemize}
+
+\textbf{Advantages:}
+\begin{itemize}
+    \item \textbf{High performance} --- No overhead for context switching
+    \item \textbf{Efficient communication} --- Function calls faster than IPC
+    \item \textbf{Simpler design} --- Everything in one address space
+\end{itemize}
+
+\textbf{Disadvantages:}
+\begin{itemize}
+    \item \textbf{Reliability} --- Bug in one driver can crash the entire system
+    \item \textbf{Security} --- Larger attack surface
+    \item \textbf{Maintainability} --- Difficult to isolate and debug
+\end{itemize}
+
+\textbf{Examples:} Linux, traditional Unix, BSD
+
+\subsubsection{Microkernel}
+
+\textbf{Characteristics:}
+\begin{itemize}
+    \item Minimal kernel with only essential services (IPC, basic scheduling, low-level memory)
+    \item Most services (file systems, drivers, network stack) in user space
+    \item Message passing for inter-component communication
+\end{itemize}
+
+\textbf{Advantages:}
+\begin{itemize}
+    \item \textbf{Reliability} --- Service crashes don't affect the kernel
+    \item \textbf{Security} --- Smaller attack surface, better isolation
+    \item \textbf{Modular} --- Easy to add/remove services
+    \item \textbf{Good for real-time} --- Predictable behavior
+\end{itemize}
+
+\textbf{Disadvantages:}
+\begin{itemize}
+    \item \textbf{Performance overhead} --- Context switches and IPC are slower
+    \item \textbf{Complexity} --- Message passing adds complexity
+\end{itemize}
+
+\textbf{Examples:} MINIX 3, QNX, seL4, L4 family
+
+\subsubsection{Hybrid Kernel}
+
+\textbf{Characteristics:}
+\begin{itemize}
+    \item Combines ideas from monolithic and microkernel
+    \item Some services in kernel space for performance
+    \item Some services in user space for modularity
+    \item Balance between speed and reliability
+\end{itemize}
+
+\textbf{Examples:}
+\begin{itemize}
+    \item \textbf{Windows NT kernel} --- Used in Windows, Xbox
+    \item \textbf{macOS XNU (X is Not Unix)} --- Mach microkernel + BSD components
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \resizebox{0.85\textwidth}{!}{%
+    \begin{tikzpicture}
+        % Monolithic
+        \node[draw, rectangle, minimum width=3.5cm, minimum height=5cm] (mono) at (0,0) {};
+        \node[above] at (mono.north) {\textbf{Monolithic}};
+        \node[draw, fill=red!20, minimum width=3cm, minimum height=4.5cm] at (mono.center) {};
+        \node[text width=2.5cm, align=center] at (mono.center) {Kernel\\[0.5em]All Services};
+        \node[below=0.1cm of mono.south, text width=3.5cm, align=center, font=\small] {Linux, BSD};
+
+        % Microkernel
+        \node[draw, rectangle, minimum width=3.5cm, minimum height=5cm] (micro) at (5,0) {};
+        \node[above] at (micro.north) {\textbf{Microkernel}};
+        \node[draw, fill=red!20, minimum width=3cm, minimum height=1cm] at (micro.center) {\small Minimal Kernel};
+        \node[draw, fill=blue!20, minimum width=3cm, minimum height=1.2cm] at ([yshift=1.5cm]micro.center) {\small Services};
+        \node[below=0.1cm of micro.south, text width=3.5cm, align=center, font=\small] {MINIX, QNX};
+
+        % Hybrid
+        \node[draw, rectangle, minimum width=3.5cm, minimum height=5cm] (hybrid) at (10,0) {};
+        \node[above] at (hybrid.north) {\textbf{Hybrid}};
+        \node[draw, fill=red!20, minimum width=3cm, minimum height=2.5cm] at ([yshift=-0.5cm]hybrid.center) {\small Kernel + Some};
+        \node[draw, fill=blue!20, minimum width=3cm, minimum height=1.2cm] at ([yshift=1.3cm]hybrid.center) {\small Services};
+        \node[below=0.1cm of hybrid.south, text width=3.5cm, align=center, font=\small] {Windows, macOS};
+    \end{tikzpicture}%
+    }
+    \caption{Comparison of Kernel Architectures}
+    \label{fig:kernel-comparison}
+\end{figure}
+
+\subsection{Kernel Architecture Comparison}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Comparison of Kernel Architectures}
+    \label{tab:kernel-comparison}
+    \begin{tabular}{@{}llll@{}}
+        \toprule
+        \textbf{Aspect} & \textbf{Monolithic} & \textbf{Microkernel} & \textbf{Hybrid} \\
+        \midrule
+        Performance & Excellent & Good & Very Good \\
+        Reliability & Moderate & Excellent & Good \\
+        Security & Moderate & Excellent & Good \\
+        Complexity & Moderate & High & High \\
+        Maintainability & Moderate & Good & Moderate \\
+        Examples & Linux, BSD & QNX, MINIX & Windows, macOS \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{examplebox}[Tanenbaum-Torvalds Debate (1992)]
+Famous debate between Andrew Tanenbaum (creator of MINIX, microkernel) and Linus Torvalds (creator of Linux, monolithic):
+
+\textbf{Tanenbaum}: "Linux is obsolete" - argued monolithic kernels are outdated
+
+\textbf{Torvalds}: Defended pragmatic monolithic design - performance and simplicity
+
+\textbf{Outcome}: Both approaches have their merits. Linux dominates servers with monolithic-modular design, while QNX microkernel dominates automotive systems.
+\end{examplebox}
+
+\subsection{System Calls}
+
+A \textbf{system call} is a mechanism provided by the kernel for programs in user space to request services from the kernel. System calls are the only way for applications to interact with hardware through the kernel.
+
+\textbf{System Call Categories:}
+\begin{enumerate}
+    \item \textbf{Process Control}: \cmd{fork()}, \cmd{exec()}, \cmd{exit()}, \cmd{wait()}
+    \item \textbf{File Management}: \cmd{open()}, \cmd{read()}, \cmd{write()}, \cmd{close()}
+    \item \textbf{Device Management}: \cmd{ioctl()}, \cmd{read()}, \cmd{write()}
+    \item \textbf{Information Maintenance}: \cmd{getpid()}, \cmd{time()}, \cmd{uname()}
+    \item \textbf{Communication}: \cmd{pipe()}, \cmd{socket()}, \cmd{send()}, \cmd{receive()}
+\end{enumerate}
+
+\begin{examplebox}[System Call Flow]
+When a program opens a file with \cmd{fopen()} in C:
+
+\begin{enumerate}
+    \item Application calls library function \cmd{fopen()}
+    \item Library function calls system call \cmd{open()}
+    \item CPU switches to kernel mode (Ring 0)
+    \item Kernel validates parameters and permissions
+    \item Kernel interacts with file system and disk driver
+    \item Kernel returns file descriptor
+    \item CPU switches back to user mode (Ring 3)
+    \item Control returns to application
+\end{enumerate}
+
+This process is conceptually the same across all OSes, but implementation details differ.
+\end{examplebox}
+
+%% ========================================================================
+%% SESSION 2: HISTORY & OS ECOSYSTEM
+%% ========================================================================
+
+%% ------------------------------------------------------------------------
+\section{Evolution of Operating Systems}
+\label{sec:os-history}
+
+\subsection{Brief Timeline}
+
+Operating system development has gone through several important eras:
+
+\begin{description}
+    \item[1950s--1960s: Early Era] Batch processing systems, program cards, no interactive computing. Examples: IBM 701, UNIVAC.
+
+    \item[1960s: Time-Sharing] CTSS (Compatible Time-Sharing System) at MIT - many users sharing computer time. Multics project (ambitious but failed, inspired Unix).
+
+    \item[1969: Birth of Unix] Ken Thompson and Dennis Ritchie at Bell Labs created Unix. Simple, portable (written in C), with "do one thing well" philosophy.
+
+    \item[1980s: PC Era] MS-DOS (1981) for IBM PC. Apple Macintosh (1984) with GUI. Windows 1.0 (1985) as a shell on top of DOS.
+
+    \item[1991: Linux] Linus Torvalds, a student from Finland, released Linux kernel 0.01. Free, open source, Unix-compatible.
+
+    \item[1993: Windows NT] Microsoft released Windows NT with hybrid kernel architecture for the enterprise market.
+
+    \item[2001: Mac OS X] Apple released macOS X based on Darwin (BSD Unix + Mach microkernel). UNIX certified.
+
+    \item[2000s: Modern Era] Windows XP unified consumer and NT lines. Linux dominated the server market. Open source momentum increased.
+
+    \item[2007--2008: Mobile Revolution] iOS (2007) and Android (2008) redefined computing with a mobile-first approach.
+
+    \item[2010s: Cloud Era] Linux dominated cloud computing (AWS, Google Cloud, Azure). Containers (Docker) revolutionized deployment.
+
+    \item[2020s: Present] Hybrid computing, ARM processors (Apple Silicon), WSL brought Linux to Windows, security-focused development.
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section{Modern Operating System Ecosystem}
+\label{sec:os-ecosystem}
+
+\subsection{Windows Ecosystem}
+
+\textbf{Platform:}
+\begin{itemize}
+    \item \textbf{Windows 10/11} - Consumer and Professional editions
+    \item \textbf{Windows Server} - Enterprise server OS
+    \item \textbf{Windows IoT} - Embedded and industrial devices
+\end{itemize}
+
+\textbf{Characteristics:}
+\begin{itemize}
+    \item Desktop market dominance (75\% market share)
+    \item Excellent backward compatibility
+    \item Extensive software ecosystem
+    \item Enterprise integration (Active Directory, Group Policy)
+    \item Best gaming support
+\end{itemize}
+
+\textbf{Technology:}
+\begin{itemize}
+    \item Filesystem: NTFS
+    \item Package management: Microsoft Store, winget, Chocolatey
+    \item Development: Visual Studio, .NET, PowerShell
+    \item Virtualization: Hyper-V
+\end{itemize}
+
+\subsection{macOS Ecosystem}
+
+\textbf{Characteristics:}
+\begin{itemize}
+    \item Premium hardware-software integration (Apple Silicon)
+    \item UNIX certified (POSIX compliant)
+    \item Excellent for creative professionals
+    \item iOS/iPadOS ecosystem integration
+    \item Developer-friendly (Unix tools + graphical environment)
+\end{itemize}
+
+\textbf{Technology:}
+\begin{itemize}
+    \item Filesystem: APFS (Apple File System)
+    \item Package management: App Store, Homebrew
+    \item Development: Xcode, Swift, Objective-C
+    \item Security: Gatekeeper, FileVault, Secure Enclave
+\end{itemize}
+
+\subsection{Linux Ecosystem}
+
+\textbf{Linux Distributions:}
+
+Linux is not a single operating system, but a collection of distributions that share the Linux kernel but differ in package management, default software, and target audience.
+
+\textbf{Major Families:}
+\begin{itemize}
+    \item \textbf{Debian Family} - Ubuntu, Debian, Linux Mint
+    \begin{itemize}
+        \item Package management: APT (dpkg)
+        \item Stability-focused, large repository
+        \item Popular for desktop and servers
+    \end{itemize}
+
+    \item \textbf{Red Hat Family} - Fedora, RHEL, CentOS Stream, Rocky Linux, AlmaLinux
+    \begin{itemize}
+        \item Package management: DNF/YUM (RPM)
+        \item Enterprise-oriented
+        \item Cutting-edge technologies
+    \end{itemize}
+
+    \item \textbf{Independent} - Arch Linux, Gentoo, Slackware
+    \begin{itemize}
+        \item Rolling release or highly customizable
+        \item Advanced users
+        \item DIY philosophy
+    \end{itemize}
+\end{itemize}
+
+\textbf{Why Linux for Practice?}
+
+\begin{enumerate}
+    \item \textbf{Open Source} - Free, source code available for learning
+    \item \textbf{Educational} - Transparent, excellent documentation
+    \item \textbf{Industry Relevance} - Dominates server, cloud, supercomputers
+    \begin{itemize}
+        \item 100\% of TOP500 supercomputers run Linux
+        \item 90\% of public cloud workloads
+        \item Most web servers
+    \end{itemize}
+    \item \textbf{Skills Transferable} - Unix concepts apply to macOS, BSDs
+    \item \textbf{Career Value} - High demand for Linux skills in DevOps, SRE, cloud engineering
+    \item \textbf{Flexibility} - Complete control, customization
+    \item \textbf{Legal} - Can install unlimited copies for learning
+\end{enumerate}
+
+\begin{notebox}
+Concepts learned in Linux are applicable to all Unix-like systems due to POSIX compliance. Skills like shell scripting, file permissions, process management work in Linux, macOS, and BSDs.
+\end{notebox}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Comparison of Popular Linux Distributions}
+    \label{tab:linux-distros}
+    \begin{tabular}{@{}llll@{}}
+        \toprule
+        \textbf{Distribution} & \textbf{Base} & \textbf{Package Manager} & \textbf{Target User} \\
+        \midrule
+        Ubuntu & Debian & APT & Beginners, General \\
+        Debian & Independent & APT & Stability, Servers \\
+        Fedora & Red Hat & DNF & Developers, Latest Tech \\
+        CentOS Stream & Red Hat & DNF & Enterprise, Testing \\
+        Arch Linux & Independent & Pacman & Advanced, Customization \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+%% ========================================================================
+%% SESSION 3-4: OPERATING SYSTEM INSTALLATION
+%% ========================================================================
+
+%% ------------------------------------------------------------------------
+\section{Operating System Installation}
+\label{sec:os-installation}
+
+\subsection{Universal Installation Concepts}
+
+Operating system installation involves the following general stages, applicable to all OSes:
+
+\begin{enumerate}
+    \item \textbf{Preparation} - Download ISO, create bootable media, backup data
+    \item \textbf{Boot} - Configure BIOS/UEFI, boot from installation media
+    \item \textbf{Partition} - Allocate disk space, create partitions
+    \item \textbf{Installation} - Copy system files, install bootloader
+    \item \textbf{Configuration} - Create user, configure network, initial settings
+\end{enumerate}
+
+\subsection{BIOS vs UEFI}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Comparison: BIOS vs UEFI}
+    \label{tab:bios-uefi}
+    \begin{tabular}{@{}lll@{}}
+        \toprule
+        \textbf{Aspect} & \textbf{BIOS (Legacy)} & \textbf{UEFI (Modern)} \\
+        \midrule
+        Introduced & 1970s & 2000s \\
+        Boot Mode & 16-bit & 32-bit/64-bit \\
+        Partition Table & MBR & GPT \\
+        Disk Limit & 2 TB & 9.4 ZB \\
+        Boot Time & Slower & Faster \\
+        Secure Boot & No & Yes \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{warningbox}
+Modern systems (post-2010) generally use UEFI. Secure Boot must be disabled or configured to install some Linux distros.
+\end{warningbox}
+
+\subsection{Deployment Methods}
+
+\subsubsection{Virtual Machine (Recommended for Learning)}
+
+\textbf{Advantages:}
+\begin{itemize}
+    \item Safe experimentation - doesn't affect host system
+    \item Snapshots for easy recovery
+    \item Run multiple OSes in parallel
+    \item No hardware risk
+\end{itemize}
+
+\textbf{Software:}
+\begin{itemize}
+    \item VirtualBox (free, cross-platform)
+    \item VMware Workstation Player (free)
+    \item QEMU/KVM (Linux native, free)
+    \item Hyper-V (Windows built-in)
+\end{itemize}
+
+\subsubsection{Dual Boot}
+
+Install multiple OSes on one machine. User selects OS at boot.
+
+\textbf{Use case:} Native performance, hardware access, production use
+
+\textbf{Risk:} Partition errors, bootloader conflicts, data loss if not careful
+
+\subsubsection{Bare Metal}
+
+Single OS installation, full hardware control.
+
+\textbf{Use case:} Production servers, dedicated workstations
+
+\subsection{Practice: Installing Ubuntu Server 22.04 LTS}
+
+\subsubsection{Prerequisites}
+
+\begin{itemize}
+    \item VirtualBox installed on host machine
+    \item Ubuntu Server 22.04 LTS ISO downloaded from \url{https://ubuntu.com/download/server}
+    \item Minimum 2GB RAM, 25GB disk space for VM
+\end{itemize}
+
+\begin{tipbox}
+Ubuntu Server is chosen because:
+\begin{itemize}
+    \item LTS (Long Term Support) - 5 years updates
+    \item Industry standard for servers
+    \item Excellent documentation
+    \item Large community support
+\end{itemize}
+\end{tipbox}
+
+\subsubsection{Step-by-Step Installation}
+
+\textbf{1. Create Virtual Machine}
+
+\begin{enumerate}
+    \item Open VirtualBox, click \keystroke{New}
+    \item Name: \texttt{Ubuntu-Server-Lab}
+    \item Type: Linux, Version: Ubuntu (64-bit)
+    \item Memory: 2048 MB (2 GB RAM)
+    \item Hard disk: Create virtual hard disk
+    \begin{itemize}
+        \item Type: VDI (VirtualBox Disk Image)
+        \item Storage: Dynamically allocated
+        \item Size: 25 GB
+    \end{itemize}
+\end{enumerate}
+
+\textbf{2. Configure VM Settings}
+
+\begin{itemize}
+    \item Settings → Storage → Controller: IDE → Add optical drive
+    \item Select Ubuntu Server ISO
+    \item Network: NAT or Bridged (for network access)
+\end{itemize}
+
+\textbf{3. Boot and Install}
+
+\begin{enumerate}
+    \item Start VM, will boot from ISO
+    \item Select language: English
+    \item Keyboard configuration: according to your keyboard
+    \item Network configuration:
+    \begin{itemize}
+        \item DHCP (automatic) - recommended for beginners
+        \item Or configure static IP (advanced)
+    \end{itemize}
+    \item Proxy: Leave empty (unless required)
+    \item Mirror: Default Ubuntu archive mirror
+\end{enumerate}
+
+\textbf{4. Partitioning}
+
+Partitioning options:
+
+\textbf{Option 1: Guided - use entire disk (Recommended for beginners)}
+\begin{itemize}
+    \item Automatic partitioning
+    \item Sets up /, /boot/efi, and swap
+    \item Simple and fast
+\end{itemize}
+
+\textbf{Option 2: Custom storage layout (Advanced)}
+\begin{itemize}
+    \item Manual partition creation
+    \item Detailed in section~\ref{sec:disk-partitioning}
+\end{itemize}
+
+\textbf{5. Profile Setup}
+
+\begin{lstlisting}[language=bash, caption={User account information}]
+Your name: John Doe
+Your server's name: ubuntu-server
+Pick a username: john
+Choose a password: [strong password]
+Confirm your password: [repeat password]
+\end{lstlisting}
+
+\textbf{6. SSH Setup}
+
+\begin{itemize}
+    \item Install OpenSSH server: \textbf{YES} (highly recommended)
+    \item Import SSH identity: No (skip for now)
+\end{itemize}
+
+\begin{notebox}
+OpenSSH server enables remote access to the server via terminal. Essential for production servers.
+\end{notebox}
+
+\textbf{7. Featured Server Snaps}
+
+Optional packages:
+\begin{itemize}
+    \item Docker - container runtime
+    \item Microk8s - Kubernetes
+    \item (Skip for basic installation)
+\end{itemize}
+
+\textbf{8. Installation Progress}
+
+\begin{itemize}
+    \item Installation will download and install packages (~15-20 minutes)
+    \item Wait until "Installation complete!" appears
+    \item Select "Reboot Now"
+    \item Remove installation media (VirtualBox removes it automatically)
+\end{itemize}
+
+\textbf{9. First Login}
+
+\begin{lstlisting}[language=bash, caption={Login and verify installation}]
+# Login with the created username
+ubuntu-server login: john
+Password: [enter password]
+
+# Verify system information
+$ uname -r
+5.15.0-56-generic
+
+$ cat /etc/os-release
+NAME="Ubuntu"
+VERSION="22.04.1 LTS (Jammy Jellyfish)"
+
+$ ip a
+# Should show network interfaces with IP address
+\end{lstlisting}
+
+\begin{examplebox}[VM Snapshot]
+After successful installation, create a snapshot in VirtualBox:
+\begin{enumerate}
+    \item Shut down VM
+    \item VirtualBox → VM → Snapshots → Take
+    \item Name: "Fresh Install"
+\end{enumerate}
+
+This allows restoration to a clean state whenever needed.
+\end{examplebox}
+
+%% ========================================================================
+%% SESSION 4-5: DISK PARTITIONING AND FILESYSTEM
+%% ========================================================================
+
+%% ------------------------------------------------------------------------
+\section{Disk Partitioning and File Systems}
+\label{sec:disk-partitioning}
+
+\subsection{Partition Concepts}
+
+A \textbf{partition} is a logical division of a physical disk. Each partition is treated as an independent storage unit by the OS.
+
+\textbf{Why partition?}
+\begin{itemize}
+    \item \textbf{Organization} - Separate OS, user data, applications
+    \item \textbf{Multi-OS} - Install multiple OSes on one disk
+    \item \textbf{Backup/Recovery} - Easier to backup specific partitions
+    \item \textbf{Security} - Isolate data with different permissions
+    \item \textbf{Performance} - Optimize for different workload types
+\end{itemize}
+
+\subsection{Partition Tables}
+
+\subsubsection{MBR (Master Boot Record)}
+
+\textbf{Legacy scheme} - used with BIOS:
+\begin{itemize}
+    \item Maximum 4 primary partitions
+    \item Extended partition can contain multiple logical partitions
+    \item Maximum disk size: 2 TB
+    \item Partition table size: 64 bytes
+\end{itemize}
+
+\subsubsection{GPT (GUID Partition Table)}
+
+\textbf{Modern scheme} - used with UEFI:
+\begin{itemize}
+    \item Practically unlimited partitions (128 in Windows/Linux)
+    \item Maximum disk size: 9.4 ZB (zettabytes)
+    \item Redundant partition tables for reliability
+    \item Required for UEFI Secure Boot
+    \item Backward compatible with BIOS (Protective MBR)
+\end{itemize}
+
+\subsection{Linux Partition Scheme}
+
+\subsubsection{Minimum Partitioning}
+
+\begin{lstlisting}[caption={Minimal partition scheme}]
+/           20 GB     ext4      Root filesystem
+swap        2-4 GB    swap      Virtual memory
+\end{lstlisting}
+
+\subsubsection{Recommended Partitioning}
+
+\begin{lstlisting}[caption={Recommended partition scheme}]
+/boot/efi   512 MB    FAT32     EFI System Partition (UEFI)
+/boot       1 GB      ext4      Kernel and bootloader
+/           20 GB     ext4      Root filesystem
+/home       50+ GB    ext4      User data
+swap        4 GB      swap      Virtual memory
+\end{lstlisting}
+
+\textbf{Mount Point Explanation:}
+
+\begin{description}
+    \item[\texttt{/}] (root) System files, installed programs, configurations
+    \item[\texttt{/boot}] Kernel, initramfs, GRUB bootloader
+    \item[\texttt{/boot/efi}] EFI bootloader (UEFI systems only)
+    \item[\texttt{/home}] User directories and personal data
+    \item[\texttt{swap}] Virtual memory, hibernation support
+\end{description}
+
+\begin{tipbox}
+\textbf{Why separate \texttt{/home}?}
+
+Advantages:
+\begin{itemize}
+    \item Reinstall OS without losing user data
+    \item Easier backup (backup only \texttt{/home})
+    \item Upgrade distro while keeping settings
+    \item Different filesystem or encryption for data
+\end{itemize}
+\end{tipbox}
+
+\subsection{Swap Space}
+
+\textbf{Swap} is disk space used as an extension of RAM (virtual memory).
+
+\textbf{When is swap used?}
+\begin{itemize}
+    \item When RAM is full, inactive pages are moved to swap
+    \item Hibernation (suspend-to-disk) - saves RAM contents to swap
+\end{itemize}
+
+\textbf{Swap Sizing Guidelines:}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Swap Size Recommendations}
+    \label{tab:swap-sizing}
+    \begin{tabular}{@{}ll@{}}
+        \toprule
+        \textbf{RAM Size} & \textbf{Swap Size} \\
+        \midrule
+        $\leq$ 2 GB & 2x RAM \\
+        2--8 GB & Same as RAM \\
+        $>$ 8 GB & 4--8 GB fixed \\
+        Hibernation needed & RAM size + 2 GB \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{warningbox}
+Swap is not a substitute for insufficient RAM. Adding RAM is much more effective than creating large swap.
+\end{warningbox}
+
+\subsection{Filesystem Types}
+
+\subsubsection{Cross-Platform Comparison}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Filesystem Comparison}
+    \label{tab:filesystem-comparison}
+    \begin{tabular}{@{}lllll@{}}
+        \toprule
+        \textbf{Filesystem} & \textbf{Platform} & \textbf{Max File} & \textbf{Journaling} & \textbf{Use Case} \\
+        \midrule
+        NTFS & Windows & 16 TB & Yes & Windows system \\
+        APFS & macOS & 8 EB & CoW & Modern macOS \\
+        ext4 & Linux & 16 TB & Yes & Linux default \\
+        XFS & Linux & 8 EB & Yes & Large files \\
+        Btrfs & Linux & 16 EB & CoW & Advanced features \\
+        exFAT & Universal & 16 EB & No & USB drives \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{Linux Filesystems}
+
+\textbf{ext4 (Fourth Extended Filesystem)}
+\begin{itemize}
+    \item Default for most Linux distributions
+    \item Mature, stable, and well-tested
+    \item Journaling for crash recovery
+    \item Good performance for general use
+\end{itemize}
+
+\noindent
+\textbf{XFS}
+\begin{itemize}
+    \item High-performance filesystem
+    \item Excellent for large files and parallel I/O
+    \item Default in Red Hat Enterprise Linux
+    \item Cannot be shrunk (only expanded)
+\end{itemize}
+
+\noindent
+\textbf{Btrfs (B-tree filesystem)}
+\begin{itemize}
+    \item Modern copy-on-write filesystem
+    \item Built-in snapshots and compression
+    \item RAID support
+    \item Still maturing (production-ready in openSUSE)
+\end{itemize}
+
+\subsection{Practice: Manual Partitioning}
+
+For advanced users, manual partitioning provides full control.
+
+During Ubuntu installation, select "Custom storage layout":
+
+\begin{lstlisting}[caption={Example manual partition layout}]
+Device      Size    Type    Mount Point    Filesystem
+/dev/sda1   512 MB  EFI     /boot/efi      FAT32
+/dev/sda2   1 GB    ext4    /boot          ext4
+/dev/sda3   20 GB   ext4    /              ext4
+/dev/sda4   50 GB   ext4    /home          ext4
+/dev/sda5   4 GB    swap    [swap]         swap
+\end{lstlisting}
+
+\subsubsection{Post-Installation Filesystem Commands}
+
+\begin{lstlisting}[language=bash, caption={Filesystem verification and management}]
+# Check disk usage
+df -h
+
+# Check disk partitions
+lsblk
+sudo fdisk -l
+
+# Check filesystem type
+lsblk -f
+blkid
+
+# Mount additional filesystem manually
+sudo mkdir /mnt/data
+sudo mount /dev/sdb1 /mnt/data
+
+# Permanent mount - edit /etc/fstab
+cat /etc/fstab
+# Format: <device> <mount point> <type> <options> <dump> <pass>
+
+# UUID-based mount (preferred)
+UUID=xxx-xxx-xxx  /data  ext4  defaults  0  2
+\end{lstlisting}
+
+\begin{notebox}
+\textbf{UUID vs Device Names}
+
+Use UUID instead of \texttt{/dev/sdX} in fstab because:
+\begin{itemize}
+    \item Device names can change (sda → sdb when adding disks)
+    \item UUID is a persistent identifier
+    \item More reliable for production systems
+\end{itemize}
+
+Get UUID: \cmd{blkid} or \cmd{lsblk -f}
+\end{notebox}
+
+%% ========================================================================
+%% SESSION 5-6: POST-INSTALLATION & SUMMARY
+%% ========================================================================
+
+%% ------------------------------------------------------------------------
+\section{Post-Installation Configuration}
+\label{sec:post-installation}
+
+After installation is complete, several important configurations should be performed.
+
+\subsection{System Updates}
+
+\textbf{Why important?}
+\begin{itemize}
+    \item Security patches for vulnerabilities
+    \item Bug fixes and stability improvements
+    \item New features and driver updates
+\end{itemize}
+
+\begin{lstlisting}[language=bash, caption={Update Ubuntu/Debian system}]
+# Update package lists from repositories
+sudo apt update
+
+# Upgrade installed packages to latest versions
+sudo apt upgrade
+
+# Full system upgrade (handles dependencies)
+sudo apt full-upgrade
+
+# Remove unneeded packages
+sudo apt autoremove
+
+# Clean package cache
+sudo apt clean
+\end{lstlisting}
+
+\subsection{Essential Software Installation}
+
+\begin{lstlisting}[language=bash, caption={Install essential development tools}]
+# Development tools
+sudo apt install -y build-essential
+
+# Version control
+sudo apt install -y git
+
+# Network utilities
+sudo apt install -y curl wget net-tools
+
+# Text editors
+sudo apt install -y vim nano
+
+# System monitoring
+sudo apt install -y htop iotop
+
+# Complete essentials in one command
+sudo apt install -y \
+    build-essential \
+    git \
+    curl \
+    wget \
+    vim \
+    htop \
+    tree \
+    net-tools \
+    openssh-server
+\end{lstlisting}
+
+\subsection{Network Connectivity Verification}
+
+Ensure the system can connect to the internet.
+
+\begin{lstlisting}[language=bash, caption={Check network status}]
+# Check IP address
+ip addr show
+
+# Test internet connectivity
+ping -c 4 google.com
+
+# Check DNS
+cat /etc/resolv.conf
+\end{lstlisting}
+
+\begin{tipbox}
+If using VirtualBox, ensure the network adapter is set to "NAT" or "Bridged Adapter" for internet connection.
+\end{tipbox}
+
+\subsection{SSH Access (Optional)}
+
+If you want remote access to the server via SSH (if already installed during installation):
+
+\begin{lstlisting}[language=bash, caption={Check SSH status}]
+# Check if SSH installed and running
+sudo systemctl status ssh
+
+# Get IP address for remote access
+ip addr show
+\end{lstlisting}
+
+\begin{examplebox}[Remote Login via SSH]
+From another computer on the same network:
+\begin{lstlisting}[language=bash]
+ssh username@192.168.1.100
+\end{lstlisting}
+
+Replace the IP address with your server's IP address.
+\end{examplebox}
+
+\subsection{Displaying System Information}
+
+\subsubsection{Install Neofetch}
+
+Neofetch is a popular tool for displaying system information with attractive visuals.
+
+\begin{lstlisting}[language=bash, caption={Install neofetch}]
+# Install neofetch
+sudo apt install -y neofetch
+
+# Run neofetch
+neofetch
+\end{lstlisting}
+
+Neofetch will display:
+\begin{itemize}
+    \item Linux distro logo
+    \item OS information (distro, version, kernel)
+    \item CPU and memory usage
+    \item Disk space
+    \item System uptime
+    \item And other information in an easy-to-read format
+\end{itemize}
+
+\begin{tipbox}
+Add \cmd{neofetch} to the \file{\textasciitilde/.bashrc} file to automatically display on login:
+\begin{lstlisting}[language=bash]
+echo "neofetch" >> ~/.bashrc
+\end{lstlisting}
+\end{tipbox}
+
+\subsubsection{Basic System Information Commands}
+
+\begin{lstlisting}[language=bash, caption={Basic system information commands}]
+# OS information
+cat /etc/os-release
+hostnamectl
+
+# Kernel version
+uname -r
+
+# CPU information
+lscpu
+
+# Memory information
+free -h
+
+# Disk information
+df -h
+lsblk
+
+# System uptime
+uptime
+
+# Who is logged in
+who
+\end{lstlisting}
+
+\begin{examplebox}[Practice: Explore System Info]
+Try running the following commands and observe the output:
+\begin{enumerate}
+    \item \cmd{neofetch} -- Complete display with visuals
+    \item \cmd{free -h} -- Check RAM usage
+    \item \cmd{df -h} -- Check disk space
+    \item \cmd{lscpu} -- CPU details
+    \item \cmd{uptime} -- How long the system has been running
+\end{enumerate}
+\end{examplebox}
+
+%% ------------------------------------------------------------------------
+\section{Summary}
+\label{sec:summary}
+
+In this chapter, we have learned fundamental operating system concepts and installation practices:
+
+\subsection{Operating System Concepts}
+
+\begin{itemize}
+    \item \textbf{Definition}: OS is a resource manager and extended machine
+    \item \textbf{Main Functions}: Process, Memory, File, I/O Management, and Security
+    \item \textbf{OS Types}: Desktop, Server, Mobile, Real-Time, Embedded
+    \item \textbf{Kernel Architectures}:
+    \begin{itemize}
+        \item Monolithic (Linux) - Performance
+        \item Microkernel (QNX) - Reliability
+        \item Hybrid (Windows, macOS) - Balance
+    \end{itemize}
+    \item \textbf{System Calls}: Interface between user space and kernel services
+\end{itemize}
+
+\subsection{Operating System Comparison}
+
+\begin{itemize}
+    \item \textbf{Windows}: Desktop dominance, gaming, business software
+    \item \textbf{macOS}: Creative professionals, hardware integration
+    \item \textbf{Linux}: Server dominance, open source, flexibility
+    \item \textbf{Android/iOS}: Mobile platforms
+\end{itemize}
+
+\subsection{Practical Skills}
+
+\begin{itemize}
+    \item Installation process (VM setup, Ubuntu Server)
+    \item Partitioning concepts (MBR vs GPT, partition schemes)
+    \item Filesystem understanding (ext4, swap, mount points)
+    \item Post-installation: system updates and basic configuration
+    \item System information gathering with neofetch and basic commands
+\end{itemize}
+
+\subsection{Key Takeaways}
+
+\begin{enumerate}
+    \item OS concepts are universal - applicable across various platforms
+    \item Linux is excellent for learning: open, free, industry-relevant
+    \item Virtual machines provide a safe learning environment
+    \item Proper partitioning is important for flexibility and recovery
+    \item System updates should be performed regularly
+    \item Basic system monitoring tools help understand system status
+\end{enumerate}
+
+%% ------------------------------------------------------------------------
+\section{Exercises}
+\label{sec:exercises}
+
+\subsection{Conceptual Exercises}
+
+\begin{exercisebox}[1.1]
+Explain the 5 main functions of an operating system with concrete examples from at least 2 different OSes (Windows, macOS, or Linux).
+\end{exercisebox}
+
+\begin{exercisebox}[1.2]
+When should you use Windows vs Linux vs macOS? Analyze based on use cases: gaming, development, server, creative work, and enterprise.
+\end{exercisebox}
+
+\subsection{Practical Exercises}
+
+\begin{exercisebox}[1.3]
+Install Ubuntu Server 22.04 LTS in VirtualBox with the following steps:
+\begin{enumerate}
+    \item Download Ubuntu Server ISO from the official website
+    \item Create a new VM in VirtualBox (RAM: 2GB, Disk: 25GB)
+    \item Install with automatic partitioning (guided)
+    \item Create a user account with a strong password
+    \item Reboot and login to the system
+    \item Document the installation process with screenshots of key steps
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[1.4]
+After installing Ubuntu Server, perform the following tasks:
+\begin{enumerate}
+    \item Update package list: \cmd{sudo apt update}
+    \item Upgrade packages: \cmd{sudo apt upgrade}
+    \item Install neofetch: \cmd{sudo apt install neofetch}
+    \item Run neofetch and screenshot the result
+    \item Check disk usage with \cmd{df -h}
+    \item Check memory with \cmd{free -h}
+    \item Document the output from each command
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[1.5]
+Explore the newly installed system:
+\begin{enumerate}
+    \item Display OS information: \cmd{cat /etc/os-release}
+    \item Display kernel version: \cmd{uname -r}
+    \item List partitions: \cmd{lsblk}
+    \item Check network connectivity: \cmd{ping -c 4 google.com}
+    \item Install and run \cmd{htop} to view resource usage
+    \item Create a brief report about your system configuration
+\end{enumerate}
+\end{exercisebox}
+
+\subsection{Reflection Exercises}
+
+\begin{exercisebox}[1.6]
+Share your experience with operating systems:
+\begin{enumerate}
+    \item What operating system do you use daily? (Windows, macOS, Linux, or other)
+    \item How long have you been using that operating system?
+    \item What do you like about that operating system?
+    \item What challenges or problems have you encountered?
+    \item Have you used other operating systems? Compare your experiences.
+    \item After learning this chapter, is there another operating system you'd like to try? Why?
+\end{enumerate}
+Write your reflection in 300-500 words with documentation.
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
+\section{References}
+\label{sec:references}
+
+\subsection{Recommended Books}
+
+\begin{itemize}
+    \item \textbf{Operating System Concepts (10th Ed)} - Silberschatz, Galvin, Gagne \\
+    Classic textbook for OS theory
+
+    \item \textbf{Modern Operating Systems (4th Ed)} - Andrew Tanenbaum \\
+    Comprehensive OS concepts with implementation details
+
+    \item \textbf{How Linux Works (3rd Ed)} - Brian Ward \\
+    Practical guide for understanding Linux internals
+
+    \item \textbf{The Linux Command Line (2nd Ed)} - William Shotts \\
+    Excellent resource for command-line mastery
+
+    \item \textbf{UNIX and Linux System Administration Handbook (5th Ed)} - Nemeth et al. \\
+    Industry standard for system administration
+\end{itemize}
+
+\subsection{Online Resources}
+
+\textbf{Documentation:}
+\begin{itemize}
+    \item Linux Foundation: \url{https://www.linuxfoundation.org}
+    \item Ubuntu Documentation: \url{https://ubuntu.com/server/docs}
+    \item Arch Wiki: \url{https://wiki.archlinux.org} (excellent cross-distro reference)
+    \item Red Hat Documentation: \url{https://access.redhat.com/documentation}
+\end{itemize}
+
+\textbf{Interactive Learning:}
+\begin{itemize}
+    \item Linux Journey: \url{https://linuxjourney.com}
+    \item OverTheWire Bandit: \url{https://overthewire.org/wargames/bandit/}
+    \item edX: Introduction to Linux (LFS101x)
+\end{itemize}
+
+\textbf{Official Sites:}
+\begin{itemize}
+    \item The Linux Kernel: \url{https://www.kernel.org}
+    \item Microsoft Docs: \url{https://docs.microsoft.com}
+    \item Apple Developer: \url{https://developer.apple.com/documentation}
+\end{itemize}
