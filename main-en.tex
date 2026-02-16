@@ -1,0 +1,149 @@
+%% ========================================================================
+%% Operating Systems Book - English Version
+%% LaTeX Template for Academic Textbook
+%% Paper Size: A4
+%% ========================================================================
+
+\documentclass[
+    a4paper,          % A4 paper size
+    12pt,             % Font size
+    twoside,          % For two-sided printing
+    openright,        % New chapters start on right page
+    bibliography=totoc, % Bibliography in table of contents
+]{scrbook}            % KOMA-Script book class (more flexible)
+
+%% ========================================================================
+%% Set Language Flags BEFORE Loading Preamble
+%% ========================================================================
+\newif\ifIndonesian
+\newif\ifEnglish
+\Indonesianfalse
+\Englishtrue
+
+%% ========================================================================
+%% Preamble: Packages and Configuration
+%% ========================================================================
+\input{preamble}
+
+%% Ensure English is selected
+\selectlanguage{english}
+
+%% ========================================================================
+%% Book Information
+%% ========================================================================
+\title{Operating Systems}
+\subtitle{A Comprehensive Guide for Students}
+\author{Authors Team}
+\date{\today}
+\publishers{Department of Information Technology}
+
+%% ========================================================================
+%% Begin Document
+%% ========================================================================
+\begin{document}
+
+%% ------------------------------------------------------------------------
+%% Front Matter
+%% ------------------------------------------------------------------------
+\frontmatter
+
+% Title Page
+\input{frontmatter/en/titlepage}
+
+% Copyright Page
+\input{frontmatter/en/copyright}
+
+% Preface
+\input{frontmatter/en/preface}
+
+% Table of Contents
+\tableofcontents
+
+% List of Figures (optional)
+\listoffigures
+
+% List of Tables (optional)
+\listoftables
+
+% List of Listings (optional)
+\lstlistoflistings
+
+%% ------------------------------------------------------------------------
+%% Main Matter (Book Content)
+%% ------------------------------------------------------------------------
+\mainmatter
+
+%% Part I: Operating Systems Fundamentals
+\part{Operating Systems Fundamentals}
+
+% Week 1: Introduction to Operating Systems & Installation
+\input{chapters/en/week01-introduction}
+
+% Week 2: Hardware Management & Basic Commands
+\input{chapters/en/week02-hardware-and-basic-commands}
+
+% Week 3: Input/Output (I/O) Basics
+\input{chapters/en/week03-basic-io}
+
+%% Part II: File and Process Management
+\part{File and Process Management}
+
+% Week 5: Directory Structure & File Operations
+\input{chapters/en/week05-directory-structure}
+
+% Week 6: Process Management
+\input{chapters/en/week06-process-management}
+
+%% Part III: Bash Shell and Scripting
+\part{Bash Shell and Scripting}
+
+% Week 7: Bash Shell
+\input{chapters/en/week07-bash-shell}
+
+% Week 9: Bash Programming
+\input{chapters/en/week09-bash-programming}
+
+%% Part IV: Advanced System Management
+\part{Advanced System Management}
+
+% Week 10: Memory Management & System Calls
+\input{chapters/en/week10-memory-and-syscalls}
+
+% Week 11: File & User/Group Management
+\input{chapters/en/week11-file-and-user-management}
+
+% Week 12: Service Management
+\input{chapters/en/week12-service-management}
+
+% Week 13: Application Management
+\input{chapters/en/week13-application-management}
+
+% Week 14: Backup and System Recovery
+\input{chapters/en/week14-backup-and-recovery}
+
+%% ------------------------------------------------------------------------
+%% Appendices
+%% ------------------------------------------------------------------------
+\appendix
+
+% Appendix A: Linux Command Reference
+\input{appendices/en/command-reference}
+
+% Appendix B: Exercise Solutions
+\input{appendices/en/exercise-solutions}
+
+% Appendix C: Glossary
+\input{appendices/en/glossary}
+
+%% ------------------------------------------------------------------------
+%% Back Matter
+%% ------------------------------------------------------------------------
+\backmatter
+
+% Bibliography
+\printbibliography[heading=bibintoc, title={References}]
+
+% Index
+\printindex
+
+\end{document}

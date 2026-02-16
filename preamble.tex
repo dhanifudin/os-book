@@ -14,22 +14,38 @@
 %% Bahasa
 %% ------------------------------------------------------------------------
 \usepackage[indonesian,english]{babel}  % Dukungan bahasa Indonesia
-\selectlanguage{indonesian}
 
-%% Konfigurasi istilah bahasa Indonesia
-\addto\captionsindonesian{%
-    \renewcommand{\figurename}{Gambar}%
-    \renewcommand{\tablename}{Tabel}%
-    \renewcommand{\contentsname}{Daftar Isi}%
-    \renewcommand{\listfigurename}{Daftar Gambar}%
-    \renewcommand{\listtablename}{Daftar Tabel}%
-    \renewcommand{\bibname}{Daftar Pustaka}%
-    \renewcommand{\indexname}{Indeks}%
-    \renewcommand{\appendixname}{Lampiran}%
-    \renewcommand{\abstractname}{Abstrak}%
-    \renewcommand{\partname}{Bagian}%
-    \renewcommand{\chaptername}{Bab}%
-}
+%% Language flags - set by main-id.tex or main-en.tex before loading preamble
+%% Default to Indonesian for backward compatibility if not set
+\ifx\ifIndonesian\undefined
+    \newif\ifIndonesian
+    \newif\ifEnglish
+    \Indonesiantrue
+    \Englishfalse
+    \selectlanguage{indonesian}
+\fi
+
+%% Konfigurasi istilah bahasa - conditional based on language
+\ifIndonesian
+    \addto\captionsindonesian{%
+        \renewcommand{\figurename}{Gambar}%
+        \renewcommand{\tablename}{Tabel}%
+        \renewcommand{\contentsname}{Daftar Isi}%
+        \renewcommand{\listfigurename}{Daftar Gambar}%
+        \renewcommand{\listtablename}{Daftar Tabel}%
+        \renewcommand{\bibname}{Daftar Pustaka}%
+        \renewcommand{\indexname}{Indeks}%
+        \renewcommand{\appendixname}{Lampiran}%
+        \renewcommand{\abstractname}{Abstrak}%
+        \renewcommand{\partname}{Bagian}%
+        \renewcommand{\chaptername}{Bab}%
+    }
+\else
+    % English uses babel defaults
+    \addto\captionsenglish{%
+        \renewcommand{\bibname}{References}%
+    }
+\fi
 
 %% ------------------------------------------------------------------------
 %% Geometri Halaman (A4)
@@ -52,11 +68,18 @@
 \usepackage{float}               % Kontrol posisi float
 \usepackage{subfig}              % Subfigure support
 
-%% Konfigurasi caption untuk bahasa Indonesia
-\captionsetup{
-    figurename=Gambar,
-    tablename=Tabel
-}
+%% Konfigurasi caption - language-aware
+\ifIndonesian
+    \captionsetup{
+        figurename=Gambar,
+        tablename=Tabel
+    }
+\else
+    \captionsetup{
+        figurename=Figure,
+        tablename=Table
+    }
+\fi
 
 \usepackage{tikz}                % Untuk diagram
 \usetikzlibrary{shapes,arrows,positioning,calc}
@@ -91,9 +114,14 @@
 %% ------------------------------------------------------------------------
 \usepackage{listings}            % Syntax highlighting untuk kode
 
-%% Konfigurasi nama caption untuk listing
-\renewcommand{\lstlistingname}{Kode}
-\renewcommand{\lstlistlistingname}{Daftar Kode}
+%% Konfigurasi nama caption untuk listing - language-aware
+\ifIndonesian
+    \renewcommand{\lstlistingname}{Kode}
+    \renewcommand{\lstlistlistingname}{Daftar Kode}
+\else
+    \renewcommand{\lstlistingname}{Listing}
+    \renewcommand{\lstlistlistingname}{List of Listings}
+\fi
 
 \lstdefinestyle{bashstyle}{
     backgroundcolor=\color{backcolour},
@@ -145,23 +173,28 @@
 
 \usepackage[capitalise,noabbrev]{cleveref}  % Referensi pintar
 
-%% Konfigurasi cleveref untuk bahasa Indonesia
-\crefname{figure}{gambar}{gambar}
-\Crefname{figure}{Gambar}{Gambar}
-\crefname{table}{tabel}{tabel}
-\Crefname{table}{Tabel}{Tabel}
-\crefname{chapter}{bab}{bab}
-\Crefname{chapter}{Bab}{Bab}
-\crefname{section}{bagian}{bagian}
-\Crefname{section}{Bagian}{Bagian}
-\crefname{subsection}{subbagian}{subbagian}
-\Crefname{subsection}{Subbagian}{Subbagian}
-\crefname{equation}{persamaan}{persamaan}
-\Crefname{equation}{Persamaan}{Persamaan}
-\crefname{listing}{kode}{kode}
-\Crefname{listing}{Kode}{Kode}
-\crefname{appendix}{lampiran}{lampiran}
-\Crefname{appendix}{Lampiran}{Lampiran}
+%% Konfigurasi cleveref - language-aware
+\ifIndonesian
+    \crefname{figure}{gambar}{gambar}
+    \Crefname{figure}{Gambar}{Gambar}
+    \crefname{table}{tabel}{tabel}
+    \Crefname{table}{Tabel}{Tabel}
+    \crefname{chapter}{bab}{bab}
+    \Crefname{chapter}{Bab}{Bab}
+    \crefname{section}{bagian}{bagian}
+    \Crefname{section}{Bagian}{Bagian}
+    \crefname{subsection}{subbagian}{subbagian}
+    \Crefname{subsection}{Subbagian}{Subbagian}
+    \crefname{equation}{persamaan}{persamaan}
+    \Crefname{equation}{Persamaan}{Persamaan}
+    \crefname{listing}{kode}{kode}
+    \Crefname{listing}{Kode}{Kode}
+    \crefname{appendix}{lampiran}{lampiran}
+    \Crefname{appendix}{Lampiran}{Lampiran}
+\else
+    % English defaults from cleveref are fine
+    % Override only if needed
+\fi
 
 %% ------------------------------------------------------------------------
 %% Header dan Footer
@@ -195,19 +228,34 @@
 %% ------------------------------------------------------------------------
 \usepackage[most]{tcolorbox}     % Colored boxes
 
-% Box untuk catatan
+%% Define box titles based on language
+\ifIndonesian
+    \def\noteboxTitle{Catatan}
+    \def\warningboxTitle{Peringatan}
+    \def\tipboxTitle{Tips}
+    \def\exampleboxPrefix{Contoh: }
+    \def\exerciseboxPrefix{Latihan }
+\else
+    \def\noteboxTitle{Note}
+    \def\warningboxTitle{Warning}
+    \def\tipboxTitle{Tip}
+    \def\exampleboxPrefix{Example: }
+    \def\exerciseboxPrefix{Exercise }
+\fi
+
+% Box untuk catatan / note
 \newtcolorbox{notebox}{
     colback=blue!5!white,
     colframe=blue!75!black,
-    title=Catatan,
+    title=\noteboxTitle,
     fonttitle=\bfseries
 }
 
-% Box untuk peringatan
+% Box untuk peringatan / warning
 \newtcolorbox{warningbox}{
     colback=red!5!white,
     colframe=red!75!black,
-    title=Peringatan,
+    title=\warningboxTitle,
     fonttitle=\bfseries
 }
 
@@ -215,23 +263,23 @@
 \newtcolorbox{tipbox}{
     colback=green!5!white,
     colframe=green!75!black,
-    title=Tips,
+    title=\tipboxTitle,
     fonttitle=\bfseries
 }
 
-% Box untuk contoh
+% Box untuk contoh / example
 \newtcolorbox{examplebox}[1][]{
     colback=yellow!10!white,
     colframe=orange!75!black,
-    title=Contoh: #1,
+    title=\exampleboxPrefix#1,
     fonttitle=\bfseries
 }
 
-% Box untuk latihan
+% Box untuk latihan / exercise
 \newtcolorbox{exercisebox}[1][]{
     colback=purple!5!white,
     colframe=purple!75!black,
-    title=Latihan #1,
+    title=\exerciseboxPrefix#1,
     fonttitle=\bfseries
 }
 
@@ -251,22 +299,35 @@
 \makeindex
 
 %% ------------------------------------------------------------------------
-%% Teorema dan Definisi
+%% Teorema dan Definisi - language-aware
 %% ------------------------------------------------------------------------
 \theoremstyle{definition}
-\newtheorem{definition}{Definisi}[chapter]
-\newtheorem{example}{Contoh}[chapter]
+\ifIndonesian
+    \newtheorem{definition}{Definisi}[chapter]
+    \newtheorem{example}{Contoh}[chapter]
+\else
+    \newtheorem{definition}{Definition}[chapter]
+    \newtheorem{example}{Example}[chapter]
+\fi
 
 \theoremstyle{plain}
-\newtheorem{theorem}{Teorema}[chapter]
+\ifIndonesian
+    \newtheorem{theorem}{Teorema}[chapter]
+\else
+    \newtheorem{theorem}{Theorem}[chapter]
+\fi
 
-%% Konfigurasi nama untuk cleveref (teorema)
-\crefname{definition}{definisi}{definisi}
-\Crefname{definition}{Definisi}{Definisi}
-\crefname{example}{contoh}{contoh}
-\Crefname{example}{Contoh}{Contoh}
-\crefname{theorem}{teorema}{teorema}
-\Crefname{theorem}{Teorema}{Teorema}
+%% Konfigurasi nama untuk cleveref (teorema) - language-aware
+\ifIndonesian
+    \crefname{definition}{definisi}{definisi}
+    \Crefname{definition}{Definisi}{Definisi}
+    \crefname{example}{contoh}{contoh}
+    \Crefname{example}{Contoh}{Contoh}
+    \crefname{theorem}{teorema}{teorema}
+    \Crefname{theorem}{Teorema}{Teorema}
+\else
+    % English defaults from cleveref are fine
+\fi
 
 %% ------------------------------------------------------------------------
 %% Spacing dan Format
