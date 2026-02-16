@@ -4,163 +4,293 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a LaTeX book project for "Sistem Operasi: Panduan Komprehensif untuk Pemula" - a comprehensive Indonesian-language textbook for an Operating Systems course, focused on Linux for practical. The book covers 16 weeks of structured learning, from OS fundamentals to advanced system administration.
+This is a bilingual LaTeX textbook project for teaching Operating Systems with a focus on Linux. The book is structured as a 16-week course (outline.md) and supports both Indonesian and English versions from a single codebase.
+
+## Bilingual Architecture
+
+**Critical**: This repository uses a dual-language structure with separate main files:
+- `main-id.tex` - Indonesian version entry point
+- `main-en.tex` - English version entry point
+- Both share the same `preamble.tex` which uses language flags (`\ifIndonesian` and `\ifEnglish`) to control language-specific elements
+
+**Language-specific content structure**:
+```
+chapters/
+  ├── id/          # Indonesian chapters
+  │   ├── week01-introduction.tex
+  │   ├── week02-hardware-and-basic-commands.tex
+  │   └── ...
+  └── en/          # English chapters (parallel structure)
+      ├── week01-introduction.tex
+      ├── week02-hardware-and-basic-commands.tex
+      └── ...
+
+frontmatter/
+  ├── id/          # Indonesian front matter
+  │   ├── titlepage.tex
+  │   ├── copyright.tex
+  │   └── preface.tex
+  └── en/          # English front matter
+      └── ...
+
+appendices/
+  ├── id/          # Indonesian appendices
+  │   ├── command-reference.tex
+  │   ├── exercise-solutions.tex
+  │   └── glossary.tex
+  └── en/          # English appendices (currently empty)
+      └── ...
+```
+
+**When creating/editing content**:
+1. Language flags MUST be set in main-*.tex BEFORE loading preamble
+2. Each language has parallel directory structure (id/ and en/)
+3. Main files use `\input{chapters/[lang]/filename}` to load language-specific content
+4. The preamble uses conditional blocks (`\ifIndonesian ... \else ... \fi`) for language-specific configuration
 
 ## Build System
 
-The project uses **latexmk** for intelligent compilation automation, managed through a Makefile.
+### Primary Commands
 
-### Essential Commands
-
+**Build Indonesian version** (default):
 ```bash
-# Full compilation with bibliography
-make
-
-# Quick single-pass compilation (during development)
-make quick
-
-# Watch mode - auto-recompile on file changes (recommended during writing)
-make watch
-
-# View PDF (opens with zathura - note: Makefile has been customized from default evince)
-make view
-
-# Clean temporary files
-make clean
-
-# Clean everything including PDF
-make cleanall
-
-# Check all dependencies are installed
-make check-deps
+make              # or `make id`
+make quick-id     # Single-pass compilation (faster, no bibliography updates)
+make watch-id     # Continuous compilation on file changes
 ```
 
-### Direct latexmk Usage
+**Build English version**:
+```bash
+make en
+make quick-en     # Single-pass compilation
+make watch-en     # Continuous compilation
+```
 
+**Build both versions**:
+```bash
+make both
+```
+
+**Other useful commands**:
+```bash
+make clean        # Remove temporary files only
+make cleanall     # Remove all output including PDFs
+make view-id      # Compile and open Indonesian PDF in zathura
+make view-en      # Compile and open English PDF in zathura
+make checkerrors  # Check log files for errors/warnings
+make checkref     # Find undefined references
+make wordcount    # Count words in both versions (requires texcount)
+make check-deps   # Verify all required dependencies are installed
+make help         # Show all available targets
+```
+
+### Manual Compilation
+
+If needed, you can compile manually with latexmk:
 ```bash
 # Full compilation
-latexmk -pdf -bibtex main.tex
+latexmk -pdf -bibtex main-id.tex
+latexmk -pdf -bibtex main-en.tex
 
-# Watch mode with continuous preview
-latexmk -pdf -bibtex -pvc main.tex
+# Watch mode
+latexmk -pdf -bibtex -pvc main-id.tex
 
 # Clean
-latexmk -c main.tex
+latexmk -c main-id.tex
+latexmk -C main-id.tex  # Also removes PDF
 ```
 
-Configuration is in `.latexmkrc` which sets pdflatex options, biber for bibliography, and PDF viewer preferences.
+## LaTeX Structure
 
-## Architecture
+### Document Class & Configuration
 
-### Entry Point and Structure
+- Uses **KOMA-Script** `scrbook` class for better typography and flexibility
+- A4 paper, 12pt font, two-sided printing layout
+- Configuration in `preamble.tex` (shared by both languages)
+- Language-specific captions/terms controlled by flags
 
-- **main.tex**: Entry point that includes preamble and structures the book into 4 parts:
-  - Part I: Fundamental Sistem Operasi (Weeks 1-3)
-  - Part II: Manajemen File dan Proses (Weeks 5-6)
-  - Part III: Bash Shell dan Scripting (Weeks 7, 9)
-  - Part IV: Manajemen Sistem Lanjutan (Weeks 10-14)
+### Custom Commands & Environments
 
-- **preamble.tex**: Centralized package configuration and custom commands. This defines all styling, packages, and custom environments.
+**Linux-specific commands** (defined in preamble.tex):
+```latex
+\cmd{command}                  % Format shell commands
+\file{/path/to/file}          % Format file paths
+\dir{/path/to/directory}      % Format directory paths
+\var{VARIABLE_NAME}           % Format environment variables
+\keystroke{Ctrl+C}            % Format keyboard shortcuts
+```
 
-### Content Organization
+**Colored boxes** for special content:
+```latex
+\begin{notebox}
+  Important notes and reminders
+\end{notebox}
 
-Chapters are in `chapters/` directory with naming pattern `weekXX-topic.tex`. Weeks 4, 8, 15, 16 are quiz/exam weeks and have no chapters. The course outline in `outline.md` provides detailed content expectations for each week.
+\begin{tipbox}
+  Helpful tips and best practices
+\end{tipbox}
 
-- `frontmatter/`: Title page, copyright, preface
-- `appendices/`: Command reference, exercise solutions, glossary
-- `images/`: Graphics and diagrams
-- `references.bib`: BibLaTeX bibliography database
+\begin{warningbox}
+  Warnings about dangerous operations
+\end{warningbox}
 
-## Custom LaTeX Elements
+\begin{examplebox}[Optional Title]
+  Examples and demonstrations
+\end{examplebox}
 
-### Colored Boxes (defined in preamble.tex)
+\begin{exercisebox}[Exercise Number]
+  Practice exercises
+\end{exercisebox}
+```
 
-These tcolorbox environments provide visual emphasis:
-
-- `\begin{notebox}` - Blue boxes for important notes
-- `\begin{tipbox}` - Green boxes for tips
-- `\begin{warningbox}` - Red boxes for warnings
-- `\begin{examplebox}[title]` - Yellow/orange boxes for examples with optional title
-- `\begin{exercisebox}[number]` - Purple boxes for exercises with number
-
-### Custom Commands for Linux Content
-
-- `\cmd{command}` - Colored command text (uses commandcolor)
-- `\file{/path/to/file}` - File path formatting
-- `\dir{/path/to/dir}` - Directory path (adds trailing slash)
-- `\var{VARNAME}` - Environment variable (adds $ prefix)
-- `\keystroke{key}` - Keyboard key representation
-
-### Code Listings
-
-Bash syntax highlighting is pre-configured with the `bashstyle` listing style. Use:
-
+**Code listings** with syntax highlighting:
 ```latex
 \begin{lstlisting}[language=bash, caption={Description}]
-# code here
+sudo apt update
+sudo apt install package
 \end{lstlisting}
 ```
 
-### Cross-references
+### Chapter Structure
 
-Use `\cref{}` from cleveref package for smart references that automatically add "Figure", "Table", "Chapter" prefixes in Indonesian.
+Each chapter follows this pattern (see chapters/id/week01-introduction.tex for complete example):
+```latex
+\chapter{Chapter Title}
+\label{ch:chapter-id}
 
-## Content Writing Guidelines
+\begin{abstract}
+Chapter summary...
+\end{abstract}
 
-### Chapter Template
+\section{Section Title}
+\label{sec:section-id}
 
-`chapters/week01-introduction.tex` is a complete reference implementation showing:
-- Proper chapter structure with abstract
-- Section/subsection hierarchy
-- TikZ diagrams
-- Professional tables with booktabs
-- Code listings with syntax highlighting
-- All colored box types
-- Exercise sections
-- Bibliography citations
+Content...
 
-Use this as the template when writing remaining chapters.
+\subsection{Subsection Title}
+More content...
+```
 
-### Labels Convention
+### Cross-References & Citations
 
-- Chapters: `\label{ch:short-name}`
-- Sections: `\label{sec:descriptive-name}`
-- Figures: `\label{fig:description}`
-- Tables: `\label{tab:description}`
+```latex
+\cref{fig:label}              % Smart cross-reference (auto-detects type)
+\cite{citation-key}           % Bibliography citation
+\url{https://example.com}     % URL formatting
+```
 
-### Bibliography
+## Content Organization
 
-Add references to `references.bib` in BibLaTeX format. The template includes key OS/Linux textbooks and resources. Use `\cite{key}` in text.
+### Book Structure (4 Parts)
+
+1. **Part I: Fundamental Sistem Operasi** - Weeks 1-3
+   - Introduction, hardware management, basic I/O
+
+2. **Part II: Manajemen File dan Proses** - Weeks 5-6
+   - Directory structure, process management
+
+3. **Part III: Bash Shell dan Scripting** - Weeks 7-9
+   - Bash shell, bash programming
+
+4. **Part IV: Manajemen Sistem Lanjutan** - Weeks 10-14
+   - Memory, files/users, services, applications, backup/recovery
+
+Note: Weeks 4, 8, 15, 16 are for quizzes/exams (see outline.md)
+
+### Current Development Status
+
+**Indonesian version** (id/):
+- Week 1-2: Substantially complete with detailed content
+- Week 3-14: Basic chapter structure created (minimal content)
+- Frontmatter: Complete (titlepage, copyright, preface)
+- Appendices: Structure present (command-reference, exercise-solutions, glossary)
+
+**English version** (en/):
+- Frontmatter files exist but chapters/en/ directory is empty
+- Appendices/en/ directory is empty
+- Translation work is needed
 
 ## Dependencies
 
-Required packages:
-- TeX Live (full installation recommended)
-- biber (for bibliography)
-- latexmk (for build automation)
-- PDF viewer (currently configured for zathura, originally evince)
+Required software:
+- `pdflatex` - LaTeX compiler
+- `biber` - Bibliography processor (NOT bibtex)
+- `latexmk` - Build automation
+- `zathura` (optional) - PDF viewer
 
-Check with: `make check-deps`
+Optional:
+- `texcount` - Word counting utility
 
-## Document Class and Language
+Install on Ubuntu/Debian:
+```bash
+sudo apt install texlive-full biber latexmk zathura
+```
 
-- Uses KOMA-Script `scrbook` class for A4 paper, two-sided printing
-- Primary language: Indonesian (babel package)
-- Configured for professional book publishing with proper margins for binding
+Verify installation:
+```bash
+make check-deps
+```
 
-## Common Issues
+## Common Workflows
 
-### Bibliography not appearing
-Run full compilation with `make` (not `make quick`). latexmk handles the pdflatex → biber → pdflatex cycle automatically.
+### Adding a New Chapter
 
-### Undefined references
-Multiple compilation passes are needed for cross-references. latexmk automatically runs sufficient passes (max 5). For manual compilation, run pdflatex at least 3 times.
+1. Create file in appropriate language directory:
+   - `chapters/id/weekXX-topic-name.tex`
+   - `chapters/en/weekXX-topic-name.tex`
 
-### PDF viewer not found
-The Makefile has been customized to use zathura instead of the default evince. To change viewer, edit the `VIEWER` variable in Makefile or the `$pdf_previewer` in `.latexmkrc`.
+2. Add `\input` statement to corresponding main file:
+   - `main-id.tex`: `\input{chapters/id/weekXX-topic-name}`
+   - `main-en.tex`: `\input{chapters/en/weekXX-topic-name}`
 
-## File Modification Notes
+3. Follow chapter structure template from week01-introduction.tex
 
-When editing chapters, the main.tex structure inputs them via `\input{chapters/filename}`. New chapters must be added to main.tex to be included in compilation.
+### Adding Images
 
-Book metadata (title, author, publisher) is defined at the top of main.tex and in frontmatter files - these should be updated before final publication.
+1. Place image files in `images/` directory
+2. Reference in LaTeX:
+```latex
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{image-filename.png}
+    \caption{Caption text}
+    \label{fig:image-label}
+\end{figure}
+```
+
+### Adding Bibliography Entries
+
+Edit `references.bib` (shared by both languages):
+```bibtex
+@book{key,
+  title={Book Title},
+  author={Author Name},
+  year={2024},
+  publisher={Publisher},
+  isbn={978-xxx}
+}
+```
+
+## File Patterns to Watch
+
+**Always rebuild** after changes to:
+- `preamble.tex` - Affects all documents
+- `references.bib` - Bibliography entries
+- `main-id.tex` or `main-en.tex` - Document structure
+- Any chapter file - Content changes
+
+**Temporary/build files** (safe to clean):
+- `*.aux`, `*.log`, `*.out`, `*.toc`, `*.lof`, `*.lot`
+- `*.bbl`, `*.blg`, `*.bcf`, `*.run.xml`
+- `*.fdb_latexmk`, `*.fls`
+- `*-SAVE-ERROR` files
+
+## Troubleshooting
+
+**Undefined references/citations**: Run full build (`make id` or `make en`), not quick build
+
+**Bibliography not updating**: Ensure biber is installed and run `make cleanall && make`
+
+**Compilation errors**: Check `make checkerrors` output or view `.log` files
+
+**Language-specific issues**: Verify language flags are set correctly in main-*.tex before `\input{preamble}`
