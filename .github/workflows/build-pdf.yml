@@ -1,0 +1,72 @@
+name: Build LaTeX PDFs
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  build-pdf:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Cache LaTeX packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          /usr/share/texmf
+          /usr/share/texlive
+          /var/lib/texmf
+        key: ${{ runner.os }}-texlive-${{ hashFiles('.github/workflows/build-pdf.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-texlive-
+
+    - name: Install LaTeX dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          texlive-latex-base \
+          texlive-latex-extra \
+          texlive-fonts-recommended \
+          texlive-fonts-extra \
+          texlive-lang-other \
+          texlive-bibtex-extra \
+          biber \
+          latexmk \
+          texlive-xetex \
+          texlive-science
+
+    - name: Build Indonesian PDF
+      run: |
+        make clean
+        make id
+      continue-on-error: false
+
+    - name: Build English PDF
+      run: |
+        make clean
+        make en
+      continue-on-error: false
+
+    - name: Check PDF files
+      run: |
+        ls -lh *.pdf
+        echo "Indonesian PDF size: $(du -h main-id.pdf | cut -f1)"
+        echo "English PDF size: $(du -h main-en.pdf | cut -f1)"
+
+    - name: Upload Indonesian PDF
+      uses: actions/upload-artifact@v4
+      with:
+        name: os-book-indonesian
+        path: main-id.pdf
+        retention-days: 90
+
+    - name: Upload English PDF
+      uses: actions/upload-artifact@v4
+      with:
+        name: os-book-english
+        path: main-en.pdf
+        retention-days: 90

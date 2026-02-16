@@ -1,0 +1,69 @@
+name: Create Release with PDFs
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0, v2.1.3, etc.
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install LaTeX dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          texlive-latex-base \
+          texlive-latex-extra \
+          texlive-fonts-recommended \
+          texlive-fonts-extra \
+          texlive-lang-other \
+          texlive-bibtex-extra \
+          biber \
+          latexmk \
+          texlive-xetex \
+          texlive-science
+
+    - name: Build both PDFs
+      run: |
+        make cleanall
+        make both
+
+    - name: Rename PDFs with version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        cp main-id.pdf os-book-indonesian-${VERSION}.pdf
+        cp main-en.pdf os-book-english-${VERSION}.pdf
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          os-book-indonesian-*.pdf
+          os-book-english-*.pdf
+        body: |
+          ## Operating Systems Book - Bilingual Edition
+
+          This release includes both Indonesian and English versions of the textbook.
+
+          ### Files:
+          - `os-book-indonesian-*.pdf` - Indonesian version (Sistem Operasi)
+          - `os-book-english-*.pdf` - English version (Operating Systems)
+
+          ### Chapters Included:
+          - Week 1: Introduction to Operating Systems & Installation (Full content)
+          - Week 2: Hardware Management & Basic Commands (Full content)
+          - Weeks 3-14: Chapter structure ready for content
+
+          Built automatically from commit: ${{ github.sha }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

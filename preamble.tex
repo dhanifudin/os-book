@@ -168,6 +168,34 @@
     pdfborder={0 0 0}
 ]{hyperref}
 
+%% ------------------------------------------------------------------------
+%% Header dan Footer
+%% ------------------------------------------------------------------------
+\usepackage{scrlayer-scrpage}    % KOMA-Script header/footer
+\clearpairofpagestyles
+\ohead{\rightmark}               % Section in outer header
+\ifoot{\leftmark}                % Chapter in inner footer
+\ofoot[\pagemark]{\pagemark}     % Page number in outer footer (right on odd, left on even)
+\pagestyle{scrheadings}
+
+%% ------------------------------------------------------------------------
+%% Bibliography (Daftar Pustaka)
+%% ------------------------------------------------------------------------
+\usepackage[
+    backend=biber,
+    style=ieee,
+    sorting=none
+]{biblatex}
+\addbibresource{references.bib}
+
+%% ------------------------------------------------------------------------
+%% Matematika
+%% ------------------------------------------------------------------------
+\usepackage{amsmath}             % Matematika lanjutan
+\usepackage{amssymb}             % Simbol matematika
+\usepackage{amsthm}              % Theorem environments
+
+%% cleveref MUST be loaded after amsmath and hyperref
 \usepackage[capitalise,noabbrev]{cleveref}  % Referensi pintar
 
 %% Konfigurasi cleveref - language-aware
@@ -192,33 +220,6 @@
     % English defaults from cleveref are fine
     % Override only if needed
 \fi
-
-%% ------------------------------------------------------------------------
-%% Header dan Footer
-%% ------------------------------------------------------------------------
-\usepackage{scrlayer-scrpage}    % KOMA-Script header/footer
-\clearpairofpagestyles
-\ihead{\leftmark}
-\ohead{\rightmark}
-\cfoot[\pagemark]{\pagemark}
-\pagestyle{scrheadings}
-
-%% ------------------------------------------------------------------------
-%% Bibliography (Daftar Pustaka)
-%% ------------------------------------------------------------------------
-\usepackage[
-    backend=biber,
-    style=ieee,
-    sorting=none
-]{biblatex}
-\addbibresource{references.bib}
-
-%% ------------------------------------------------------------------------
-%% Matematika
-%% ------------------------------------------------------------------------
-\usepackage{amsmath}             % Matematika lanjutan
-\usepackage{amssymb}             % Simbol matematika
-\usepackage{amsthm}              % Theorem environments
 
 %% ------------------------------------------------------------------------
 %% Box dan Environment Khusus
