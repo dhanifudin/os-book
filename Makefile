@@ -14,12 +14,27 @@ VIEWER = zathura
 LATEXMK = latexmk
 LATEXMK_FLAGS = -pdf -bibtex -interaction=nonstopmode -file-line-error
 
+# Chapters list
+CHAPTERS = week01-introduction \
+           week02-hardware-and-basic-commands \
+           week03-basic-io \
+           week05-directory-structure \
+           week06-process-management \
+           week07-bash-shell \
+           week09-bash-programming \
+           week10-memory-and-syscalls \
+           week11-file-and-user-management \
+           week12-service-management \
+           week13-application-management \
+           week14-backup-and-recovery
+
 # ========================================================================
 # Target Utama
 # ========================================================================
 
 .PHONY: all id en both clean cleanall view view-id view-en watch watch-id watch-en \
-        quick quick-id quick-en checkerrors checkref wordcount help check-deps
+        quick quick-id quick-en checkerrors checkref wordcount help check-deps \
+        chapters chapters-id chapters-en
 
 # Default target - build Indonesian version (backward compatibility)
 all: id
@@ -52,6 +67,35 @@ $(MAIN_EN).pdf: $(MAIN_EN).tex preamble.tex references.bib
 	@echo "========================================="
 	@echo "Compilation complete! File: $(MAIN_EN).pdf"
 	@echo "========================================="
+
+# Build all chapters individually for both languages
+chapters: chapters-id chapters-en
+
+# Build all Indonesian chapters individually
+chapters-id:
+	@echo "Building all Indonesian chapters..."
+	@for chapter in $(CHAPTERS); do \
+		echo "Building ID chapter: $$chapter"; \
+		./scripts/build-chapter.sh id $$chapter; \
+	done
+	@echo "All Indonesian chapters built in output/chapters/"
+
+# Build all English chapters individually
+chapters-en:
+	@echo "Building all English chapters..."
+	@for chapter in $(CHAPTERS); do \
+		echo "Building EN chapter: $$chapter"; \
+		./scripts/build-chapter.sh en $$chapter; \
+	done
+	@echo "All English chapters built in output/chapters/"
+
+# Build a single chapter: make chapter LANG=en CHAPTER=week01-introduction
+chapter:
+	@if [ -z "$(LANG)" ] || [ -z "$(CHAPTER)" ]; then \
+		echo "Usage: make chapter LANG=<id|en> CHAPTER=<chapter-name>"; \
+		exit 1; \
+	fi
+	./scripts/build-chapter.sh $(LANG) $(CHAPTER)
 
 # Kompilasi cepat (single pass)
 quick: quick-id
@@ -101,6 +145,7 @@ cleanall:
 	rm -f chapters/id/*.aux chapters/en/*.aux
 	rm -f frontmatter/id/*.aux frontmatter/en/*.aux
 	rm -f appendices/id/*.aux appendices/en/*.aux
+	rm -rf output/
 	@echo "Semua file output telah dihapus."
 
 # Buka PDF dengan viewer
@@ -199,6 +244,10 @@ help:
 	@echo "  make checkref         - Cek referensi undefined"
 	@echo "  make wordcount        - Hitung jumlah kata kedua versi"
 	@echo "  make check-deps       - Periksa dependensi"
+	@echo "  make chapters         - Build semua chapter (ID & EN) secara terpisah"
+	@echo "  make chapters-id      - Build semua chapter Indonesia secara terpisah"
+	@echo "  make chapters-en      - Build semua chapter English secara terpisah"
+	@echo "  make chapter LANG=<id|en> CHAPTER=<name> - Build satu chapter"
 	@echo "  make help             - Tampilkan bantuan ini"
 	@echo ""
 	@echo "Contoh penggunaan:"
