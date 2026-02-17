@@ -8,6 +8,8 @@ jobs:
   build-full:
     name: Build Full Book (${{ matrix.lang }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     strategy:
       matrix:
         lang: [id, en]
@@ -62,6 +64,8 @@ jobs:
   build-chapters:
     name: Build Chapter (${{ matrix.lang }}, ${{ matrix.chapter }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
