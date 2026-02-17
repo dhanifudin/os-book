@@ -1,20 +1,31 @@
 name: Create Release with PDFs
 
 on:
-  push:
-    tags:
-      - 'v*'  # Triggers on version tags like v1.0.0, v2.1.3, etc.
+  release:
+    types: [created]
 
 jobs:
-  build-and-release:
+  build-full:
+    name: Build Full Book (${{ matrix.lang }})
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
+    strategy:
+      matrix:
+        lang: [id, en]
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+
+    - name: Cache LaTeX packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          /usr/share/texmf
+          /usr/share/texlive
+          /var/lib/texmf
+        key: ${{ runner.os }}-texlive-${{ hashFiles('.github/workflows/release.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-texlive-
 
     - name: Install LaTeX dependencies
       run: |
@@ -31,39 +42,89 @@ jobs:
           texlive-xetex \
           texlive-science
 
-    - name: Build both PDFs
+    - name: Build full book
       run: |
-        make cleanall
-        make both
+        make clean
+        make ${{ matrix.lang }}
 
-    - name: Rename PDFs with version
+    - name: Rename PDF with release tag
       run: |
-        VERSION=${GITHUB_REF#refs/tags/}
-        cp main-id.pdf os-book-indonesian-${VERSION}.pdf
-        cp main-en.pdf os-book-english-${VERSION}.pdf
+        VERSION=${{ github.event.release.tag_name }}
+        cp main-${{ matrix.lang }}.pdf os-book-${{ matrix.lang }}-${VERSION}.pdf
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
+    - name: Upload full book to release
+      uses: softprops/action-gh-release@v2
       with:
-        files: |
-          os-book-indonesian-*.pdf
-          os-book-english-*.pdf
-        body: |
-          ## Operating Systems Book - Bilingual Edition
+        files: os-book-${{ matrix.lang }}-*.pdf
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          This release includes both Indonesian and English versions of the textbook.
+  build-chapters:
+    name: Build Chapter (${{ matrix.lang }}, ${{ matrix.chapter }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        lang: [id, en]
+        chapter:
+          - week01-introduction
+          - week02-hardware-and-basic-commands
+          - week03-basic-io
+          - week05-directory-structure
+          - week06-process-management
+          - week07-bash-shell
+          - week09-bash-programming
+          - week10-memory-and-syscalls
+          - week11-file-and-user-management
+          - week12-service-management
+          - week13-application-management
+          - week14-backup-and-recovery
 
-          ### Files:
-          - `os-book-indonesian-*.pdf` - Indonesian version (Sistem Operasi)
-          - `os-book-english-*.pdf` - English version (Operating Systems)
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-          ### Chapters Included:
-          - Week 1: Introduction to Operating Systems & Installation (Full content)
-          - Week 2: Hardware Management & Basic Commands (Full content)
-          - Weeks 3-14: Chapter structure ready for content
+    - name: Cache LaTeX packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          /usr/share/texmf
+          /usr/share/texlive
+          /var/lib/texmf
+        key: ${{ runner.os }}-texlive-${{ hashFiles('.github/workflows/release.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-texlive-
 
-          Built automatically from commit: ${{ github.sha }}
-        draft: false
-        prerelease: false
+    - name: Install LaTeX dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          texlive-latex-base \
+          texlive-latex-extra \
+          texlive-fonts-recommended \
+          texlive-fonts-extra \
+          texlive-lang-other \
+          texlive-bibtex-extra \
+          biber \
+          latexmk \
+          texlive-xetex \
+          texlive-science
+
+    - name: Build chapter
+      run: |
+        chmod +x scripts/build-chapter.sh
+        ./scripts/build-chapter.sh ${{ matrix.lang }} ${{ matrix.chapter }}
+
+    - name: Rename chapter PDF with release tag
+      run: |
+        VERSION=${{ github.event.release.tag_name }}
+        SRC="output/chapters/chapter-${{ matrix.lang }}-${{ matrix.chapter }}.pdf"
+        DEST="chapter-${{ matrix.lang }}-${{ matrix.chapter }}-${VERSION}.pdf"
+        cp "$SRC" "$DEST"
+
+    - name: Upload chapter to release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: chapter-${{ matrix.lang }}-${{ matrix.chapter }}-*.pdf
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
