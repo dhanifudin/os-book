@@ -352,11 +352,6 @@ Gunakan di teks dengan `\cite{key}`.
 
 If you don't want to build locally, you can download pre-built PDFs:
 
-### From GitHub Actions (Latest Build)
-1. Go to the [Actions tab](../../actions)
-2. Click on the latest successful workflow run
-3. Download artifacts from the "Artifacts" section
-
 ### From Releases (Stable Versions)
 1. Go to the [Releases page](../../releases)
 2. Download the latest release PDFs
