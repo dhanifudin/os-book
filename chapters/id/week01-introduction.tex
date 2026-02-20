@@ -648,7 +648,7 @@ Ubuntu Server dipilih karena:
 \textbf{2. Configure VM Settings}
 
 \begin{itemize}
-    \item Settings → Storage → Controller: IDE → Add optical drive
+    \item Settings $\to$ Storage $\to$ Controller: IDE $\to$ Add optical drive
     \item Select Ubuntu Server ISO
     \item Network: NAT atau Bridged (untuk akses jaringan)
 \end{itemize}
@@ -747,7 +747,7 @@ $ ip a
 Setelah instalasi berhasil, buat snapshot di VirtualBox:
 \begin{enumerate}
     \item Matikan VM
-    \item VirtualBox → VM → Snapshots → Take
+    \item VirtualBox $\to$ VM $\to$ Snapshots $\to$ Take
     \item Name: "Fresh Install"
 \end{enumerate}
 
@@ -967,7 +967,7 @@ UUID=xxx-xxx-xxx  /data  ext4  defaults  0  2
 
 Gunakan UUID daripada \texttt{/dev/sdX} di fstab karena:
 \begin{itemize}
-    \item Device names dapat berubah (sda → sdb jika menambah disk)
+    \item Device names dapat berubah (sda $\to$ sdb jika menambah disk)
     \item UUID adalah persistent identifier
     \item Lebih reliable untuk production systems
 \end{itemize}

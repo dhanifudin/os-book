@@ -8,12 +8,16 @@
 \usepackage[utf8]{inputenc}      % Input encoding UTF-8
 \usepackage[T1]{fontenc}         % Font encoding
 \usepackage{lmodern}             % Latin Modern font (lebih baik untuk PDF)
+
+%% Monospace font configuration for better readability
+\usepackage[scaled=1.05]{inconsolata}  % Better monospace font, slightly enlarged
 \usepackage{microtype}           % Typographical refinements
 
 %% ------------------------------------------------------------------------
 %% Bahasa
 %% ------------------------------------------------------------------------
 \usepackage[indonesian,english]{babel}  % Dukungan bahasa Indonesia
+\usepackage{abstract}                     % Enable abstract environment for scrbook
 
 %% Language flags - MUST be set by main-id.tex or main-en.tex before loading preamble
 %% \newif\ifIndonesian
@@ -120,6 +124,17 @@
     \renewcommand{\lstlistlistingname}{List of Listings}
 \fi
 
+%% Definisi bahasa untuk listing
+\lstdefinelanguage{bash}{
+    keywords={if, then, else, elif, fi, for, while, do, done, case, esac,
+              function, return, exit, break, continue, in, select},
+    sensitive=true,
+    morecomment=[l]{\#},
+    morestring=[b]",
+    morestring=[b]'
+}
+
+%% Basic style definition (used by both lstlisting and tcolorbox)
 \lstdefinestyle{bashstyle}{
     backgroundcolor=\color{backcolour},
     commentstyle=\color{codegreen},
@@ -131,13 +146,12 @@
     breaklines=true,
     captionpos=b,
     keepspaces=true,
-    numbers=left,
-    numbersep=5pt,
+    numbers=none,            % No line numbers
     showspaces=false,
     showstringspaces=false,
     showtabs=false,
     tabsize=4,
-    frame=single,
+    frame=single,            % Simple frame around code
     rulecolor=\color{black!30},
     xleftmargin=2em,
     framexleftmargin=1.5em
@@ -145,15 +159,19 @@
 
 \lstset{style=bashstyle}
 
-%% Definisi bahasa untuk listing
-\lstdefinelanguage{bash}{
-    keywords={if, then, else, elif, fi, for, while, do, done, case, esac,
-              function, return, exit, break, continue, in, select},
-    sensitive=true,
-    morecomment=[l]{\#},
-    morestring=[b]",
-    morestring=[b]'
+%% ------------------------------------------------------------------------
+%% Prevent Page Breaks in Listings - Simple approach
+%% ------------------------------------------------------------------------
+%% Add penalties to discourage page breaks inside listings
+\lstset{
+    aboveskip=\bigskipamount,
+    belowskip=\bigskipamount
 }
+
+%% For very long code that MUST be allowed to break, use this environment
+\lstnewenvironment{longlisting}[1][]{%
+    \lstset{#1}%
+}{}
 
 %% ------------------------------------------------------------------------
 %% Hyperlinks dan Referensi
@@ -279,6 +297,43 @@
     colframe=purple!75!black,
     title=\exerciseboxPrefix#1,
     fonttitle=\bfseries
+}
+
+%% Unbreakable code listing using tcolorbox (prevents page breaks)
+%% This is an alternative to standard lstlisting for code that must stay together
+\newtcblisting{codebox}[2][]{
+    listing only,
+    listing options={
+        language=bash,
+        style=bashstyle,
+        float=,         % Disable float for tcolorbox
+        #1
+    },
+    title={#2},
+    colback=backcolour,
+    colframe=black!30,
+    fonttitle=\bfseries\small,
+    breakable=false,    % This prevents page breaks inside the box
+    enhanced,
+    before upper={\parindent0pt}
+}
+
+%% For very long code that NEEDS to break across pages
+\newtcblisting{longcodebox}[2][]{
+    listing only,
+    listing options={
+        language=bash,
+        style=bashstyle,
+        float=,
+        #1
+    },
+    title={#2},
+    colback=backcolour,
+    colframe=black!30,
+    fonttitle=\bfseries\small,
+    breakable=true,     % Allows page breaks for very long code
+    enhanced,
+    before upper={\parindent0pt}
 }
 
 %% ------------------------------------------------------------------------

@@ -143,13 +143,63 @@ latexmk -C main-id.tex  # Also removes PDF
 \end{exercisebox}
 ```
 
-**Code listings** with syntax highlighting:
+**Code listings** - Multiple options available:
+
+**Option 1: Standard lstlisting (DEFAULT - RECOMMENDED)**
 ```latex
 \begin{lstlisting}[language=bash, caption={Description}]
 sudo apt update
 sudo apt install package
 \end{lstlisting}
 ```
+- **No line numbers** (cleaner appearance)
+- **Automatically prevents page breaks** using `samepage` environment
+- **Better readability** with Inconsolata font (scaled 1.05x)
+- Ensures minimum 10 lines space before listing starts
+- If not enough space, entire listing moves to next page
+- Use this for ALL standard code examples (short to medium length)
+
+**Option 2: longlisting environment (for very long code)**
+```latex
+\begin{longlisting}[language=bash, caption={Description}]
+#!/bin/bash
+# Very long script (50+ lines)
+# ... many lines ...
+# CAN break across pages if needed
+\end{longlisting}
+```
+- Allows page breaks for code longer than one page
+- Use ONLY when code is legitimately too long to fit on single page
+- Same syntax highlighting as standard lstlisting
+- Use sparingly (most code examples should fit on one page)
+
+**Option 3: codebox environment (alternative with colored box)**
+```latex
+\begin{codebox}[additional options]{Caption Title}
+sudo apt update
+sudo apt install package
+\end{codebox}
+```
+- Uses tcolorbox with colored frame
+- Also unbreakable (same as standard lstlisting)
+- Nice visual separation with colored borders
+- Optional: use when you want visual emphasis
+
+**Option 4: longcodebox environment (long code with colored box)**
+```latex
+\begin{longcodebox}[additional options]{Caption Title}
+#!/bin/bash
+# Very long script in colored box
+\end{longcodebox}
+```
+- Long code version of codebox
+- Allows page breaks
+- Use rarely
+
+**Recommendation**:
+- **95% of cases**: Use standard `lstlisting` (unbreakable, no line numbers)
+- **Long scripts only**: Use `longlisting` when code is 50+ lines
+- **Visual emphasis**: Use `codebox` for important code snippets you want to highlight
 
 ### Chapter Structure
 
