@@ -22,7 +22,7 @@ Pada sistem operasi Linux, informasi perangkat keras dapat terlihat melalui bebe
 \textbf{kernel} melakukan enumerasi/scan perangkat (contoh: PCI/USB/storage), menampilkan informasi melalui \textbf{sysfs} (\texttt{/sys}),
 kemudian \textbf{udev} membuat node perangkat di \textbf{/dev}. Setelah menyelesaikan bab ini, diharapkan,
 \begin{itemize}
-    \item Anda dapat \textbf{melihat dafatar perangkat} (misal: NIC, disk, USB) dengan menggunakan perintah seperti \texttt{lspci/lsusb/lsblk}.
+    \item Anda dapat \textbf{melihat daftar perangkat} (misal: NIC, disk, USB) dengan menggunakan perintah seperti \texttt{lspci/lsusb/lsblk}.
     \item Anda dapat \textbf{melihat driver/modul} yang meng-handle perangkat (misal: nama modul kernel) dari output \texttt{lspci -k} atau \texttt{lsmod}.
     \item Anda dapat \textbf{melihat jejak deteksi} pada log kernel dengan \texttt{dmesg} atau \texttt{journalctl -k}.
 \end{itemize}
