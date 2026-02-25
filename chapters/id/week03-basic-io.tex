@@ -16,7 +16,7 @@ Bab ini membahas mekanisme fundamental input/output di sistem Linux, termasuk ko
 Salah satu prinsip fundamental dalam desain Unix (dan turunannya seperti Linux) adalah konsep \textbf{``everything is a file''}. Filosofi ini berarti bahwa hampir semua sumber daya sistem---file reguler, direktori, perangkat keras, socket jaringan, pipe, bahkan proses---diperlakukan sebagai file yang dapat dibaca atau ditulis.
 
 \begin{definition}[Everything is a File]
-Paradigma desain sistem operasi di mana berbagai jenis sumber daya sistem (hardware, software, komunikasi) diakses melalui antarmuka file yang seragam, menggunakan operasi standar seperti \texttt{open()}, \texttt{read()}, \texttt{write()}, dan \texttt{close()}.
+	Paradigma desain sistem operasi di mana berbagai jenis sumber daya sistem (hardware, software, komunikasi) diakses melalui antarmuka file yang seragam, menggunakan operasi standar seperti \texttt{open()}, \texttt{read()}, \texttt{write()}, dan \texttt{close()}.
 \end{definition}
 
 \subsection{Mengapa Filosofi Ini Penting?}
@@ -24,10 +24,10 @@ Paradigma desain sistem operasi di mana berbagai jenis sumber daya sistem (hardw
 Pendekatan ``everything is a file'' memberikan beberapa keuntungan arsitektural:
 
 \begin{enumerate}
-    \item \textbf{Kesederhanaan Interface}: Programmer hanya perlu mempelajari satu set system call untuk mengakses berbagai jenis sumber daya
-    \item \textbf{Komposabilitas}: Program dapat digabungkan dengan mudah menggunakan pipe dan redirection karena semuanya menggunakan aliran byte yang sama
-    \item \textbf{Portabilitas}: Abstraksi ini menyembunyikan detail implementasi perangkat keras, membuat kode lebih portable
-    \item \textbf{Fleksibilitas}: Mudah mengganti sumber I/O (misalnya dari keyboard ke file) tanpa mengubah logika program
+	\item \textbf{Kesederhanaan Interface}: Programmer hanya perlu mempelajari satu set system call untuk mengakses berbagai jenis sumber daya
+	\item \textbf{Komposabilitas}: Program dapat digabungkan dengan mudah menggunakan pipe dan redirection karena semuanya menggunakan aliran byte yang sama
+	\item \textbf{Portabilitas}: Abstraksi ini menyembunyikan detail implementasi perangkat keras, membuat kode lebih portable
+	\item \textbf{Fleksibilitas}: Mudah mengganti sumber I/O (misalnya dari keyboard ke file) tanpa mengubah logika program
 \end{enumerate}
 
 \subsection{Kapan Filosofi Ini Diterapkan?}
@@ -35,14 +35,14 @@ Pendekatan ``everything is a file'' memberikan beberapa keuntungan arsitektural:
 Filosofi ini tercermin dalam berbagai aspek Linux:
 
 \begin{itemize}
-    \item \textbf{Perangkat Hardware}: \file{/dev/sda} (hard disk), \file{/dev/tty} (terminal), \file{/dev/null} (null device)
-    \item \textbf{Informasi Proses}: \dir{/proc/[PID]} berisi informasi proses yang dapat dibaca seperti file
-    \item \textbf{Informasi Sistem}: \dir{/sys} berisi informasi kernel dan perangkat
-    \item \textbf{Inter-Process Communication}: Named pipes (FIFO) dan Unix domain sockets
+	\item \textbf{Perangkat Hardware}: \file{/dev/sda} (hard disk), \file{/dev/tty} (terminal), \file{/dev/null} (null device)
+	\item \textbf{Informasi Proses}: \dir{/proc/[PID]} berisi informasi proses yang dapat dibaca seperti file
+	\item \textbf{Informasi Sistem}: \dir{/sys} berisi informasi kernel dan perangkat
+	\item \textbf{Inter-Process Communication}: Named pipes (FIFO) dan Unix domain sockets
 \end{itemize}
 
 \begin{examplebox}[Membaca Informasi CPU]
-\begin{lstlisting}[language=bash]
+	\begin{lstlisting}[language=bash]
 # Informasi CPU dapat dibaca seperti file biasa
 cat /proc/cpuinfo
 
@@ -66,14 +66,14 @@ Di Linux, setiap proses memiliki akses ke file dan stream melalui mekanisme yang
 File descriptor adalah implementasi konkret dari filosofi ``everything is a file''. Kernel menggunakan file descriptor untuk:
 
 \begin{enumerate}
-    \item \textbf{Abstraksi}: Menyembunyikan detail implementasi perangkat keras dan sistem file dari program
-    \item \textbf{Keamanan}: Kernel mengontrol akses melalui file descriptor, memastikan proses hanya mengakses file yang diizinkan
-    \item \textbf{Efisiensi}: File descriptor adalah integer sederhana yang murah untuk di-copy dan di-pass antar fungsi
-    \item \textbf{Multiplexing}: Memungkinkan satu proses mengakses banyak file sekaligus dengan FD yang berbeda
+	\item \textbf{Abstraksi}: Menyembunyikan detail implementasi perangkat keras dan sistem file dari program
+	\item \textbf{Keamanan}: Kernel mengontrol akses melalui file descriptor, memastikan proses hanya mengakses file yang diizinkan
+	\item \textbf{Efisiensi}: File descriptor adalah integer sederhana yang murah untuk di-copy dan di-pass antar fungsi
+	\item \textbf{Multiplexing}: Memungkinkan satu proses mengakses banyak file sekaligus dengan FD yang berbeda
 \end{enumerate}
 
 \begin{notebox}
-File descriptor adalah abstraksi yang memungkinkan program berinteraksi dengan berbagai jenis I/O menggunakan interface yang seragam, tanpa perlu tahu apakah I/O tersebut berasal dari file, keyboard, jaringan, atau perangkat lain.
+	File descriptor adalah abstraksi yang memungkinkan program berinteraksi dengan berbagai jenis I/O menggunakan interface yang seragam, tanpa perlu tahu apakah I/O tersebut berasal dari file, keyboard, jaringan, atau perangkat lain.
 \end{notebox}
 
 \subsection{Bagaimana File Descriptor Bekerja?}
@@ -81,14 +81,14 @@ File descriptor adalah abstraksi yang memungkinkan program berinteraksi dengan b
 Secara internal, kernel memelihara tabel file descriptor untuk setiap proses:
 
 \begin{enumerate}
-    \item Ketika proses membuka file dengan \texttt{open()}, kernel mengalokasikan FD berikutnya yang tersedia
-    \item Kernel membuat entri di \textbf{file descriptor table} yang menunjuk ke \textbf{open file table}
-    \item Open file table berisi informasi seperti file offset, mode akses, dan pointer ke inode
-    \item Program menggunakan FD (integer) untuk operasi selanjutnya, kernel menerjemahkannya ke file yang sesuai
+	\item Ketika proses membuka file dengan \texttt{open()}, kernel mengalokasikan FD berikutnya yang tersedia
+	\item Kernel membuat entri di \textbf{file descriptor table} yang menunjuk ke \textbf{open file table}
+	\item Open file table berisi informasi seperti file offset, mode akses, dan pointer ke inode
+	\item Program menggunakan FD (integer) untuk operasi selanjutnya, kernel menerjemahkannya ke file yang sesuai
 \end{enumerate}
 
 \begin{tipbox}
-File descriptor dialokasikan dari angka terkecil yang tersedia. Setelah 0, 1, 2 (stdin, stdout, stderr), FD berikutnya yang dibuka biasanya adalah 3, kemudian 4, dan seterusnya.
+	File descriptor dialokasikan dari angka terkecil yang tersedia. Setelah 0, 1, 2 (stdin, stdout, stderr), FD berikutnya yang dibuka biasanya adalah 3, kemudian 4, dan seterusnya.
 \end{tipbox}
 
 \subsection{File Descriptor Standar}
@@ -98,18 +98,18 @@ Setiap proses di Linux secara otomatis mendapat tiga file descriptor standar saa
 Tabel berikut menjelaskan ketiga file descriptor standar yang tersedia:
 
 \begin{table}[htbp]
-    \centering
-    \caption{File Descriptor Standar di Linux}
-    \label{tab:standard-fd}
-    \begin{tabular}{@{}clll@{}}
-        \toprule
-        \textbf{FD} & \textbf{Nama} & \textbf{Simbol} & \textbf{Fungsi} \\
-        \midrule
-        0 & Standard Input  & \texttt{stdin}  & Input dari keyboard/terminal \\
-        1 & Standard Output & \texttt{stdout} & Output normal program \\
-        2 & Standard Error  & \texttt{stderr} & Pesan error dan diagnostik \\
-        \bottomrule
-    \end{tabular}
+	\centering
+	\caption{File Descriptor Standar di Linux}
+	\label{tab:standard-fd}
+	\begin{tabular}{@{}clll@{}}
+		\toprule
+		\textbf{FD} & \textbf{Nama}   & \textbf{Simbol} & \textbf{Fungsi}              \\
+		\midrule
+		0           & Standard Input  & \texttt{stdin}  & Input dari keyboard/terminal \\
+		1           & Standard Output & \texttt{stdout} & Output normal program        \\
+		2           & Standard Error  & \texttt{stderr} & Pesan error dan diagnostik   \\
+		\bottomrule
+	\end{tabular}
 \end{table}
 
 Sebagai contoh, ketika Anda menjalankan perintah seperti \texttt{ls} di terminal, perintah tersebut membaca input dari \texttt{stdin} (FD 0, keyboard Anda), menampilkan hasil ke \texttt{stdout} (FD 1, layar terminal), dan jika ada error akan ditampilkan ke \texttt{stderr} (FD 2, juga ke layar terminal, tapi bisa dialihkan terpisah).
@@ -132,14 +132,14 @@ ls -l /proc/$$/fd
 
 Penjelasan output di atas:
 \begin{itemize}
-    \item Simbol \texttt{->} menunjukkan kemana file descriptor tersebut mengarah
-    \item \file{/dev/pts/0} adalah pseudo-terminal (terminal virtual Anda saat ini)
-    \item Ketiga file descriptor (0, 1, 2) mengarah ke tempat yang sama, yaitu terminal Anda
-    \item Ini berarti input diambil dari keyboard terminal, dan output ditampilkan ke layar terminal yang sama
+	\item Simbol \texttt{->} menunjukkan kemana file descriptor tersebut mengarah
+	\item \file{/dev/pts/0} adalah pseudo-terminal (terminal virtual Anda saat ini)
+	\item Ketiga file descriptor (0, 1, 2) mengarah ke tempat yang sama, yaitu terminal Anda
+	\item Ini berarti input diambil dari keyboard terminal, dan output ditampilkan ke layar terminal yang sama
 \end{itemize}
 
 \begin{tipbox}
-Variabel \texttt{\$\$} dalam bash adalah variabel spesial yang menyimpan PID (Process ID) dari shell saat ini. Jadi \texttt{\$\$} akan otomatis diganti dengan angka PID shell Anda.
+	Variabel \texttt{\$\$} dalam bash adalah variabel spesial yang menyimpan PID (Process ID) dari shell saat ini. Jadi \texttt{\$\$} akan otomatis diganti dengan angka PID shell Anda.
 \end{tipbox}
 
 %% ------------------------------------------------------------------------
@@ -152,20 +152,20 @@ Pengalihan I/O (I/O redirection) adalah teknik untuk mengubah sumber input atau 
 
 Pengalihan I/O memungkinkan Anda untuk:
 \begin{itemize}
-    \item Mengubah dari mana program membaca inputnya (selain dari keyboard)
-    \item Mengubah ke mana program menulis outputnya (selain ke layar)
-    \item Memisahkan output normal dari pesan error
-    \item Menghubungkan beberapa program untuk memproses data
+	\item Mengubah dari mana program membaca inputnya (selain dari keyboard)
+	\item Mengubah ke mana program menulis outputnya (selain ke layar)
+	\item Memisahkan output normal dari pesan error
+	\item Menghubungkan beberapa program untuk memproses data
 \end{itemize}
 
 \subsection{Mengapa Pengalihan I/O Penting?}
 
 Tanpa pengalihan I/O, setiap program harus mengimplementasikan kode file handling sendiri. Dengan redirection:
 \begin{enumerate}
-    \item \textbf{Otomasi}: Script dapat memproses file tanpa interaksi user
-    \item \textbf{Logging}: Menyimpan output program untuk analisis kemudian
-    \item \textbf{Pemrosesan Data}: Menghubungkan program sederhana menjadi workflow kompleks
-    \item \textbf{Operasi Batch}: Memproses banyak file menggunakan perintah yang sama
+	\item \textbf{Otomasi}: Script dapat memproses file tanpa interaksi user
+	\item \textbf{Logging}: Menyimpan output program untuk analisis kemudian
+	\item \textbf{Pemrosesan Data}: Menghubungkan program sederhana menjadi workflow kompleks
+	\item \textbf{Operasi Batch}: Memproses banyak file menggunakan perintah yang sama
 \end{enumerate}
 
 Misalnya, daripada mengetik data secara manual ke perintah \cmd{sort}, Anda bisa mengalihkannya untuk membaca dari file yang berisi ribuan baris. Daripada menonton output scroll, Anda bisa menyimpannya ke file dan menganalisisnya nanti.
@@ -178,20 +178,20 @@ Standard input (stdin) adalah sumber data untuk program. Secara default, stdin d
 
 Pengalihan stdin mengubah sumber data input dari interaktif (keyboard) ke otomatis (file atau program lain). Ini fundamental untuk:
 \begin{itemize}
-    \item Memproses dataset besar
-    \item Mengotomasi tugas berulang
-    \item Batch processing file
-    \item Testing program dengan input yang sudah diketahui
+	\item Memproses dataset besar
+	\item Mengotomasi tugas berulang
+	\item Batch processing file
+	\item Testing program dengan input yang sudah diketahui
 \end{itemize}
 
 \subsubsection{Kapan Menggunakan Pengalihan stdin?}
 
 Gunakan pengalihan stdin ketika:
 \begin{itemize}
-    \item Anda memiliki data input yang sudah ada dalam file
-    \item Input terlalu besar untuk diketik manual
-    \item Anda perlu menjalankan input yang sama melalui program berbeda
-    \item Anda mengotomasi tugas yang biasanya memerlukan input user
+	\item Anda memiliki data input yang sudah ada dalam file
+	\item Input terlalu besar untuk diketik manual
+	\item Anda perlu menjalankan input yang sama melalui program berbeda
+	\item Anda mengotomasi tugas yang biasanya memerlukan input user
 \end{itemize}
 
 \subsubsection{Cara Mengalihkan stdin dari File}
@@ -210,8 +210,8 @@ wc -l < /etc/passwd
 
 Penjelasan contoh di atas:
 \begin{itemize}
-    \item Baris pertama: perintah \cmd{sort} akan membaca isi \file{file.txt} (bukan menunggu Anda mengetik), lalu mengurutkannya dan menampilkan hasilnya
-    \item Baris kedua: perintah \cmd{wc -l} akan menghitung jumlah baris dari file \file{/etc/passwd}. Operator \texttt{-l} artinya "line count" (hitung baris)
+	\item Baris pertama: perintah \cmd{sort} akan membaca isi \file{file.txt} (bukan menunggu Anda mengetik), lalu mengurutkannya dan menampilkan hasilnya
+	\item Baris kedua: perintah \cmd{wc -l} akan menghitung jumlah baris dari file \file{/etc/passwd}. Operator \texttt{-l} artinya "line count" (hitung baris)
 \end{itemize}
 
 \subsubsection{Here Document (<<)}
@@ -222,10 +222,10 @@ Here document (sering disingkat "heredoc") adalah fitur yang memungkinkan kita m
 
 Sebelum ada here document, jika Anda perlu memberikan input multi-baris ke program, Anda harus:
 \begin{enumerate}
-    \item Membuat file temporary
-    \item Menulis konten ke file
-    \item Redirect file sebagai input
-    \item Menghapus file temporary
+	\item Membuat file temporary
+	\item Menulis konten ke file
+	\item Redirect file sebagai input
+	\item Menghapus file temporary
 \end{enumerate}
 
 Here document menghilangkan kompleksitas ini dengan memungkinkan inline multi-line input.
@@ -234,21 +234,21 @@ Here document menghilangkan kompleksitas ini dengan memungkinkan inline multi-li
 
 Gunakan here document ketika:
 \begin{itemize}
-    \item Membuat file konfigurasi dalam script
-    \item Membuat pesan email atau dokumen multi-baris
-    \item Memberikan SQL query atau perintah multi-baris lainnya
-    \item Menyematkan dokumentasi atau help text dalam script
-    \item Testing program dengan input multi-baris tertentu
+	\item Membuat file konfigurasi dalam script
+	\item Membuat pesan email atau dokumen multi-baris
+	\item Memberikan SQL query atau perintah multi-baris lainnya
+	\item Menyematkan dokumentasi atau help text dalam script
+	\item Testing program dengan input multi-baris tertentu
 \end{itemize}
 
 \paragraph{Mengapa Menggunakan Here Document Daripada echo?}
 
 Meskipun Anda bisa menggunakan multiple perintah \cmd{echo}, here document lebih baik karena:
 \begin{itemize}
-    \item Lebih mudah dibaca---konten terlihat seperti teks asli, bukan kode
-    \item Mempertahankan formatting (line breaks, indentasi)
-    \item Tidak perlu escape karakter spesial di setiap baris
-    \item Satu blok teks lebih mudah dimaintain
+	\item Lebih mudah dibaca---konten terlihat seperti teks asli, bukan kode
+	\item Mempertahankan formatting (line breaks, indentasi)
+	\item Tidak perlu escape karakter spesial di setiap baris
+	\item Satu blok teks lebih mudah dimaintain
 \end{itemize}
 
 \paragraph{Cara Kerja Here Document}
@@ -276,9 +276,9 @@ EOF
 
 Penjelasan contoh di atas:
 \begin{itemize}
-    \item Contoh pertama: semua teks antara \texttt{<< EOF} dan \texttt{EOF} akan menjadi input untuk perintah \cmd{cat}, yang kemudian ditampilkan ke layar
-    \item Contoh kedua: menggunakan tanda kutip pada delimiter \texttt{'EOF'} untuk mencegah ekspansi variabel. Output disimpan ke file \file{config.txt} menggunakan operator \texttt{>}
-    \item Delimiter bisa menggunakan kata apapun (EOF, END, STOP, dll), yang penting kata pembuka dan penutup harus sama
+	\item Contoh pertama: semua teks antara \texttt{<< EOF} dan \texttt{EOF} akan menjadi input untuk perintah \cmd{cat}, yang kemudian ditampilkan ke layar
+	\item Contoh kedua: menggunakan tanda kutip pada delimiter \texttt{'EOF'} untuk mencegah ekspansi variabel. Output disimpan ke file \file{config.txt} menggunakan operator \texttt{>}
+	\item Delimiter bisa menggunakan kata apapun (EOF, END, STOP, dll), yang penting kata pembuka dan penutup harus sama
 \end{itemize}
 
 \subsection{Standard Output (stdout)}
@@ -289,22 +289,22 @@ Standard output (stdout) adalah tujuan output normal dari program. Ketika progra
 
 Pengalihan stdout menangkap output program dan menyimpannya ke file alih-alih menampilkannya di layar. Ini essential untuk:
 \begin{itemize}
-    \item Membuat catatan permanen dari output command
-    \item Membuat laporan dan log
-    \item Menyimpan data untuk pemrosesan selanjutnya
-    \item Mengotomasi tugas tanpa mengotori layar
+	\item Membuat catatan permanen dari output command
+	\item Membuat laporan dan log
+	\item Menyimpan data untuk pemrosesan selanjutnya
+	\item Mengotomasi tugas tanpa mengotori layar
 \end{itemize}
 
 \subsubsection{Kapan Mengalihkan stdout?}
 
 Anda harus mengalihkan stdout ketika:
 \begin{itemize}
-    \item Perlu menyimpan output command untuk dokumentasi
-    \item Membuat log aktivitas sistem
-    \item Menghasilkan data file untuk pemrosesan lebih lanjut
-    \item Menjalankan command di background/cron jobs (tidak ada yang melihat layar)
-    \item Output terlalu besar untuk dibaca di layar
-    \item Ingin membandingkan output dari berbagai run
+	\item Perlu menyimpan output command untuk dokumentasi
+	\item Membuat log aktivitas sistem
+	\item Menghasilkan data file untuk pemrosesan lebih lanjut
+	\item Menjalankan command di background/cron jobs (tidak ada yang melihat layar)
+	\item Output terlalu besar untuk dibaca di layar
+	\item Ingin membandingkan output dari berbagai run
 \end{itemize}
 
 \subsubsection{Operator > (Overwrite)}
@@ -315,10 +315,10 @@ Operator \texttt{>} (tanda lebih besar) digunakan untuk mengalihkan stdout ke fi
 
 Gunakan operator overwrite ketika:
 \begin{itemize}
-    \item Anda ingin output fresh setiap kali (data lama tidak diperlukan)
-    \item Membuat laporan yang harus mengganti versi lama
-    \item Membuat output file dalam kondisi bersih
-    \item Data lama menjadi usang setelah setiap run
+	\item Anda ingin output fresh setiap kali (data lama tidak diperlukan)
+	\item Membuat laporan yang harus mengganti versi lama
+	\item Membuat output file dalam kondisi bersih
+	\item Data lama menjadi usang setelah setiap run
 \end{itemize}
 
 \paragraph{Contoh}
@@ -338,13 +338,13 @@ uname -a > system-info.txt
 
 Penjelasan contoh di atas:
 \begin{itemize}
-    \item Baris pertama: output dari \cmd{ls -la} (daftar file lengkap) disimpan ke file \file{daftar-file.txt}
-    \item Baris kedua: membuat file kosong bernama \file{empty-file.txt}. Operator \texttt{>} tanpa command akan membuat file kosong
-    \item Baris ketiga: informasi sistem dari \cmd{uname -a} disimpan ke \file{system-info.txt}
+	\item Baris pertama: output dari \cmd{ls -la} (daftar file lengkap) disimpan ke file \file{daftar-file.txt}
+	\item Baris kedua: membuat file kosong bernama \file{empty-file.txt}. Operator \texttt{>} tanpa command akan membuat file kosong
+	\item Baris ketiga: informasi sistem dari \cmd{uname -a} disimpan ke \file{system-info.txt}
 \end{itemize}
 
 \begin{warningbox}
-Operator \texttt{>} akan menghapus isi file yang sudah ada! Jika file \file{daftar-file.txt} sudah berisi data, data lama akan hilang dan diganti dengan data baru. Gunakan dengan hati-hati.
+	Operator \texttt{>} akan menghapus isi file yang sudah ada! Jika file \file{daftar-file.txt} sudah berisi data, data lama akan hilang dan diganti dengan data baru. Gunakan dengan hati-hati.
 \end{warningbox}
 
 \subsubsection{Operator >> (Append)}
@@ -355,31 +355,31 @@ Operator \texttt{>>} (dua tanda lebih besar) digunakan untuk mengalihkan stdout 
 
 Mode append mempertahankan konten file yang sudah ada dan menambahkan data baru di akhir. Ini berbeda fundamental dari mode overwrite karena:
 \begin{itemize}
-    \item Data lama tetap utuh
-    \item Data baru ditambahkan secara berurutan
-    \item File bertambah besar seiring waktu
-    \item Sempurna untuk mengakumulasi informasi
+	\item Data lama tetap utuh
+	\item Data baru ditambahkan secara berurutan
+	\item File bertambah besar seiring waktu
+	\item Sempurna untuk mengakumulasi informasi
 \end{itemize}
 
 \paragraph{Kapan Menggunakan Append (>>)?}
 
 Gunakan operator append ketika:
 \begin{itemize}
-    \item Membuat atau mengupdate file log (perlu menyimpan history)
-    \item Mengakumulasi hasil dari beberapa run script
-    \item Membangun laporan secara incremental
-    \item Merekam event secara kronologis
-    \item Menambah data ke file yang sudah ada tanpa kehilangan data lama
+	\item Membuat atau mengupdate file log (perlu menyimpan history)
+	\item Mengakumulasi hasil dari beberapa run script
+	\item Membangun laporan secara incremental
+	\item Merekam event secara kronologis
+	\item Menambah data ke file yang sudah ada tanpa kehilangan data lama
 \end{itemize}
 
 \paragraph{Mengapa Append Penting untuk Log?}
 
 File log memerlukan mode append karena:
 \begin{enumerate}
-    \item \textbf{Catatan Historis}: Anda perlu melihat apa yang terjadi dari waktu ke waktu, tidak hanya event terakhir
-    \item \textbf{Troubleshooting}: Masalah mungkin disebabkan oleh event berjam-jam atau berhari-hari lalu
-    \item \textbf{Audit Trail}: Compliance dan keamanan memerlukan history lengkap
-    \item \textbf{Analisis Pattern}: Anda bisa menganalisis trend dan pattern di berbagai run
+	\item \textbf{Catatan Historis}: Anda perlu melihat apa yang terjadi dari waktu ke waktu, tidak hanya event terakhir
+	\item \textbf{Troubleshooting}: Masalah mungkin disebabkan oleh event berjam-jam atau berhari-hari lalu
+	\item \textbf{Audit Trail}: Compliance dan keamanan memerlukan history lengkap
+	\item \textbf{Analisis Pattern}: Anda bisa menganalisis trend dan pattern di berbagai run
 \end{enumerate}
 
 \paragraph{Contoh}
@@ -397,9 +397,9 @@ echo "$(date): System started" >> /var/log/myapp.log
 
 Penjelasan contoh di atas:
 \begin{itemize}
-    \item Baris pertama: tanggal dan waktu saat ini ditambahkan ke akhir file \file{log.txt}
-    \item Baris kedua: teks "Proses selesai" ditambahkan ke baris baru di \file{log.txt}, tanpa menghapus tanggal yang sudah ada
-    \item Baris ketiga: membuat log entry dengan timestamp yang ditambahkan ke file log aplikasi
+	\item Baris pertama: tanggal dan waktu saat ini ditambahkan ke akhir file \file{log.txt}
+	\item Baris kedua: teks "Proses selesai" ditambahkan ke baris baru di \file{log.txt}, tanpa menghapus tanggal yang sudah ada
+	\item Baris ketiga: membuat log entry dengan timestamp yang ditambahkan ke file log aplikasi
 \end{itemize}
 
 \subsection{Standard Error (stderr)}
@@ -411,41 +411,41 @@ Standard error (stderr) adalah channel terpisah yang khusus digunakan untuk pesa
 Desainer Unix menciptakan channel terpisah untuk error karena alasan yang sangat bagus:
 
 \begin{enumerate}
-    \item \textbf{Separation of Concerns}: Output normal (data) dan error (diagnostik) melayani tujuan berbeda
-    \item \textbf{Integritas Pipeline}: Error tidak merusak data yang mengalir melalui pipe
-    \item \textbf{Penanganan Error Fleksibel}: Anda bisa menangani error berbeda dari data
-    \item \textbf{User Experience}: User bisa melihat error bahkan ketika output dialihkan
+	\item \textbf{Separation of Concerns}: Output normal (data) dan error (diagnostik) melayani tujuan berbeda
+	\item \textbf{Integritas Pipeline}: Error tidak merusak data yang mengalir melalui pipe
+	\item \textbf{Penanganan Error Fleksibel}: Anda bisa menangani error berbeda dari data
+	\item \textbf{User Experience}: User bisa melihat error bahkan ketika output dialihkan
 \end{enumerate}
 
 \paragraph{Masalah Tanpa stderr}
 
 Bayangkan jika error dan output normal ke channel yang sama:
 \begin{itemize}
-    \item Error akan tercampur ke dalam file data Anda
-    \item Anda tidak bisa menyimpan data ke file sambil tetap melihat error di layar
-    \item Pipeline akan rusak karena error diperlakukan sebagai data
-    \item Script otomatis tidak bisa membedakan antara sukses dan gagal
+	\item Error akan tercampur ke dalam file data Anda
+	\item Anda tidak bisa menyimpan data ke file sambil tetap melihat error di layar
+	\item Pipeline akan rusak karena error diperlakukan sebagai data
+	\item Script otomatis tidak bisa membedakan antara sukses dan gagal
 \end{itemize}
 
 \paragraph{Kapan Menggunakan Pengalihan stderr?}
 
 Alihkan stderr secara terpisah ketika:
 \begin{itemize}
-    \item Ingin menyimpan error ke file log terpisah untuk debugging
-    \item Perlu membuang error yang diketahui/expected tanpa kehilangan output
-    \item Ingin melihat error di layar sambil menyimpan output ke file
-    \item Perlu penanganan berbeda untuk error vs. output normal
-    \item Membuat alert atau notifikasi berdasarkan error
+	\item Ingin menyimpan error ke file log terpisah untuk debugging
+	\item Perlu membuang error yang diketahui/expected tanpa kehilangan output
+	\item Ingin melihat error di layar sambil menyimpan output ke file
+	\item Perlu penanganan berbeda untuk error vs. output normal
+	\item Membuat alert atau notifikasi berdasarkan error
 \end{itemize}
 
 \paragraph{Mengapa Memisahkan Error dan Output?}
 
 Manfaat penanganan error terpisah:
 \begin{enumerate}
-    \item \textbf{Debugging Lebih Mudah}: Error ada di file sendiri, mudah ditemukan
-    \item \textbf{Data Bersih}: File output hanya berisi data, tanpa pesan error
-    \item \textbf{Automation-Friendly}: Script bisa mendeteksi dan menangani error secara programmatic
-    \item \textbf{Monitoring}: Anda bisa memonitor error log terpisah dari data
+	\item \textbf{Debugging Lebih Mudah}: Error ada di file sendiri, mudah ditemukan
+	\item \textbf{Data Bersih}: File output hanya berisi data, tanpa pesan error
+	\item \textbf{Automation-Friendly}: Script bisa mendeteksi dan menangani error secara programmatic
+	\item \textbf{Monitoring}: Anda bisa memonitor error log terpisah dari data
 \end{enumerate}
 
 \subsubsection{Cara Mengalihkan stderr}
@@ -469,9 +469,9 @@ command 2>> error-log.txt
 
 Penjelasan contoh di atas:
 \begin{itemize}
-    \item Baris pertama: perintah \cmd{find} mencari di seluruh sistem (\dir{/}). Akan ada banyak error "Permission denied" untuk folder yang tidak bisa diakses. Error-error ini disimpan ke \file{errors.txt}, sedangkan hasil pencarian yang berhasil tetap ditampilkan ke layar
-    \item Baris kedua: error dari \cmd{grep} (misalnya "file not found") dibuang ke \file{/dev/null} (tempat sampah sistem). Berguna jika kita tahu error tidak penting
-    \item Baris ketiga: error ditambahkan (append) ke file log, mirip dengan \texttt{>>} untuk stdout
+	\item Baris pertama: perintah \cmd{find} mencari di seluruh sistem (\dir{/}). Akan ada banyak error "Permission denied" untuk folder yang tidak bisa diakses. Error-error ini disimpan ke \file{errors.txt}, sedangkan hasil pencarian yang berhasil tetap ditampilkan ke layar
+	\item Baris kedua: error dari \cmd{grep} (misalnya "file not found") dibuang ke \file{/dev/null} (tempat sampah sistem). Berguna jika kita tahu error tidak penting
+	\item Baris ketiga: error ditambahkan (append) ke file log, mirip dengan \texttt{>>} untuk stdout
 \end{itemize}
 
 \subsubsection{Mengalihkan stdout dan stderr}
@@ -479,10 +479,10 @@ Penjelasan contoh di atas:
 Dalam praktik nyata, seringkali kita perlu mengalihkan stdout dan stderr secara bersamaan. Situasi ini sangat umum terjadi ketika:
 
 \begin{itemize}
-    \item Menjalankan script otomatis (cron jobs) yang perlu mencatat semua output
-    \item Melakukan instalasi software yang menghasilkan banyak output dan mungkin error
-    \item Debugging program yang kompleks dengan banyak pesan
-    \item Membuat laporan lengkap dari eksekusi program
+	\item Menjalankan script otomatis (cron jobs) yang perlu mencatat semua output
+	\item Melakukan instalasi software yang menghasilkan banyak output dan mungkin error
+	\item Debugging program yang kompleks dengan banyak pesan
+	\item Membuat laporan lengkap dari eksekusi program
 \end{itemize}
 
 Mengapa kita perlu mengalihkan keduanya? Bayangkan Anda menjalankan script backup yang berjalan di malam hari. Jika ada error, Anda ingin tahu apa errornya (dari stderr). Tapi Anda juga ingin tahu file mana saja yang berhasil di-backup (dari stdout). Dengan mengalihkan keduanya ke file, Anda bisa melihat complete picture dari apa yang terjadi.
@@ -519,17 +519,17 @@ gcc program.c -o program > compile-output.txt 2> compile-errors.txt
 
 \textbf{Kapan menggunakan Metode 1?}
 \begin{itemize}
-    \item Ketika debugging: Anda bisa langsung membuka file error tanpa harus mencari di antara output normal
-    \item Ketika error perlu diproses terpisah (misalnya dikirim email ke admin)
-    \item Ketika output normal sangat banyak dan error jarang, sehingga error mudah terlewat jika dicampur
+	\item Ketika debugging: Anda bisa langsung membuka file error tanpa harus mencari di antara output normal
+	\item Ketika error perlu diproses terpisah (misalnya dikirim email ke admin)
+	\item Ketika output normal sangat banyak dan error jarang, sehingga error mudah terlewat jika dicampur
 \end{itemize}
 
 \textbf{Cara kerjanya:}
 \begin{enumerate}
-    \item \texttt{>} mengalihkan stdout (FD 1) ke \file{output.txt}
-    \item \texttt{2>} mengalihkan stderr (FD 2) ke \file{error.txt}
-    \item Kedua operator bekerja independen
-    \item Jika tidak ada error, file \file{error.txt} akan kosong
+	\item \texttt{>} mengalihkan stdout (FD 1) ke \file{output.txt}
+	\item \texttt{2>} mengalihkan stderr (FD 2) ke \file{error.txt}
+	\item Kedua operator bekerja independen
+	\item Jika tidak ada error, file \file{error.txt} akan kosong
 \end{enumerate}
 
 \paragraph{Metode 2: File yang Sama (Metode Klasik)}
@@ -546,17 +546,17 @@ rsync -av /home /backup > backup.log 2>&1
 
 \textbf{Kapan menggunakan Metode 2?}
 \begin{itemize}
-    \item Ketika ingin satu file log lengkap yang mencakup semua
-    \item Ketika urutan kronologis output dan error penting (mereka muncul sesuai urutan waktu)
-    \item Untuk kompatibilitas dengan versi Bash lama (bekerja di semua versi)
+	\item Ketika ingin satu file log lengkap yang mencakup semua
+	\item Ketika urutan kronologis output dan error penting (mereka muncul sesuai urutan waktu)
+	\item Untuk kompatibilitas dengan versi Bash lama (bekerja di semua versi)
 \end{itemize}
 
 \textbf{Cara kerjanya (PENTING - urutan matters!):}
 \begin{enumerate}
-    \item \texttt{> all-output.txt}: Alihkan stdout ke file
-    \item \texttt{2>\&1}: Alihkan stderr ke "tempat yang sama dengan stdout" (yang sudah mengarah ke file)
-    \item Karakter \texttt{\&} penting! Tanpa \texttt{\&}, shell akan mengira "1" adalah nama file
-    \item \textbf{Urutan harus benar}: \texttt{> file} dulu, baru \texttt{2>\&1}
+	\item \texttt{> all-output.txt}: Alihkan stdout ke file
+	\item \texttt{2>\&1}: Alihkan stderr ke "tempat yang sama dengan stdout" (yang sudah mengarah ke file)
+	\item Karakter \texttt{\&} penting! Tanpa \texttt{\&}, shell akan mengira "1" adalah nama file
+	\item \textbf{Urutan harus benar}: \texttt{> file} dulu, baru \texttt{2>\&1}
 \end{enumerate}
 
 \paragraph{Metode 3: Syntax Modern dengan \&>}
@@ -573,16 +573,16 @@ docker build -t myapp . &> build.log
 
 \textbf{Kapan menggunakan Metode 3?}
 \begin{itemize}
-    \item Ketika Anda yakin menggunakan Bash versi 4+ (check dengan: \texttt{bash --version})
-    \item Ketika ingin syntax yang lebih mudah dibaca dan ditulis
-    \item Untuk script baru yang tidak perlu kompatibilitas dengan shell lama
+	\item Ketika Anda yakin menggunakan Bash versi 4+ (check dengan: \texttt{bash --version})
+	\item Ketika ingin syntax yang lebih mudah dibaca dan ditulis
+	\item Untuk script baru yang tidak perlu kompatibilitas dengan shell lama
 \end{itemize}
 
 \textbf{Cara kerjanya:}
 \begin{itemize}
-    \item \texttt{\&>} adalah operator khusus yang langsung mengalihkan keduanya
-    \item Equivalent dengan \texttt{> file 2>\&1}, tapi lebih ringkas
-    \item Tidak bisa dipakai untuk append (tidak ada \texttt{\&>>})
+	\item \texttt{\&>} adalah operator khusus yang langsung mengalihkan keduanya
+	\item Equivalent dengan \texttt{> file 2>\&1}, tapi lebih ringkas
+	\item Tidak bisa dipakai untuk append (tidak ada \texttt{\&>>})
 \end{itemize}
 
 \paragraph{Metode 4: Append Keduanya}
@@ -598,26 +598,26 @@ Ketika Anda ingin menambahkan ke file yang sudah ada (tidak menghapus isi lama):
 \end{lstlisting}
 
 \begin{warningbox}
-\textbf{Kesalahan Umum:} Menulis \texttt{2>\&1 > file} (urutan terbalik)
+	\textbf{Kesalahan Umum:} Menulis \texttt{2>\&1 > file} (urutan terbalik)
 
-Ini TIDAK akan bekerja dengan benar! Stderr akan tetap ke terminal, bukan ke file. Mengapa? Karena saat \texttt{2>\&1} dieksekusi, stdout masih mengarah ke terminal. Baru setelah itu stdout dialihkan ke file, tapi stderr sudah "terlanjur" dikunci ke terminal.
+	Ini TIDAK akan bekerja dengan benar! Stderr akan tetap ke terminal, bukan ke file. Mengapa? Karena saat \texttt{2>\&1} dieksekusi, stdout masih mengarah ke terminal. Baru setelah itu stdout dialihkan ke file, tapi stderr sudah "terlanjur" dikunci ke terminal.
 
-\textbf{Urutan yang benar}: \texttt{> file 2>\&1}
+	\textbf{Urutan yang benar}: \texttt{> file 2>\&1}
 
 \end{warningbox}
 \textbf{Kapan menggunakan Metode 4?}
 \begin{itemize}
-    \item Script yang dijalankan berulang kali (cron jobs)
-    \item Log file yang perlu menyimpan history
-    \item Debugging bertahap (menjalankan program berkali-kali sambil accumulate output)
+	\item Script yang dijalankan berulang kali (cron jobs)
+	\item Log file yang perlu menyimpan history
+	\item Debugging bertahap (menjalankan program berkali-kali sambil accumulate output)
 \end{itemize}
 
 \textbf{Cara kerjanya:}
 \begin{itemize}
-    \item Sama seperti Metode 2, tapi menggunakan \texttt{>>} untuk append
-    \item \texttt{>> file}: Append stdout ke file (tidak menghapus isi lama)
-    \item \texttt{2>\&1}: Stderr juga ikut append ke tempat yang sama
-    \item File akan terus bertambah besar---perlu log rotation untuk production
+	\item Sama seperti Metode 2, tapi menggunakan \texttt{>>} untuk append
+	\item \texttt{>> file}: Append stdout ke file (tidak menghapus isi lama)
+	\item \texttt{2>\&1}: Stderr juga ikut append ke tempat yang sama
+	\item File akan terus bertambah besar---perlu log rotation untuk production
 \end{itemize}
 
 \paragraph{Perbandingan Praktis: Kapan Pakai Yang Mana?}
@@ -625,16 +625,16 @@ Ini TIDAK akan bekerja dengan benar! Stderr akan tetap ke terminal, bukan ke fil
 Berikut panduan cepat memilih metode:
 
 \begin{itemize}
-    \item \textbf{Debugging program}: Gunakan Metode 1 (file terpisah) agar error mudah ditemukan
-    \item \textbf{Script sekali jalan}: Gunakan Metode 3 (\texttt{\&>}) jika Bash 4+, atau Metode 2 jika perlu kompatibilitas
-    \item \textbf{Cron jobs / recurring tasks}: Gunakan Metode 4 (append) agar semua history tersimpan
-    \item \textbf{Production systems}: Gunakan Metode 2 atau 4, dengan log rotation untuk manage ukuran file
+	\item \textbf{Debugging program}: Gunakan Metode 1 (file terpisah) agar error mudah ditemukan
+	\item \textbf{Script sekali jalan}: Gunakan Metode 3 (\texttt{\&>}) jika Bash 4+, atau Metode 2 jika perlu kompatibilitas
+	\item \textbf{Cron jobs / recurring tasks}: Gunakan Metode 4 (append) agar semua history tersimpan
+	\item \textbf{Production systems}: Gunakan Metode 2 atau 4, dengan log rotation untuk manage ukuran file
 \end{itemize}
 
 \begin{examplebox}[Memisahkan Output dan Error]
-Untuk memahami penggunaan redirection dalam situasi nyata, mari lihat contoh script backup yang mencatat output normal dan error ke file terpisah:
+	Untuk memahami penggunaan redirection dalam situasi nyata, mari lihat contoh script backup yang mencatat output normal dan error ke file terpisah:
 
-\begin{lstlisting}[language=bash]
+	\begin{lstlisting}[language=bash]
 #!/bin/bash
 # Jalankan backup dengan logging
 
@@ -655,37 +655,37 @@ else
 fi
 \end{lstlisting}
 
-Penjelasan script di atas:
-\begin{itemize}
-    \item Script menggunakan \texttt{>>} untuk append karena kita ingin menyimpan history backup
-    \item Output normal dari \cmd{rsync} (daftar file yang di-backup) masuk ke \file{backup.log}
-    \item Error (misalnya file yang tidak bisa dibaca) masuk ke \file{backup-error.log}
-    \item Variabel \texttt{\$?} berisi exit code dari command terakhir: 0 berarti sukses, bukan 0 berarti error
-    \item Dengan pemisahan ini, kita bisa dengan mudah melihat apakah ada error tanpa harus membaca semua output
-\end{itemize}
+	Penjelasan script di atas:
+	\begin{itemize}
+		\item Script menggunakan \texttt{>>} untuk append karena kita ingin menyimpan history backup
+		\item Output normal dari \cmd{rsync} (daftar file yang di-backup) masuk ke \file{backup.log}
+		\item Error (misalnya file yang tidak bisa dibaca) masuk ke \file{backup-error.log}
+		\item Variabel \texttt{\$?} berisi exit code dari command terakhir: 0 berarti sukses, bukan 0 berarti error
+		\item Dengan pemisahan ini, kita bisa dengan mudah melihat apakah ada error tanpa harus membaca semua output
+	\end{itemize}
 \end{examplebox}
 
 Setelah memahami berbagai operator redirection, berikut ringkasan lengkap semua operator yang tersedia:
 
 \begin{table}[htbp]
-    \centering
-    \caption{Operator Pengalihan I/O}
-    \label{tab:io-operators}
-    \begin{tabular}{@{}lp{10cm}@{}}
-        \toprule
-        \textbf{Operator} & \textbf{Deskripsi} \\
-        \midrule
-        \texttt{<}   & Redirect stdin dari file \\
-        \texttt{>}   & Redirect stdout ke file (overwrite) \\
-        \texttt{>>}  & Redirect stdout ke file (append) \\
-        \texttt{2>}  & Redirect stderr ke file (overwrite) \\
-        \texttt{2>>} & Redirect stderr ke file (append) \\
-        \texttt{2>\&1} & Redirect stderr ke stdout \\
-        \texttt{\&>} & Redirect stdout dan stderr ke file (Bash 4+) \\
-        \texttt{<<}  & Here document (input multi-baris) \\
-        \texttt{<<<} & Here string (input string tunggal) \\
-        \bottomrule
-    \end{tabular}
+	\centering
+	\caption{Operator Pengalihan I/O}
+	\label{tab:io-operators}
+	\begin{tabular}{@{}lp{10cm}@{}}
+		\toprule
+		\textbf{Operator} & \textbf{Deskripsi}                           \\
+		\midrule
+		\texttt{<}        & Redirect stdin dari file                     \\
+		\texttt{>}        & Redirect stdout ke file (overwrite)          \\
+		\verb|>>|         & Redirect stdout ke file (append)             \\
+		\texttt{2>}       & Redirect stderr ke file (overwrite)          \\
+		\verb|2>>|        & Redirect stderr ke file (append)             \\
+		\texttt{2>\&1}    & Redirect stderr ke stdout                    \\
+		\texttt{\&>}      & Redirect stdout dan stderr ke file (Bash 4+) \\
+		\verb|<<|         & Here document (input multi-baris)            \\
+		\verb|<<<|        & Here string (input string tunggal)           \\
+		\bottomrule
+	\end{tabular}
 \end{table}
 
 %% ------------------------------------------------------------------------
@@ -697,7 +697,7 @@ Setelah memahami berbagai operator redirection, berikut ringkasan lengkap semua 
 \textbf{Pipe} (pipa) adalah mekanisme Inter-Process Communication (IPC) yang menghubungkan stdout dari satu perintah ke stdin perintah lain. Operator pipe adalah \texttt{|}.
 
 \begin{definition}[Pipe]
-Saluran komunikasi satu arah (unidirectional) yang menghubungkan output suatu proses sebagai input proses lain, menciptakan aliran data yang seamless tanpa perlu file intermediet.
+	Saluran komunikasi satu arah (unidirectional) yang menghubungkan output suatu proses sebagai input proses lain, menciptakan aliran data yang seamless tanpa perlu file intermediet.
 \end{definition}
 
 \subsection{Mengapa Pipe Penting dalam Unix?}
@@ -705,14 +705,14 @@ Saluran komunikasi satu arah (unidirectional) yang menghubungkan output suatu pr
 Pipe adalah implementasi kunci dari \textbf{Unix Philosophy}: ``Write programs that do one thing and do it well. Write programs to work together.''
 
 \begin{enumerate}
-    \item \textbf{Modularitas}: Program kecil yang fokus pada satu tugas dapat dikombinasikan untuk tugas kompleks
-    \item \textbf{Efisiensi}: Data mengalir langsung antar proses tanpa menulis ke disk, menghemat I/O
-    \item \textbf{Paralelisme}: Proses dalam pipeline berjalan secara concurrent, meningkatkan throughput
-    \item \textbf{Reusabilitas}: Program yang sama dapat digunakan dalam berbagai kombinasi pipeline
+	\item \textbf{Modularitas}: Program kecil yang fokus pada satu tugas dapat dikombinasikan untuk tugas kompleks
+	\item \textbf{Efisiensi}: Data mengalir langsung antar proses tanpa menulis ke disk, menghemat I/O
+	\item \textbf{Paralelisme}: Proses dalam pipeline berjalan secara concurrent, meningkatkan throughput
+	\item \textbf{Reusabilitas}: Program yang sama dapat digunakan dalam berbagai kombinasi pipeline
 \end{enumerate}
 
 \begin{notebox}
-Pipe menciptakan buffer di kernel (biasanya 64KB di Linux modern). Jika buffer penuh, proses penulis akan blocked sampai proses pembaca mengambil data. Ini adalah bentuk natural flow control.
+	Pipe menciptakan buffer di kernel (biasanya 64KB di Linux modern). Jika buffer penuh, proses penulis akan blocked sampai proses pembaca mengambil data. Ini adalah bentuk natural flow control.
 \end{notebox}
 
 \subsection{Kapan Menggunakan Pipe?}
@@ -720,15 +720,15 @@ Pipe menciptakan buffer di kernel (biasanya 64KB di Linux modern). Jika buffer p
 Gunakan pipe ketika:
 
 \begin{itemize}
-    \item Anda perlu memproses data melalui serangkaian transformasi
-    \item Output satu program cocok sebagai input program lain
-    \item Anda ingin menghindari file temporary
-    \item Anda perlu memproses stream data yang besar (tidak perlu load semua ke memory)
-    \item Anda ingin memanfaatkan paralelisme (pipeline stages berjalan bersamaan)
+	\item Anda perlu memproses data melalui serangkaian transformasi
+	\item Output satu program cocok sebagai input program lain
+	\item Anda ingin menghindari file temporary
+	\item Anda perlu memproses stream data yang besar (tidak perlu load semua ke memory)
+	\item Anda ingin memanfaatkan paralelisme (pipeline stages berjalan bersamaan)
 \end{itemize}
 
 \begin{tipbox}
-Pipe sangat efisien untuk data besar karena menggunakan streaming: data diproses chunk-by-chunk, bukan sekaligus. Ini memungkinkan pemrosesan file gigabyte dengan memory minimal.
+	Pipe sangat efisien untuk data besar karena menggunakan streaming: data diproses chunk-by-chunk, bukan sekaligus. Ini memungkinkan pemrosesan file gigabyte dengan memory minimal.
 \end{tipbox}
 
 \subsection{Konsep Pipa}
@@ -751,28 +751,28 @@ ps aux | grep apache
 Penjelasan contoh di atas:
 
 \begin{enumerate}
-    \item \textbf{Contoh pertama} - menampilkan 10 file terbesar:
-    \begin{itemize}
-        \item \cmd{ls -lh}: tampilkan daftar file dengan ukuran human-readable (KB, MB, dll)
-        \item \texttt{|}: kirim output ke command berikutnya
-        \item \cmd{sort -k5 -rh}: urutkan berdasarkan kolom ke-5 (ukuran file), \texttt{-r}=reverse (besar ke kecil), \texttt{-h}=human-readable numbers
-        \item \texttt{|}: kirim hasil sorting ke command berikutnya
-        \item \cmd{head -10}: ambil 10 baris pertama saja
-    \end{itemize}
+	\item \textbf{Contoh pertama} - menampilkan 10 file terbesar:
+	      \begin{itemize}
+		      \item \cmd{ls -lh}: tampilkan daftar file dengan ukuran human-readable (KB, MB, dll)
+		      \item \texttt{|}: kirim output ke command berikutnya
+		      \item \cmd{sort -k5 -rh}: urutkan berdasarkan kolom ke-5 (ukuran file), \texttt{-r}=reverse (besar ke kecil), \texttt{-h}=human-readable numbers
+		      \item \texttt{|}: kirim hasil sorting ke command berikutnya
+		      \item \cmd{head -10}: ambil 10 baris pertama saja
+	      \end{itemize}
 
-    \item \textbf{Contoh kedua} - menghitung user:
-    \begin{itemize}
-        \item \cmd{cat /etc/passwd}: tampilkan isi file passwd (berisi daftar user, satu user per baris)
-        \item \texttt{|}: kirim ke command berikutnya
-        \item \cmd{wc -l}: hitung jumlah baris (\texttt{-l} = line count)
-    \end{itemize}
+	\item \textbf{Contoh kedua} - menghitung user:
+	      \begin{itemize}
+		      \item \cmd{cat /etc/passwd}: tampilkan isi file passwd (berisi daftar user, satu user per baris)
+		      \item \texttt{|}: kirim ke command berikutnya
+		      \item \cmd{wc -l}: hitung jumlah baris (\texttt{-l} = line count)
+	      \end{itemize}
 
-    \item \textbf{Contoh ketiga} - cari proses:
-    \begin{itemize}
-        \item \cmd{ps aux}: tampilkan semua proses yang sedang berjalan
-        \item \texttt{|}: kirim ke command berikutnya
-        \item \cmd{grep apache}: filter hanya baris yang mengandung kata "apache"
-    \end{itemize}
+	\item \textbf{Contoh ketiga} - cari proses:
+	      \begin{itemize}
+		      \item \cmd{ps aux}: tampilkan semua proses yang sedang berjalan
+		      \item \texttt{|}: kirim ke command berikutnya
+		      \item \cmd{grep apache}: filter hanya baris yang mengandung kata "apache"
+	      \end{itemize}
 \end{enumerate}
 
 \subsection{Rantai Pipa}
@@ -798,24 +798,24 @@ find ~ -type f -exec ls -lh {} \; | \
 Penjelasan pipeline di atas:
 
 \begin{enumerate}
-    \item \textbf{Analisis log error}:
-    \begin{itemize}
-        \item \cmd{cat /var/log/syslog}: baca file log sistem
-        \item \cmd{grep "error"}: filter hanya baris yang ada kata "error"
-        \item \cmd{awk '\{print \$5\}'}: ambil kolom ke-5 (biasanya nama service/program)
-        \item \cmd{sort}: urutkan alphabetically
-        \item \cmd{uniq -c}: hitung berapa kali setiap baris muncul
-        \item \cmd{sort -rn}: urutkan berdasarkan angka (\texttt{-n}), terbesar dulu (\texttt{-r})
-        \item Hasil: daftar service mana yang paling banyak menghasilkan error
-    \end{itemize}
+	\item \textbf{Analisis log error}:
+	      \begin{itemize}
+		      \item \cmd{cat /var/log/syslog}: baca file log sistem
+		      \item \cmd{grep "error"}: filter hanya baris yang ada kata "error"
+		      \item \cmd{awk '\{print \$5\}'}: ambil kolom ke-5 (biasanya nama service/program)
+		      \item \cmd{sort}: urutkan alphabetically
+		      \item \cmd{uniq -c}: hitung berapa kali setiap baris muncul
+		      \item \cmd{sort -rn}: urutkan berdasarkan angka (\texttt{-n}), terbesar dulu (\texttt{-r})
+		      \item Hasil: daftar service mana yang paling banyak menghasilkan error
+	      \end{itemize}
 
-    \item \textbf{Monitoring disk}: Menampilkan penggunaan disk yang terurut dari yang paling penuh
+	\item \textbf{Monitoring disk}: Menampilkan penggunaan disk yang terurut dari yang paling penuh
 
-    \item \textbf{File terbesar}: Menemukan 20 file terbesar di home directory Anda
+	\item \textbf{File terbesar}: Menemukan 20 file terbesar di home directory Anda
 \end{enumerate}
 
 \begin{notebox}
-Backslash (\textbackslash) di akhir baris memungkinkan perintah dilanjutkan ke baris berikutnya untuk keterbacaan yang lebih baik. Ini sangat berguna untuk pipeline panjang agar mudah dibaca.
+	Backslash (\textbackslash) di akhir baris memungkinkan perintah dilanjutkan ke baris berikutnya untuk keterbacaan yang lebih baik. Ini sangat berguna untuk pipeline panjang agar mudah dibaca.
 \end{notebox}
 
 \subsection{Pipa vs Redirection}
@@ -823,8 +823,8 @@ Backslash (\textbackslash) di akhir baris memungkinkan perintah dilanjutkan ke b
 Perbedaan utama antara pipa dan redirection:
 
 \begin{itemize}
-    \item \textbf{Pipa} (\texttt{|}): Menghubungkan stdout ke stdin proses lain
-    \item \textbf{Redirection} (\texttt{>}): Menghubungkan stdout ke file
+	\item \textbf{Pipa} (\texttt{|}): Menghubungkan stdout ke stdin proses lain
+	\item \textbf{Redirection} (\texttt{>}): Menghubungkan stdout ke file
 \end{itemize}
 
 \begin{lstlisting}[language=bash, caption={Kombinasi pipa dan redirection}]
@@ -861,9 +861,9 @@ rm mypipe
 \end{lstlisting}
 
 \begin{examplebox}[Pipeline untuk Analisis Data]
-Contoh penggunaan pipeline untuk menganalisis log akses web:
+	Contoh penggunaan pipeline untuk menganalisis log akses web:
 
-\begin{lstlisting}[language=bash]
+	\begin{lstlisting}[language=bash]
 # Analisis log Apache: IP dengan akses terbanyak
 cat /var/log/apache2/access.log | \
     awk '{print $1}' | \
@@ -951,19 +951,19 @@ set +o noclobber
 \file{/dev/null} adalah file perangkat khusus di sistem Unix-like, sering disebut "bit bucket" atau "black hole" (lubang hitam). File ini memiliki properti unik:
 
 \begin{itemize}
-    \item \textbf{Write}: Apa pun yang ditulis ke dalamnya langsung hilang
-    \item \textbf{Read}: Membaca dari file ini tidak menghasilkan apa-apa (langsung EOF)
-    \item \textbf{Selalu Tersedia}: File ini selalu ada di sistem
-    \item \textbf{Tidak Pernah Penuh}: Anda bisa mengalihkan data tak terbatas ke dalamnya
+	\item \textbf{Write}: Apa pun yang ditulis ke dalamnya langsung hilang
+	\item \textbf{Read}: Membaca dari file ini tidak menghasilkan apa-apa (langsung EOF)
+	\item \textbf{Selalu Tersedia}: File ini selalu ada di sistem
+	\item \textbf{Tidak Pernah Penuh}: Anda bisa mengalihkan data tak terbatas ke dalamnya
 \end{itemize}
 
 \subsubsection{Mengapa /dev/null Dibuat?}
 
 Desainer Unix menciptakan \file{/dev/null} untuk mengatasi masalah umum: kadang Anda perlu menjalankan perintah tetapi tidak peduli dengan outputnya. Tanpa \file{/dev/null}, Anda harus:
 \begin{enumerate}
-    \item Membuat file sementara
-    \item Mengalihkan output ke file tersebut
-    \item Ingat untuk menghapus file tersebut nanti
+	\item Membuat file sementara
+	\item Mengalihkan output ke file tersebut
+	\item Ingat untuk menghapus file tersebut nanti
 \end{enumerate}
 
 Dengan \file{/dev/null}, Anda cukup mengalihkan output ke sana dan lupakan.
@@ -973,32 +973,32 @@ Dengan \file{/dev/null}, Anda cukup mengalihkan output ke sana dan lupakan.
 Gunakan \file{/dev/null} ketika:
 
 \begin{enumerate}
-    \item \textbf{Menekan Error yang Diharapkan}: Ketika menjalankan \cmd{find /} Anda akan mendapat banyak error "Permission denied" untuk direktori sistem yang tidak bisa diakses. Error ini diharapkan dan tidak berguna:
-    \begin{lstlisting}[language=bash]
+	\item \textbf{Menekan Error yang Diharapkan}: Ketika menjalankan \cmd{find /} Anda akan mendapat banyak error "Permission denied" untuk direktori sistem yang tidak bisa diakses. Error ini diharapkan dan tidak berguna:
+	      \begin{lstlisting}[language=bash]
 find / -name "*.conf" 2> /dev/null
     \end{lstlisting}
 
-    \item \textbf{Eksekusi Perintah Tanpa Suara}: Ketika menjalankan perintah di script yang outputnya tidak diperlukan:
-    \begin{lstlisting}[language=bash]
+	\item \textbf{Eksekusi Perintah Tanpa Suara}: Ketika menjalankan perintah di script yang outputnya tidak diperlukan:
+	      \begin{lstlisting}[language=bash]
 # Cek apakah perintah berhasil, tidak peduli outputnya
 if wget -q -O /dev/null http://example.com; then
     echo "Situs aktif"
 fi
     \end{lstlisting}
 
-    \item \textbf{Testing Perintah}: Ketika menguji syntax perintah tanpa mengacaukan layar
+	\item \textbf{Testing Perintah}: Ketika menguji syntax perintah tanpa mengacaukan layar
 
-    \item \textbf{Mengosongkan File}: Cara cepat untuk mengosongkan file (truncate ke 0 byte) tanpa menghapusnya
+	\item \textbf{Mengosongkan File}: Cara cepat untuk mengosongkan file (truncate ke 0 byte) tanpa menghapusnya
 \end{enumerate}
 
 \subsubsection{Mengapa Tidak Sekalian Hapus Error Messages?}
 
 Anda mungkin bertanya: mengapa redirect ke \file{/dev/null} daripada memperbaiki kode agar tidak menghasilkan error? Jawabannya:
 \begin{itemize}
-    \item Beberapa error adalah \textbf{diharapkan dan tidak berbahaya} (seperti permission denied saat searching system-wide)
-    \item Anda tidak mengontrol program yang menghasilkan error tersebut
-    \item Error tersebut sebenarnya bukan error---hanya perilaku normal program
-    \item Anda ingin program berjalan sampai selesai tanpa berhenti pada masalah kecil
+	\item Beberapa error adalah \textbf{diharapkan dan tidak berbahaya} (seperti permission denied saat searching system-wide)
+	\item Anda tidak mengontrol program yang menghasilkan error tersebut
+	\item Error tersebut sebenarnya bukan error---hanya perilaku normal program
+	\item Anda ingin program berjalan sampai selesai tanpa berhenti pada masalah kecil
 \end{itemize}
 
 \subsubsection{Contoh}
@@ -1022,11 +1022,11 @@ fi
 \end{lstlisting}
 
 \begin{tipbox}
-\file{/dev/null} sangat berguna ketika Anda ingin mengecek apakah perintah \textbf{berhasil} (exit code) tetapi tidak peduli apa outputnya. Exit code memberi tahu sukses/gagal; outputnya tidak relevan.
+	\file{/dev/null} sangat berguna ketika Anda ingin mengecek apakah perintah \textbf{berhasil} (exit code) tetapi tidak peduli apa outputnya. Exit code memberi tahu sukses/gagal; outputnya tidak relevan.
 \end{tipbox}
 
 \begin{warningbox}
-Hati-hati jangan sampai tidak sengaja mengalihkan output penting ke \file{/dev/null}! Sekali data masuk ke sana, hilang selamanya. Selalu periksa ulang operator redirection Anda.
+	Hati-hati jangan sampai tidak sengaja mengalihkan output penting ke \file{/dev/null}! Sekali data masuk ke sana, hilang selamanya. Selalu periksa ulang operator redirection Anda.
 \end{warningbox}
 
 %% ------------------------------------------------------------------------
@@ -1042,10 +1042,10 @@ Perintah \cmd{tee} membaca dari stdin dan menulis ke stdout \textbf{sekaligus} k
 Tanpa \cmd{tee}, Anda harus memilih: lihat output di terminal ATAU simpan ke file. Dengan \cmd{tee}, Anda bisa melakukan keduanya:
 
 \begin{enumerate}
-    \item \textbf{Real-time Monitoring}: Lihat progress program sambil merekam log
-    \item \textbf{Debugging}: Simpan output untuk analisis nanti tanpa kehilangan visibility
-    \item \textbf{Audit Trail}: Dokumentasikan apa yang terjadi saat maintenance/deployment
-    \item \textbf{Multiple Outputs}: Kirim data ke beberapa destinasi sekaligus
+	\item \textbf{Real-time Monitoring}: Lihat progress program sambil merekam log
+	\item \textbf{Debugging}: Simpan output untuk analisis nanti tanpa kehilangan visibility
+	\item \textbf{Audit Trail}: Dokumentasikan apa yang terjadi saat maintenance/deployment
+	\item \textbf{Multiple Outputs}: Kirim data ke beberapa destinasi sekaligus
 \end{enumerate}
 
 \subsection{Kapan Menggunakan tee?}
@@ -1053,15 +1053,15 @@ Tanpa \cmd{tee}, Anda harus memilih: lihat output di terminal ATAU simpan ke fil
 Gunakan \cmd{tee} dalam situasi berikut:
 
 \begin{itemize}
-    \item \textbf{Instalasi/Update Sistem}: Monitor progress sambil simpan log
-    \item \textbf{Deployment Scripts}: Lihat output sambil catat untuk audit
-    \item \textbf{Long-running Commands}: Simpan output untuk review kemudian
-    \item \textbf{Write ke Protected Files}: Bypass permission issue dengan \texttt{sudo tee}
-    \item \textbf{Pipeline Debugging}: Lihat data intermediate di tengah pipeline
+	\item \textbf{Instalasi/Update Sistem}: Monitor progress sambil simpan log
+	\item \textbf{Deployment Scripts}: Lihat output sambil catat untuk audit
+	\item \textbf{Long-running Commands}: Simpan output untuk review kemudian
+	\item \textbf{Write ke Protected Files}: Bypass permission issue dengan \texttt{sudo tee}
+	\item \textbf{Pipeline Debugging}: Lihat data intermediate di tengah pipeline
 \end{itemize}
 
 \begin{notebox}
-\cmd{tee} tidak mengubah data yang melewatinya, hanya menduplikasi ke file. Ini membuatnya ideal untuk debugging pipeline tanpa mengubah behavior.
+	\cmd{tee} tidak mengubah data yang melewatinya, hanya menduplikasi ke file. Ini membuatnya ideal untuk debugging pipeline tanpa mengubah behavior.
 \end{notebox}
 
 \subsection{Syntax Dasar tee}
@@ -1098,13 +1098,13 @@ ps aux | tee processes.txt | grep apache
 Mari kita pahami setiap contoh di atas:
 
 \begin{enumerate}
-    \item \textbf{apt update dengan tee}: Ketika Anda menjalankan \cmd{sudo apt update}, Anda ingin melihat paket mana yang diupdate secara real-time, tetapi juga ingin menyimpan log untuk dokumentasi atau troubleshooting. Tanpa tee, Anda harus memilih salah satu.
+	\item \textbf{apt update dengan tee}: Ketika Anda menjalankan \cmd{sudo apt update}, Anda ingin melihat paket mana yang diupdate secara real-time, tetapi juga ingin menyimpan log untuk dokumentasi atau troubleshooting. Tanpa tee, Anda harus memilih salah satu.
 
-    \item \textbf{ping dengan tee}: Saat melakukan network monitoring dengan \cmd{ping}, Anda ingin melihat response time secara langsung untuk memastikan koneksi stabil, tetapi juga ingin merekam data untuk analisis nanti (misalnya untuk mendeteksi pola packet loss).
+	\item \textbf{ping dengan tee}: Saat melakukan network monitoring dengan \cmd{ping}, Anda ingin melihat response time secara langsung untuk memastikan koneksi stabil, tetapi juga ingin merekam data untuk analisis nanti (misalnya untuk mendeteksi pola packet loss).
 
-    \item \textbf{backup dengan tee}: Saat membuat backup dengan \cmd{tar}, prosesnya bisa memakan waktu lama. Anda ingin melihat progress (file mana yang sedang di-compress), tetapi juga ingin log lengkap untuk verifikasi backup berhasil.
+	\item \textbf{backup dengan tee}: Saat membuat backup dengan \cmd{tar}, prosesnya bisa memakan waktu lama. Anda ingin melihat progress (file mana yang sedang di-compress), tetapi juga ingin log lengkap untuk verifikasi backup berhasil.
 
-    \item \textbf{Pipeline debugging}: Anda bisa "menyadap" data di tengah pipeline tanpa mengganggu aliran data. Data tetap mengalir ke \cmd{grep}, tetapi juga tersimpan di \file{processes.txt} untuk inspeksi.
+	\item \textbf{Pipeline debugging}: Anda bisa "menyadap" data di tengah pipeline tanpa mengganggu aliran data. Data tetap mengalir ke \cmd{grep}, tetapi juga tersimpan di \file{processes.txt} untuk inspeksi.
 \end{enumerate}
 
 \subsection{Bagaimana tee Bekerja Secara Internal?}
@@ -1112,19 +1112,19 @@ Mari kita pahami setiap contoh di atas:
 Untuk memahami \cmd{tee} lebih dalam, mari kita lihat bagaimana ia bekerja:
 
 \begin{enumerate}
-    \item \cmd{tee} membaca data dari stdin (file descriptor 0)
-    \item Untuk setiap chunk data yang dibaca:
-    \begin{itemize}
-        \item Tulis ke stdout (fd 1) - sehingga terminal atau pipe berikutnya menerima data
-        \item Tulis ke file(s) yang ditentukan - sehingga data tersimpan
-    \end{itemize}
-    \item Ulangi sampai input selesai (EOF)
+	\item \cmd{tee} membaca data dari stdin (file descriptor 0)
+	\item Untuk setiap chunk data yang dibaca:
+	      \begin{itemize}
+		      \item Tulis ke stdout (fd 1) - sehingga terminal atau pipe berikutnya menerima data
+		      \item Tulis ke file(s) yang ditentukan - sehingga data tersimpan
+	      \end{itemize}
+	\item Ulangi sampai input selesai (EOF)
 \end{enumerate}
 
 \textbf{Perbedaan dengan redirection}:
 \begin{itemize}
-    \item \textbf{Redirection} (\texttt{>}): Data hanya pergi ke file, tidak ke terminal
-    \item \textbf{tee}: Data pergi ke KEDUANYA - terminal DAN file
+	\item \textbf{Redirection} (\texttt{>}): Data hanya pergi ke file, tidak ke terminal
+	\item \textbf{tee}: Data pergi ke KEDUANYA - terminal DAN file
 \end{itemize}
 
 \subsection{tee dengan Multiple Files}
@@ -1149,10 +1149,10 @@ cat sensor-data.csv | tee raw-backup.csv |
 \paragraph{Mengapa ini berguna?}
 
 \begin{itemize}
-    \item \textbf{Redundansi}: Backup ke multiple lokasi untuk disaster recovery
-    \item \textbf{Multiple Formats}: Save raw data sekaligus processed data
-    \item \textbf{Different Destinations}: Local file + network share + cloud storage
-    \item \textbf{Access Control}: Copy ke direktori dengan permission berbeda
+	\item \textbf{Redundansi}: Backup ke multiple lokasi untuk disaster recovery
+	\item \textbf{Multiple Formats}: Save raw data sekaligus processed data
+	\item \textbf{Different Destinations}: Local file + network share + cloud storage
+	\item \textbf{Access Control}: Copy ke direktori dengan permission berbeda
 \end{itemize}
 
 \subsection{Perbedaan tee dan tee -a}
@@ -1170,20 +1170,20 @@ date | tee -a timestamp.log  # File berisi SEMUA timestamp
 \paragraph{Kapan menggunakan masing-masing?}
 
 \begin{description}
-    \item[Overwrite (\cmd{tee})]:
-    \begin{itemize}
-        \item Status checks yang tidak perlu history
-        \item Output yang selalu fresh/current
-        \item Temporary results yang di-replace tiap run
-    \end{itemize}
+	\item[Overwrite (\cmd{tee})]:
+	      \begin{itemize}
+		      \item Status checks yang tidak perlu history
+		      \item Output yang selalu fresh/current
+		      \item Temporary results yang di-replace tiap run
+	      \end{itemize}
 
-    \item[Append (\cmd{tee -a})]:
-    \begin{itemize}
-        \item Continuous monitoring (logs, metrics)
-        \item Historical data accumulation
-        \item Multiple script runs yang perlu combined
-        \item Audit trails
-    \end{itemize}
+	\item[Append (\cmd{tee -a})]:
+	      \begin{itemize}
+		      \item Continuous monitoring (logs, metrics)
+		      \item Historical data accumulation
+		      \item Multiple script runs yang perlu combined
+		      \item Audit trails
+	      \end{itemize}
 \end{description}
 
 \subsection{Error Handling dengan tee}
@@ -1205,7 +1205,7 @@ echo ${PIPESTATUS[1]}  # Exit code dari tee
 \end{lstlisting}
 
 \begin{warningbox}
-Variable \texttt{\$?} di bash hanya menangkap exit code dari \textbf{command terakhir} di pipeline. Untuk mendapatkan exit code dari command di awal pipeline, gunakan array \texttt{PIPESTATUS}.
+	Variable \texttt{\$?} di bash hanya menangkap exit code dari \textbf{command terakhir} di pipeline. Untuk mendapatkan exit code dari command di awal pipeline, gunakan array \texttt{PIPESTATUS}.
 \end{warningbox}
 
 \subsection{Use Cases Umum tee}
@@ -1245,33 +1245,33 @@ cat raw-data.csv |
 
 Di contoh data processing di atas:
 \begin{enumerate}
-    \item Data asli tersimpan di \file{raw-backup.csv} sebelum processing
-    \item Data diproses oleh \file{process-script.py}
-    \item Hasil processing tersimpan di \file{processed-backup.csv}
-    \item Data akhir dimuat ke database
-    \item Jika ada masalah di step mana pun, Anda punya backup untuk replay
+	\item Data asli tersimpan di \file{raw-backup.csv} sebelum processing
+	\item Data diproses oleh \file{process-script.py}
+	\item Hasil processing tersimpan di \file{processed-backup.csv}
+	\item Data akhir dimuat ke database
+	\item Jika ada masalah di step mana pun, Anda punya backup untuk replay
 \end{enumerate}
 
 \subsection{Best Practices tee}
 
 \begin{enumerate}
-    \item \textbf{Naming Convention}: Gunakan timestamp di nama file log
-    \begin{lstlisting}[language=bash]
+	\item \textbf{Naming Convention}: Gunakan timestamp di nama file log
+	      \begin{lstlisting}[language=bash]
 command | tee "log-$(date +%Y%m%d-%H%M%S).txt"
     \end{lstlisting}
 
-    \item \textbf{Disk Space}: Pastikan cukup ruang, terutama untuk long-running commands
-    \begin{lstlisting}[language=bash]
+	\item \textbf{Disk Space}: Pastikan cukup ruang, terutama untuk long-running commands
+	      \begin{lstlisting}[language=bash]
 df -h /var/log  # Cek space sebelum logging
     \end{lstlisting}
 
-    \item \textbf{Suppress Terminal Output}: Redirect tee output ke /dev/null jika hanya butuh file
-    \begin{lstlisting}[language=bash]
+	\item \textbf{Suppress Terminal Output}: Redirect tee output ke /dev/null jika hanya butuh file
+	      \begin{lstlisting}[language=bash]
 command | tee output.txt > /dev/null  # Hanya ke file, tidak ke terminal
     \end{lstlisting}
 
-    \item \textbf{Buffering}: Gunakan \cmd{unbuffer} atau \texttt{stdbuf} untuk real-time output
-    \begin{lstlisting}[language=bash]
+	\item \textbf{Buffering}: Gunakan \cmd{unbuffer} atau \texttt{stdbuf} untuk real-time output
+	      \begin{lstlisting}[language=bash]
 # Untuk program yang buffer outputnya
 unbuffer command | tee output.txt
 # atau
@@ -1298,15 +1298,15 @@ echo "secret" | sudo tee /etc/secret.conf > /dev/null
 \end{lstlisting}
 
 \begin{notebox}
-Operator redirect (\texttt{>}) diproses oleh shell sebelum \cmd{sudo}, sehingga tidak mendapat privilege root. Gunakan \cmd{tee} untuk menulis ke file yang memerlukan root.
+	Operator redirect (\texttt{>}) diproses oleh shell sebelum \cmd{sudo}, sehingga tidak mendapat privilege root. Gunakan \cmd{tee} untuk menulis ke file yang memerlukan root.
 \end{notebox}
 
 \subsection{tee dalam Script}
 
 \begin{examplebox}[Logging Script dengan tee]
-Script yang mencatat output ke file dan terminal:
+	Script yang mencatat output ke file dan terminal:
 
-\begin{lstlisting}[language=bash]
+	\begin{lstlisting}[language=bash]
 #!/bin/bash
 # Deploy script dengan logging
 
@@ -1357,17 +1357,17 @@ Syntax: \texttt{<(command)} untuk input, \texttt{>(command)} untuk output.
 Beberapa program hanya menerima file sebagai argumen, bukan stdin. Process substitution mengatasi keterbatasan ini:
 
 \begin{enumerate}
-    \item \textbf{Kompatibilitas}: Program yang perlu filename (seperti \cmd{diff}) bisa menerima output command
-    \item \textbf{Efisiensi}: Tidak perlu temporary file
-    \item \textbf{Multiple Inputs}: Bisa feed beberapa command output ke satu program
+	\item \textbf{Kompatibilitas}: Program yang perlu filename (seperti \cmd{diff}) bisa menerima output command
+	\item \textbf{Efisiensi}: Tidak perlu temporary file
+	\item \textbf{Multiple Inputs}: Bisa feed beberapa command output ke satu program
 \end{enumerate}
 
 \subsubsection{Kapan Menggunakan Process Substitution?}
 
 \begin{itemize}
-    \item Comparing outputs: \texttt{diff <(cmd1) <(cmd2)}
-    \item Tools yang butuh filename: \texttt{vimdiff}, \texttt{comm}, \texttt{join}
-    \item Menghindari temporary files untuk one-time use
+	\item Comparing outputs: \texttt{diff <(cmd1) <(cmd2)}
+	\item Tools yang butuh filename: \texttt{vimdiff}, \texttt{comm}, \texttt{join}
+	\item Menghindari temporary files untuk one-time use
 \end{itemize}
 
 \subsubsection{Contoh Penggunaan}
@@ -1398,22 +1398,22 @@ Syntax lama: \texttt{`command`} (backticks, deprecated)
 \subsubsection{Mengapa Menggunakan Command Substitution?}
 
 \begin{enumerate}
-    \item \textbf{Dynamic Values}: Generate nilai berdasarkan kondisi sistem
-    \item \textbf{Automation}: Script dapat beradaptasi dengan environment
-    \item \textbf{Composability}: Gabungkan output beberapa perintah
+	\item \textbf{Dynamic Values}: Generate nilai berdasarkan kondisi sistem
+	\item \textbf{Automation}: Script dapat beradaptasi dengan environment
+	\item \textbf{Composability}: Gabungkan output beberapa perintah
 \end{enumerate}
 
 \subsubsection{Kapan Menggunakan Command Substitution?}
 
 \begin{itemize}
-    \item Membuat filename dynamic (dengan timestamp, hostname, dll)
-    \item Menyimpan output untuk conditional logic
-    \item Menggunakan output command sebagai argumen command lain
-    \item Generating configuration based on system state
+	\item Membuat filename dynamic (dengan timestamp, hostname, dll)
+	\item Menyimpan output untuk conditional logic
+	\item Menggunakan output command sebagai argumen command lain
+	\item Generating configuration based on system state
 \end{itemize}
 
 \begin{notebox}
-Gunakan \texttt{\$()} alih-alih backticks karena lebih readable dan mendukung nesting dengan lebih baik.
+	Gunakan \texttt{\$()} alih-alih backticks karena lebih readable dan mendukung nesting dengan lebih baik.
 \end{notebox}
 
 \subsubsection{Contoh Penggunaan}
@@ -1463,67 +1463,67 @@ Memilih teknik I/O yang tepat bergantung pada kebutuhan spesifik. Berikut pandua
 \subsection{Redirection vs Pipe}
 
 \begin{table}[htbp]
-    \centering
-    \caption{Perbandingan Redirection dan Pipe}
-    \label{tab:redirect-vs-pipe}
-    \begin{tabular}{@{}p{4cm}p{5cm}p{5cm}@{}}
-        \toprule
-        \textbf{Aspek} & \textbf{Redirection (\texttt{>})} & \textbf{Pipe (\texttt{|})} \\
-        \midrule
-        Tujuan & File di disk & Proses lain (stdin) \\
-        Persistensi & Data tersimpan permanent & Data transient (hilang setelah diproses) \\
-        Gunakan ketika & Perlu simpan hasil untuk nanti & Perlu proses data lebih lanjut \\
-        Efisiensi & Butuh I/O disk & Fully in-memory (lebih cepat) \\
-        Contoh use case & Logging, backup output & Data transformation, filtering \\
-        \bottomrule
-    \end{tabular}
+	\centering
+	\caption{Perbandingan Redirection dan Pipe}
+	\label{tab:redirect-vs-pipe}
+	\begin{tabular}{@{}p{4cm}p{5cm}p{5cm}@{}}
+		\toprule
+		\textbf{Aspek}  & \textbf{Redirection (\texttt{>})} & \textbf{Pipe (\texttt{|})}               \\
+		\midrule
+		Tujuan          & File di disk                      & Proses lain (stdin)                      \\
+		Persistensi     & Data tersimpan permanent          & Data transient (hilang setelah diproses) \\
+		Gunakan ketika  & Perlu simpan hasil untuk nanti    & Perlu proses data lebih lanjut           \\
+		Efisiensi       & Butuh I/O disk                    & Fully in-memory (lebih cepat)            \\
+		Contoh use case & Logging, backup output            & Data transformation, filtering           \\
+		\bottomrule
+	\end{tabular}
 \end{table}
 
 \subsection{Append (\texttt{>>}) vs Overwrite (\texttt{>})}
 
 \begin{itemize}
-    \item \textbf{Gunakan \texttt{>} (overwrite)} ketika:
-    \begin{itemize}
-        \item Membuat file output baru
-        \item Data lama tidak diperlukan
-        \item Ingin hasil yang clean dari awal
-    \end{itemize}
+	\item \textbf{Gunakan \texttt{>} (overwrite)} ketika:
+	      \begin{itemize}
+		      \item Membuat file output baru
+		      \item Data lama tidak diperlukan
+		      \item Ingin hasil yang clean dari awal
+	      \end{itemize}
 
-    \item \textbf{Gunakan \texttt{>>} (append)} ketika:
-    \begin{itemize}
-        \item Menambahkan ke log file
-        \item Mengakumulasi hasil dari multiple runs
-        \item Data lama harus dipertahankan
-    \end{itemize}
+	\item \textbf{Gunakan \texttt{>>} (append)} ketika:
+	      \begin{itemize}
+		      \item Menambahkan ke log file
+		      \item Mengakumulasi hasil dari multiple runs
+		      \item Data lama harus dipertahankan
+	      \end{itemize}
 \end{itemize}
 
 \begin{warningbox}
-Salah menggunakan \texttt{>} alih-alih \texttt{>>} pada log file akan menghapus semua history. Selalu double-check operator yang digunakan!
+	Salah menggunakan \texttt{>} alih-alih \texttt{>>} pada log file akan menghapus semua history. Selalu double-check operator yang digunakan!
 \end{warningbox}
 
 \subsection{tee vs Redirection}
 
 \begin{itemize}
-    \item \textbf{Gunakan \texttt{tee}} ketika:
-    \begin{itemize}
-        \item Perlu lihat output real-time DAN simpan ke file
-        \item Debugging pipeline (lihat intermediate data)
-        \item Multiple output destinations diperlukan
-        \item Perlu write ke file dengan \cmd{sudo} privilege
-    \end{itemize}
+	\item \textbf{Gunakan \texttt{tee}} ketika:
+	      \begin{itemize}
+		      \item Perlu lihat output real-time DAN simpan ke file
+		      \item Debugging pipeline (lihat intermediate data)
+		      \item Multiple output destinations diperlukan
+		      \item Perlu write ke file dengan \cmd{sudo} privilege
+	      \end{itemize}
 
-    \item \textbf{Gunakan redirection} ketika:
-    \begin{itemize}
-        \item Hanya perlu simpan, tidak perlu lihat
-        \item Background process (tidak ada terminal)
-        \item Maksimalkan performa (tee sedikit lebih lambat)
-    \end{itemize}
+	\item \textbf{Gunakan redirection} ketika:
+	      \begin{itemize}
+		      \item Hanya perlu simpan, tidak perlu lihat
+		      \item Background process (tidak ada terminal)
+		      \item Maksimalkan performa (tee sedikit lebih lambat)
+	      \end{itemize}
 \end{itemize}
 
 \subsection{Pipe vs Temporary File}
 
 \begin{examplebox}[Perbandingan Pipe vs Temporary File]
-\begin{lstlisting}[language=bash]
+	\begin{lstlisting}[language=bash]
 # Menggunakan temporary file (kurang efisien)
 ps aux > /tmp/processes.txt
 grep apache /tmp/processes.txt > /tmp/apache.txt
@@ -1537,47 +1537,47 @@ ps aux | grep apache | sort
 
 \textbf{Keuntungan Pipe}:
 \begin{itemize}
-    \item Tidak ada I/O disk (lebih cepat)
-    \item Tidak perlu cleanup temporary files
-    \item Proses berjalan parallel (concurrent)
-    \item Lebih ringkas dan readable
+	\item Tidak ada I/O disk (lebih cepat)
+	\item Tidak perlu cleanup temporary files
+	\item Proses berjalan parallel (concurrent)
+	\item Lebih ringkas dan readable
 \end{itemize}
 
 \textbf{Keuntungan Temporary File}:
 \begin{itemize}
-    \item Dapat digunakan multiple kali
-    \item Dapat di-inspect untuk debugging
-    \item Tidak ada batasan buffer size
-    \item Dapat diproses oleh tools yang tidak support stdin
+	\item Dapat digunakan multiple kali
+	\item Dapat di-inspect untuk debugging
+	\item Tidak ada batasan buffer size
+	\item Dapat diproses oleh tools yang tidak support stdin
 \end{itemize}
 
 \subsection{stderr Handling: Kapan Redirect, Kapan Buang?}
 
 \begin{enumerate}
-    \item \textbf{Redirect stderr ke file} (\texttt{2> error.log}):
-    \begin{itemize}
-        \item Production scripts (audit trail)
-        \item Debugging intermittent issues
-        \item Compliance/regulatory requirements
-    \end{itemize}
+	\item \textbf{Redirect stderr ke file} (\texttt{2> error.log}):
+	      \begin{itemize}
+		      \item Production scripts (audit trail)
+		      \item Debugging intermittent issues
+		      \item Compliance/regulatory requirements
+	      \end{itemize}
 
-    \item \textbf{Buang stderr} (\texttt{2> /dev/null}):
-    \begin{itemize}
-        \item Error yang expected dan tidak penting (contoh: \cmd{find} permission denied)
-        \item Cleaning up script output untuk user
-        \item Known false positives
-    \end{itemize}
+	\item \textbf{Buang stderr} (\texttt{2> /dev/null}):
+	      \begin{itemize}
+		      \item Error yang expected dan tidak penting (contoh: \cmd{find} permission denied)
+		      \item Cleaning up script output untuk user
+		      \item Known false positives
+	      \end{itemize}
 
-    \item \textbf{Gabung dengan stdout} (\texttt{2>\&1}):
-    \begin{itemize}
-        \item Ingin satu log file unified
-        \item Perlu preserve urutan kronologis output dan error
-        \item Pipeline processing (pipe perlu keduanya)
-    \end{itemize}
+	\item \textbf{Gabung dengan stdout} (\texttt{2>\&1}):
+	      \begin{itemize}
+		      \item Ingin satu log file unified
+		      \item Perlu preserve urutan kronologis output dan error
+		      \item Pipeline processing (pipe perlu keduanya)
+	      \end{itemize}
 \end{enumerate}
 
 \begin{tipbox}
-Dalam production scripts, selalu catat stderr ke file terpisah minimal saat testing. Setelah yakin stabil, baru pertimbangkan untuk membuang stderr yang tidak relevan.
+	Dalam production scripts, selalu catat stderr ke file terpisah minimal saat testing. Setelah yakin stabil, baru pertimbangkan untuk membuang stderr yang tidak relevan.
 \end{tipbox}
 
 %% ------------------------------------------------------------------------
@@ -1585,19 +1585,19 @@ Dalam production scripts, selalu catat stderr ke file terpisah minimal saat test
 \label{sec:io-best-practices}
 
 \begin{enumerate}
-    \item \textbf{Selalu cek hasil redirection}: Gunakan \texttt{\$?} atau \texttt{PIPESTATUS} untuk memverifikasi sukses
+	\item \textbf{Selalu cek hasil redirection}: Gunakan \texttt{\$?} atau \texttt{PIPESTATUS} untuk memverifikasi sukses
 
-    \item \textbf{Gunakan noclobber untuk safety}: Aktifkan \texttt{set -o noclobber} dalam script penting
+	\item \textbf{Gunakan noclobber untuk safety}: Aktifkan \texttt{set -o noclobber} dalam script penting
 
-    \item \textbf{Log dengan timestamp}: Gunakan \texttt{\$(date)} untuk mencatat waktu dalam log
+	\item \textbf{Log dengan timestamp}: Gunakan \texttt{\$(date)} untuk mencatat waktu dalam log
 
-    \item \textbf{Pisahkan stdout dan stderr}: Untuk debugging yang lebih mudah
+	\item \textbf{Pisahkan stdout dan stderr}: Untuk debugging yang lebih mudah
 
-    \item \textbf{Gunakan tee untuk visibility}: Saat perlu melihat dan menyimpan output
+	\item \textbf{Gunakan tee untuk visibility}: Saat perlu melihat dan menyimpan output
 
-    \item \textbf{Cleanup file descriptor}: Tutup FD custom setelah selesai
+	\item \textbf{Cleanup file descriptor}: Tutup FD custom setelah selesai
 
-    \item \textbf{Quote variables}: Gunakan quotes untuk menghindari word splitting
+	\item \textbf{Quote variables}: Gunakan quotes untuk menghindari word splitting
 \end{enumerate}
 
 \begin{lstlisting}[language=bash, caption={Best practice example}]
@@ -1629,17 +1629,17 @@ log "Proses selesai"
 \label{sec:io-summary}
 
 \begin{itemize}
-    \item \textbf{File Descriptor}: Integer yang merepresentasikan I/O stream (0=stdin, 1=stdout, 2=stderr)
+	\item \textbf{File Descriptor}: Integer yang merepresentasikan I/O stream (0=stdin, 1=stdout, 2=stderr)
 
-    \item \textbf{I/O Redirection}: Mengalihkan input/output menggunakan operator \texttt{<}, \texttt{>}, \texttt{>>}, \texttt{2>}, dll.
+	\item \textbf{I/O Redirection}: Mengalihkan input/output menggunakan operator \texttt{<}, \texttt{>}, \texttt{>>}, \texttt{2>}, dll.
 
-    \item \textbf{Pipe}: Menghubungkan stdout satu perintah ke stdin perintah lain dengan operator \texttt{|}
+	\item \textbf{Pipe}: Menghubungkan stdout satu perintah ke stdin perintah lain dengan operator \texttt{|}
 
-    \item \textbf{tee}: Menampilkan output di terminal sekaligus menyimpan ke file
+	\item \textbf{tee}: Menampilkan output di terminal sekaligus menyimpan ke file
 
-    \item \textbf{/dev/null}: Null device untuk membuang output yang tidak diperlukan
+	\item \textbf{/dev/null}: Null device untuk membuang output yang tidak diperlukan
 
-    \item \textbf{Kombinasi Operator}: Dapat dikombinasikan untuk workflow yang kompleks
+	\item \textbf{Kombinasi Operator}: Dapat dikombinasikan untuk workflow yang kompleks
 \end{itemize}
 
 %% ------------------------------------------------------------------------
@@ -1647,56 +1647,62 @@ log "Proses selesai"
 \label{sec:io-exercises}
 
 \begin{exercisebox}[3.1]
-Buatlah script yang:
-\begin{enumerate}
-    \item Menampilkan daftar 10 file terbesar di direktori \dir{/var/log}
-    \item Menyimpan hasilnya ke file \file{large-logs.txt}
-    \item Menampilkan output juga di terminal menggunakan \cmd{tee}
-    \item Menangani error dengan redirect ke \file{error.log}
-\end{enumerate}
+	Jalankan perintah berikut satu per satu di terminal untuk menampilkan dan menyimpan 10 file terbesar di \dir{/var/log}:
+	\begin{enumerate}
+		\item Tampilkan 10 file terbesar di \dir{/var/log}: \texttt{du -ah /var/log 2>/dev/null | sort -rh | head -10}
+		\item Simpan hasilnya ke file \file{large-logs.txt}: \texttt{du -ah /var/log 2>/dev/null | sort -rh | head -10 > large-logs.txt}
+		\item Jalankan perintah yang sama menggunakan \cmd{tee} agar output tampil di terminal sekaligus tersimpan ke file
+		\item Pisahkan pesan error ke \file{error.log} menggunakan \texttt{2>}
+	\end{enumerate}
 \end{exercisebox}
 
 \begin{exercisebox}[3.2]
-Buat pipeline yang:
-\begin{enumerate}
-    \item Membaca \file{/etc/passwd}
-    \item Mengekstrak username (kolom pertama)
-    \item Mengurutkan alfabetis
-    \item Menyimpan ke file \file{sorted-users.txt}
-\end{enumerate}
+	Buat pipeline yang:
+	\begin{enumerate}
+		\item Membaca \file{/etc/passwd}
+		\item Mengekstrak username (kolom pertama)
+		\item Mengurutkan alfabetis
+		\item Menyimpan ke file \file{sorted-users.txt}
+	\end{enumerate}
 
-Hint: Gunakan \cmd{cut}, \cmd{sort}, dan operator redirect.
+	Hint: Gunakan \cmd{cut}, \cmd{sort}, dan operator redirect.
 \end{exercisebox}
 
 \begin{exercisebox}[3.3]
-Tulis script monitoring yang:
-\begin{enumerate}
-    \item Mencatat penggunaan CPU dan memory setiap 5 detik
-    \item Menyimpan log dengan timestamp
-    \item Berjalan selama 1 menit (12 iterasi)
-    \item Output ditampilkan di terminal DAN disimpan ke file
-\end{enumerate}
+	Gunakan redirection untuk mencatat informasi sistem ke file log. Jalankan setiap perintah satu per satu di terminal:
+	\begin{enumerate}
+		\item Buat file log baru dengan timestamp: \texttt{date > system-monitor.log}
+		\item Tambahkan informasi memory ke log: \texttt{free -h >> system-monitor.log}
+		\item Tambahkan informasi disk ke log: \texttt{df -h >> system-monitor.log}
+		\item Tampilkan proses yang berjalan sekaligus simpan: \texttt{ps aux | tee -a system-monitor.log | head -5}
+		\item Tampilkan isi file log: \texttt{cat system-monitor.log}
+	\end{enumerate}
+
+	Perhatikan perbedaan antara \texttt{>} (overwrite) dan \texttt{>>} (append) pada setiap langkah.
 \end{exercisebox}
 
 \begin{exercisebox}[3.4]
-Buat perintah yang:
-\begin{enumerate}
-    \item Mencari semua file \texttt{.conf} di sistem
-    \item Membuang pesan "Permission denied"
-    \item Menghitung jumlah file yang ditemukan
-    \item Menyimpan daftar path lengkap ke file
-\end{enumerate}
+	Buat perintah yang:
+	\begin{enumerate}
+		\item Mencari semua file \texttt{.conf} di sistem
+		\item Membuang pesan "Permission denied"
+		\item Menghitung jumlah file yang ditemukan
+		\item Menyimpan daftar path lengkap ke file
+	\end{enumerate}
 \end{exercisebox}
 
 \begin{exercisebox}[3.5]
-Implementasikan script backup yang:
-\begin{enumerate}
-    \item Menggunakan \cmd{tar} untuk backup direktori
-    \item Menampilkan progress dengan \cmd{tee}
-    \item Mencatat stdout ke \file{backup-success.log}
-    \item Mencatat stderr ke \file{backup-error.log}
-    \item Menambahkan timestamp di setiap log entry
-\end{enumerate}
+	Lakukan backup direktori latihan menggunakan \cmd{tar} dengan redirection untuk memisahkan output dan pesan error. Jalankan setiap perintah di terminal:
+	\begin{enumerate}
+		\item Buat direktori latihan terlebih dahulu: \texttt{mkdir -p \textasciitilde/latihan}
+		\item Buat backup dan pisahkan output ke dua file berbeda:\\
+		      \texttt{tar -czvf backup-latihan.tar.gz \textasciitilde/latihan > backup-output.log 2> backup-error.log}
+		\item Tampilkan isi file output: \texttt{cat backup-output.log}
+		\item Tampilkan isi file error (jika ada): \texttt{cat backup-error.log}
+		\item Lihat isi arsip sekaligus simpan daftar file: \texttt{tar -tzvf backup-latihan.tar.gz | tee backup-isi.log}
+	\end{enumerate}
+
+	Perhatikan bagaimana stdout (daftar file yang di-backup) dan stderr (pesan error) dipisahkan ke file yang berbeda.
 \end{exercisebox}
 
 %% ------------------------------------------------------------------------
@@ -1704,8 +1710,8 @@ Implementasikan script backup yang:
 \label{sec:io-references}
 
 \begin{itemize}
-    \item Man pages: \cmd{man bash} (section REDIRECTION)
-    \item Man pages: \cmd{man tee}, \cmd{man mkfifo}
-    \item Advanced Bash-Scripting Guide: I/O Redirection
-    \item Linux Documentation Project: Bash Guide for Beginners
+	\item Man pages: \cmd{man bash} (section REDIRECTION)
+	\item Man pages: \cmd{man tee}, \cmd{man mkfifo}
+	\item Advanced Bash-Scripting Guide: I/O Redirection
+	\item Linux Documentation Project: Bash Guide for Beginners
 \end{itemize}
