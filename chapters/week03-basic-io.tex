@@ -1,53 +1,550 @@
 %% ========================================================================
-%% Chapter 3: Dasar Input/Output (I/O)
+%% BAB 3: Dasar Input dan Output (I/O) pada Linux (Komprehensif)
+%% Sumber konsep diperkaya dari OS-Pertemuan 3.
+%% Asumsi: environment box dan lstlisting style sudah didefinisikan seperti week02.
 %% ========================================================================
 
-\chapter{Dasar Input/Output (I/O)}
+\chapter{Dasar Input dan Output (I/O) pada Linux}
 \label{ch:basic-io}
 
 \begin{abstract}
-Bab ini membahas mekanisme input/output di Linux, termasuk file descriptor,
-pengalihan I/O, pipa, dan penggunaan operator untuk manipulasi aliran data.
+Bab ini membahas mekanisme fundamental input/output pada Linux: filosofi Unix ``everything is a file'',
+file descriptor, pengalihan I/O standar (\texttt{stdin}, \texttt{stdout}, \texttt{stderr}),
+pipa (pipe) dan operator \texttt{|}, pengalihan output ke file (\texttt{>}, \texttt{>>}),
+serta \texttt{tee} untuk menampilkan dan menyimpan output sekaligus.
+Pembahasan difokuskan untuk kebutuhan praktikum: otomasi, logging, audit sederhana, dan troubleshooting.
 \end{abstract}
 
-%% ------------------------------------------------------------------------
+% ------------------------------------------------------------------------
+\section{Filosofi I/O Unix: ``Everything is a File''}
+\label{sec:everything-is-file}
+
+\subsection*{Penjelasan Konsep}
+Salah satu prinsip kunci Unix/Linux adalah \textbf{``everything is a file''}:
+bukan hanya file reguler, tetapi juga perangkat (\texttt{/dev}), informasi proses (\texttt{/proc}),
+informasi sistem (\texttt{/sys}), pipe, socket, dan lain-lain diperlakukan sebagai ``file'' yang
+bisa diakses melalui antarmuka seragam: \texttt{open()}, \texttt{read()}, \texttt{write()}, \texttt{close()}.
+
+Keuntungan besar dari filosofi ini:
+\begin{itemize}
+    \item \textbf{Kesederhanaan antarmuka:} cukup memahami satu pola akses I/O.
+    \item \textbf{Komposabilitas:} output suatu program bisa jadi input program lain (pipe/redirection).
+    \item \textbf{Portabilitas:} detail hardware disembunyikan oleh abstraksi file.
+    \item \textbf{Fleksibilitas:} sumber/tujuan I/O bisa diganti tanpa mengubah logika program.
+\end{itemize}
+
+\begin{tipbox}
+Cara berpikir yang berguna: ``terminal itu file'', ``keyboard itu file'', ``log itu file''.
+Makanya kita bisa mengalihkan output ke mana pun: file, pipe, atau bahkan ``lubang hitam'' (\texttt{/dev/null}).
+\end{tipbox}
+
+\subsection*{Praktikum 3.0 --- Membaca Informasi Sistem seperti Membaca File (Mudah)}
+\textbf{Tujuan:} membuktikan bahwa informasi sistem dapat dibaca seperti file biasa.
+
+\begin{enumerate}
+    \item Lihat informasi CPU:
+\begin{lstlisting}[language=bash, caption={Membaca info CPU dari /proc}]
+cat /proc/cpuinfo | head
+\end{lstlisting}
+
+    \item Lihat informasi memori:
+\begin{lstlisting}[language=bash, caption={Membaca info memori dari /proc}]
+cat /proc/meminfo | head
+\end{lstlisting}
+\end{enumerate}
+
+\begin{examplebox}[Refleksi]
+Walaupun \texttt{/proc/cpuinfo} terlihat seperti file teks, sebenarnya itu adalah \textit{virtual file} yang disediakan kernel.
+Ini contoh nyata ``everything is a file''.
+\end{examplebox}
+
+% ------------------------------------------------------------------------
 \section{File Descriptor di Linux}
-\label{sec:file-descriptors}
+\label{sec:fd}
 
-% [Konten akan diisi di sini]
+\subsection*{Penjelasan Konsep}
+\textbf{File descriptor (FD)} adalah bilangan bulat non-negatif yang menjadi \textit{handle} bagi proses untuk mengakses file/stream:
+file biasa, terminal, pipe, socket, dan sebagainya.
+FD adalah implementasi konkret dari filosofi ``everything is a file''.
 
-%% ------------------------------------------------------------------------
-\section{Pengalihan I/O Standar}
-\label{sec:io-redirection}
+Mengapa FD diperlukan?
+\begin{itemize}
+    \item \textbf{Abstraksi:} program tidak perlu tahu detail device/filesystem.
+    \item \textbf{Keamanan:} kernel mengontrol akses via FD (izin baca/tulis).
+    \item \textbf{Efisiensi:} integer murah untuk dipass dan dikelola.
+    \item \textbf{Multiplexing:} satu proses dapat membuka banyak file sekaligus (FD 3,4,5,...).
+\end{itemize}
 
-\subsection{Standard Input (stdin)}
-\subsection{Standard Output (stdout)}
-\subsection{Standard Error (stderr)}
+\begin{notebox}
+Secara internal, kernel menyimpan tabel FD per proses.
+Saat \texttt{open()} dipanggil, kernel memberi FD terkecil yang tersedia (setelah 0,1,2 biasanya mulai dari 3).
+\end{notebox}
 
-% [Konten akan diisi di sini]
+\subsection*{File Descriptor Standar}
+Setiap proses yang berjalan dari terminal umumnya memiliki tiga FD standar:
 
-%% ------------------------------------------------------------------------
-\section{Pipa dan Operator |}
+\begin{center}
+\begin{tabular}{|c|c|l|}
+\hline
+FD & Nama & Fungsi \\
+\hline
+0 & stdin  & Input standar (keyboard/terminal) \\
+1 & stdout & Output normal program \\
+2 & stderr & Pesan error/diagnostik \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection*{Praktikum 3.1 --- Melihat FD Shell Aktif (Mudah)}
+\textbf{Tujuan:} melihat FD 0,1,2 pada shell saat ini.
+
+\begin{enumerate}
+    \item Tampilkan PID shell:
+\begin{lstlisting}[language=bash, caption={PID shell}]
+echo $$
+\end{lstlisting}
+
+    \item Lihat FD yang terbuka:
+\begin{lstlisting}[language=bash, caption={FD shell pada /proc}]
+ls -l /proc/$$/fd
+\end{lstlisting}
+
+    \item Amati FD 0,1,2 mengarah ke \texttt{/dev/pts/X} (pseudo-terminal).
+\end{enumerate}
+
+\begin{exercisebox}[3.1]
+Tuliskan hasil mapping FD 0,1,2 pada sistem Anda, lalu jelaskan mengapa semuanya mengarah ke \texttt{/dev/pts/X}.
+\end{exercisebox}
+
+\subsection*{Praktikum 3.2 --- FD untuk Logging Terpisah (Riil)}
+\textbf{Skenario:} memisahkan output normal dan error untuk debugging cepat.
+
+\begin{enumerate}
+    \item Siapkan folder:
+\begin{lstlisting}[language=bash, caption={Folder log praktikum}]
+mkdir -p ~/log-praktikum
+\end{lstlisting}
+
+    \item Jalankan perintah campuran dan pisahkan:
+\begin{lstlisting}[language=bash, caption={Pisahkan stdout dan stderr}]
+(ls /etc; ls /folder_tidak_ada) > ~/log-praktikum/stdout.log 2> ~/log-praktikum/stderr.log
+\end{lstlisting}
+
+    \item Baca log:
+\begin{lstlisting}[language=bash, caption={Baca hasil log}]
+cat ~/log-praktikum/stdout.log
+cat ~/log-praktikum/stderr.log
+\end{lstlisting}
+\end{enumerate}
+
+% ------------------------------------------------------------------------
+\section{Pengalihan I/O Standar (stdin, stdout, stderr)}
+\label{sec:redirection}
+
+\subsection*{Penjelasan Konsep}
+\textbf{Redirection} adalah mekanisme shell untuk mengubah sumber input atau tujuan output.
+Ini penting untuk otomasi, logging, batch processing, dan membangun workflow data.
+
+\subsubsection*{A. Pengalihan stdin (\texttt{<})}
+Secara default, program membaca input dari keyboard. Dengan \texttt{<}, input bisa berasal dari file.
+
+\begin{lstlisting}[language=bash, caption={Contoh redirect stdin dari file}]
+sort < file.txt
+wc -l < /etc/passwd
+\end{lstlisting}
+
+\begin{tipbox}
+Redirect stdin berguna untuk input besar, input berulang (testing), dan otomasi tanpa interaksi user.
+\end{tipbox}
+
+\subsubsection*{B. Pengalihan stdout (\texttt{>} dan \texttt{>>})}
+Secara default stdout tampil ke terminal. Dengan \texttt{>} output disimpan ke file (overwrite),
+dengan \texttt{>>} output ditambahkan di akhir file (append).
+
+\begin{warningbox}
+\texttt{>} menimpa file tanpa peringatan.
+Untuk file log, hampir selalu lebih aman memakai \texttt{>>}.
+\end{warningbox}
+
+\subsubsection*{C. Pengalihan stderr (\texttt{2>} dan \texttt{2>>})}
+stderr adalah channel terpisah untuk error/diagnostik agar data (stdout) tidak tercampur error.
+Dengan \texttt{2>} error disimpan ke file, dengan \texttt{2>>} error di-append.
+
+\begin{lstlisting}[language=bash, caption={Redirect stderr}]
+find / -name "*.conf" 2> errors.txt
+grep "pattern" file.txt 2> /dev/null
+\end{lstlisting}
+
+\subsubsection*{D. Menggabungkan stdout dan stderr (Perhatikan Urutan!)}
+Ada beberapa metode umum:
+
+\begin{lstlisting}[language=bash, caption={Metode umum redirect stdout+stderr}]
+# File berbeda
+command > output.txt 2> error.txt
+
+# Satu file (metode klasik) - URUTAN penting
+command > all-output.txt 2>&1
+
+# Syntax modern bash (Bash 4+)
+command &> all-output.txt
+
+# Append keduanya ke satu file
+command >> all-output.txt 2>&1
+\end{lstlisting}
+
+\begin{warningbox}
+Kesalahan umum: \texttt{command 2>\&1 > file} (urutan terbalik).
+Ini membuat stderr tetap ke terminal karena saat \texttt{2>\&1} dieksekusi, stdout masih ke terminal.
+Urutan benar: \texttt{> file 2>\&1}.
+\end{warningbox}
+
+\subsubsection*{E. Here Document (Input Multi-baris tanpa File Sementara)}
+Here document (heredoc) memungkinkan memberi input multi-baris langsung pada command/script.
+
+\begin{lstlisting}[language=bash, caption={Here document untuk input multi-baris}]
+cat << EOF
+Baris 1
+Baris 2
+EOF
+
+# Mencegah ekspansi variabel dengan delimiter bertanda kutip
+cat << 'EOF' > config.txt
+server=localhost
+port=8080
+EOF
+\end{lstlisting}
+
+\subsection*{Praktikum 3.3 --- Redirection Dasar (Mudah)}
+\textbf{Tujuan:} menguasai \texttt{>}, \texttt{>>}, \texttt{2>}.
+
+\begin{enumerate}
+    \item Simpan daftar file:
+\begin{lstlisting}[language=bash, caption={Redirect stdout}]
+ls > daftar_file.txt
+\end{lstlisting}
+
+    \item Append timestamp:
+\begin{lstlisting}[language=bash, caption={Append output}]
+date >> daftar_file.txt
+\end{lstlisting}
+
+    \item Redirect error:
+\begin{lstlisting}[language=bash, caption={Redirect stderr}]
+ls file_tidak_ada 2> error.txt
+\end{lstlisting}
+
+    \item Verifikasi:
+\begin{lstlisting}[language=bash, caption={Cek hasil redirection}]
+cat daftar_file.txt
+cat error.txt
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 3.4 --- Noclobber untuk Mencegah Overwrite (Riil Safety)}
+\textbf{Skenario:} mencegah file tertimpa tak sengaja (praktik aman di server).
+
+\begin{enumerate}
+    \item Aktifkan noclobber:
+\begin{lstlisting}[language=bash, caption={Aktifkan noclobber}]
+set -o noclobber
+\end{lstlisting}
+
+    \item Coba overwrite file yang sudah ada (harus gagal jika file ada):
+\begin{lstlisting}[language=bash, caption={Overwrite diblokir noclobber}]
+echo "data" > daftar_file.txt
+\end{lstlisting}
+
+    \item Paksa overwrite dengan \texttt{>|}:
+\begin{lstlisting}[language=bash, caption={Paksa overwrite}]
+echo "data paksa" >| daftar_file.txt
+\end{lstlisting}
+
+    \item Nonaktifkan noclobber:
+\begin{lstlisting}[language=bash, caption={Nonaktifkan noclobber}]
+set +o noclobber
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 3.5 --- /dev/null untuk ``Membuang'' Output (Riil)}
+\textbf{Skenario:} membuang error yang diharapkan (mis. permission denied saat scanning sistem).
+
+\begin{enumerate}
+    \item Jalankan pencarian dan buang error:
+\begin{lstlisting}[language=bash, caption={Buang stderr ke /dev/null}]
+find / -name "*.conf" 2> /dev/null | head
+\end{lstlisting}
+
+    \item Buang semua output (stdout+stderr):
+\begin{lstlisting}[language=bash, caption={Buang semua output}]
+command > /dev/null 2>&1
+\end{lstlisting}
+\end{enumerate}
+
+\begin{warningbox}
+Hati-hati: sekali output masuk \texttt{/dev/null}, hilang permanen.
+Pastikan Anda memang tidak memerlukan output tersebut.
+\end{warningbox}
+
+% ------------------------------------------------------------------------
+\section{Pipa dan Operator \texttt{|}}
 \label{sec:pipes}
 
-% [Konten akan diisi di sini]
+\subsection*{Penjelasan Konsep}
+\textbf{Pipe} adalah mekanisme IPC (inter-process communication) yang menghubungkan stdout suatu proses menjadi stdin proses lain
+dengan operator \texttt{|}. Pipe mengimplementasikan Unix Philosophy:
+\textit{buat program kecil yang melakukan satu hal dengan baik, lalu gabungkan.}
 
-%% ------------------------------------------------------------------------
-\section{Pengalihan Output ke File}
-\label{sec:output-redirection}
+Manfaat pipe:
+\begin{itemize}
+    \item \textbf{Efisiensi:} data mengalir antar proses tanpa file perantara (minim I/O disk).
+    \item \textbf{Paralelisme:} tahapan pipeline dapat berjalan \textit{concurrent}.
+    \item \textbf{Streaming:} cocok untuk data besar karena diproses bertahap (chunk-by-chunk).
+\end{itemize}
 
-\subsection{Operator > (Overwrite)}
-\subsection{Operator >> (Append)}
+\begin{notebox}
+Pipe memiliki buffer di kernel (umumnya puluhan KB).
+Jika buffer penuh, proses penulis akan \textit{blocked} sampai proses pembaca mengonsumsi data.
+Ini menjadi flow control alami.
+\end{notebox}
 
-% [Konten akan diisi di sini]
+\subsection*{Praktikum 3.6 --- Pipeline Dasar (Mudah)}
+\begin{enumerate}
+    \item Hitung jumlah item:
+\begin{lstlisting}[language=bash, caption={Hitung item di direktori}]
+ls | wc -l
+\end{lstlisting}
 
-%% ------------------------------------------------------------------------
-\section{Penggunaan tee untuk Output Ganda}
-\label{sec:tee-command}
+    \item Filter file \texttt{.txt}:
+\begin{lstlisting}[language=bash, caption={Filter txt}]
+ls | grep ".txt"
+\end{lstlisting}
 
-% [Konten akan diisi di sini]
+    \item Pipeline bertingkat:
+\begin{lstlisting}[language=bash, caption={Filter lalu hitung}]
+ls -l | grep ".txt" | wc -l
+\end{lstlisting}
+\end{enumerate}
 
-%% ------------------------------------------------------------------------
-\section{Rangkuman}
-\section{Latihan}
-\section{Referensi Tambahan}
+\subsection*{Praktikum 3.7 --- Pipeline ``Kondisi Riil'' (Analisis Log/Proses)}
+\textbf{Skenario A (Proses):} cari proses tertentu lalu simpan hasilnya.
+\begin{lstlisting}[language=bash, caption={Filter proses dan simpan}]
+ps aux | grep ssh | sort -k3 -rn | head -10 > top-ssh-processes.txt
+\end{lstlisting}
+
+\textbf{Skenario B (Log autentikasi):} investigasi login gagal.
+\begin{lstlisting}[language=bash, caption={Analisis login gagal}]
+sudo cat /var/log/auth.log | grep "Failed" | tail -n 10
+sudo cat /var/log/auth.log | grep "Failed" | wc -l
+\end{lstlisting}
+
+\subsection*{Tambahan Konsep: Named Pipe (FIFO)}
+Selain pipe ``sementara'' dari operator \texttt{|}, Linux juga mendukung \textbf{named pipe} (FIFO) yang punya nama di filesystem
+dan bisa dipakai antar terminal/proses terpisah.
+
+\subsection*{Praktikum 3.8 --- Named Pipe (Riil IPC Sederhana)}
+\textbf{Tujuan:} simulasi komunikasi antar proses/terminal.
+
+\begin{enumerate}
+    \item Buat FIFO:
+\begin{lstlisting}[language=bash, caption={Membuat FIFO}]
+mkfifo mypipe
+\end{lstlisting}
+
+    \item \textbf{Terminal 1} (menulis):
+\begin{lstlisting}[language=bash, caption={Menulis ke FIFO}]
+echo "Hello from Terminal 1" > mypipe
+\end{lstlisting}
+
+    \item \textbf{Terminal 2} (membaca):
+\begin{lstlisting}[language=bash, caption={Membaca dari FIFO}]
+cat < mypipe
+\end{lstlisting}
+
+    \item Hapus FIFO:
+\begin{lstlisting}[language=bash, caption={Menghapus FIFO}]
+rm mypipe
+\end{lstlisting}
+\end{enumerate}
+
+% ------------------------------------------------------------------------
+\section{Pengalihan Output ke File (\texttt{>} dan \texttt{>>})}
+\label{sec:redirect-to-file}
+
+\subsection*{Penjelasan Konsep}
+Pengalihan output ke file adalah dasar pembuatan log dan laporan.
+
+\textbf{Overwrite (\texttt{>})} cocok untuk hasil yang harus selalu fresh.
+\textbf{Append (\texttt{>>})} cocok untuk log dan histori.
+
+\begin{tipbox}
+Rule of thumb:
+\texttt{>} = laporan baru,
+\texttt{>>} = log yang terus bertambah.
+\end{tipbox}
+
+\subsection*{Praktikum 3.9 --- Overwrite vs Append (Mudah)}
+\begin{enumerate}
+    \item Overwrite:
+\begin{lstlisting}[language=bash, caption={Overwrite}]
+echo "Baris Pertama" > latihan.txt
+\end{lstlisting}
+
+    \item Append:
+\begin{lstlisting}[language=bash, caption={Append}]
+echo "Baris Kedua" >> latihan.txt
+\end{lstlisting}
+
+    \item Cek:
+\begin{lstlisting}[language=bash, caption={Cek isi}]
+cat latihan.txt
+\end{lstlisting}
+
+    \item Timpa:
+\begin{lstlisting}[language=bash, caption={Timpa}]
+echo "Ditimpa" > latihan.txt
+cat latihan.txt
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 3.10 --- Laporan Harian Server (Riil)}
+\textbf{Skenario:} membuat daily report manual (dasar automasi cron).
+
+\begin{enumerate}
+    \item Header + timestamp:
+\begin{lstlisting}[language=bash, caption={Membuat header laporan}]
+echo "=== DAILY REPORT ===" > daily_report.txt
+date >> daily_report.txt
+\end{lstlisting}
+
+    \item Disk + memory:
+\begin{lstlisting}[language=bash, caption={Tambahkan disk dan memory}]
+echo "--- DISK USAGE ---" >> daily_report.txt
+df -h >> daily_report.txt
+echo "--- MEMORY ---" >> daily_report.txt
+free -h >> daily_report.txt
+\end{lstlisting}
+
+    \item User login:
+\begin{lstlisting}[language=bash, caption={Tambahkan user login}]
+echo "--- LOGGED IN USERS ---" >> daily_report.txt
+who >> daily_report.txt
+\end{lstlisting}
+
+    \item Tampilkan:
+\begin{lstlisting}[language=bash, caption={Tampilkan laporan}]
+cat daily_report.txt
+\end{lstlisting}
+\end{enumerate}
+
+% ------------------------------------------------------------------------
+\section{Penggunaan \texttt{tee} untuk Output Ganda}
+\label{sec:tee}
+
+\subsection*{Penjelasan Konsep}
+Perintah \texttt{tee} membaca dari stdin lalu menulis ke stdout dan ke satu/lebih file.
+Nama ``tee'' mengilustrasikan bentuk huruf T: aliran data dibagi dua.
+
+Kapan \texttt{tee} berguna?
+\begin{itemize}
+    \item \textbf{Real-time monitoring + logging:} lihat proses sambil simpan log.
+    \item \textbf{Audit trail:} dokumentasi langkah maintenance/deployment.
+    \item \textbf{Debug pipeline:} ``menyadap'' data intermediate tanpa mengubah alur.
+    \item \textbf{Menulis ke file root:} gunakan \texttt{sudo tee} (redirection biasa tidak ikut sudo).
+\end{itemize}
+
+\begin{notebox}
+Redirection \texttt{>} diproses oleh shell \textit{sebelum} \texttt{sudo}.
+Karena itu \texttt{sudo echo "x" > /etc/file} sering gagal.
+Solusinya: \texttt{echo "x" | sudo tee /etc/file}.
+\end{notebox}
+
+\subsection*{Praktikum 3.11 --- tee Dasar (Mudah)}
+\begin{enumerate}
+    \item Tampilkan dan simpan:
+\begin{lstlisting}[language=bash, caption={tee dasar}]
+ls | tee hasil.txt
+\end{lstlisting}
+
+    \item Append:
+\begin{lstlisting}[language=bash, caption={tee append}]
+date | tee -a hasil.txt
+\end{lstlisting}
+
+    \item Cek:
+\begin{lstlisting}[language=bash, caption={Cek hasil}]
+cat hasil.txt
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 3.12 --- tee untuk Logging APT Update (Riil)}
+\textbf{Skenario:} saat update server, Anda ingin melihat progress dan punya log.
+
+\begin{enumerate}
+    \item Jalankan update dan simpan log:
+\begin{lstlisting}[language=bash, caption={apt update dengan tee}]
+sudo apt update | tee apt-update.log
+\end{lstlisting}
+
+    \item (Opsional) upgrade dan simpan log:
+\begin{lstlisting}[language=bash, caption={apt upgrade dengan tee}]
+sudo apt upgrade -y | tee apt-upgrade.log
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 3.13 --- tee untuk Menulis File Butuh Root (Riil)}
+\textbf{Skenario:} menambah entri ke \texttt{/etc/hosts}.
+
+\begin{enumerate}
+    \item Append aman dengan \texttt{sudo tee -a}:
+\begin{lstlisting}[language=bash, caption={Append ke /etc/hosts}]
+echo "127.0.0.1 contoh.local" | sudo tee -a /etc/hosts
+\end{lstlisting}
+
+    \item Verifikasi:
+\begin{lstlisting}[language=bash, caption={Cek hosts}]
+tail -n 3 /etc/hosts
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Catatan Penting: Exit Code pada Pipeline (\texttt{\$?} vs \texttt{PIPESTATUS})}
+Pada pipeline, \texttt{\$?} hanya menyimpan exit code command \textit{terakhir}.
+Untuk mengambil exit code tiap tahapan pipeline, gunakan array \texttt{PIPESTATUS}.
+
+\begin{lstlisting}[language=bash, caption={PIPESTATUS untuk cek exit code pipeline}]
+command | tee output.txt
+echo ${PIPESTATUS[0]}   # exit code command
+echo ${PIPESTATUS[1]}   # exit code tee
+\end{lstlisting}
+
+\begin{warningbox}
+Jika Anda membuat script logging menggunakan \texttt{tee}, jangan hanya mengandalkan \texttt{\$?}.
+Gunakan \texttt{PIPESTATUS} agar tahu apakah command utama sukses/gagal.
+\end{warningbox}
+
+% ------------------------------------------------------------------------
+\section{Tugas dan Latihan Mandiri}
+\label{sec:tasks-io}
+
+\subsection*{A. Latihan Konseptual}
+\begin{enumerate}
+    \item Jelaskan mengapa Unix memisahkan \texttt{stdout} dan \texttt{stderr}. Berikan satu contoh manfaatnya pada pipeline.
+    \item Jelaskan perbedaan \texttt{>}, \texttt{>>}, \texttt{2>}, \texttt{2>>}, \texttt{2>\&1}, dan \texttt{\&>}.
+    \item Mengapa urutan \texttt{> file 2>\&1} penting? Jelaskan dengan logika FD.
+\end{enumerate}
+
+\subsection*{B. Latihan Praktikum (Mudah)}
+\begin{enumerate}
+    \item Buat pipeline yang membaca \texttt{/etc/passwd}, mengambil username (kolom pertama), urutkan alfabetis, dan simpan ke \texttt{sorted-users.txt}.
+    \item Buat perintah yang mencari semua file \texttt{.conf} di sistem tetapi membuang pesan ``Permission denied'', lalu hitung jumlah file yang ditemukan.
+\end{enumerate}
+
+\subsection*{C. Latihan Praktikum (Kondisi Riil)}
+\begin{enumerate}
+    \item Buat script/perintah yang menampilkan 10 file terbesar di \texttt{/var/log}, tampilkan di terminal \textbf{dan} simpan ke \texttt{large-logs.txt} menggunakan \texttt{tee}. Error disimpan ke \texttt{error.log}.
+    \item Buat ``monitoring mini'' selama 1 menit (12 iterasi) yang setiap 5 detik mencatat ringkasan CPU dan memory (boleh minimal: \texttt{uptime} dan \texttt{free -h}),
+    tampilkan dan simpan ke file log dengan timestamp.
+\end{enumerate}
+
+\begin{tipbox}
+Jika sudah nyaman dengan bab ini, Anda siap naik tingkat ke: redirection lanjutan, scripting bash yang robust, dan automasi dengan \texttt{cron} atau \texttt{systemd timer}.
+\end{tipbox}
