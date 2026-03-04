@@ -8,28 +8,44 @@
 \usepackage[utf8]{inputenc}      % Input encoding UTF-8
 \usepackage[T1]{fontenc}         % Font encoding
 \usepackage{lmodern}             % Latin Modern font (lebih baik untuk PDF)
+
+%% Monospace font configuration for better readability
+\usepackage[scaled=1.05]{inconsolata}  % Better monospace font, slightly enlarged
 \usepackage{microtype}           % Typographical refinements
 
 %% ------------------------------------------------------------------------
 %% Bahasa
 %% ------------------------------------------------------------------------
 \usepackage[indonesian,english]{babel}  % Dukungan bahasa Indonesia
-\selectlanguage{indonesian}
 
-%% Konfigurasi istilah bahasa Indonesia
-\addto\captionsindonesian{%
-    \renewcommand{\figurename}{Gambar}%
-    \renewcommand{\tablename}{Tabel}%
-    \renewcommand{\contentsname}{Daftar Isi}%
-    \renewcommand{\listfigurename}{Daftar Gambar}%
-    \renewcommand{\listtablename}{Daftar Tabel}%
-    \renewcommand{\bibname}{Daftar Pustaka}%
-    \renewcommand{\indexname}{Indeks}%
-    \renewcommand{\appendixname}{Lampiran}%
-    \renewcommand{\abstractname}{Abstrak}%
-    \renewcommand{\partname}{Bagian}%
-    \renewcommand{\chaptername}{Bab}%
-}
+%% Language flags - MUST be set by main-id.tex or main-en.tex before loading preamble
+%% \newif\ifIndonesian
+%% \newif\ifEnglish
+%% Then set \Indonesiantrue or \Englishtrue
+%%
+%% The flags control all language-specific elements below
+
+%% Konfigurasi istilah bahasa - conditional based on language
+\ifIndonesian
+    \addto\captionsindonesian{%
+        \renewcommand{\figurename}{Gambar}%
+        \renewcommand{\tablename}{Tabel}%
+        \renewcommand{\contentsname}{Daftar Isi}%
+        \renewcommand{\listfigurename}{Daftar Gambar}%
+        \renewcommand{\listtablename}{Daftar Tabel}%
+        \renewcommand{\bibname}{Daftar Pustaka}%
+        \renewcommand{\indexname}{Indeks}%
+        \renewcommand{\appendixname}{Lampiran}%
+        \renewcommand{\abstractname}{Abstrak}%
+        \renewcommand{\partname}{Bagian}%
+        \renewcommand{\chaptername}{Bab}%
+    }
+\else
+    % English uses babel defaults
+    \addto\captionsenglish{%
+        \renewcommand{\bibname}{References}%
+    }
+\fi
 
 %% ------------------------------------------------------------------------
 %% Geometri Halaman (A4)
@@ -52,11 +68,18 @@
 \usepackage{float}               % Kontrol posisi float
 \usepackage{subfig}              % Subfigure support
 
-%% Konfigurasi caption untuk bahasa Indonesia
-\captionsetup{
-    figurename=Gambar,
-    tablename=Tabel
-}
+%% Konfigurasi caption - language-aware
+\ifIndonesian
+    \captionsetup{
+        figurename=Gambar,
+        tablename=Tabel
+    }
+\else
+    \captionsetup{
+        figurename=Figure,
+        tablename=Table
+    }
+\fi
 
 \usepackage{tikz}                % Untuk diagram
 \usetikzlibrary{shapes,arrows,positioning,calc}
@@ -91,10 +114,26 @@
 %% ------------------------------------------------------------------------
 \usepackage{listings}            % Syntax highlighting untuk kode
 
-%% Konfigurasi nama caption untuk listing
-\renewcommand{\lstlistingname}{Kode}
-\renewcommand{\lstlistlistingname}{Daftar Kode}
+%% Konfigurasi nama caption untuk listing - language-aware
+\ifIndonesian
+    \renewcommand{\lstlistingname}{Kode}
+    \renewcommand{\lstlistlistingname}{Daftar Kode}
+\else
+    \renewcommand{\lstlistingname}{Listing}
+    \renewcommand{\lstlistlistingname}{List of Listings}
+\fi
 
+%% Definisi bahasa untuk listing
+\lstdefinelanguage{bash}{
+    keywords={if, then, else, elif, fi, for, while, do, done, case, esac,
+              function, return, exit, break, continue, in, select},
+    sensitive=true,
+    morecomment=[l]{\#},
+    morestring=[b]",
+    morestring=[b]'
+}
+
+%% Basic style definition (used by both lstlisting and tcolorbox)
 \lstdefinestyle{bashstyle}{
     backgroundcolor=\color{backcolour},
     commentstyle=\color{codegreen},
@@ -106,13 +145,12 @@
     breaklines=true,
     captionpos=b,
     keepspaces=true,
-    numbers=left,
-    numbersep=5pt,
+    numbers=none,            % No line numbers
     showspaces=false,
     showstringspaces=false,
     showtabs=false,
     tabsize=4,
-    frame=single,
+    frame=single,            % Simple frame around code
     rulecolor=\color{black!30},
     xleftmargin=2em,
     framexleftmargin=1.5em
@@ -120,15 +158,19 @@
 
 \lstset{style=bashstyle}
 
-%% Definisi bahasa untuk listing
-\lstdefinelanguage{bash}{
-    keywords={if, then, else, elif, fi, for, while, do, done, case, esac,
-              function, return, exit, break, continue, in, select},
-    sensitive=true,
-    morecomment=[l]{\#},
-    morestring=[b]",
-    morestring=[b]'
+%% ------------------------------------------------------------------------
+%% Prevent Page Breaks in Listings - Simple approach
+%% ------------------------------------------------------------------------
+%% Add penalties to discourage page breaks inside listings
+\lstset{
+    aboveskip=\bigskipamount,
+    belowskip=\bigskipamount
 }
+
+%% For very long code that MUST be allowed to break, use this environment
+\lstnewenvironment{longlisting}[1][]{%
+    \lstset{#1}%
+}{}
 
 %% ------------------------------------------------------------------------
 %% Hyperlinks dan Referensi
@@ -143,34 +185,14 @@
     pdfborder={0 0 0}
 ]{hyperref}
 
-\usepackage[capitalise,noabbrev]{cleveref}  % Referensi pintar
-
-%% Konfigurasi cleveref untuk bahasa Indonesia
-\crefname{figure}{gambar}{gambar}
-\Crefname{figure}{Gambar}{Gambar}
-\crefname{table}{tabel}{tabel}
-\Crefname{table}{Tabel}{Tabel}
-\crefname{chapter}{bab}{bab}
-\Crefname{chapter}{Bab}{Bab}
-\crefname{section}{bagian}{bagian}
-\Crefname{section}{Bagian}{Bagian}
-\crefname{subsection}{subbagian}{subbagian}
-\Crefname{subsection}{Subbagian}{Subbagian}
-\crefname{equation}{persamaan}{persamaan}
-\Crefname{equation}{Persamaan}{Persamaan}
-\crefname{listing}{kode}{kode}
-\Crefname{listing}{Kode}{Kode}
-\crefname{appendix}{lampiran}{lampiran}
-\Crefname{appendix}{Lampiran}{Lampiran}
-
 %% ------------------------------------------------------------------------
 %% Header dan Footer
 %% ------------------------------------------------------------------------
 \usepackage{scrlayer-scrpage}    % KOMA-Script header/footer
 \clearpairofpagestyles
-\ihead{\leftmark}
-\ohead{\rightmark}
-\cfoot[\pagemark]{\pagemark}
+\ohead{\rightmark}               % Section in outer header
+\ifoot{\leftmark}                % Chapter in inner footer
+\ofoot[\pagemark]{\pagemark}     % Page number in outer footer (right on odd, left on even)
 \pagestyle{scrheadings}
 
 %% ------------------------------------------------------------------------
@@ -190,24 +212,65 @@
 \usepackage{amssymb}             % Simbol matematika
 \usepackage{amsthm}              % Theorem environments
 
+%% cleveref MUST be loaded after amsmath and hyperref
+\usepackage[capitalise,noabbrev]{cleveref}  % Referensi pintar
+
+%% Konfigurasi cleveref - language-aware
+\ifIndonesian
+    \crefname{figure}{gambar}{gambar}
+    \Crefname{figure}{Gambar}{Gambar}
+    \crefname{table}{tabel}{tabel}
+    \Crefname{table}{Tabel}{Tabel}
+    \crefname{chapter}{bab}{bab}
+    \Crefname{chapter}{Bab}{Bab}
+    \crefname{section}{bagian}{bagian}
+    \Crefname{section}{Bagian}{Bagian}
+    \crefname{subsection}{subbagian}{subbagian}
+    \Crefname{subsection}{Subbagian}{Subbagian}
+    \crefname{equation}{persamaan}{persamaan}
+    \Crefname{equation}{Persamaan}{Persamaan}
+    \crefname{listing}{kode}{kode}
+    \Crefname{listing}{Kode}{Kode}
+    \crefname{appendix}{lampiran}{lampiran}
+    \Crefname{appendix}{Lampiran}{Lampiran}
+\else
+    % English defaults from cleveref are fine
+    % Override only if needed
+\fi
+
 %% ------------------------------------------------------------------------
 %% Box dan Environment Khusus
 %% ------------------------------------------------------------------------
 \usepackage[most]{tcolorbox}     % Colored boxes
 
-% Box untuk catatan
+%% Define box titles based on language
+\ifIndonesian
+    \def\noteboxTitle{Catatan}
+    \def\warningboxTitle{Peringatan}
+    \def\tipboxTitle{Tips}
+    \def\exampleboxPrefix{Contoh: }
+    \def\exerciseboxPrefix{Latihan }
+\else
+    \def\noteboxTitle{Note}
+    \def\warningboxTitle{Warning}
+    \def\tipboxTitle{Tip}
+    \def\exampleboxPrefix{Example: }
+    \def\exerciseboxPrefix{Exercise }
+\fi
+
+% Box untuk catatan / note
 \newtcolorbox{notebox}{
     colback=blue!5!white,
     colframe=blue!75!black,
-    title=Catatan,
+    title=\noteboxTitle,
     fonttitle=\bfseries
 }
 
-% Box untuk peringatan
+% Box untuk peringatan / warning
 \newtcolorbox{warningbox}{
     colback=red!5!white,
     colframe=red!75!black,
-    title=Peringatan,
+    title=\warningboxTitle,
     fonttitle=\bfseries
 }
 
@@ -215,24 +278,61 @@
 \newtcolorbox{tipbox}{
     colback=green!5!white,
     colframe=green!75!black,
-    title=Tips,
+    title=\tipboxTitle,
     fonttitle=\bfseries
 }
 
-% Box untuk contoh
+% Box untuk contoh / example
 \newtcolorbox{examplebox}[1][]{
     colback=yellow!10!white,
     colframe=orange!75!black,
-    title=Contoh: #1,
+    title=\exampleboxPrefix#1,
     fonttitle=\bfseries
 }
 
-% Box untuk latihan
+% Box untuk latihan / exercise
 \newtcolorbox{exercisebox}[1][]{
     colback=purple!5!white,
     colframe=purple!75!black,
-    title=Latihan #1,
+    title=\exerciseboxPrefix#1,
     fonttitle=\bfseries
+}
+
+%% Unbreakable code listing using tcolorbox (prevents page breaks)
+%% This is an alternative to standard lstlisting for code that must stay together
+\newtcblisting{codebox}[2][]{
+    listing only,
+    listing options={
+        language=bash,
+        style=bashstyle,
+        float=,         % Disable float for tcolorbox
+        #1
+    },
+    title={#2},
+    colback=backcolour,
+    colframe=black!30,
+    fonttitle=\bfseries\small,
+    breakable=false,    % This prevents page breaks inside the box
+    enhanced,
+    before upper={\parindent0pt}
+}
+
+%% For very long code that NEEDS to break across pages
+\newtcblisting{longcodebox}[2][]{
+    listing only,
+    listing options={
+        language=bash,
+        style=bashstyle,
+        float=,
+        #1
+    },
+    title={#2},
+    colback=backcolour,
+    colframe=black!30,
+    fonttitle=\bfseries\small,
+    breakable=true,     % Allows page breaks for very long code
+    enhanced,
+    before upper={\parindent0pt}
 }
 
 %% ------------------------------------------------------------------------
@@ -251,22 +351,35 @@
 \makeindex
 
 %% ------------------------------------------------------------------------
-%% Teorema dan Definisi
+%% Teorema dan Definisi - language-aware
 %% ------------------------------------------------------------------------
 \theoremstyle{definition}
-\newtheorem{definition}{Definisi}[chapter]
-\newtheorem{example}{Contoh}[chapter]
+\ifIndonesian
+    \newtheorem{definition}{Definisi}[chapter]
+    \newtheorem{example}{Contoh}[chapter]
+\else
+    \newtheorem{definition}{Definition}[chapter]
+    \newtheorem{example}{Example}[chapter]
+\fi
 
 \theoremstyle{plain}
-\newtheorem{theorem}{Teorema}[chapter]
+\ifIndonesian
+    \newtheorem{theorem}{Teorema}[chapter]
+\else
+    \newtheorem{theorem}{Theorem}[chapter]
+\fi
 
-%% Konfigurasi nama untuk cleveref (teorema)
-\crefname{definition}{definisi}{definisi}
-\Crefname{definition}{Definisi}{Definisi}
-\crefname{example}{contoh}{contoh}
-\Crefname{example}{Contoh}{Contoh}
-\crefname{theorem}{teorema}{teorema}
-\Crefname{theorem}{Teorema}{Teorema}
+%% Konfigurasi nama untuk cleveref (teorema) - language-aware
+\ifIndonesian
+    \crefname{definition}{definisi}{definisi}
+    \Crefname{definition}{Definisi}{Definisi}
+    \crefname{example}{contoh}{contoh}
+    \Crefname{example}{Contoh}{Contoh}
+    \crefname{theorem}{teorema}{teorema}
+    \Crefname{theorem}{Teorema}{Teorema}
+\else
+    % English defaults from cleveref are fine
+\fi
 
 %% ------------------------------------------------------------------------
 %% Spacing dan Format

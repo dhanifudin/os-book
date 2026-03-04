@@ -5,13 +5,11 @@
 \chapter{Manajemen Perangkat Keras \& Perintah Dasar Sistem Operasi}
 \label{ch:hardware-and-basic-commands}
 
-\begin{abstract}
 Bab ini membahas cara Linux mendeteksi dan mengelola perangkat keras, modul kernel,
 driver perangkat, serta perintah-perintah dasar terminal Linux yang esensial untuk praktikum
 Ubuntu Server 22.04. Fokus utama bab ini adalah keterampilan praktik: mengidentifikasi perangkat,
 mengecek driver/modul kernel, memahami perangkat di \texttt{/dev}, melakukan manipulasi teks
 dengan \texttt{grep/sed/awk}, mengelola proses, dan memantau kondisi sistem.
-\end{abstract}
 
 %% ------------------------------------------------------------------------
 \section{Deteksi Perangkat Keras di Linux}
@@ -24,7 +22,7 @@ Pada sistem operasi Linux, informasi perangkat keras dapat terlihat melalui bebe
 \textbf{kernel} melakukan enumerasi/scan perangkat (contoh: PCI/USB/storage), menampilkan informasi melalui \textbf{sysfs} (\texttt{/sys}),
 kemudian \textbf{udev} membuat node perangkat di \textbf{/dev}. Setelah menyelesaikan bab ini, diharapkan,
 \begin{itemize}
-    \item Anda dapat \textbf{melihat dafatar perangkat} (misal: NIC, disk, USB) dengan menggunakan perintah seperti \texttt{lspci/lsusb/lsblk}.
+    \item Anda dapat \textbf{melihat daftar perangkat} (misal: NIC, disk, USB) dengan menggunakan perintah seperti \texttt{lspci/lsusb/lsblk}.
     \item Anda dapat \textbf{melihat driver/modul} yang meng-handle perangkat (misal: nama modul kernel) dari output \texttt{lspci -k} atau \texttt{lsmod}.
     \item Anda dapat \textbf{melihat jejak deteksi} pada log kernel dengan \texttt{dmesg} atau \texttt{journalctl -k}.
 \end{itemize}
@@ -614,7 +612,7 @@ sudo ss -tulpn
 \end{enumerate}
 
 \begin{exercisebox}[2.5]
-Pilih satu port yang listening dari output \texttt{ss -tulpn}, lalu tuliskan service/proses yang membukanya. Jelaskan kegunaan port tersebut secara singkat.
+Pilih satu port yang listening dari output \texttt{ss -tulpn}(misal port 22), lalu tuliskan service/proses yang membukanya. Jelaskan kegunaan port tersebut secara singkat.
 \end{exercisebox}
 
 %% ------------------------------------------------------------------------

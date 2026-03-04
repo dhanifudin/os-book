@@ -30,6 +30,10 @@ $biber = 'biber %O %S';
 # Maximum number of runs
 $max_repeat = 5;
 
+# Force mode - continue even if there are errors (important for CI/CD)
+# This ensures we get a PDF even with warnings/undefined references on first pass
+$force_mode = 1;
+
 # Remove output directory on clean
 $out_dir = '';
 
@@ -41,7 +45,8 @@ $dvi_mode = 0;
 $warnings_as_errors = 0;
 
 # Files to watch for changes (in addition to .tex files)
-@default_files = ('main.tex');
+# Updated for bilingual support
+@default_files = ('main-id.tex', 'main-en.tex');
 
 # Extra file extensions to clean
 push @generated_exts, 'synctex.gz', 'run.xml', 'bcf', 'nav', 'snm', 'vrb', 'lol';

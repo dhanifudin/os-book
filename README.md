@@ -1,47 +1,79 @@
-# Buku Sistem Operasi Linux
+# Buku Sistem Operasi Linux (Bilingual Edition)
 
 Template LaTeX untuk buku teks "Sistem Operasi Linux: Panduan Komprehensif untuk Mahasiswa"
+
+**🌏 Available in two languages:** Indonesian (Bahasa Indonesia) and English
 
 ## 📋 Deskripsi
 
 Template buku ini dirancang untuk mendukung pembelajaran mata kuliah Sistem Operasi dengan fokus pada Linux. Buku ini mencakup 16 minggu pembelajaran yang terstruktur, dari pengenalan sistem operasi hingga manajemen sistem lanjutan.
 
+**Bilingual Support:**
+- `main-id.tex` - Indonesian version
+- `main-en.tex` - English version
+- Shared preamble and bibliography
+- Separate content directories: `chapters/id/` and `chapters/en/`
+
 ## 📁 Struktur Direktori
 
 ```
 os-book/
-├── main.tex                    # File utama LaTeX
-├── preamble.tex                # Konfigurasi package dan styling
-├── references.bib              # Database bibliografi
-├── Makefile                    # Automation untuk kompilasi
-├── README.md                   # Dokumentasi (file ini)
+├── main-id.tex                 # Indonesian version entry point
+├── main-en.tex                 # English version entry point
+├── preamble.tex                # Shared configuration
+├── references.bib              # Shared bibliography
+├── Makefile                    # Build automation (bilingual)
+├── CLAUDE.md                   # Documentation for Claude Code
+├── README.md                   # This file
 │
-├── frontmatter/                # Halaman depan buku
-│   ├── titlepage.tex          # Halaman judul
-│   ├── copyright.tex          # Halaman hak cipta
-│   └── preface.tex            # Kata pengantar
+├── .github/
+│   └── workflows/              # GitHub Actions CI/CD
+│       ├── build-pdf.yml       # Automatic PDF builds
+│       ├── release.yml         # Release automation
+│       └── README.md           # Workflow documentation
 │
-├── chapters/                   # Bab-bab utama
-│   ├── week01-introduction.tex
-│   ├── week02-hardware-and-basic-commands.tex
-│   ├── week03-basic-io.tex
-│   ├── week05-directory-structure.tex
-│   ├── week06-process-management.tex
-│   ├── week07-bash-shell.tex
-│   ├── week09-bash-programming.tex
-│   ├── week10-memory-and-syscalls.tex
-│   ├── week11-file-and-user-management.tex
-│   ├── week12-service-management.tex
-│   ├── week13-application-management.tex
-│   └── week14-backup-and-recovery.tex
+├── frontmatter/                # Front matter
+│   ├── id/                     # Indonesian
+│   │   ├── titlepage.tex
+│   │   ├── copyright.tex
+│   │   └── preface.tex
+│   └── en/                     # English
+│       ├── titlepage.tex
+│       ├── copyright.tex
+│       └── preface.tex
 │
-├── appendices/                 # Lampiran
-│   ├── command-reference.tex  # Referensi perintah
-│   ├── exercise-solutions.tex # Solusi latihan
-│   └── glossary.tex           # Daftar istilah
+├── chapters/                   # Main chapters
+│   ├── id/                     # Indonesian chapters
+│   │   ├── week01-introduction.tex
+│   │   ├── week02-hardware-and-basic-commands.tex
+│   │   └── ... (weeks 3-14)
+│   └── en/                     # English chapters
+│       ├── week01-introduction.tex
+│       ├── week02-hardware-and-basic-commands.tex
+│       └── ... (weeks 3-14)
 │
-└── images/                     # Direktori untuk gambar
+├── appendices/                 # Appendices
+│   ├── id/                     # Indonesian
+│   │   ├── command-reference.tex
+│   │   ├── exercise-solutions.tex
+│   │   └── glossary.tex
+│   └── en/                     # English
+│       ├── command-reference.tex
+│       ├── exercise-solutions.tex
+│       └── glossary.tex
+│
+└── images/                     # Shared images directory
 ```
+
+## 🤖 Automated Builds (GitHub Actions)
+
+This repository includes automated PDF builds via GitHub Actions:
+
+- **Automatic builds** on every push to `main` or `feature/*` branches
+- **PDF artifacts** available for download (90 days retention)
+- **Automatic releases** when you push version tags (e.g., `v1.0.0`)
+
+See [`.github/workflows/README.md`](.github/workflows/README.md) for details.
 
 ## 🔧 Persyaratan Sistem
 
@@ -91,30 +123,33 @@ Template ini menggunakan berbagai package LaTeX:
 
 ### Kompilasi Menggunakan Makefile (Recommended)
 
+**Build Indonesian version:**
 ```bash
-# Kompilasi lengkap
-make
+make id              # or just `make` (default)
+make quick-id        # Quick build (single pass)
+make watch-id        # Auto-compile on changes
+make view-id         # Build and view with zathura
+```
 
-# Kompilasi cepat (single pass)
-make quick
+**Build English version:**
+```bash
+make en              # Full build
+make quick-en        # Quick build (single pass)
+make watch-en        # Auto-compile on changes
+make view-en         # Build and view with zathura
+```
 
-# Mode watch - kompilasi otomatis saat ada perubahan
-make watch
+**Build both versions:**
+```bash
+make both            # Build Indonesian and English
+```
 
-# Lihat PDF hasil kompilasi dengan zathura
-make view
-
-# Bersihkan file temporary
-make clean
-
-# Bersihkan semua termasuk PDF
-make cleanall
-
-# Check dependensi
-make check-deps
-
-# Lihat semua opsi
-make help
+**Other commands:**
+```bash
+make clean           # Clean temporary files
+make cleanall        # Clean all including PDFs
+make check-deps      # Check dependencies
+make help            # Show all options
 ```
 
 ### Kompilasi Manual
@@ -312,6 +347,14 @@ Gunakan di teks dengan `\cite{key}`.
 4. **Tambahkan gambar** di direktori `images/`
 5. **Update referensi** di `references.bib`
 6. **Kompilasi final** dengan `make` sebelum review
+
+## 📦 Downloading Pre-built PDFs
+
+If you don't want to build locally, you can download pre-built PDFs:
+
+### From Releases (Stable Versions)
+1. Go to the [Releases page](../../releases)
+2. Download the latest release PDFs
 
 ## 🎨 Kustomisasi
 

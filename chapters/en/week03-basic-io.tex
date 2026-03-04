@@ -1,0 +1,1713 @@
+%% ========================================================================
+%% Chapter 3: Input/Output (I/O) Basics
+%% ========================================================================
+
+\chapter{Input/Output (I/O) Basics}
+\label{ch:basic-io}
+
+This chapter covers fundamental input/output mechanisms in Linux systems, including file descriptor concepts, standard I/O redirection, using pipes to connect processes, and various data stream manipulation techniques. Understanding I/O redirection is essential for automation and scripting in Linux.
+
+%% ------------------------------------------------------------------------
+\section{Unix I/O Philosophy: ``Everything is a File''}
+\label{sec:unix-io-philosophy}
+
+\subsection{What Is Unix I/O Philosophy?}
+
+One of the fundamental principles in Unix design (and its derivatives like Linux) is the concept of \textbf{``everything is a file''}. This philosophy means that almost all system resources---regular files, directories, hardware devices, network sockets, pipes, even processes---are treated as files that can be read or written.
+
+\begin{definition}[Everything is a File]
+	An operating system design paradigm where various types of system resources (hardware, software, communication) are accessed through a uniform file interface, using standard operations like \texttt{open()}, \texttt{read()}, \texttt{write()}, and \texttt{close()}.
+\end{definition}
+
+\subsection{Why Is This Philosophy Important?}
+
+The ``everything is a file'' approach provides several architectural advantages:
+
+\begin{enumerate}
+	\item \textbf{Interface Simplicity}: Programmers only need to learn one set of system calls to access various types of resources
+	\item \textbf{Composability}: Programs can be easily combined using pipes and redirection since everything uses the same byte stream
+	\item \textbf{Portability}: This abstraction hides hardware implementation details, making code more portable
+	\item \textbf{Flexibility}: Easy to replace I/O sources (e.g., from keyboard to file) without changing program logic
+\end{enumerate}
+
+\subsection{When Is This Philosophy Applied?}
+
+This philosophy is reflected in various aspects of Linux:
+
+\begin{itemize}
+	\item \textbf{Hardware Devices}: \file{/dev/sda} (hard disk), \file{/dev/tty} (terminal), \file{/dev/null} (null device)
+	\item \textbf{Process Information}: \dir{/proc/[PID]} contains process information that can be read like files
+	\item \textbf{System Information}: \dir{/sys} contains kernel and device information
+	\item \textbf{Inter-Process Communication}: Named pipes (FIFO) and Unix domain sockets
+\end{itemize}
+
+\begin{examplebox}[Reading CPU Information]
+	\begin{lstlisting}[language=bash]
+# CPU information can be read like a regular file
+cat /proc/cpuinfo
+
+# Memory information
+cat /proc/meminfo
+
+# All use the same "file" interface
+\end{lstlisting}
+\end{examplebox}
+
+%% ------------------------------------------------------------------------
+\section{File Descriptors in Linux}
+\label{sec:file-descriptors}
+
+\subsection{What Are File Descriptors?}
+
+In Linux, every process has access to files and streams through a mechanism called \textbf{file descriptors} (FD). A file descriptor is a non-negative integer that functions as a \textit{handle} or \textit{reference} for accessing files, sockets, pipes, or other I/O devices.
+
+\subsection{Why Are File Descriptors Needed?}
+
+File descriptors are the concrete implementation of the ``everything is a file'' philosophy. The kernel uses file descriptors to:
+
+\begin{enumerate}
+	\item \textbf{Abstraction}: Hide hardware and filesystem implementation details from programs
+	\item \textbf{Security}: The kernel controls access through file descriptors, ensuring processes only access permitted files
+	\item \textbf{Efficiency}: File descriptors are simple integers that are cheap to copy and pass between functions
+	\item \textbf{Multiplexing}: Allow a process to access many files simultaneously with different FDs
+\end{enumerate}
+
+\begin{notebox}
+	File descriptors are abstractions that allow programs to interact with various types of I/O using a uniform interface, without needing to know whether the I/O comes from files, keyboards, networks, or other devices.
+\end{notebox}
+
+\subsection{How Do File Descriptors Work?}
+
+Internally, the kernel maintains a file descriptor table for each process:
+
+\begin{enumerate}
+	\item When a process opens a file with \texttt{open()}, the kernel allocates the next available FD
+	\item The kernel creates an entry in the \textbf{file descriptor table} that points to the \textbf{open file table}
+	\item The open file table contains information such as file offset, access mode, and pointer to inode
+	\item The program uses the FD (integer) for subsequent operations, the kernel translates it to the appropriate file
+\end{enumerate}
+
+\begin{tipbox}
+	File descriptors are allocated from the smallest available number. After 0, 1, 2 (stdin, stdout, stderr), the next opened FD is usually 3, then 4, and so on.
+\end{tipbox}
+
+\subsection{Standard File Descriptors}
+
+Every process in Linux automatically receives three standard file descriptors when it starts running. These three file descriptors are always present and already opened by the operating system, so every program can use them immediately without opening files first.
+
+The following table explains the three standard file descriptors available:
+
+\begin{table}[htbp]
+	\centering
+	\caption{Standard File Descriptors in Linux}
+	\label{tab:standard-fd}
+	\begin{tabular}{@{}clll@{}}
+		\toprule
+		\textbf{FD} & \textbf{Name}   & \textbf{Symbol} & \textbf{Function}             \\
+		\midrule
+		0           & Standard Input  & \texttt{stdin}  & Input from keyboard/terminal  \\
+		1           & Standard Output & \texttt{stdout} & Normal program output         \\
+		2           & Standard Error  & \texttt{stderr} & Error and diagnostic messages \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+For example, when you run a command like \texttt{ls} in the terminal, it reads input from \texttt{stdin} (FD 0, your keyboard), displays results to \texttt{stdout} (FD 1, terminal screen), and if there are errors they go to \texttt{stderr} (FD 2, also to terminal screen, but can be redirected separately).
+
+\subsection{Viewing File Descriptors}
+
+To better understand file descriptors, we can view the file descriptors currently open by a process. Linux provides a virtual filesystem \dir{/proc} that contains information about running processes.
+
+File descriptors opened by a process can be viewed in the \dir{/proc/PID/fd} directory, where PID is the Process ID of the process. Let's see an example:
+
+\begin{lstlisting}[language=bash, caption={Viewing process file descriptors}]
+# View file descriptors of current bash process
+ls -l /proc/$$/fd
+
+# Example output:
+# lrwx------ 1 user user 0 Feb 16 10:00 0 -> /dev/pts/0
+# lrwx------ 1 user user 0 Feb 16 10:00 1 -> /dev/pts/0
+# lrwx------ 1 user user 0 Feb 16 10:00 2 -> /dev/pts/0
+\end{lstlisting}
+
+Explanation of the output above:
+\begin{itemize}
+	\item The symbol \texttt{->} shows where the file descriptor points to
+	\item \file{/dev/pts/0} is a pseudo-terminal (your current virtual terminal)
+	\item All three file descriptors (0, 1, 2) point to the same place---your terminal
+	\item This means input is taken from the terminal keyboard, and output is displayed to the same terminal screen
+\end{itemize}
+
+\begin{tipbox}
+	The variable \var{\$\$} in bash is a special variable that stores the PID (Process ID) of the current shell. So \texttt{\$\$} will automatically be replaced with your shell's PID number.
+\end{tipbox}
+
+%% ------------------------------------------------------------------------
+\section{Standard I/O Redirection}
+\label{sec:io-redirection}
+
+I/O redirection is a technique for changing the input source or output destination of commands. This is one of the most powerful features of Unix-like systems, enabling flexible data processing and automation.
+
+\subsection{What Is I/O Redirection?}
+
+I/O redirection allows you to:
+\begin{itemize}
+	\item Change where a program reads its input from (instead of keyboard)
+	\item Change where a program writes its output to (instead of screen)
+	\item Separate normal output from error messages
+	\item Chain multiple programs together to process data
+\end{itemize}
+
+\subsection{Why Is I/O Redirection Important?}
+
+Without I/O redirection, every program would need to implement its own file handling code. With redirection:
+\begin{enumerate}
+	\item \textbf{Automation}: Scripts can process files without user interaction
+	\item \textbf{Logging}: Save program output for later analysis
+	\item \textbf{Data Processing}: Chain simple programs into complex workflows
+	\item \textbf{Batch Operations}: Process many files using the same commands
+\end{enumerate}
+
+For example, instead of manually typing data into a \cmd{sort} command, you can redirect it to read from a file containing thousands of lines. Instead of watching output scroll by, you can save it to a file and analyze it later.
+
+\subsection{Standard Input (stdin)}
+
+Standard input (stdin) is the data source for programs. By default, stdin is read from the keyboard---meaning the program waits for you to type something. However, we can redirect stdin to read from a file, so the program gets data from that file instead of the keyboard.
+
+\subsubsection{What Is stdin Redirection?}
+
+Stdin redirection changes the source of input data from interactive (keyboard) to automated (file or another program). This is fundamental for:
+\begin{itemize}
+	\item Processing large datasets
+	\item Automating repetitive tasks
+	\item Batch processing of files
+	\item Testing programs with known inputs
+\end{itemize}
+
+\subsubsection{When to Use stdin Redirection?}
+
+Use stdin redirection when:
+\begin{itemize}
+	\item You have input data already in a file
+	\item The input is too large to type manually
+	\item You need to run the same input through different programs
+	\item You're automating a task that normally requires user input
+\end{itemize}
+
+\subsubsection{How to Redirect stdin from File}
+
+The \texttt{<} (less-than sign) operator is used to redirect stdin from a file. This operator tells the shell to get input from a file, not from the keyboard.
+
+Example usage:
+
+\begin{lstlisting}[language=bash, caption={Redirecting stdin from file}]
+# Read input from file.txt instead of keyboard
+sort < file.txt
+
+# Count lines from file
+wc -l < /etc/passwd
+\end{lstlisting}
+
+Explanation of the examples above:
+\begin{itemize}
+	\item First line: the \cmd{sort} command will read the contents of \file{file.txt} (not wait for you to type), then sort it and display the result
+	\item Second line: the \cmd{wc -l} command will count the number of lines in \file{/etc/passwd}. The \texttt{-l} option means "line count"
+\end{itemize}
+
+\subsubsection{Here Document (<<)}
+
+Here document (often shortened to "heredoc") is a feature that allows us to provide multi-line input directly in a script or command line, without needing to create a separate file.
+
+\paragraph{What Problem Does Here Document Solve?}
+
+Before here documents, if you needed to provide multi-line input to a program, you had to:
+\begin{enumerate}
+	\item Create a temporary file
+	\item Write the content to the file
+	\item Redirect the file as input
+	\item Delete the temporary file
+\end{enumerate}
+
+Here documents eliminate this complexity by allowing inline multi-line input.
+
+\paragraph{When to Use Here Documents?}
+
+Use here documents when:
+\begin{itemize}
+	\item Generating configuration files in scripts
+	\item Creating multi-line email messages or documents
+	\item Providing SQL queries or other multi-line commands
+	\item Embedding documentation or help text in scripts
+	\item Testing programs with specific multi-line input
+\end{itemize}
+
+\paragraph{Why Use Here Documents Instead of echo?}
+
+While you could use multiple \cmd{echo} commands, here documents are better because:
+\begin{itemize}
+	\item More readable---content looks like actual text, not code
+	\item Preserves formatting (line breaks, indentation)
+	\item No need to escape special characters on every line
+	\item Single block of text is easier to maintain
+\end{itemize}
+
+\paragraph{How Here Documents Work}
+
+We use the \texttt{<<} operator followed by a delimiter (end marker, usually the word "EOF" meaning "End Of File"). All lines after that are treated as input, until the shell finds the same delimiter on a separate line.
+
+Here are examples:
+
+\begin{lstlisting}[language=bash, caption={Using here document}]
+# Send email with heredoc
+cat << EOF
+To: user@example.com
+Subject: Test Email
+
+This is the email body.
+Second line.
+EOF
+
+# Create configuration file
+cat << 'EOF' > config.txt
+server=localhost
+port=8080
+EOF
+\end{lstlisting}
+
+Explanation of the examples above:
+\begin{itemize}
+	\item First example: all text between \texttt{<< EOF} and \texttt{EOF} becomes input for the \cmd{cat} command, which then displays it to the screen
+	\item Second example: using quotes on the delimiter \texttt{'EOF'} prevents variable expansion. Output is saved to \file{config.txt} using the \texttt{>} operator
+	\item The delimiter can be any word (EOF, END, STOP, etc.), as long as the opening and closing words match
+\end{itemize}
+
+\subsection{Standard Output (stdout)}
+
+Standard output (stdout) is the destination for normal program output. When a program produces output (like \cmd{ls}, \cmd{echo}, \cmd{cat}), by default that output is displayed to the terminal (your screen). However, we can redirect this output to a file using redirection operators.
+
+\subsubsection{What Is stdout Redirection?}
+
+Stdout redirection captures program output and saves it to a file instead of displaying it on screen. This is essential for:
+\begin{itemize}
+	\item Creating permanent records of command output
+	\item Generating reports and logs
+	\item Saving data for later processing
+	\item Automating tasks without cluttering the screen
+\end{itemize}
+
+\subsubsection{When to Redirect stdout?}
+
+You should redirect stdout when:
+\begin{itemize}
+	\item You need to save command output for documentation
+	\item Creating logs of system activities
+	\item Generating data files for further processing
+	\item Running commands in background/cron jobs (no one watching the screen)
+	\item Output is too large to read on screen
+	\item You want to compare output from different runs
+\end{itemize}
+
+\subsubsection{The > Operator (Overwrite)}
+
+The \texttt{>} (greater-than sign) operator is used to redirect stdout to a file. If the file already exists, its contents will be \textbf{overwritten} (deleted and replaced). If the file doesn't exist, a new file will be created.
+
+\paragraph{When to Use Overwrite (>)?}
+
+Use the overwrite operator when:
+\begin{itemize}
+	\item You want fresh output each time (previous data not needed)
+	\item Generating reports that should replace old versions
+	\item Creating output files in a clean state
+	\item The old data becomes obsolete after each run
+\end{itemize}
+
+\paragraph{Examples}
+
+Here are examples:
+
+\begin{lstlisting}[language=bash, caption={Redirecting stdout with overwrite}]
+# Write output to file (overwrite if exists)
+ls -la > file-list.txt
+
+# Create empty file
+> empty-file.txt
+
+# Save system configuration
+uname -a > system-info.txt
+\end{lstlisting}
+
+Explanation of the examples above:
+\begin{itemize}
+	\item First line: output from \cmd{ls -la} (detailed file list) is saved to file \file{file-list.txt}
+	\item Second line: creates an empty file named \file{empty-file.txt}. The \texttt{>} operator without a command creates an empty file
+	\item Third line: system information from \cmd{uname -a} is saved to \file{system-info.txt}
+\end{itemize}
+
+\begin{warningbox}
+	The \texttt{>} operator will delete existing file contents! If \file{file-list.txt} already contains data, the old data will be lost and replaced with new data. Use with caution.
+\end{warningbox}
+
+\subsubsection{The >> Operator (Append)}
+
+The \texttt{>>} (two greater-than signs) operator is used to redirect stdout to a file in \textbf{append} mode. Unlike \texttt{>}, this operator doesn't delete existing file contents, but instead adds new output at the end of the file.
+
+\paragraph{What Is Append Mode?}
+
+Append mode preserves existing file contents and adds new data to the end. This is fundamentally different from overwrite mode because:
+\begin{itemize}
+	\item Old data is kept intact
+	\item New data is added sequentially
+	\item File grows over time
+	\item Perfect for accumulating information
+\end{itemize}
+
+\paragraph{When to Use Append (>>)?}
+
+Use the append operator when:
+\begin{itemize}
+	\item Creating or updating log files (need to preserve history)
+	\item Accumulating results from multiple script runs
+	\item Building reports incrementally
+	\item Recording events chronologically
+	\item Adding data to existing files without losing old data
+\end{itemize}
+
+\paragraph{Why Is Append Important for Logs?}
+
+Log files need append mode because:
+\begin{enumerate}
+	\item \textbf{Historical Record}: You need to see what happened over time, not just the latest event
+	\item \textbf{Troubleshooting}: Problems might be caused by events hours or days ago
+	\item \textbf{Audit Trail}: Compliance and security require complete history
+	\item \textbf{Pattern Analysis}: You can analyze trends and patterns across multiple runs
+\end{enumerate}
+
+\paragraph{Examples}
+
+Here are examples:
+
+\begin{lstlisting}[language=bash, caption={Redirecting stdout with append}]
+# Append output to file
+date >> log.txt
+echo "Process completed" >> log.txt
+
+# Create simple log
+echo "$(date): System started" >> /var/log/myapp.log
+\end{lstlisting}
+
+Explanation of the examples above:
+\begin{itemize}
+	\item First line: current date and time is added to the end of \file{log.txt}
+	\item Second line: text "Process completed" is added on a new line in \file{log.txt}, without deleting the date that's already there
+	\item Third line: creates a log entry with timestamp that's added to the application log file
+\end{itemize}
+
+\subsection{Standard Error (stderr)}
+
+Standard error (stderr) is a separate channel specifically used for error and diagnostic messages.
+
+\subsubsection{What Is stderr and Why Does It Exist?}
+
+Unix designers created a separate channel for errors for very good reasons:
+
+\begin{enumerate}
+	\item \textbf{Separation of Concerns}: Normal output (data) and errors (diagnostics) serve different purposes
+	\item \textbf{Pipeline Integrity}: Errors don't corrupt data flowing through pipes
+	\item \textbf{Flexible Error Handling}: You can handle errors differently than data
+	\item \textbf{User Experience}: Users can see errors even when output is redirected
+\end{enumerate}
+
+\paragraph{The Problem Without stderr}
+
+Imagine if errors and normal output went to the same channel:
+\begin{itemize}
+	\item Errors would be mixed into your data files
+	\item You couldn't save data to a file while still seeing errors on screen
+	\item Pipelines would break because errors would be treated as data
+	\item Automated scripts couldn't distinguish between success and failure
+\end{itemize}
+
+\paragraph{When to Use stderr Redirection?}
+
+Redirect stderr separately when:
+\begin{itemize}
+	\item You want to save errors to a separate log file for debugging
+	\item You need to discard known/expected errors without losing output
+	\item You want to see errors on screen while saving output to a file
+	\item You need different handling for errors vs. normal output
+	\item Creating alerts or notifications based on errors
+\end{itemize}
+
+\paragraph{Why Keep Errors and Output Separate?}
+
+Benefits of separate error handling:
+\begin{enumerate}
+	\item \textbf{Easier Debugging}: Errors are in their own file, easy to find
+	\item \textbf{Clean Data}: Output files contain only data, no error messages
+	\item \textbf{Automation-Friendly}: Scripts can detect and handle errors programmatically
+	\item \textbf{Monitoring}: You can monitor error logs separately from data
+\end{enumerate}
+
+\subsubsection{How to Redirect stderr}
+
+To redirect stderr, we use the \texttt{2>} operator. The number 2 refers to the file descriptor for stderr (remember: 0=stdin, 1=stdout, 2=stderr).
+
+\paragraph{Examples}
+
+Here are examples:
+
+\begin{lstlisting}[language=bash, caption={Redirecting stderr}]
+# Save errors to file
+find / -name "*.conf" 2> errors.txt
+
+# Discard errors (redirect to /dev/null)
+grep "pattern" file.txt 2> /dev/null
+
+# Append errors to file
+command 2>> error-log.txt
+\end{lstlisting}
+
+Explanation of the examples above:
+\begin{itemize}
+	\item First line: the \cmd{find} command searches the entire system (\dir{/}). There will be many "Permission denied" errors for folders that can't be accessed. These errors are saved to \file{errors.txt}, while successful search results are still displayed on screen
+	\item Second line: errors from \cmd{grep} (like "file not found") are discarded to \file{/dev/null} (system trash). Useful when we know the errors aren't important
+	\item Third line: errors are appended to the log file, similar to \texttt{>>} for stdout
+\end{itemize}
+
+\subsubsection{Redirecting Both stdout and stderr}
+
+In real-world practice, we often need to redirect both stdout and stderr simultaneously. This situation is very common when:
+
+\begin{itemize}
+	\item Running automated scripts (cron jobs) that need to record all output
+	\item Installing software that produces lots of output and possibly errors
+	\item Debugging complex programs with many messages
+	\item Creating complete reports of program execution
+\end{itemize}
+
+Why do we need to redirect both? Imagine you're running a backup script that runs at night. If there are errors, you want to know what they are (from stderr). But you also want to know which files were successfully backed up (from stdout). By redirecting both to a file, you can see the complete picture of what happened.
+
+There are several ways to do this, depending on your needs. Let's look at the four most commonly used methods:
+
+\begin{lstlisting}[language=bash, caption={Redirecting stdout and stderr}]
+# Method 1: Redirect to different files
+command > output.txt 2> error.txt
+
+# Method 2: Redirect both to same file
+command > all-output.txt 2>&1
+
+# Method 3: Modern syntax (Bash 4+)
+command &> all-output.txt
+
+# Method 4: Append both
+command >> all-output.txt 2>&1
+\end{lstlisting}
+
+Now let's discuss each method in detail:
+
+\paragraph{Method 1: Separate Files for Output and Errors}
+
+This method separates normal output and errors into two different files:
+
+\begin{lstlisting}[language=bash, caption={Method 1 example - separate files}]
+# Install package with separate logs
+sudo apt install nginx > install-output.txt 2> install-errors.txt
+
+# Compile program
+gcc program.c -o program > compile-output.txt 2> compile-errors.txt
+\end{lstlisting}
+
+\textbf{When to use Method 1?}
+\begin{itemize}
+	\item When debugging: You can directly open the error file without searching through normal output
+	\item When errors need separate processing (e.g., sent to admin via email)
+	\item When normal output is very large and errors are rare, so errors would be easily missed if mixed
+\end{itemize}
+
+\textbf{How it works:}
+\begin{enumerate}
+	\item \texttt{>} redirects stdout (FD 1) to \file{output.txt}
+	\item \texttt{2>} redirects stderr (FD 2) to \file{error.txt}
+	\item Both operators work independently
+	\item If there are no errors, \file{error.txt} will be empty
+\end{enumerate}
+
+\paragraph{Method 2: Same File (Classic Method)}
+
+This method combines stdout and stderr into the same file. Syntax: \texttt{command > file 2>\&1}
+
+\begin{lstlisting}[language=bash, caption={Method 2 example - same file}]
+# Backup with complete log
+rsync -av /home /backup > backup.log 2>&1
+
+# Running tests with all output
+./run-tests.sh > test-results.log 2>&1
+\end{lstlisting}
+
+\textbf{When to use Method 2?}
+\begin{itemize}
+	\item When you want one complete log file that includes everything
+	\item When chronological order of output and errors is important (they appear in time order)
+	\item For compatibility with older Bash versions (works in all versions)
+\end{itemize}
+
+\textbf{How it works (IMPORTANT - order matters!):}
+\begin{enumerate}
+	\item \texttt{> all-output.txt}: Redirect stdout to file
+	\item \texttt{2>\&1}: Redirect stderr to "the same place as stdout" (which already points to the file)
+	\item The \texttt{\&} character is important! Without \texttt{\&}, the shell thinks "1" is a filename
+	\item \textbf{Order must be correct}: \texttt{> file} first, then \texttt{2>\&1}
+\end{enumerate}
+
+\paragraph{Method 3: Modern Syntax with \&>}
+
+Bash version 4 and above provides a shortcut: \texttt{\&>}
+
+\begin{lstlisting}[language=bash, caption={Method 3 example - modern syntax}]
+# More concise and easier to read
+./deployment-script.sh &> deploy.log
+
+# Same result as method 2, but simpler
+docker build -t myapp . &> build.log
+\end{lstlisting}
+
+\textbf{When to use Method 3?}
+\begin{itemize}
+	\item When you're sure you're using Bash 4+ (check with: \texttt{bash --version})
+	\item When you want syntax that's easier to read and write
+	\item For new scripts that don't need compatibility with old shells
+\end{itemize}
+
+\textbf{How it works:}
+\begin{itemize}
+	\item \texttt{\&>} is a special operator that directly redirects both
+	\item Equivalent to \texttt{> file 2>\&1}, but more concise
+	\item Cannot be used for append (there's no \texttt{\&>>})
+\end{itemize}
+
+\paragraph{Method 4: Append Both}
+
+When you want to add to an existing file (not delete old contents):
+
+\begin{lstlisting}[language=bash, caption={Method 4 example - append both}]
+# Running script multiple times, accumulate all logs
+./daily-report.sh >> reports.log 2>&1
+
+# Cron job running daily
+0 2 * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1
+\end{lstlisting}
+
+\begin{warningbox}
+	\textbf{Common Mistake:} Writing \texttt{2>\&1 > file} (reversed order)
+
+	This will NOT work correctly! Stderr will still go to the terminal, not to the file. Why? Because when \texttt{2>\&1} executes, stdout still points to the terminal. Only after that is stdout redirected to the file, but stderr was already "locked" to the terminal.
+
+	\textbf{Correct order}: \texttt{> file 2>\&1}
+
+\end{warningbox}
+\textbf{When to use Method 4?}
+\begin{itemize}
+	\item Scripts that run repeatedly (cron jobs)
+	\item Log files that need to preserve history
+	\item Gradual debugging (running program multiple times while accumulating output)
+\end{itemize}
+
+\textbf{How it works:}
+\begin{itemize}
+	\item Same as Method 2, but uses \texttt{>>} for append
+	\item \texttt{>> file}: Append stdout to file (doesn't delete old contents)
+	\item \texttt{2>\&1}: Stderr also appends to the same place
+	\item File will keep growing---need log rotation for production
+\end{itemize}
+
+\paragraph{Practical Comparison: When to Use Which?}
+
+Here's a quick guide for choosing a method:
+
+\begin{itemize}
+	\item \textbf{Debugging programs}: Use Method 1 (separate files) so errors are easy to find
+	\item \textbf{One-time scripts}: Use Method 3 (\texttt{\&>}) if Bash 4+, or Method 2 if compatibility needed
+	\item \textbf{Cron jobs / recurring tasks}: Use Method 4 (append) so all history is saved
+	\item \textbf{Production systems}: Use Method 2 or 4, with log rotation to manage file size
+\end{itemize}
+
+\begin{examplebox}[Separating Output and Errors]
+	To understand the use of redirection in real-world situations, let's look at an example backup script that logs normal output and errors to separate files:
+
+	\begin{lstlisting}[language=bash]
+#!/bin/bash
+# Run backup with logging
+
+backup_dir="/backup"
+log_file="/var/log/backup.log"
+error_file="/var/log/backup-error.log"
+
+echo "$(date): Starting backup..." >> "$log_file"
+
+# Run rsync with separated output
+rsync -av /home/ "$backup_dir" \
+    >> "$log_file" 2>> "$error_file"
+
+if [ $? -eq 0 ]; then
+    echo "$(date): Backup successful" >> "$log_file"
+else
+    echo "$(date): Backup failed" >> "$log_file"
+fi
+\end{lstlisting}
+
+	Explanation of the script above:
+	\begin{itemize}
+		\item The script uses \texttt{>>} for append because we want to preserve backup history
+		\item Normal output from \cmd{rsync} (list of backed-up files) goes to \file{backup.log}
+		\item Errors (e.g., files that couldn't be read) go to \file{backup-error.log}
+		\item The variable \texttt{\$?} contains the exit code from the last command: 0 means success, non-zero means error
+		\item With this separation, we can easily see if there were errors without having to read all the output
+	\end{itemize}
+\end{examplebox}
+
+After understanding the various redirection operators, here's a complete summary of all available operators:
+
+\begin{table}[htbp]
+	\centering
+	\caption{I/O Redirection Operators}
+	\label{tab:io-operators}
+	\begin{tabular}{@{}lp{10cm}@{}}
+		\toprule
+		\textbf{Operator} & \textbf{Description}                         \\
+		\midrule
+		\texttt{<}        & Redirect stdin from file                     \\
+		\texttt{>}        & Redirect stdout to file (overwrite)          \\
+		\verb|>>|         & Redirect stdout to file (append)             \\
+		\texttt{2>}       & Redirect stderr to file (overwrite)          \\
+		\verb|2>>|        & Redirect stderr to file (append)             \\
+		\texttt{2>\&1}    & Redirect stderr to stdout                    \\
+		\texttt{\&>}      & Redirect stdout and stderr to file (Bash 4+) \\
+		\verb|<<|         & Here document (multi-line input)             \\
+		\verb|<<<|        & Here string (single string input)            \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+%% ------------------------------------------------------------------------
+\section{Pipes and the | Operator}
+\label{sec:pipes}
+
+\subsection{What Is a Pipe?}
+
+A \textbf{pipe} is an Inter-Process Communication (IPC) mechanism that connects the stdout of one command to the stdin of another command. The pipe operator is \texttt{|}.
+
+\begin{definition}[Pipe]
+	A unidirectional communication channel that connects the output of one process as the input of another, creating a seamless data flow without intermediate files.
+\end{definition}
+
+\subsection{Why Are Pipes Important in Unix?}
+
+Pipes are a key implementation of the \textbf{Unix Philosophy}: ``Write programs that do one thing and do it well. Write programs to work together.''
+
+\begin{enumerate}
+	\item \textbf{Modularity}: Small programs focused on one task can be combined for complex tasks
+	\item \textbf{Efficiency}: Data flows directly between processes without writing to disk, saving I/O
+	\item \textbf{Parallelism}: Processes in a pipeline run concurrently, increasing throughput
+	\item \textbf{Reusability}: The same programs can be used in various pipeline combinations
+\end{enumerate}
+
+\begin{notebox}
+	Pipes create a buffer in the kernel (typically 64KB in modern Linux). If the buffer is full, the writer process will block until the reader process consumes data. This is a natural form of flow control.
+\end{notebox}
+
+\subsection{When to Use Pipes?}
+
+Use pipes when:
+
+\begin{itemize}
+	\item You need to process data through a series of transformations
+	\item Output from one program fits as input to another
+	\item You want to avoid temporary files
+	\item You need to process large data streams (no need to load everything into memory)
+	\item You want to leverage parallelism (pipeline stages run concurrently)
+\end{itemize}
+
+\begin{tipbox}
+	Pipes are very efficient for large data because they use streaming: data is processed chunk-by-chunk, not all at once. This allows processing gigabyte files with minimal memory.
+\end{tipbox}
+
+\subsection{Pipe Examples}
+
+Pipes enable direct data flow between processes without intermediate files. Think of it like a water pipe: water flows from one end to the other without spilling. In Linux context, the "water" is data (text output).
+
+Let's look at basic pipe usage examples:
+
+\begin{lstlisting}[language=bash, caption={Basic pipe usage}]
+# Display 10 largest files
+ls -lh | sort -k5 -rh | head -10
+
+# Count number of users in system
+cat /etc/passwd | wc -l
+
+# Find specific process
+ps aux | grep apache
+\end{lstlisting}
+
+Explanation of the examples above:
+
+\begin{enumerate}
+	\item \textbf{First example} - display 10 largest files:
+	      \begin{itemize}
+		      \item \cmd{ls -lh}: show file list with human-readable sizes (KB, MB, etc.)
+		      \item \texttt{|}: send output to next command
+		      \item \cmd{sort -k5 -rh}: sort by column 5 (file size), \texttt{-r}=reverse (large to small), \texttt{-h}=human-readable numbers
+		      \item \texttt{|}: send sorted results to next command
+		      \item \cmd{head -10}: take only first 10 lines
+	      \end{itemize}
+
+	\item \textbf{Second example} - count users:
+	      \begin{itemize}
+		      \item \cmd{cat /etc/passwd}: display passwd file contents (contains user list, one user per line)
+		      \item \texttt{|}: send to next command
+		      \item \cmd{wc -l}: count number of lines (\texttt{-l} = line count)
+	      \end{itemize}
+
+	\item \textbf{Third example} - find process:
+	      \begin{itemize}
+		      \item \cmd{ps aux}: show all running processes
+		      \item \texttt{|}: send to next command
+		      \item \cmd{grep apache}: filter only lines containing the word "apache"
+	      \end{itemize}
+\end{enumerate}
+
+\subsection{Pipe Chains}
+
+The real power of pipes is seen when we connect multiple commands in a long chain (pipeline). Each program in the pipeline does one small task, and the results are combined for a complex task.
+
+Let's look at more complex pipeline examples:
+
+\begin{lstlisting}[language=bash, caption={Pipe chains (pipeline)}]
+# Log analysis: find errors, count, and sort
+cat /var/log/syslog | grep "error" | \
+    awk '{print $5}' | sort | uniq -c | sort -rn
+
+# Real-time disk usage monitoring
+df -h | grep "^/dev" | \
+    awk '{print $5, $6}' | sort -rn
+
+# Find largest files in home directory
+find ~ -type f -exec ls -lh {} \; | \
+    awk '{print $5, $9}' | sort -rh | head -20
+\end{lstlisting}
+
+Explanation of the pipelines above:
+
+\begin{enumerate}
+	\item \textbf{Error log analysis}:
+	      \begin{itemize}
+		      \item \cmd{cat /var/log/syslog}: read system log file
+		      \item \cmd{grep "error"}: filter only lines with the word "error"
+		      \item \cmd{awk '\{print \$5\}'}: extract column 5 (usually service/program name)
+		      \item \cmd{sort}: sort alphabetically
+		      \item \cmd{uniq -c}: count how many times each line appears
+		      \item \cmd{sort -rn}: sort by number (\texttt{-n}), largest first (\texttt{-r})
+		      \item Result: list of which services produce the most errors
+	      \end{itemize}
+
+	\item \textbf{Disk monitoring}: Shows disk usage sorted from most full
+
+	\item \textbf{Largest files}: Finds the 20 largest files in your home directory
+\end{enumerate}
+
+\begin{notebox}
+	Backslash (\textbackslash) at the end of a line allows the command to continue on the next line for better readability. This is very useful for long pipelines to keep them easy to read.
+\end{notebox}
+
+\subsection{Pipe vs Redirection}
+
+Key differences between pipes and redirection:
+
+\begin{itemize}
+	\item \textbf{Pipe} (\texttt{|}): Connects stdout to stdin of another process
+	\item \textbf{Redirection} (\texttt{>}): Connects stdout to a file
+\end{itemize}
+
+\begin{lstlisting}[language=bash, caption={Combining pipes and redirection}]
+# Pipe for filtering, redirect for saving
+ps aux | grep apache | sort -k3 -rn > apache-processes.txt
+
+# Create report with timestamp
+date > report.txt
+df -h | grep "^/dev" >> report.txt
+echo "---" >> report.txt
+free -h >> report.txt
+\end{lstlisting}
+
+\subsection{Named Pipes (FIFO)}
+
+Named pipes are special files that act as persistent pipes:
+
+\begin{lstlisting}[language=bash, caption={Using named pipes}]
+# Create named pipe
+mkfifo mypipe
+
+# Terminal 1: Write to pipe
+echo "Hello from terminal 1" > mypipe
+
+# Terminal 2: Read from pipe
+cat < mypipe
+
+# Remove named pipe
+rm mypipe
+\end{lstlisting}
+
+\begin{examplebox}[Pipeline for Data Analysis]
+	Example using pipeline to analyze web access logs:
+
+	\begin{lstlisting}[language=bash]
+# Analyze Apache log: IP addresses with most accesses
+cat /var/log/apache2/access.log | \
+    awk '{print $1}' | \
+    sort | \
+    uniq -c | \
+    sort -rn | \
+    head -10
+
+# Find most frequently accessed URLs
+cat /var/log/apache2/access.log | \
+    awk '{print $7}' | \
+    sort | \
+    uniq -c | \
+    sort -rn | \
+    head -20 > top-urls.txt
+
+# Calculate bandwidth per IP
+cat /var/log/apache2/access.log | \
+    awk '{bytes[$1]+=$10} END {for (ip in bytes) print ip, bytes[ip]}' | \
+    sort -k2 -rn
+\end{lstlisting}
+\end{examplebox}
+
+%% ------------------------------------------------------------------------
+\section{Output Redirection to Files}
+\label{sec:output-redirection}
+
+Output redirection allows saving program execution results to files for analysis or documentation.
+
+\subsection{The > Operator (Overwrite)}
+
+The \texttt{>} operator creates a new file or overwrites an existing one:
+
+\begin{lstlisting}[language=bash, caption={Overwrite with > operator}]
+# Save process list
+ps aux > processes.txt
+
+# Create configuration file
+echo "DEBUG=true" > .env
+
+# Backup installed packages list
+dpkg -l > installed-packages.txt
+\end{lstlisting}
+
+\subsection{The >> Operator (Append)}
+
+The \texttt{>>} operator adds output to the end of a file:
+
+\begin{lstlisting}[language=bash, caption={Append with >> operator}]
+# Create daily log
+echo "$(date): System boot" >> /var/log/daily.log
+
+# Add note
+echo "TODO: Update documentation" >> notes.txt
+
+# Collect system information
+echo "=== CPU Info ===" >> system-report.txt
+cat /proc/cpuinfo >> system-report.txt
+echo "=== Memory Info ===" >> system-report.txt
+free -h >> system-report.txt
+\end{lstlisting}
+
+\subsection{Noclobber Option}
+
+Bash has a \texttt{noclobber} option to prevent accidental file overwriting:
+
+\begin{lstlisting}[language=bash, caption={Using noclobber}]
+# Enable noclobber
+set -o noclobber
+
+# This will fail if file exists
+echo "data" > existing-file.txt  # Error if file exists
+
+# Force overwrite with >|
+echo "data" >| existing-file.txt  # Success even with noclobber
+
+# Disable noclobber
+set +o noclobber
+\end{lstlisting}
+
+\subsection{Null Device (/dev/null)}
+
+\subsubsection{What Is /dev/null?}
+
+\file{/dev/null} is a special device file in Unix-like systems, often called the "bit bucket" or "black hole." It has unique properties:
+
+\begin{itemize}
+	\item \textbf{Write}: Anything written to it disappears immediately
+	\item \textbf{Read}: Reading from it produces nothing (EOF immediately)
+	\item \textbf{Always Available}: It's always present in the system
+	\item \textbf{Never Fills Up}: You can redirect unlimited data to it
+\end{itemize}
+
+\subsubsection{Why Does /dev/null Exist?}
+
+Unix designers created \file{/dev/null} to solve a common problem: sometimes you need to run a command but don't care about its output. Without \file{/dev/null}, you would need to:
+\begin{enumerate}
+	\item Create a temporary file
+	\item Redirect output to that file
+	\item Remember to delete the file later
+\end{enumerate}
+
+With \file{/dev/null}, you simply redirect to it and forget about it.
+
+\subsubsection{When to Use /dev/null?}
+
+Use \file{/dev/null} when:
+
+\begin{enumerate}
+	\item \textbf{Suppressing Expected Errors}: When running \cmd{find /} you'll get many "Permission denied" errors for system directories you can't access. These are expected and not useful:
+	      \begin{lstlisting}[language=bash]
+find / -name "*.conf" 2> /dev/null
+    \end{lstlisting}
+
+	\item \textbf{Silent Command Execution}: When running commands in scripts where output is not needed:
+	      \begin{lstlisting}[language=bash]
+# Check if a command succeeds, don't care about output
+if wget -q -O /dev/null http://example.com; then
+    echo "Site is up"
+fi
+    \end{lstlisting}
+
+	\item \textbf{Testing Commands}: When testing command syntax without cluttering the screen
+
+	\item \textbf{Emptying Files}: Quick way to truncate a file to zero bytes without deleting it
+\end{enumerate}
+
+\subsubsection{Why Not Just Delete the Error Messages?}
+
+You might wonder: why redirect to \file{/dev/null} instead of just fixing the code to not produce errors? The answer is:
+\begin{itemize}
+	\item Some errors are \textbf{expected and harmless} (like permission denied when searching system-wide)
+	\item You don't control the program that produces the errors
+	\item The errors aren't actually errors---they're normal program behavior
+	\item You want the program to run to completion without stopping on minor issues
+\end{itemize}
+
+\subsubsection{Examples}
+
+\begin{lstlisting}[language=bash, caption={Using /dev/null}]
+# Discard unwanted output
+find / -name "*.log" 2> /dev/null
+
+# Run command without output
+command > /dev/null 2>&1
+
+# Empty file (truncate to 0 bytes)
+> /dev/null > large-file.log
+# or
+cat /dev/null > large-file.log
+
+# Test if file exists without output
+if [ -f /etc/passwd ] > /dev/null 2>&1; then
+    echo "File exists"
+fi
+\end{lstlisting}
+
+\begin{tipbox}
+	\file{/dev/null} is particularly useful when you want to check if a command \textbf{succeeds} (exit code) but don't care about what it outputs. The exit code tells you success/failure; the output is irrelevant.
+\end{tipbox}
+
+\begin{warningbox}
+	Be careful not to accidentally redirect important output to \file{/dev/null}! Once data goes there, it's gone forever. Always double-check your redirection operators.
+\end{warningbox}
+
+%% ------------------------------------------------------------------------
+\section{Using tee for Dual Output}
+\label{sec:tee-command}
+
+\subsection{What Is tee?}
+
+The \cmd{tee} command reads from stdin and writes to stdout \textbf{while also} writing to one or more files. The name ``tee'' comes from the T-shaped plumbing fitting that splits water flow in two directions.
+
+\subsection{Why Use tee?}
+
+Without \cmd{tee}, you must choose: see output on terminal OR save to file. With \cmd{tee}, you can do both:
+
+\begin{enumerate}
+	\item \textbf{Real-time Monitoring}: See program progress while recording logs
+	\item \textbf{Debugging}: Save output for later analysis without losing visibility
+	\item \textbf{Audit Trail}: Document what happened during maintenance/deployment
+	\item \textbf{Multiple Outputs}: Send data to multiple destinations simultaneously
+\end{enumerate}
+
+\subsection{When to Use tee?}
+
+Use \cmd{tee} in the following situations:
+
+\begin{itemize}
+	\item \textbf{System Installation/Updates}: Monitor progress while saving logs
+	\item \textbf{Deployment Scripts}: View output while recording for audit
+	\item \textbf{Long-running Commands}: Save output for later review
+	\item \textbf{Write to Protected Files}: Bypass permission issues with \texttt{sudo tee}
+	\item \textbf{Pipeline Debugging}: View intermediate data in the middle of a pipeline
+\end{itemize}
+
+\begin{notebox}
+	\cmd{tee} doesn't modify data passing through it, only duplicates to files. This makes it ideal for debugging pipelines without changing behavior.
+\end{notebox}
+
+\subsection{Basic tee Syntax}
+
+\begin{lstlisting}[language=bash, caption={Basic tee syntax}]
+# Display on screen AND save to file
+command | tee output.txt
+
+# Append to file with -a
+command | tee -a output.txt
+
+# Write to multiple files at once
+command | tee file1.txt file2.txt file3.txt
+\end{lstlisting}
+
+\subsection{Practical tee Examples}
+
+\begin{lstlisting}[language=bash, caption={Practical tee examples}]
+# View installation output and save log
+sudo apt update | tee apt-update.log
+
+# Monitoring and logging
+ping google.com | tee ping-log.txt
+
+# Backup while viewing progress
+tar -czf backup.tar.gz /home/user | tee backup-log.txt
+
+# Pipeline with tee
+ps aux | tee processes.txt | grep apache
+\end{lstlisting}
+
+\paragraph{Explaining the Examples}
+
+Let's understand each example above:
+
+\begin{enumerate}
+	\item \textbf{apt update with tee}: When you run \cmd{sudo apt update}, you want to see which packages are being updated in real-time, but also want to save a log for documentation or troubleshooting. Without tee, you'd have to choose one or the other.
+
+	\item \textbf{ping with tee}: When monitoring network with \cmd{ping}, you want to see response times live to ensure connection stability, but also want to record data for later analysis (e.g., to detect packet loss patterns).
+
+	\item \textbf{backup with tee}: When creating backups with \cmd{tar}, the process can take a long time. You want to see progress (which files are being compressed), but also want a complete log to verify the backup succeeded.
+
+	\item \textbf{Pipeline debugging}: You can "tap" data in the middle of a pipeline without disrupting the flow. Data continues to \cmd{grep}, but is also saved to \file{processes.txt} for inspection.
+\end{enumerate}
+
+\subsection{How tee Works Internally}
+
+To understand \cmd{tee} deeply, let's see how it operates:
+
+\begin{enumerate}
+	\item \cmd{tee} reads data from stdin (file descriptor 0)
+	\item For each chunk of data read:
+	      \begin{itemize}
+		      \item Write to stdout (fd 1) - so terminal or next pipe receives data
+		      \item Write to specified file(s) - so data is saved
+	      \end{itemize}
+	\item Repeat until input is finished (EOF)
+\end{enumerate}
+
+\textbf{Difference from redirection}:
+\begin{itemize}
+	\item \textbf{Redirection} (\texttt{>}): Data only goes to file, not terminal
+	\item \textbf{tee}: Data goes to BOTH - terminal AND file
+\end{itemize}
+
+\subsection{tee with Multiple Files}
+
+One of \cmd{tee}'s strengths is writing to multiple files simultaneously:
+
+\begin{lstlisting}[language=bash, caption={tee with multiple files}]
+# Save to 3 files at once
+echo "Important data" | tee file1.txt file2.txt file3.txt
+
+# Use case: Log to different levels
+./deploy.sh 2>&1 | tee logs/deploy-full.log \
+                        logs/deploy-summary.log \
+                        /var/log/deploy.log
+
+# Distribute data to multiple consumers
+cat sensor-data.csv | tee raw-backup.csv |
+    tee >(process-script1.sh > output1.txt) |
+    process-script2.sh > output2.txt
+\end{lstlisting}
+
+\paragraph{Why is this useful?}
+
+\begin{itemize}
+	\item \textbf{Redundancy}: Backup to multiple locations for disaster recovery
+	\item \textbf{Multiple Formats}: Save raw data alongside processed data
+	\item \textbf{Different Destinations}: Local file + network share + cloud storage
+	\item \textbf{Access Control}: Copy to directories with different permissions
+\end{itemize}
+
+\subsection{Difference Between tee and tee -a}
+
+Understanding when to use overwrite vs append mode is crucial:
+
+\begin{lstlisting}[language=bash, caption={Overwrite vs Append}]
+# Overwrite mode (default): New file every time
+date | tee timestamp.log     # File contains ONLY latest timestamp
+
+# Append mode (-a): Accumulate data over time
+date | tee -a timestamp.log  # File contains ALL timestamps
+\end{lstlisting}
+
+\paragraph{When to use each?}
+
+\begin{description}
+	\item[Overwrite (\cmd{tee})]:
+	      \begin{itemize}
+		      \item Status checks that don't need history
+		      \item Output that should always be fresh/current
+		      \item Temporary results replaced each run
+	      \end{itemize}
+
+	\item[Append (\cmd{tee -a})]:
+	      \begin{itemize}
+		      \item Continuous monitoring (logs, metrics)
+		      \item Historical data accumulation
+		      \item Multiple script runs that need combining
+		      \item Audit trails
+	      \end{itemize}
+\end{description}
+
+\subsection{Error Handling with tee}
+
+It's important to understand how \cmd{tee} handles errors:
+
+\begin{lstlisting}[language=bash, caption={Error handling with tee}]
+# If file can't be written, tee still outputs to stdout
+command | tee /read-only/file.txt  # Error, but stdout continues
+
+# Capture exit code from command, not tee
+command | tee output.txt
+echo $?  # Exit code from TEE, not command!
+
+# CORRECT: Use PIPESTATUS
+command | tee output.txt
+echo ${PIPESTATUS[0]}  # Exit code from command
+echo ${PIPESTATUS[1]}  # Exit code from tee
+\end{lstlisting}
+
+\begin{warningbox}
+	The \texttt{\$?} variable in bash only captures the exit code from the \textbf{last command} in a pipeline. To get the exit code from commands earlier in the pipeline, use the \texttt{PIPESTATUS} array.
+\end{warningbox}
+
+\subsection{Common tee Use Cases}
+
+\subsubsection{1. Development and Testing}
+
+\begin{lstlisting}[language=bash, caption={Testing with tee}]
+# Run tests and save output for CI/CD
+npm test | tee test-results.txt
+
+# If test fails, can review log without re-running
+cat test-results.txt | grep "FAILED"
+\end{lstlisting}
+
+\subsubsection{2. System Administration}
+
+\begin{lstlisting}[language=bash, caption={System admin with tee}]
+# Monitor disk usage every hour
+watch -n 3600 'df -h | tee -a disk-usage-$(date +%F).log'
+
+# Deployment with audit trail
+./deploy-production.sh 2>&1 | tee -a /var/log/deployments.log
+\end{lstlisting}
+
+\subsubsection{3. Data Processing}
+
+\begin{lstlisting}[language=bash, caption={Data processing with tee}]
+# Process data, save both raw and processed
+cat raw-data.csv |
+    tee raw-backup.csv |
+    process-script.py |
+    tee processed-backup.csv |
+    load-to-database.sh
+\end{lstlisting}
+
+\paragraph{Why is this pattern powerful?}
+
+In the data processing example above:
+\begin{enumerate}
+	\item Original data is saved to \file{raw-backup.csv} before processing
+	\item Data is processed by \file{process-script.py}
+	\item Processed results are saved to \file{processed-backup.csv}
+	\item Final data is loaded to database
+	\item If anything goes wrong at any step, you have backups to replay from
+\end{enumerate}
+
+\subsection{Best Practices for tee}
+
+\begin{enumerate}
+	\item \textbf{Naming Convention}: Use timestamps in log filenames
+	      \begin{lstlisting}[language=bash]
+command | tee "log-$(date +%Y%m%d-%H%M%S).txt"
+    \end{lstlisting}
+
+	\item \textbf{Disk Space}: Ensure sufficient space, especially for long-running commands
+	      \begin{lstlisting}[language=bash]
+df -h /var/log  # Check space before logging
+    \end{lstlisting}
+
+	\item \textbf{Suppress Terminal Output}: Redirect tee output to /dev/null if you only need the file
+	      \begin{lstlisting}[language=bash]
+command | tee output.txt > /dev/null  # File only, not terminal
+    \end{lstlisting}
+
+	\item \textbf{Buffering}: Use \cmd{unbuffer} or \texttt{stdbuf} for real-time output
+	      \begin{lstlisting}[language=bash]
+# For programs that buffer their output
+unbuffer command | tee output.txt
+# or
+stdbuf -oL command | tee output.txt
+    \end{lstlisting}
+\end{enumerate}
+
+\subsection{tee with sudo}
+
+When you need to write to files requiring root privileges:
+
+\begin{lstlisting}[language=bash, caption={tee with sudo}]
+# WRONG: Redirect doesn't work with sudo
+sudo echo "option" > /etc/config.conf  # Fails: permission denied
+
+# CORRECT: Use tee
+echo "option" | sudo tee /etc/config.conf
+
+# Append with root privilege
+echo "new line" | sudo tee -a /etc/hosts
+
+# Without terminal output
+echo "secret" | sudo tee /etc/secret.conf > /dev/null
+\end{lstlisting}
+
+\begin{notebox}
+	The redirect operator (\texttt{>}) is processed by the shell before \cmd{sudo}, so it doesn't get root privileges. Use \cmd{tee} to write to files requiring root access.
+\end{notebox}
+
+\subsection{tee in Scripts}
+
+\begin{examplebox}[Logging Script with tee]
+	Script that logs output to file and terminal:
+
+	\begin{lstlisting}[language=bash]
+#!/bin/bash
+# Deploy script with logging
+
+LOGFILE="/var/log/deploy-$(date +%Y%m%d-%H%M%S).log"
+
+# All output logged with tee
+{
+    echo "=== Deploy started: $(date) ==="
+
+    echo "Pulling latest code..."
+    git pull origin main
+
+    echo "Installing dependencies..."
+    npm install
+
+    echo "Building application..."
+    npm run build
+
+    echo "Restarting service..."
+    sudo systemctl restart myapp
+
+    echo "=== Deploy completed: $(date) ==="
+} 2>&1 | tee "$LOGFILE"
+
+# Check result
+if [ ${PIPESTATUS[0]} -eq 0 ]; then
+    echo "Deploy successful. Log: $LOGFILE"
+else
+    echo "Deploy failed. Check log: $LOGFILE"
+fi
+\end{lstlisting}
+\end{examplebox}
+
+%% ------------------------------------------------------------------------
+\section{Advanced I/O Techniques}
+\label{sec:advanced-io}
+
+\subsection{Process Substitution}
+
+\subsubsection{What Is Process Substitution?}
+
+Process substitution is a bash feature that allows command output to appear as a file. Bash creates a temporary \textit{named pipe} and runs the command, so other programs can read it like a regular file.
+
+Syntax: \texttt{<(command)} for input, \texttt{>(command)} for output.
+
+\subsubsection{Why Use Process Substitution?}
+
+Some programs only accept files as arguments, not stdin. Process substitution overcomes this limitation:
+
+\begin{enumerate}
+	\item \textbf{Compatibility}: Programs that need filenames (like \cmd{diff}) can accept command output
+	\item \textbf{Efficiency}: No temporary files needed
+	\item \textbf{Multiple Inputs}: Can feed multiple command outputs to one program
+\end{enumerate}
+
+\subsubsection{When to Use Process Substitution?}
+
+\begin{itemize}
+	\item Comparing outputs: \texttt{diff <(cmd1) <(cmd2)}
+	\item Tools that need filenames: \texttt{vimdiff}, \texttt{comm}, \texttt{join}
+	\item Avoiding temporary files for one-time use
+\end{itemize}
+
+\subsubsection{Examples}
+
+Process substitution allows using command output as a file:
+
+\begin{lstlisting}[language=bash, caption={Process substitution}]
+# Compare output of two commands
+diff <(ls dir1) <(ls dir2)
+
+# Use output as input
+sort <(cat file1.txt file2.txt)
+
+# Combine results of multiple commands
+paste <(cut -d: -f1 /etc/passwd) <(cut -d: -f3 /etc/passwd)
+\end{lstlisting}
+
+\subsection{Command Substitution}
+
+\subsubsection{What Is Command Substitution?}
+
+Command substitution is a technique for capturing command output and using it as a string in another command or storing it in a variable.
+
+Modern syntax: \texttt{\$(command)} (more recommended)
+
+Old syntax: \texttt{`command`} (backticks, deprecated)
+
+\subsubsection{Why Use Command Substitution?}
+
+\begin{enumerate}
+	\item \textbf{Dynamic Values}: Generate values based on system conditions
+	\item \textbf{Automation}: Scripts can adapt to the environment
+	\item \textbf{Composability}: Combine outputs from multiple commands
+\end{enumerate}
+
+\subsubsection{When to Use Command Substitution?}
+
+\begin{itemize}
+	\item Creating dynamic filenames (with timestamps, hostnames, etc.)
+	\item Storing output for conditional logic
+	\item Using command output as arguments to other commands
+	\item Generating configuration based on system state
+\end{itemize}
+
+\begin{notebox}
+	Use \texttt{\$()} instead of backticks because it's more readable and supports nesting better.
+\end{notebox}
+
+\subsubsection{Examples}
+
+Capture command output as a string:
+
+\begin{lstlisting}[language=bash, caption={Command substitution}]
+# Modern syntax with $()
+current_date=$(date +%Y-%m-%d)
+echo "Date: $current_date"
+
+# Using in scripts
+backup_file="backup-$(hostname)-$(date +%Y%m%d).tar.gz"
+
+# Nested command substitution
+echo "There are $(cat /etc/passwd | wc -l) users in the system"
+\end{lstlisting}
+
+\subsection{Advanced File Descriptors}
+
+Creating and closing custom file descriptors:
+
+\begin{lstlisting}[language=bash, caption={Custom file descriptors}]
+# Open file descriptor 3 for reading
+exec 3< input.txt
+
+# Read from FD 3
+while read -u 3 line; do
+    echo "Line: $line"
+done
+
+# Close FD 3
+exec 3<&-
+
+# Open FD 4 for writing
+exec 4> output.txt
+echo "Data" >&4
+exec 4>&-
+\end{lstlisting}
+
+%% ------------------------------------------------------------------------
+\section{When to Use Specific I/O Techniques?}
+\label{sec:when-to-use}
+
+Choosing the right I/O technique depends on specific needs. Here's a selection guide:
+
+\subsection{Redirection vs Pipe}
+
+\begin{table}[htbp]
+	\centering
+	\caption{Comparison of Redirection and Pipe}
+	\label{tab:redirect-vs-pipe}
+	\begin{tabular}{@{}p{4cm}p{5cm}p{5cm}@{}}
+		\toprule
+		\textbf{Aspect}  & \textbf{Redirection (\texttt{>})} & \textbf{Pipe (\texttt{|})}             \\
+		\midrule
+		Destination      & File on disk                      & Another process (stdin)                \\
+		Persistence      & Data saved permanently            & Data transient (lost after processing) \\
+		Use when         & Need to save results for later    & Need to process data further           \\
+		Efficiency       & Requires disk I/O                 & Fully in-memory (faster)               \\
+		Example use case & Logging, backup output            & Data transformation, filtering         \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\subsection{Append (>>) vs Overwrite (>)}
+
+\begin{itemize}
+	\item \textbf{Use \texttt{>} (overwrite)} when:
+	      \begin{itemize}
+		      \item Creating new output file
+		      \item Old data not needed
+		      \item Want clean results from scratch
+	      \end{itemize}
+
+	\item \textbf{Use \texttt{>>} (append)} when:
+	      \begin{itemize}
+		      \item Adding to log files
+		      \item Accumulating results from multiple runs
+		      \item Old data must be retained
+	      \end{itemize}
+\end{itemize}
+
+\begin{warningbox}
+	Using \texttt{>} instead of \texttt{>>} on log files will erase all history. Always double-check the operator used!
+\end{warningbox}
+
+\subsection{tee vs Redirection}
+
+\begin{itemize}
+	\item \textbf{Use \texttt{tee}} when:
+	      \begin{itemize}
+		      \item Need to see real-time output AND save to file
+		      \item Debugging pipeline (view intermediate data)
+		      \item Multiple output destinations needed
+		      \item Need to write to file with \cmd{sudo} privileges
+	      \end{itemize}
+
+	\item \textbf{Use redirection} when:
+	      \begin{itemize}
+		      \item Only need to save, don't need to view
+		      \item Background process (no terminal)
+		      \item Maximize performance (tee is slightly slower)
+	      \end{itemize}
+\end{itemize}
+
+\subsection{Pipe vs Temporary File}
+
+\begin{examplebox}[Comparing Pipe vs Temporary File]
+	\begin{lstlisting}[language=bash]
+# Using temporary file (less efficient)
+ps aux > /tmp/processes.txt
+grep apache /tmp/processes.txt > /tmp/apache.txt
+sort /tmp/apache.txt
+rm /tmp/processes.txt /tmp/apache.txt
+
+# Using pipe (more efficient)
+ps aux | grep apache | sort
+\end{lstlisting}
+\end{examplebox}
+
+\textbf{Advantages of Pipes}:
+\begin{itemize}
+	\item No disk I/O (faster)
+	\item No cleanup of temporary files
+	\item Processes run in parallel (concurrent)
+	\item More concise and readable
+\end{itemize}
+
+\textbf{Advantages of Temporary Files}:
+\begin{itemize}
+	\item Can be used multiple times
+	\item Can be inspected for debugging
+	\item No buffer size limitations
+	\item Can be processed by tools that don't support stdin
+\end{itemize}
+
+\subsection{stderr Handling: When to Redirect, When to Discard?}
+
+\begin{enumerate}
+	\item \textbf{Redirect stderr to file} (\texttt{2> error.log}):
+	      \begin{itemize}
+		      \item Production scripts (audit trail)
+		      \item Debugging intermittent issues
+		      \item Compliance/regulatory requirements
+	      \end{itemize}
+
+	\item \textbf{Discard stderr} (\texttt{2> /dev/null}):
+	      \begin{itemize}
+		      \item Expected and unimportant errors (e.g., \cmd{find} permission denied)
+		      \item Cleaning up script output for users
+		      \item Known false positives
+	      \end{itemize}
+
+	\item \textbf{Merge with stdout} (\texttt{2>\&1}):
+	      \begin{itemize}
+		      \item Want unified log file
+		      \item Need to preserve chronological order of output and errors
+		      \item Pipeline processing (pipe needs both)
+	      \end{itemize}
+\end{enumerate}
+
+\begin{tipbox}
+	In production scripts, always log stderr to a separate file at least during testing. After confirming stability, then consider discarding irrelevant stderr.
+\end{tipbox}
+
+%% ------------------------------------------------------------------------
+\section{I/O Redirection Best Practices}
+\label{sec:io-best-practices}
+
+\begin{enumerate}
+	\item \textbf{Always check redirection results}: Use \texttt{\$?} or \texttt{PIPESTATUS} to verify success
+
+	\item \textbf{Use noclobber for safety}: Enable \texttt{set -o noclobber} in important scripts
+
+	\item \textbf{Log with timestamps}: Use \texttt{\$(date)} to record time in logs
+
+	\item \textbf{Separate stdout and stderr}: For easier debugging
+
+	\item \textbf{Use tee for visibility}: When you need to see and save output
+
+	\item \textbf{Cleanup file descriptors}: Close custom FDs after use
+
+	\item \textbf{Quote variables}: Use quotes to avoid word splitting
+\end{enumerate}
+
+\begin{lstlisting}[language=bash, caption={Best practice example}]
+#!/bin/bash
+set -euo pipefail  # Exit on error, undefined var, pipe failure
+
+LOGFILE="process-$(date +%Y%m%d).log"
+
+# Logging function
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOGFILE"
+}
+
+# Execute with logging
+log "Process started"
+
+if process_data > output.txt 2>> error.log; then
+    log "Process successful"
+else
+    log "ERROR: Process failed with code $?"
+    exit 1
+fi
+
+log "Process completed"
+\end{lstlisting}
+
+%% ------------------------------------------------------------------------
+\section{Summary}
+\label{sec:io-summary}
+
+\begin{itemize}
+	\item \textbf{File Descriptor}: Integer representing I/O stream (0=stdin, 1=stdout, 2=stderr)
+
+	\item \textbf{I/O Redirection}: Redirect input/output using operators \texttt{<}, \texttt{>}, \texttt{>>}, \texttt{2>}, etc.
+
+	\item \textbf{Pipe}: Connect stdout of one command to stdin of another with \texttt{|} operator
+
+	\item \textbf{tee}: Display output on terminal while saving to file
+
+	\item \textbf{/dev/null}: Null device for discarding unwanted output
+
+	\item \textbf{Operator Combinations}: Can be combined for complex workflows
+\end{itemize}
+
+%% ------------------------------------------------------------------------
+\section{Exercises}
+\label{sec:io-exercises}
+
+\begin{exercisebox}[3.1]
+	Run the following commands one at a time in the terminal to display and save the 10 largest files in \dir{/var/log}:
+	\begin{enumerate}
+		\item Display the 10 largest files in \dir{/var/log}: \texttt{du -ah /var/log 2>/dev/null | sort -rh | head -10}
+		\item Save the results to \file{large-logs.txt}: \texttt{du -ah /var/log 2>/dev/null | sort -rh | head -10 > large-logs.txt}
+		\item Run the same command using \cmd{tee} so output appears on terminal and is saved to file simultaneously
+		\item Separate error messages to \file{error.log} using \texttt{2>}
+	\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[3.2]
+	Create a pipeline that:
+	\begin{enumerate}
+		\item Reads \file{/etc/passwd}
+		\item Extracts usernames (first column)
+		\item Sorts alphabetically
+		\item Saves to \file{sorted-users.txt}
+	\end{enumerate}
+
+	Hint: Use \cmd{cut}, \cmd{sort}, and redirect operators.
+\end{exercisebox}
+
+\begin{exercisebox}[3.3]
+	Use redirection to record system information to a log file. Run each command one at a time in the terminal:
+	\begin{enumerate}
+		\item Create a new log file with a timestamp header: \texttt{date > system-monitor.log}
+		\item Append memory information to the log: \texttt{free -h >> system-monitor.log}
+		\item Append disk information to the log: \texttt{df -h >> system-monitor.log}
+		\item Display running processes and save simultaneously: \texttt{ps aux | tee -a system-monitor.log | head -5}
+		\item Display the contents of the log file: \texttt{cat system-monitor.log}
+	\end{enumerate}
+
+	Notice the difference between \texttt{>} (overwrite) and \texttt{>>} (append) at each step.
+\end{exercisebox}
+
+\begin{exercisebox}[3.4]
+	Create a command that:
+	\begin{enumerate}
+		\item Finds all \texttt{.conf} files in the system
+		\item Discards "Permission denied" messages
+		\item Counts the number of files found
+		\item Saves complete path list to file
+	\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[3.5]
+	Back up a practice directory using \cmd{tar} with redirection to separate normal output from error messages. Run each command in the terminal:
+	\begin{enumerate}
+		\item Create a practice directory first: \texttt{mkdir -p \textasciitilde/practice}
+		\item Create a backup and separate output to two different files:\\
+		      \texttt{tar -czvf backup-practice.tar.gz \textasciitilde/practice > backup-output.log 2> backup-error.log}
+		\item View the output file contents: \texttt{cat backup-output.log}
+		\item View the error file contents (if any): \texttt{cat backup-error.log}
+		\item List archive contents and save the list simultaneously: \texttt{tar -tzvf backup-practice.tar.gz | tee backup-contents.log}
+	\end{enumerate}
+
+	Notice how stdout (list of backed-up files) and stderr (error messages) are separated into different files.
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
+\section{Additional References}
+\label{sec:io-references}
+
+\begin{itemize}
+	\item Man pages: \cmd{man bash} (section REDIRECTION)
+	\item Man pages: \cmd{man tee}, \cmd{man mkfifo}
+	\item Advanced Bash-Scripting Guide: I/O Redirection
+	\item Linux Documentation Project: Bash Guide for Beginners
+\end{itemize}

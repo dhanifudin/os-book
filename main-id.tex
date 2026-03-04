@@ -1,5 +1,5 @@
 %% ========================================================================
-%% Buku Sistem Operasi
+%% Buku Sistem Operasi - Versi Indonesia
 %% Template LaTeX untuk Buku Teks Akademik
 %% Ukuran Kertas: A4
 %% ========================================================================
@@ -13,9 +13,20 @@
 ]{scrbook}            % KOMA-Script book class (lebih fleksibel)
 
 %% ========================================================================
+%% Set Language Flags BEFORE Loading Preamble
+%% ========================================================================
+\newif\ifIndonesian
+\newif\ifEnglish
+\Indonesiantrue
+\Englishfalse
+
+%% ========================================================================
 %% Preamble: Package dan Konfigurasi
 %% ========================================================================
 \input{preamble}
+
+%% Ensure Indonesian is selected
+\selectlanguage{indonesian}
 
 %% ========================================================================
 %% Informasi Buku
@@ -37,13 +48,13 @@
 \frontmatter
 
 % Halaman Judul
-\input{frontmatter/titlepage}
+\input{frontmatter/id/titlepage}
 
 % Halaman Hak Cipta
-\input{frontmatter/copyright}
+\input{frontmatter/id/copyright}
 
 % Kata Pengantar
-\input{frontmatter/preface}
+\input{frontmatter/id/preface}
 
 % Daftar Isi
 \tableofcontents
@@ -66,49 +77,49 @@
 \part{Fundamental Sistem Operasi}
 
 % Minggu 1: Pengenalan Sistem Operasi & Instalasi
-\input{chapters/week01-introduction}
+\input{chapters/id/week01-introduction}
 
 % Minggu 2: Manajemen Perangkat Keras & Perintah Dasar
-\input{chapters/week02-hardware-and-basic-commands}
+\input{chapters/id/week02-hardware-and-basic-commands}
 
 % Minggu 3: Dasar Input/Output (I/O)
-\input{chapters/week03-basic-io}
+\input{chapters/id/week03-basic-io}
 
 %% Bagian II: Manajemen File dan Proses
 \part{Manajemen File dan Proses}
 
 % Minggu 5: Struktur Direktori & Operasi File
-\input{chapters/week05-directory-structure}
+\input{chapters/id/week05-directory-structure}
 
 % Minggu 6: Manajemen Proses
-\input{chapters/week06-process-management}
+\input{chapters/id/week06-process-management}
 
 %% Bagian III: Bash Shell dan Scripting
 \part{Bash Shell dan Scripting}
 
 % Minggu 7: Bash Shell
-\input{chapters/week07-bash-shell}
+\input{chapters/id/week07-bash-shell}
 
 % Minggu 9: Pemrograman Bash
-\input{chapters/week09-bash-programming}
+\input{chapters/id/week09-bash-programming}
 
 %% Bagian IV: Manajemen Sistem Lanjutan
 \part{Manajemen Sistem Lanjutan}
 
 % Minggu 10: Manajemen Memori & System Call
-\input{chapters/week10-memory-and-syscalls}
+\input{chapters/id/week10-memory-and-syscalls}
 
 % Minggu 11: Manajemen File & User/Group
-\input{chapters/week11-file-and-user-management}
+\input{chapters/id/week11-file-and-user-management}
 
 % Minggu 12: Manajemen Layanan (Services)
-\input{chapters/week12-service-management}
+\input{chapters/id/week12-service-management}
 
 % Minggu 13: Manajemen Aplikasi
-\input{chapters/week13-application-management}
+\input{chapters/id/week13-application-management}
 
 % Minggu 14: Backup dan Pemulihan Sistem
-\input{chapters/week14-backup-and-recovery}
+\input{chapters/id/week14-backup-and-recovery}
 
 %% ------------------------------------------------------------------------
 %% Appendices (Lampiran)
@@ -116,13 +127,13 @@
 \appendix
 
 % Lampiran A: Referensi Perintah Linux
-\input{appendices/command-reference}
+\input{appendices/id/command-reference}
 
 % Lampiran B: Solusi Latihan
-\input{appendices/exercise-solutions}
+\input{appendices/id/exercise-solutions}
 
 % Lampiran C: Glossary
-\input{appendices/glossary}
+\input{appendices/id/glossary}
 
 %% ------------------------------------------------------------------------
 %% Back Matter (Halaman Belakang)
