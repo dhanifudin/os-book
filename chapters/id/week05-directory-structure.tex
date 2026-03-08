@@ -101,7 +101,9 @@ Gunakan \texttt{-L} untuk membatasi kedalaman.
     \item Verifikasi file konfigurasi SSH:
 \begin{lstlisting}[language=bash, caption={Cek konfigurasi SSH}]
 ls -lah /etc/ssh/
-sudo test -f /etc/ssh/sshd_config && echo "sshd_config ada" || echo "sshd_config tidak ditemukan"
+sudo test -f /etc/ssh/sshd_config \
+  && echo "sshd_config ada" \
+  || echo "sshd_config tidak ditemukan"
 \end{lstlisting}
 
     \item Baca baris-baris awal konfigurasi (tanpa mengedit):
@@ -117,7 +119,9 @@ sudo tail -n 50 /var/log/auth.log
 
     \item (Opsional) Filter event penting:
 \begin{lstlisting}[language=bash, caption={Filter event penting pada auth.log}]
-sudo grep -E "Failed password|Accepted password|Invalid user" /var/log/auth.log | tail -n 30
+sudo grep \ 
+  -E "Failed password|Accepted password|Invalid user" \
+  /var/log/auth.log | tail -n 30
 \end{lstlisting}
 \end{enumerate}
 
@@ -243,7 +247,7 @@ cd ../..
 pwd
 \end{lstlisting}
 
-    \item Gunakan \texttt{pushd/popd} untuk bolak-balik:
+    \item Gunakan \texttt{pushd/popd} untuk berpindah bolak-balik direktori:
 \begin{lstlisting}[language=bash, caption={Navigasi stack direktori}]
 pushd /etc
 pwd
@@ -327,33 +331,47 @@ Direktori tanpa \texttt{x} bisa terlihat isinya (jika \texttt{r} ada), tetapi ti
 Sebaliknya, direktori dengan \texttt{x} tapi tanpa \texttt{r} bisa diakses jika Anda tahu nama file tepatnya.
 \end{warningbox}
 
-\subsection*{chmod: notasi angka (oktal) + tabel konversi}
-Dalam notasi oktal, setiap triad (\textit{user/group/others}) direpresentasikan oleh angka 0--7:
+\subsection{chmod: Notasi Angka (Oktal)}
+\label{subsec:chmod-oktal}
+
+Setiap permission direpresentasikan sebagai angka oktal (0--7). Setiap triad
+(\textit{user/group/others}) dihitung dengan menjumlahkan nilai bit:
+
 \begin{center}
-\begin{tabular}{lll}
-\texttt{r} = 4 & \texttt{w} = 2 & \texttt{x} = 1 \\
+\begin{tabular}{ccc}
+    \textbf{r} (read) & \textbf{w} (write) & \textbf{x} (execute) \\
+    4                 & 2                  & 1                    \\
 \end{tabular}
 \end{center}
 
-\begin{center}
-\begin{tabular}{cl}
-\textbf{Angka} & \textbf{Izin} \\
-\hline
-0 & --- \\
-1 & --x \\
-2 & -w- \\
-3 & -wx \\
-4 & r-- \\
-5 & r-x \\
-6 & rw- \\
-7 & rwx \\
-\end{tabular}
-\end{center}
+Jumlahkan nilai bit yang aktif untuk mendapatkan angka oktal tiap triad.
+Tiga angka oktal digabung membentuk permission lengkap, misalnya \texttt{755}
+berarti user=7, group=5, others=5.
 
-Contoh:
+\begin{table}[htbp]
+    \centering
+    \caption{Tabel konversi notasi oktal ke permission}
+    \begin{tabular}{cll}
+        \hline
+        \textbf{Angka} & \textbf{Izin} & \textbf{Deskripsi} \\
+        \hline
+        0 & \texttt{-{}-{}-} & Tidak ada akses sama sekali \\
+        1 & \texttt{-{}-x} & Hanya eksekusi (masuk direktori) \\
+        2 & \texttt{-w-} & Hanya tulis \\
+        3 & \texttt{-wx} & Tulis dan eksekusi \\
+        4 & \texttt{r-{}-} & Hanya baca \\
+        5 & \texttt{r-x} & Baca dan eksekusi \\
+        6 & \texttt{rw-} & Baca dan tulis \\
+        7 & \texttt{rwx} & Baca, tulis, dan eksekusi (akses penuh) \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Contoh penggunaan:
 \begin{itemize}
-    \item \texttt{chmod 755 file} $\rightarrow$ owner \texttt{rwx}, group \texttt{r-x}, others \texttt{r-x}
-    \item \texttt{chmod 640 file} $\rightarrow$ owner \texttt{rw-}, group \texttt{r--}, others \texttt{---}
+    \item \texttt{chmod 755 file} $\rightarrow$ owner \texttt{rwx} (7), group \texttt{r-x} (5), others \texttt{r-x} (5)
+    \item \texttt{chmod 640 file} $\rightarrow$ owner \texttt{rw-} (6), group \texttt{r--} (4), others \texttt{---} (0)
+    \item \texttt{chmod 600 file} $\rightarrow$ owner \texttt{rw-} (6), group \texttt{---} (0), others \texttt{---} (0)
 \end{itemize}
 
 \subsection*{chmod: notasi simbolik}
@@ -425,7 +443,8 @@ cd -
 \begin{lstlisting}[language=bash, caption={Menguji efek hilangnya x pada direktori}]
 chmod 600 permtest/dirA
 ls -ld permtest/dirA
-cd permtest/dirA 2>/dev/null || echo "Gagal masuk karena tidak ada execute (x) pada direktori"
+cd permtest/dirA 2>/dev/null \
+ || echo "Gagal: tidak ada execute (x) pada direktori"
 \end{lstlisting}
 \end{enumerate}
 
@@ -458,7 +477,8 @@ ls -ld /srv/project-gamma
 
     \item Uji pembuatan file (catatan: membership group bisa butuh re-login):
 \begin{lstlisting}[language=bash, caption={Uji akses kolaborasi}]
-touch /srv/project-gamma/test-$USER.txt 2>/dev/null || echo "Jika gagal: re-login atau jalankan newgrp project"
+touch /srv/project-gamma/test-$USER.txt 2>/dev/null \
+  || echo "Jika gagal: re-login atau jalankan newgrp"
 ls -l /srv/project-gamma | head
 \end{lstlisting}
 \end{enumerate}
@@ -512,7 +532,8 @@ ls -li target.txt hardlink.txt symlink.txt
 rm target.txt
 ls -li hardlink.txt symlink.txt
 cat hardlink.txt
-cat symlink.txt || echo "symlink broken karena target hilang"
+cat symlink.txt \
+  || echo "symlink broken karena target hilang"
 \end{lstlisting}
 \end{enumerate}
 
@@ -595,7 +616,8 @@ tetapi buang error permission agar output bersih.
 \textbf{Tujuan:} menggunakan \texttt{find} pada root filesystem dan mengelola error dengan redirection.
 
 \begin{lstlisting}[language=bash, caption={Scan *.conf tanpa membanjiri error permission}]
-sudo find / -type f -name "*.conf" 2>/dev/null | head -n 30
+sudo find / -type f -name "*.conf" 2>/dev/null \
+  | head -n 30
 \end{lstlisting}
 
 \begin{tipbox}
@@ -610,7 +632,8 @@ karena banyak direktori memang tidak bisa dibaca user biasa.
     \item Pastikan \texttt{plocate} tersedia:
 \begin{lstlisting}[language=bash, caption={Memasang locate tool}]
 sudo apt update
-sudo apt install -y plocate || sudo apt install -y mlocate
+sudo apt install -y plocate \
+  || sudo apt install -y mlocate
 \end{lstlisting}
 
     \item Update database (butuh root), lalu cari:
@@ -644,8 +667,10 @@ find ~ -type f -perm -0002 2>/dev/null | head -n 30
 
     \item (Opsional) Cari file setuid/setgid:
 \begin{lstlisting}[language=bash, caption={Audit setuid/setgid di sistem (butuh sudo)}]
-sudo find / -type f -perm -4000 2>/dev/null | head -n 30   # setuid
-sudo find / -type f -perm -2000 2>/dev/null | head -n 30   # setgid
+sudo find / -type f -perm -4000 2>/dev/null \
+  | head -n 30   # setuid
+sudo find / -type f -perm -2000 2>/dev/null \ 
+  | head -n 30   # setgid
 \end{lstlisting}
 \end{enumerate}
 
@@ -721,7 +746,8 @@ tar -tzvf week04-backup.tar.gz | head -n 30
     \item Ekstrak ke folder uji:
 \begin{lstlisting}[language=bash, caption={Mengekstrak tar.gz ke folder tertentu}]
 mkdir -p ~/praktikum-os/restore-test
-tar -xzvf week04-backup.tar.gz -C ~/praktikum-os/restore-test
+tar -xzvf week04-backup.tar.gz \ 
+  -C ~/praktikum-os/restore-test
 ls -lah ~/praktikum-os/restore-test/week04 | head
 \end{lstlisting}
 \end{enumerate}
@@ -747,13 +773,15 @@ ls -lah ~/backup/etc-core-*.tar.gz
 
     \item Validasi isi backup (tanpa ekstrak):
 \begin{lstlisting}[language=bash, caption={Validasi isi backup}]
-tar -tzvf ~/backup/etc-core-$(date +%F).tar.gz | head -n 40
+tar -tzvf ~/backup/etc-core-$(date +%F).tar.gz \
+  | head -n 40
 \end{lstlisting}
 
     \item Restore uji ke direktori aman (jangan overwrite sistem):
 \begin{lstlisting}[language=bash, caption={Restore uji ke folder sandbox}]
 mkdir -p ~/backup/restore-sandbox
-tar -xzvf ~/backup/etc-core-$(date +%F).tar.gz -C ~/backup/restore-sandbox
+tar -xzvf ~/backup/etc-core-$(date +%F).tar.gz \
+  -C ~/backup/restore-sandbox
 ls -lah ~/backup/restore-sandbox/etc | head -n 20
 \end{lstlisting}
 \end{enumerate}
