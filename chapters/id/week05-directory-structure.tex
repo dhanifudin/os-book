@@ -120,8 +120,8 @@ sudo tail -n 50 /var/log/auth.log
     \item (Opsional) Filter event penting:
 \begin{lstlisting}[language=bash, caption={Filter event penting pada auth.log}]
 sudo grep \ 
-  -E "Failed password|Accepted password|Invalid user" \
-  /var/log/auth.log | tail -n 30
+ -E "Failed password|Accepted password|Invalid user" \
+ /var/log/auth.log | tail -n 30
 \end{lstlisting}
 \end{enumerate}
 
@@ -457,7 +457,8 @@ dan tidak saling menghapus file sembarangan.
 \begin{enumerate}
     \item Buat group dan folder proyek:
 \begin{lstlisting}[language=bash, caption={Membuat group dan folder proyek}]
-sudo groupadd project 2>/dev/null || echo "group project sudah ada"
+sudo groupadd project 2>/dev/null \ 
+  || echo "group project sudah ada"
 sudo usermod -aG project $USER
 sudo mkdir -p /srv/project-gamma
 sudo chgrp project /srv/project-gamma
