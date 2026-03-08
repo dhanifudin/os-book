@@ -1,20 +1,947 @@
 %% ========================================================================
-%% Chapter 5: Directory Structure & File Operations
+%% Chapter 5: Directory Structure & File Operations on Linux
+%% Target: Ubuntu Server 22.04
 %% ========================================================================
 
-\chapter{Directory Structure \& File Operations}
-\label{ch:directory-structure}
+\chapter{Directory Structure and File Operations on Linux}
+\label{ch:filesystem-ops}
 
-This chapter discusses the Filesystem Hierarchy Standard (FHS) in Linux, file types,
-file system navigation, and advanced file operations including permissions and links.
+This chapter discusses the Linux directory structure based on the
+\textit{Filesystem Hierarchy Standard} (FHS), the types of files in Linux
+(regular, directory, symlink, and device files), file system navigation via the
+command line, advanced file operations related to permissions and ownership
+(\texttt{chmod}, \texttt{chown}, \texttt{chgrp}), hard links and symbolic
+links, file searching with \texttt{find} and \texttt{locate}, and archiving
+and compression (\texttt{tar}, \texttt{gzip}, \texttt{zip}). The module is
+designed for Ubuntu Server 22.04 lab sessions with a hands-on approach:
+concept, output verification, easy scenarios, and real-world scenarios
+commonly encountered by server administrators.
 
-\section{Filesystem Hierarchy Standard (FHS)}
-\section{File Types in Linux}
-\section{File System Navigation}
-\section{Advanced File Operations}
+% ------------------------------------------------------------------------
+\section{Filesystem Hierarchy Standard (FHS) in Linux}
+\label{sec:fhs}
+
+\subsection*{Concept Overview}
+Linux organises files and folders in a hierarchical structure rooted at
+\texttt{/}. On a server, knowing \textit{"what goes where"} is a basic skill:
+configuration lives in \texttt{/etc}, logs are mostly under \texttt{/var/log},
+user home directories are in \texttt{/home}, and hardware is represented as
+files under \texttt{/dev}. The relevant Unix/Linux principle is
+\textit{everything is a file}: not only regular files, but also devices
+(\texttt{/dev}) and system/process information (\texttt{/proc}, \texttt{/sys})
+are treated like files.
+
+\begin{tipbox}
+A useful mindset for server administration:
+\textit{``configuration is a file'', ``logs are files'', ``devices are files''}.
+Therefore, most troubleshooting ends up at \texttt{cat}, \texttt{less},
+\texttt{grep}, and \texttt{ls -l}.
+\end{tipbox}
+
+\subsection*{Key directories (brief + function)}
+\begin{itemize}
+    \item \texttt{/} : root of the entire filesystem.
+    \item \texttt{/bin} : essential programs for all users (e.g. \texttt{ls}, \texttt{cp}, \texttt{mv}).
+    \item \texttt{/sbin} : essential administration programs (often requires \texttt{sudo}).
+    \item \texttt{/etc} : system configuration (generally plain-text files).
+    \item \texttt{/var} : frequently changing data (logs, cache, spool). Common: \texttt{/var/log}.
+    \item \texttt{/home} : user home directories.
+    \item \texttt{/root} : home directory for the \texttt{root} user.
+    \item \texttt{/tmp} : temporary files (often cleaned automatically).
+    \item \texttt{/usr} : userland applications and libraries (sub: \texttt{/usr/bin}, \texttt{/usr/sbin}).
+    \item \texttt{/opt} : third-party/optional applications (often used for custom app deployments).
+    \item \texttt{/srv} : data for server services (e.g. web/app).
+    \item \texttt{/dev} : \textit{device nodes} (disks, ttys, etc.).
+    \item \texttt{/proc}, \texttt{/sys} : \textit{virtual filesystems} from the kernel (process/system status).
+    \item \texttt{/mnt}, \texttt{/media} : temporary/removable mount points.
+\end{itemize}
+
+\subsection*{Lab 4.1 --- FHS Tour: Explore the System (Easy)}
+\textbf{Objective:} identify key directories and distinguish configuration,
+logs, and user data.
+
+\begin{enumerate}
+    \item Check your current location and display the root contents:
+\begin{lstlisting}[language=bash, caption={Viewing the root filesystem and its contents}]
+pwd
+ls -lah /
+\end{lstlisting}
+
+    \item View the contents of the configuration and log directories (briefly):
+\begin{lstlisting}[language=bash, caption={Inspecting /etc and /var/log}]
+ls -lah /etc | head
+ls -lah /var/log | head
+\end{lstlisting}
+
+    \item (Optional) Install \texttt{tree} for a visual hierarchy:
+\begin{lstlisting}[language=bash, caption={Installing tree and displaying the folder structure}]
+sudo apt update
+sudo apt install -y tree
+tree -L 2 /
+\end{lstlisting}
+\end{enumerate}
+
+\begin{warningbox}
+Do not run \texttt{tree /} without a depth limit on a real server --- the
+output can be enormous. Use \texttt{-L} to limit the depth.
+\end{warningbox}
+
+\subsection*{Lab 4.2 --- Audit Configuration and Service Log Locations (Real-World)}
+\textbf{Scenario:} an admin is asked to check the SSH configuration and look
+for access indicators in the logs.
+
+\textbf{Objective:} practise locating standard configuration files and reading
+logs safely.
+
+\begin{enumerate}
+    \item Verify the SSH configuration file:
+\begin{lstlisting}[language=bash, caption={Checking the SSH configuration}]
+ls -lah /etc/ssh/
+sudo test -f /etc/ssh/sshd_config \
+  && echo "sshd_config found" \
+  || echo "sshd_config not found"
+\end{lstlisting}
+
+    \item Read the first lines of the configuration (without editing):
+\begin{lstlisting}[language=bash, caption={Reading configuration safely}]
+sudo head -n 30 /etc/ssh/sshd_config
+\end{lstlisting}
+
+    \item View recent activity in the authentication log:
+\begin{lstlisting}[language=bash, caption={Viewing the authentication log}]
+ls -lah /var/log/ | grep -E "auth|secure" || true
+sudo tail -n 50 /var/log/auth.log
+\end{lstlisting}
+
+    \item (Optional) Filter important events:
+\begin{lstlisting}[language=bash, caption={Filtering important events in auth.log}]
+sudo grep \
+ -E "Failed password|Accepted password|Invalid user" \
+ /var/log/auth.log | tail -n 30
+\end{lstlisting}
+\end{enumerate}
+
+% ------------------------------------------------------------------------
+\section{File Types in Linux (Regular, Directory, Symlink, Device)}
+\label{sec:filetypes}
+
+\subsection*{Concept Overview}
+In Linux, a ``file'' is not just a document. From the output of \texttt{ls -l},
+the first character indicates the type:
+\begin{itemize}
+    \item \texttt{-} : regular file
+    \item \texttt{d} : directory
+    \item \texttt{l} : symbolic link
+    \item \texttt{b} : block device (disk/partition)
+    \item \texttt{c} : character device (tty/serial)
+    \item \texttt{p} : FIFO (named pipe)
+    \item \texttt{s} : socket
+\end{itemize}
+
+\subsection*{Commands used}
+\begin{itemize}
+    \item \texttt{ls -l} / \texttt{ls -lah}: view file types and permissions.
+    \item \texttt{stat <file>}: detailed metadata (inode, size, timestamps, permissions).
+    \item \texttt{file <file>}: guess the content type (ASCII text, image, ELF binary, etc.).
+\end{itemize}
+
+\subsection*{Lab 4.3 --- Reading File Types from ls -l Output (Easy)}
+\textbf{Objective:} distinguish regular files, directories, symlinks, and device files.
+
+\begin{enumerate}
+    \item Create the lab workspace:
+\begin{lstlisting}[language=bash, caption={Creating the workspace for this chapter}]
+mkdir -p ~/lab-os/week05
+cd ~/lab-os/week05
+pwd
+\end{lstlisting}
+
+    \item Create example files and directories:
+\begin{lstlisting}[language=bash, caption={Creating a regular file and example directory}]
+mkdir -p data
+echo "hello server" > data/hello.txt
+ls -lah
+ls -lah data
+\end{lstlisting}
+
+    \item Create a simple symlink:
+\begin{lstlisting}[language=bash, caption={Creating a symlink}]
+ln -s data/hello.txt hello-link.txt
+ls -lah
+\end{lstlisting}
+
+    \item Inspect metadata:
+\begin{lstlisting}[language=bash, caption={Inspecting file metadata}]
+stat data/hello.txt | head -n 20
+file data/hello.txt
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Lab 4.4 --- Reading Device Files and Virtual FS (Real-World)}
+\textbf{Scenario:} an admin needs to distinguish device nodes (block vs char)
+and virtual files from the kernel.
+
+\textbf{Objective:} recognise \texttt{/dev} (device nodes), \texttt{/proc} and
+\texttt{/sys} (virtual filesystems).
+
+\begin{enumerate}
+    \item Identify block devices and character devices:
+\begin{lstlisting}[language=bash, caption={Block vs character device}]
+ls -l /dev/sd* 2>/dev/null | head -n 10
+ls -l /dev/tty
+\end{lstlisting}
+
+    \item Show that \texttt{/proc} contains process information (virtual):
+\begin{lstlisting}[language=bash, caption={Reading system information from /proc}]
+ls -lah /proc | head
+cat /proc/cpuinfo | head -n 20
+\end{lstlisting}
+
+    \item Use \texttt{file} to distinguish content types:
+\begin{lstlisting}[language=bash, caption={Testing content type with file}]
+file /dev/tty
+file /proc/cpuinfo
+\end{lstlisting}
+\end{enumerate}
+
+\begin{warningbox}
+Do not write arbitrarily to \texttt{/dev/*} or \texttt{/proc/*}. Many entries
+are sensitive and can affect the system.
+\end{warningbox}
+
+% ------------------------------------------------------------------------
+\section{File System Navigation via the Command Line}
+\label{sec:navigasi}
+
+\subsection*{Concept Overview}
+On Ubuntu Server, the terminal is the primary administration interface. Navigation
+skills --- finding file locations, moving between directories, and reading
+structures --- are the foundation for all advanced tasks.
+
+\subsection*{Commands used}
+\begin{itemize}
+    \item \texttt{pwd}: display the current working directory.
+    \item \texttt{ls}: list directory contents (common options: \texttt{-l}, \texttt{-a}, \texttt{-h}).
+    \item \texttt{cd}: change directory.
+    \item \texttt{pushd}/\texttt{popd}: directory stack navigation (convenient for switching back and forth).
+\end{itemize}
+
+\subsection*{Lab 4.5 --- Safe and Efficient Navigation (Easy)}
+\textbf{Objective:} practise absolute paths, relative paths, and \texttt{pushd/popd}.
+
+\begin{enumerate}
+    \item Move to root, then return to home:
+\begin{lstlisting}[language=bash, caption={Absolute path vs returning to home}]
+cd /
+pwd
+cd ~
+pwd
+\end{lstlisting}
+
+    \item Practise relative paths:
+\begin{lstlisting}[language=bash, caption={Relative paths in the workspace}]
+cd ~/lab-os/week05
+mkdir -p a/b/c
+cd a/b
+pwd
+cd ../..
+pwd
+\end{lstlisting}
+
+    \item Use \texttt{pushd/popd} to switch between directories:
+\begin{lstlisting}[language=bash, caption={Directory stack navigation}]
+pushd /etc
+pwd
+popd
+pwd
+\end{lstlisting}
+\end{enumerate}
+
+\begin{warningbox}
+The command \texttt{rm -rf} deletes directories and their contents without
+confirmation. During lab sessions, use \texttt{rm -ri} or verify the path
+carefully first.
+\end{warningbox}
+
+\subsection*{Lab 4.6 --- Locating Configuration Files from Service Output (Real-World)}
+\textbf{Scenario:} you are asked to find the service unit location and related
+configuration file.
+
+\textbf{Objective:} use navigation together with reading common system paths on
+a server.
+
+\begin{enumerate}
+    \item View SSH status and location hints:
+\begin{lstlisting}[language=bash, caption={Tracing service information via systemctl}]
+systemctl status ssh --no-pager | head -n 30
+\end{lstlisting}
+
+    \item Display the service unit file:
+\begin{lstlisting}[language=bash, caption={Finding the service unit file}]
+systemctl cat ssh --no-pager | head -n 80
+\end{lstlisting}
+
+    \item Navigate quickly to the configuration directory:
+\begin{lstlisting}[language=bash, caption={Navigating to the SSH configuration directory}]
+cd /etc/ssh
+pwd
+ls -lah | head
+\end{lstlisting}
+\end{enumerate}
+
+% ------------------------------------------------------------------------
+\section{Advanced File Operations: chmod, chown, chgrp}
+\label{sec:perm-owner}
+
+\subsection*{Concept Overview}
+Access control in Linux is built from three components:
+\begin{itemize}
+    \item \textbf{Permissions} for the \textit{owner}, \textit{group}, and \textit{others}
+    \item \textbf{Ownership}: \textit{user owner} and \textit{group owner}
+    \item \textbf{The execute bit on directories}: on a directory, \texttt{x} means
+          ``allowed to enter/traverse the directory''.
+\end{itemize}
+
+\subsection*{Reading permissions: rwx for user/group/others}
+Example \texttt{ls -l} output:
+\begin{center}
+\texttt{-rwxr-x---}
+\end{center}
+Meaning:
+\begin{itemize}
+    \item Character 1: file type (\texttt{-}, \texttt{d}, \texttt{l}, etc.)
+    \item Next 3: \textbf{owner} (user)
+    \item Next 3: \textbf{group}
+    \item Last 3: \textbf{others}
+\end{itemize}
+
+\subsubsection*{Meaning of r/w/x on files vs directories}
+\begin{itemize}
+    \item \textbf{Regular file}:
+    \begin{itemize}
+        \item \texttt{r}: allowed to read the file contents
+        \item \texttt{w}: allowed to modify the file contents
+        \item \texttt{x}: allowed to execute the file as a program/script
+    \end{itemize}
+    \item \textbf{Directory}:
+    \begin{itemize}
+        \item \texttt{r}: allowed to list the file names (e.g. \texttt{ls})
+        \item \texttt{w}: allowed to create/delete/rename entries in the directory
+        \item \texttt{x}: allowed to enter (\texttt{cd}) and access files inside
+    \end{itemize}
+\end{itemize}
+
+\begin{warningbox}
+A directory without \texttt{x} can still have its names listed (if \texttt{r}
+is set), but cannot be entered or accessed. Conversely, a directory with
+\texttt{x} but without \texttt{r} can be accessed if you know the exact
+filename.
+\end{warningbox}
+
+\subsection{chmod: Octal Notation}
+\label{subsec:chmod-octal}
+
+Each permission is represented as an octal digit (0--7). Each triad
+(\textit{user/group/others}) is calculated by summing the bit values:
+
+\begin{center}
+\begin{tabular}{ccc}
+    \textbf{r} (read) & \textbf{w} (write) & \textbf{x} (execute) \\
+    4                 & 2                  & 1                    \\
+\end{tabular}
+\end{center}
+
+Sum the active bit values to get the octal digit for each triad. Three octal
+digits combined form the complete permission, for example \texttt{755} means
+user=7, group=5, others=5.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Octal notation to permission conversion table}
+    \begin{tabular}{cll}
+        \hline
+        \textbf{Digit} & \textbf{Permission} & \textbf{Description} \\
+        \hline
+        0 & \texttt{-{}-{}-} & No access at all \\
+        1 & \texttt{-{}-x} & Execute only (enter directory) \\
+        2 & \texttt{-w-} & Write only \\
+        3 & \texttt{-wx} & Write and execute \\
+        4 & \texttt{r-{}-} & Read only \\
+        5 & \texttt{r-x} & Read and execute \\
+        6 & \texttt{rw-} & Read and write \\
+        7 & \texttt{rwx} & Read, write, and execute (full access) \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Usage examples:
+\begin{itemize}
+    \item \texttt{chmod 755 file} $\rightarrow$ owner \texttt{rwx} (7), group \texttt{r-x} (5), others \texttt{r-x} (5)
+    \item \texttt{chmod 640 file} $\rightarrow$ owner \texttt{rw-} (6), group \texttt{r--} (4), others \texttt{---} (0)
+    \item \texttt{chmod 600 file} $\rightarrow$ owner \texttt{rw-} (6), group \texttt{---} (0), others \texttt{---} (0)
+\end{itemize}
+
+\subsection*{chmod: symbolic notation}
+\begin{itemize}
+    \item Target: \texttt{u} (user), \texttt{g} (group), \texttt{o} (others), \texttt{a} (all)
+    \item Operator: \texttt{+} (add), \texttt{-} (remove), \texttt{=} (set exactly)
+\end{itemize}
+
+Examples:
+\begin{itemize}
+    \item \texttt{chmod u+x script.sh} (add execute for owner)
+    \item \texttt{chmod go-rw file} (remove read+write for group and others)
+\end{itemize}
+
+\subsection*{Special bits: setuid, setgid, sticky}
+In addition to the three main triads, there are special bits:
+\begin{itemize}
+    \item \textbf{setuid (4xxx)}: program runs with the file owner's privileges (usually root). Example: \texttt{/usr/bin/passwd}.
+    \item \textbf{setgid (2xxx)}:
+    \begin{itemize}
+        \item on a file: runs with the file's group
+        \item on a directory: new files inherit the directory's group (\textit{important for shared folders})
+    \end{itemize}
+    \item \textbf{sticky bit (1xxx)} on a directory: only the file owner (or root) may delete files in that directory.
+          Example: \texttt{/tmp}.
+\end{itemize}
+
+\subsection*{Ownership: chown and chgrp}
+\begin{itemize}
+    \item \texttt{chown user file} changes the user owner
+    \item \texttt{chown user:group file} changes both user and group at once
+    \item \texttt{chgrp group file} changes the group
+\end{itemize}
+
+\begin{tipbox}
+Access problems on a server are often not because a file is ``missing'', but
+because ownership or permissions are incorrect. Make it a habit to verify with
+\texttt{ls -l} and \texttt{stat}.
+\end{tipbox}
+
+\subsection*{Lab 4.7 --- Basic Permissions on Files and Directories (Easy)}
+\textbf{Objective:} observe the difference in meaning of \texttt{x} on a file
+vs a directory, and practise octal conversion.
+
+\begin{enumerate}
+    \item Prepare test objects:
+\begin{lstlisting}[language=bash, caption={Setting up permission test objects}]
+cd ~/lab-os/week05
+mkdir -p permtest/dirA
+echo "hello" > permtest/fileA.txt
+ls -ld permtest permtest/dirA
+ls -l permtest/fileA.txt
+\end{lstlisting}
+
+    \item Change the file permission to \texttt{640} and verify:
+\begin{lstlisting}[language=bash, caption={chmod on a file using octal}]
+chmod 640 permtest/fileA.txt
+ls -l permtest/fileA.txt
+\end{lstlisting}
+
+    \item Change the directory permission to \texttt{700}, then try to access it:
+\begin{lstlisting}[language=bash, caption={chmod on a directory and testing access}]
+chmod 700 permtest/dirA
+ls -ld permtest/dirA
+cd permtest/dirA
+pwd
+cd -
+\end{lstlisting}
+
+    \item Experiment: remove \texttt{x} from the directory and observe the effect:
+\begin{lstlisting}[language=bash, caption={Testing the effect of removing x from a directory}]
+chmod 600 permtest/dirA
+ls -ld permtest/dirA
+cd permtest/dirA 2>/dev/null \
+ || echo "Failed: no execute (x) on the directory"
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Lab 4.8 --- Shared Project Folder + Sticky Bit (Real-World)}
+\textbf{Scenario:} a shared project folder where group members can collaborate,
+new files inherit the group, and users cannot accidentally delete each other's
+files.
+
+\textbf{Objective:} apply \texttt{chgrp}, \texttt{chmod 2xxx}, and sticky bit
+on a collaborative directory.
+
+\begin{enumerate}
+    \item Create the group and project folder:
+\begin{lstlisting}[language=bash, caption={Creating the group and project folder}]
+sudo groupadd project 2>/dev/null \
+  || echo "group project already exists"
+sudo usermod -aG project $USER
+sudo mkdir -p /srv/project-gamma
+sudo chgrp project /srv/project-gamma
+\end{lstlisting}
+
+    \item Apply setgid so new files inherit the group, and restrict others:
+\begin{lstlisting}[language=bash, caption={Setgid on the project directory}]
+sudo chmod 2770 /srv/project-gamma
+ls -ld /srv/project-gamma
+\end{lstlisting}
+
+    \item Apply the sticky bit so users cannot delete each other's files:
+\begin{lstlisting}[language=bash, caption={Sticky bit on the collaborative directory}]
+sudo chmod +t /srv/project-gamma
+ls -ld /srv/project-gamma
+\end{lstlisting}
+
+    \item Test file creation (note: group membership may require re-login):
+\begin{lstlisting}[language=bash, caption={Testing collaborative access}]
+touch /srv/project-gamma/test-$USER.txt 2>/dev/null \
+  || echo "If it fails: re-login or run newgrp"
+ls -l /srv/project-gamma | head
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[4.1]
+Determine the chmod number for:
+\begin{enumerate}
+    \item File: owner \texttt{rw-}, group \texttt{r--}, others \texttt{---}
+    \item Shared directory: owner+group \texttt{rwx}, others \texttt{---}, new files inherit the group (setgid)
+    \item Directory like \texttt{/tmp}: everyone can create files, but cannot delete files belonging to other users (sticky bit)
+\end{enumerate}
+\end{exercisebox}
+
+% ------------------------------------------------------------------------
 \section{Hard Links and Symbolic Links}
-\section{File Searching}
-\section{Compression and Archiving}
+\label{sec:links}
+
+\subsection*{Concept Overview}
+A link is a way to create an ``alternative name'' for a file.
+\begin{itemize}
+    \item \textbf{Hard link} (\texttt{ln}): points to the same inode. Deleting the original name does not remove the data as long as another hard link exists.
+    \item \textbf{Symbolic link} / symlink (\texttt{ln -s}): a small file that points to a target path. If the target is moved or deleted, the symlink becomes \textit{broken}.
+\end{itemize}
+
+\subsection*{Commands used}
+\begin{itemize}
+    \item \texttt{ln}, \texttt{ln -s}: create links.
+    \item \texttt{ls -li}: display inode numbers and link counts.
+    \item \texttt{stat}: verify inodes and metadata.
+\end{itemize}
+
+\subsection*{Lab 4.9 --- Testing Hard Links vs Symlinks (Easy)}
+\textbf{Objective:} observe the difference in inodes and the effect of deletion.
+
+\begin{enumerate}
+    \item Prepare a file:
+\begin{lstlisting}[language=bash, caption={Creating a source file}]
+cd ~/lab-os/week05
+echo "version1" > target.txt
+\end{lstlisting}
+
+    \item Create a hard link and a symlink:
+\begin{lstlisting}[language=bash, caption={Creating a hard link and symlink}]
+ln target.txt hardlink.txt
+ln -s target.txt symlink.txt
+ls -li target.txt hardlink.txt symlink.txt
+\end{lstlisting}
+
+    \item Delete the original file and check the effect:
+\begin{lstlisting}[language=bash, caption={Deleting the target and checking the links}]
+rm target.txt
+ls -li hardlink.txt symlink.txt
+cat hardlink.txt
+cat symlink.txt \
+  || echo "symlink is broken because the target is gone"
+\end{lstlisting}
+\end{enumerate}
+
+\begin{warningbox}
+Hard links are generally not used for directories (restricted to prevent
+structural loops). For a ``shortcut'' to a directory, use a symlink instead.
+\end{warningbox}
+
+\subsection*{Lab 4.10 --- Symlink for Application Version Deployment (Real-World)}
+\textbf{Scenario:} a common deployment pattern --- separate versioned
+application folders with \texttt{current} as a symlink pointing to the active
+version.
+
+\textbf{Objective:} understand why symlinks are very useful for quick rollbacks.
+
+\begin{enumerate}
+    \item Create the version structure:
+\begin{lstlisting}[language=bash, caption={Creating dummy application versions}]
+cd ~/lab-os/week05
+mkdir -p app/releases/v1 app/releases/v2 app/shared
+echo "APP_VERSION=v1" > app/releases/v1/.env
+echo "APP_VERSION=v2" > app/releases/v2/.env
+\end{lstlisting}
+
+    \item Create a \texttt{current} symlink pointing to the active version:
+\begin{lstlisting}[language=bash, caption={Creating the current symlink}]
+ln -s releases/v1 app/current
+ls -lah app
+cat app/current/.env
+\end{lstlisting}
+
+    \item Simulate an upgrade and rollback by simply switching the symlink:
+\begin{lstlisting}[language=bash, caption={Switching versions via symlink}]
+rm app/current
+ln -s releases/v2 app/current
+cat app/current/.env
+
+rm app/current
+ln -s releases/v1 app/current
+cat app/current/.env
+\end{lstlisting}
+\end{enumerate}
+
+% ------------------------------------------------------------------------
+\section{File Searching with find and locate}
+\label{sec:search}
+
+\subsection*{Concept Overview}
+On a server, you often need to search for:
+\begin{itemize}
+    \item configuration files (\texttt{*.conf}), logs, or large files consuming disk space
+    \item files with problematic permissions
+    \item files modified within a specific time range (for debugging)
+\end{itemize}
+
+\subsection*{Commands used}
+\begin{itemize}
+    \item \texttt{find}: real-time search (accurate, flexible).
+    \item \texttt{locate}: database-based search (fast, requires database update).
+\end{itemize}
+
+\subsection*{Lab 4.11 --- Basic find: Name, Type, Size (Easy)}
+\textbf{Objective:} search for files by name, type, and size.
+
+\begin{enumerate}
+    \item Find all \texttt{.txt} files in the workspace:
+\begin{lstlisting}[language=bash, caption={find by name and type}]
+cd ~/lab-os/week05
+find . -type f -name "*.txt"
+\end{lstlisting}
+
+    \item Find files larger than 1 MB (common troubleshooting example):
+\begin{lstlisting}[language=bash, caption={find by file size}]
+find ~ -type f -size +1M 2>/dev/null | head
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Lab 4.12 --- Real-World find: System Configuration Scan (Advanced/Real-World)}
+\textbf{Scenario:} search for \texttt{*.conf} configuration files across the
+entire system, suppressing permission errors for clean output.
+
+\textbf{Objective:} use \texttt{find} on the root filesystem and manage errors
+with redirection.
+
+\begin{lstlisting}[language=bash, caption={Scanning *.conf without flooding permission errors}]
+sudo find / -type f -name "*.conf" 2>/dev/null \
+  | head -n 30
+\end{lstlisting}
+
+\begin{tipbox}
+The pattern \texttt{2>/dev/null} is used very often when scanning the entire
+system, because many directories simply cannot be read by a regular user.
+\end{tipbox}
+
+\subsection*{Lab 4.13 --- locate + updatedb (Easy)}
+\textbf{Objective:} use the index database for fast searches.
+
+\begin{enumerate}
+    \item Ensure \texttt{plocate} is available:
+\begin{lstlisting}[language=bash, caption={Installing the locate tool}]
+sudo apt update
+sudo apt install -y plocate \
+  || sudo apt install -y mlocate
+\end{lstlisting}
+
+    \item Update the database (requires root), then search:
+\begin{lstlisting}[language=bash, caption={Updating the locate database and searching}]
+sudo updatedb
+locate sshd_config | head
+\end{lstlisting}
+\end{enumerate}
+
+\begin{warningbox}
+\texttt{locate} is not always real-time. If a file was just created and has not
+yet been indexed, the result may be empty until \texttt{updatedb} is run.
+\end{warningbox}
+
+\subsection*{Lab 4.14 --- Auditing Problematic Permissions with find (Real-World)}
+\textbf{Scenario:} an admin wants to find files/directories that are ``too
+open'' (world-writable), or setuid/setgid files, for a light security audit.
+
+\textbf{Objective:} locate objects that are risky from a permissions
+perspective.
+
+\begin{enumerate}
+    \item Find world-writable directories in home:
+\begin{lstlisting}[language=bash, caption={Finding world-writable directories}]
+find ~ -type d -perm -0002 2>/dev/null | head -n 30
+\end{lstlisting}
+
+    \item Find world-writable files:
+\begin{lstlisting}[language=bash, caption={Finding world-writable files}]
+find ~ -type f -perm -0002 2>/dev/null | head -n 30
+\end{lstlisting}
+
+    \item (Optional) Find setuid/setgid files:
+\begin{lstlisting}[language=bash, caption={Auditing setuid/setgid on the system (requires sudo)}]
+sudo find / -type f -perm -4000 2>/dev/null \
+  | head -n 30   # setuid
+sudo find / -type f -perm -2000 2>/dev/null \
+  | head -n 30   # setgid
+\end{lstlisting}
+\end{enumerate}
+
+\begin{warningbox}
+Do not arbitrarily change permissions on system setuid/setgid files. This lab
+is for identification purposes only.
+\end{warningbox}
+
+% ------------------------------------------------------------------------
+\section{File Compression and Archiving (tar, gzip, zip)}
+\label{sec:archive}
+
+\subsection*{Concept Overview}
+An \textbf{archive} combines multiple files/folders into a single package.
+\textbf{Compression} reduces the size of the data. On a server, the common
+combination is:
+\begin{itemize}
+    \item \texttt{tar} to archive a folder
+    \item \texttt{gzip} (or \texttt{bzip2}/\texttt{xz}) to compress the archive
+    \item \texttt{zip} for cross-OS exchange (Windows/macOS) or specific needs
+\end{itemize}
+
+\subsection*{tar: most commonly used flags}
+\begin{itemize}
+    \item \texttt{-c} : create an archive
+    \item \texttt{-x} : extract an archive
+    \item \texttt{-t} : list contents (view without extracting)
+    \item \texttt{-f <file>} : archive filename (required when using a file)
+    \item \texttt{-v} : verbose (show files being processed)
+    \item \texttt{-C <dir>} : extract/work from a specific directory
+    \item \texttt{-z} : use gzip (\texttt{.tar.gz / .tgz})
+    \item \texttt{-J} : use xz (\texttt{.tar.xz}) --- stronger compression, slower
+\end{itemize}
+
+Quick examples:
+\begin{itemize}
+    \item Create: \texttt{tar -czvf backup.tar.gz folder/}
+    \item List contents: \texttt{tar -tzvf backup.tar.gz}
+    \item Extract: \texttt{tar -xzvf backup.tar.gz -C /destination}
+\end{itemize}
+
+\subsection*{gzip: important flags}
+\begin{itemize}
+    \item \texttt{-k} : keep the original file (do not delete the source)
+    \item \texttt{-d} : decompress (gunzip)
+    \item \texttt{-1} to \texttt{-9} : compression level (1 fastest, 9 maximum)
+\end{itemize}
+Note: \texttt{gzip} works on a \textbf{single file}. For folders, usually
+\texttt{tar} first, then \texttt{gzip}.
+
+\subsection*{zip/unzip: important flags}
+\begin{itemize}
+    \item \texttt{zip -r} : recursive for folders
+    \item \texttt{zip -9} : maximum compression (slower)
+    \item \texttt{unzip -l} : list zip contents without extracting
+    \item \texttt{unzip -d <dir>} : extract to a specific directory
+\end{itemize}
+
+\subsection*{Lab 4.15 --- Archive the Workspace: tar + gzip (Easy)}
+\textbf{Objective:} create a \texttt{.tar.gz}, inspect its contents, then
+extract it.
+
+\begin{enumerate}
+    \item Create a compressed archive of the workspace:
+\begin{lstlisting}[language=bash, caption={Creating a tar.gz}]
+cd ~/lab-os
+tar -czvf week05-backup.tar.gz week05
+ls -lah week05-backup.tar.gz
+\end{lstlisting}
+
+    \item List the archive contents without extracting:
+\begin{lstlisting}[language=bash, caption={Listing tar.gz contents}]
+tar -tzvf week05-backup.tar.gz | head -n 30
+\end{lstlisting}
+
+    \item Extract to a test folder:
+\begin{lstlisting}[language=bash, caption={Extracting tar.gz to a specific folder}]
+mkdir -p ~/lab-os/restore-test
+tar -xzvf week05-backup.tar.gz \
+  -C ~/lab-os/restore-test
+ls -lah ~/lab-os/restore-test/week05 | head
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Lab 4.16 --- System Configuration Backup (Subset) + Validation (Real-World)}
+\textbf{Scenario:} before making configuration changes on a server, an admin
+creates a backup of a subset of \texttt{/etc} and stores it in a backup folder.
+
+\textbf{Objective:} create a tidy, verifiable archive without flooding
+permission errors.
+
+\begin{enumerate}
+    \item Prepare the backup folder:
+\begin{lstlisting}[language=bash, caption={Creating the backup folder}]
+mkdir -p ~/backup
+\end{lstlisting}
+
+    \item Create a backup of important configuration and verify the size:
+\begin{lstlisting}[language=bash, caption={Backing up important configuration with tar.gz}]
+sudo tar -czvf ~/backup/etc-core-$(date +%F).tar.gz \
+  /etc/ssh /etc/hosts /etc/netplan /etc/systemd \
+  2>/dev/null
+ls -lah ~/backup/etc-core-*.tar.gz
+\end{lstlisting}
+
+    \item Validate the backup contents (without extracting):
+\begin{lstlisting}[language=bash, caption={Validating backup contents}]
+tar -tzvf ~/backup/etc-core-$(date +%F).tar.gz \
+  | head -n 40
+\end{lstlisting}
+
+    \item Test restore to a safe directory (do not overwrite the live system):
+\begin{lstlisting}[language=bash, caption={Test restore to a sandbox folder}]
+mkdir -p ~/backup/restore-sandbox
+tar -xzvf ~/backup/etc-core-$(date +%F).tar.gz \
+  -C ~/backup/restore-sandbox
+ls -lah ~/backup/restore-sandbox/etc | head -n 20
+\end{lstlisting}
+\end{enumerate}
+
+\begin{tipbox}
+The ``backup of important subset'' pattern is safer than archiving all of
+\texttt{/etc}, and is more realistic for everyday administration.
+\end{tipbox}
+
+\subsection*{Lab 4.17 --- gzip for a Single File (Easy)}
+\textbf{Objective:} understand gzip as a single-file compressor, and the effect
+of \texttt{-k} and the compression level.
+
+\begin{enumerate}
+    \item Create a simple large test file:
+\begin{lstlisting}[language=bash, caption={Creating a large test file}]
+cd ~/lab-os/week05
+yes "logline" | head -n 200000 > biglog.txt
+ls -lah biglog.txt
+\end{lstlisting}
+
+    \item Compress with gzip and keep the original file:
+\begin{lstlisting}[language=bash, caption={gzip with keep}]
+gzip -k -9 biglog.txt
+ls -lah biglog.txt biglog.txt.gz
+\end{lstlisting}
+
+    \item Decompress:
+\begin{lstlisting}[language=bash, caption={Decompress gzip}]
+gzip -d -k biglog.txt.gz
+ls -lah biglog.txt biglog.txt.gz
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Lab 4.18 --- zip for Cross-OS Distribution (Real-World)}
+\textbf{Scenario:} you need to send a backup/restore folder to a Windows or
+macOS user.
+
+\begin{enumerate}
+    \item Ensure zip/unzip is installed:
+\begin{lstlisting}[language=bash, caption={Installing zip/unzip}]
+sudo apt update
+sudo apt install -y zip unzip
+\end{lstlisting}
+
+    \item Create a recursive zip and inspect its contents:
+\begin{lstlisting}[language=bash, caption={Creating a zip and listing without extracting}]
+cd ~/backup
+zip -r -9 restore-sandbox.zip restore-sandbox
+unzip -l restore-sandbox.zip | head -n 30
+\end{lstlisting}
+
+    \item Extract to a new folder:
+\begin{lstlisting}[language=bash, caption={Extracting the zip to the target folder}]
+mkdir -p ~/backup/unzip-test
+unzip restore-sandbox.zip -d ~/backup/unzip-test
+ls -lah ~/backup/unzip-test | head
+\end{lstlisting}
+\end{enumerate}
+
+% ------------------------------------------------------------------------
 \section{Summary}
-\section{Exercises}
-\section{Additional References}
+\label{sec:summary-filesystem}
+
+\begin{itemize}
+    \item The Linux structure is rooted at \texttt{/} and follows FHS conventions: configuration in \texttt{/etc}, logs in \texttt{/var/log}, home directories in \texttt{/home}.
+    \item Linux has many file types: regular, directory, symlink, and device files (\texttt{/dev}) and virtual filesystems (\texttt{/proc}, \texttt{/sys}).
+    \item Terminal navigation (\texttt{pwd}, \texttt{ls}, \texttt{cd}, \texttt{pushd/popd}) is the foundation of server administration.
+    \item Access control is built from permissions (\texttt{chmod}) and ownership (\texttt{chown}/\texttt{chgrp}); shared folders are a real-world scenario frequently encountered.
+    \item Hard links share an inode; symlinks point to a target path and are ideal for deploy/rollback patterns.
+    \item \texttt{find} is flexible for real-time searches; \texttt{locate} is fast but depends on a database.
+    \item Simple backups are commonly done with \texttt{tar.gz}; \texttt{gzip} handles single files; \texttt{zip} is convenient for cross-OS exchange.
+\end{itemize}
+
+% ------------------------------------------------------------------------
+\section{Exercises and Independent Tasks}
+\label{sec:exercises-filesystem}
+
+\subsection*{A. Conceptual Exercises}
+\begin{exercisebox}[4.A]
+Choose 8 directories from the FHS list (\texttt{/etc, /var, /home, /tmp, /usr,
+/opt, /srv, /dev, /proc, /sys}) and explain the function of each in 1--2
+sentences.
+\end{exercisebox}
+
+\begin{exercisebox}[4.B]
+Explain the difference between a hard link and a symlink, then give one
+realistic use case for each.
+\end{exercisebox}
+
+\subsection*{B. Lab Exercises (Easy--Intermediate)}
+\begin{exercisebox}[4.C]
+Create the folder \texttt{\~/lab-os/week05-exercises} containing:
+\begin{itemize}
+    \item 3 text files, 1 subfolder, and 1 symlink pointing to one of the files.
+\end{itemize}
+Show proof with \texttt{ls -lah} and \texttt{ls -li}.
+\end{exercisebox}
+
+\begin{exercisebox}[4.D]
+Set the permissions of \texttt{report.txt} so that the owner can read and
+write, the group can only read, and others have no access. Write the command
+and verify with \texttt{ls -l}.
+\end{exercisebox}
+
+\begin{exercisebox}[4.E]
+Use \texttt{find} to locate the 20 largest files in \texttt{/var/log}. If
+permission errors appear, discard them with \texttt{2>/dev/null}. Display the
+first 20 lines of output.
+\end{exercisebox}
+
+\subsection*{C. Lab Exercises (Real-World)}
+\begin{exercisebox}[4.F --- Admin Case 1]
+You are asked to create the folder \texttt{/srv/data-share} for a team (group
+\texttt{project}) with the following rules:
+\begin{itemize}
+\item all group members can create and edit files
+\item new files inherit the folder's group (setgid)
+\item other users cannot access the folder
+\item users cannot delete files belonging to other users in that folder (sticky bit)
+\end{itemize}
+Write the commands and show proof with \texttt{ls -ld}.
+\end{exercisebox}
+
+\begin{exercisebox}[4.G --- Admin Case 2]
+You are asked to gather troubleshooting evidence:
+\begin{itemize}
+\item copy the last 100 lines of \texttt{/var/log/auth.log} to a file in your home directory
+\item compress that file to \texttt{.gz} without deleting the original
+\item archive the evidence folder into a \texttt{tar.gz}
+\end{itemize}
+Write all commands and display the final \texttt{ls -lah} output.
+\end{exercisebox}
+
+\subsection*{Reference (Manual Pages)}
+\begin{itemize}
+    \item \texttt{man hier}, \texttt{man ls}, \texttt{man stat}, \texttt{man file}
+    \item \texttt{man chmod}, \texttt{man chown}, \texttt{man chgrp}, \texttt{man umask}
+    \item \texttt{man ln}
+    \item \texttt{man find}, \texttt{man locate}, \texttt{man updatedb}
+    \item \texttt{man tar}, \texttt{man gzip}, \texttt{man zip}, \texttt{man unzip}
+\end{itemize}
