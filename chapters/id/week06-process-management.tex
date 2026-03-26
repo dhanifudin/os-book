@@ -5,16 +5,1117 @@
 \chapter{Manajemen Proses}
 \label{ch:process-management}
 
-Bab ini membahas konsep proses dan thread di Linux, siklus hidup proses,
-penjadwalan, sinyal, dan manajemen job.
+Bab ini membahas konsep dasar manajemen proses pada Linux dengan konteks Ubuntu 22.04
+sebagai lingkungan praktikum utama. Topik yang dibahas meliputi proses dan thread,
+siklus hidup proses, penjadwalan dan prioritas, sinyal proses, job control, penggunaan
+\texttt{nice} dan \texttt{renice}, serta pemantauan proses menggunakan \texttt{htop}
+dan \texttt{atop}. Melalui bab ini, mahasiswa diharapkan tidak hanya memahami konsep
+manajemen proses secara teoritis, tetapi juga mampu mengamati dan mengelolanya langsung
+melalui terminal Linux.
 
-\section{Konsep Proses dan Thread}
+% ------------------------------------------------------------------------
+\section{Tujuan Praktikum}
+\label{sec:tujuan-praktikum-proses}
+
+Setelah menyelesaikan praktikum ini, mahasiswa diharapkan mampu:
+\begin{enumerate}
+    \item menjelaskan konsep proses dan thread pada sistem operasi Linux;
+    \item memahami siklus hidup proses pada Linux;
+    \item memahami dasar penjadwalan proses dan prioritas proses;
+    \item menggunakan sinyal untuk mengendalikan proses;
+    \item mengelola job pada mode \textit{foreground} dan \textit{background};
+    \item menggunakan \texttt{nice} dan \texttt{renice} untuk mengatur prioritas proses;
+    \item memantau proses menggunakan \texttt{htop} dan \texttt{atop}.
+\end{enumerate}
+
+% ------------------------------------------------------------------------
+\section{Konsep Proses dan Thread di Linux}
+\label{sec:konsep-proses-thread}
+
+\subsection*{Penjelasan Konsep}
+
+Dalam Linux, \textbf{proses} adalah instansi program yang sedang berjalan. Ketika
+pengguna mengeksekusi suatu perintah, sistem tidak sekadar membuka file program,
+melainkan membuat entitas eksekusi baru yang memiliki identitas, status, ruang memori,
+dan resource tersendiri. Entitas inilah yang disebut proses.
+
+\begin{definition}[Proses]
+Proses adalah program yang sedang dieksekusi dan dikelola oleh kernel, lengkap dengan
+identitas proses, konteks eksekusi, ruang alamat memori, file descriptor, dan statusnya.
+\end{definition}
+
+Setiap proses pada Linux umumnya memiliki atribut penting seperti:
+\begin{itemize}
+    \item \textbf{PID (\textit{Process ID})}, yaitu nomor unik proses;
+    \item \textbf{PPID (\textit{Parent Process ID})}, yaitu PID proses induk;
+    \item \textbf{UID/GID}, yang menunjukkan pemilik proses;
+    \item \textbf{status proses}, misalnya berjalan, menunggu, atau berhenti;
+    \item \textbf{file descriptor}, yang menghubungkan proses ke file, terminal, pipe, atau socket;
+    \item \textbf{nilai nice}, yang memengaruhi prioritas relatif proses.
+\end{itemize}
+
+\begin{notebox}
+Dalam administrasi Linux, proses adalah unit utama yang paling sering diamati.
+Ketika sistem terasa lambat, layanan gagal berjalan, atau terminal tampak ``macet'',
+langkah diagnosis awal hampir selalu dimulai dari identifikasi proses.
+\end{notebox}
+
+Selain proses, Linux juga mengenal \textbf{thread}. Thread adalah unit eksekusi yang
+lebih ringan di dalam sebuah proses. Jika proses dipahami sebagai wadah kerja, maka
+thread adalah jalur eksekusi yang berjalan di dalam wadah tersebut.
+
+\begin{definition}[Thread]
+Thread adalah unit eksekusi ringan di dalam sebuah proses yang berbagi memori dan
+resource utama proses yang sama.
+\end{definition}
+
+Perbedaan umum antara proses dan thread adalah sebagai berikut:
+\begin{itemize}
+    \item proses memiliki ruang alamat sendiri dan relatif terisolasi;
+    \item thread dalam proses yang sama berbagi memori dan resource;
+    \item pembuatan thread umumnya lebih ringan dibanding pembuatan proses baru;
+    \item sinkronisasi pada thread biasanya lebih kompleks karena berbagi data.
+\end{itemize}
+
+\begin{tipbox}
+Jika sebuah aplikasi terasa ``satu program saja'' tetapi tampak memiliki banyak
+aktivitas sekaligus, sangat mungkin aplikasi tersebut menggunakan banyak thread.
+\end{tipbox}
+
+Pada Ubuntu 22.04, informasi proses dapat dilihat menggunakan perintah seperti
+\texttt{ps}, \texttt{pstree}, \texttt{top}, dan \texttt{htop}. Sementara itu,
+thread dapat diamati menggunakan \texttt{ps -eLf} atau mode thread pada \texttt{top}.
+
+\begin{examplebox}[Contoh Intuisi Proses]
+Ketika Anda menjalankan perintah:
+\begin{lstlisting}[language=bash]
+python3 app.py
+\end{lstlisting}
+shell akan memicu pembentukan proses baru, kernel memberikan PID, lalu proses tersebut
+dijalankan dengan input/output yang terhubung ke terminal aktif. Jika program di dalamnya
+menggunakan multi-threading, maka satu proses tersebut dapat memiliki beberapa thread
+tambahan.
+\end{examplebox}
+
+\subsection*{Perintah yang Dipakai}
+\begin{itemize}
+    \item \texttt{ps}: menampilkan snapshot proses.
+    \item \texttt{pstree}: menampilkan hubungan parent-child proses.
+    \item \texttt{ps -eLf}: menampilkan thread.
+    \item \texttt{top} / \texttt{htop}: monitoring proses secara real-time.
+\end{itemize}
+
+\subsection*{Praktikum 6.1 --- Melihat Proses dan Thread (Mudah)}
+\textbf{Tujuan:} mengenali proses aktif dan melihat informasi dasar proses pada sistem.
+
+\begin{enumerate}
+    \item Tampilkan daftar proses aktif:
+\begin{lstlisting}[language=bash, caption={Menampilkan daftar proses aktif}]
+ps aux | head
+\end{lstlisting}
+
+    \item Tampilkan PID shell yang sedang digunakan:
+\begin{lstlisting}[language=bash, caption={Melihat PID shell aktif}]
+echo $$
+\end{lstlisting}
+
+    \item Cari proses shell:
+\begin{lstlisting}[language=bash, caption={Mencari proses shell}]
+ps aux | grep bash
+\end{lstlisting}
+
+    \item Tampilkan hubungan parent-child proses:
+\begin{lstlisting}[language=bash, caption={Melihat struktur proses dengan pstree}]
+pstree -p | head -n 20
+\end{lstlisting}
+
+    \item Tampilkan daftar thread:
+\begin{lstlisting}[language=bash, caption={Melihat thread pada sistem}]
+ps -eLf | head
+\end{lstlisting}
+\end{enumerate}
+
+\textbf{Analisis:}
+\begin{itemize}
+    \item Catat PID shell aktif yang digunakan.
+    \item Amati perbedaan tampilan \texttt{ps aux} dan \texttt{pstree}.
+    \item Jelaskan mengapa satu proses dapat memiliki lebih dari satu thread.
+\end{itemize}
+
+\subsection*{Praktikum 6.2 --- Mengamati Informasi Proses dari \dir{/proc} (Menengah)}
+\textbf{Tujuan:} memahami bahwa Linux menyediakan informasi proses melalui
+pseudo-filesystem \dir{/proc}.
+
+\begin{enumerate}
+    \item Tampilkan PID shell aktif:
+\begin{lstlisting}[language=bash, caption={Melihat PID shell aktif}]
+echo $$
+\end{lstlisting}
+
+    \item Simpan PID tersebut:
+\begin{lstlisting}[language=bash, caption={Menyimpan PID shell ke variabel}]
+MYPID=$$
+\end{lstlisting}
+
+    \item Tampilkan isi direktori proses:
+\begin{lstlisting}[language=bash, caption={Melihat isi /proc untuk suatu PID}]
+ls /proc/$MYPID
+\end{lstlisting}
+
+    \item Lihat informasi status proses:
+\begin{lstlisting}[language=bash, caption={Membaca status proses dari /proc}]
+cat /proc/$MYPID/status | head -n 20
+\end{lstlisting}
+
+    \item Lihat file descriptor proses:
+\begin{lstlisting}[language=bash, caption={Melihat file descriptor proses}]
+ls -l /proc/$MYPID/fd
+\end{lstlisting}
+\end{enumerate}
+
+\begin{tipbox}
+Direktori \dir{/proc} adalah filesystem virtual yang disediakan kernel. Banyak informasi
+internal sistem dapat diakses seolah-olah berupa file biasa.
+\end{tipbox}
+
+% ------------------------------------------------------------------------
 \section{Siklus Hidup Proses}
+\label{sec:siklus-hidup-proses}
+
+\subsection*{Penjelasan Konsep}
+
+Proses pada Linux tidak selalu berada pada kondisi ``sedang berjalan''.
+Sejak dibuat sampai selesai, proses melewati serangkaian keadaan yang disebut
+\textbf{siklus hidup proses}.
+
+\begin{definition}[Siklus Hidup Proses]
+Siklus hidup proses adalah rangkaian status yang dilalui proses sejak dibuat,
+siap dijalankan, berjalan, menunggu, berhenti sementara, hingga selesai.
+\end{definition}
+
+Secara konseptual, tahapan tersebut meliputi:
+\begin{enumerate}
+    \item \textbf{new}: proses baru dibuat;
+    \item \textbf{ready/runnable}: proses siap dijalankan dan menunggu jatah CPU;
+    \item \textbf{running}: proses sedang dieksekusi oleh CPU;
+    \item \textbf{waiting/sleeping}: proses menunggu event, timer, atau I/O;
+    \item \textbf{stopped}: proses dihentikan sementara;
+    \item \textbf{terminated}: proses telah selesai;
+    \item \textbf{zombie}: proses selesai tetapi status keluarannya belum diambil oleh parent.
+\end{enumerate}
+
+Dalam Linux, status proses sering ditampilkan dalam bentuk kode singkat:
+\begin{itemize}
+    \item \texttt{R}: running atau runnable;
+    \item \texttt{S}: interruptible sleep;
+    \item \texttt{D}: uninterruptible sleep, umumnya menunggu I/O;
+    \item \texttt{T}: stopped;
+    \item \texttt{Z}: zombie.
+\end{itemize}
+
+\begin{notebox}
+Status \texttt{S} sangat umum dijumpai. Banyak proses pada Linux tidak terus-menerus
+menggunakan CPU, melainkan lebih sering menunggu event tertentu.
+\end{notebox}
+
+Pada Ubuntu 22.04, proses awal sistem adalah \texttt{systemd} dengan PID 1.
+Proses ini berperan penting sebagai induk bagi banyak service dan juga mengadopsi
+proses yatim (\textit{orphan process}).
+
+\begin{warningbox}
+Zombie bukan proses yang masih aktif menggunakan CPU, tetapi jumlah zombie yang
+terus bertambah dapat menjadi indikasi adanya parent process yang tidak mengelola
+child process dengan benar.
+\end{warningbox}
+
+\subsection*{Perintah yang Dipakai}
+\begin{itemize}
+    \item \texttt{ps -o pid,ppid,stat,cmd}: melihat status proses.
+    \item \texttt{sleep}: membuat proses sederhana untuk simulasi.
+    \item \texttt{jobs}: melihat job aktif pada shell.
+    \item \texttt{bg} dan \texttt{fg}: melanjutkan proses di background atau foreground.
+\end{itemize}
+
+\subsection*{Praktikum 6.3 --- Mengamati Status Proses (Mudah)}
+\textbf{Tujuan:} melihat status proses sederhana pada Linux.
+
+\begin{enumerate}
+    \item Jalankan proses berikut:
+\begin{lstlisting}[language=bash, caption={Menjalankan proses sleep di background}]
+sleep 300 &
+\end{lstlisting}
+
+    \item Lihat job aktif:
+\begin{lstlisting}[language=bash, caption={Melihat job aktif}]
+jobs
+\end{lstlisting}
+
+    \item Tampilkan informasi proses:
+\begin{lstlisting}[language=bash, caption={Melihat status proses sleep}]
+ps -o pid,ppid,stat,cmd -C sleep
+\end{lstlisting}
+
+    \item Hentikan proses:
+\begin{lstlisting}[language=bash, caption={Menghentikan proses berdasarkan PID}]
+kill <PID>
+\end{lstlisting}
+
+    \item Periksa kembali:
+\begin{lstlisting}[language=bash, caption={Memastikan proses sudah berhenti}]
+ps -o pid,ppid,stat,cmd -C sleep
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 6.4 --- Simulasi Stop dan Continue (Menengah)}
+\textbf{Tujuan:} memahami status \textit{stopped} dan kelanjutan proses.
+
+\begin{enumerate}
+    \item Jalankan:
+\begin{lstlisting}[language=bash, caption={Menjalankan sleep di foreground}]
+sleep 500
+\end{lstlisting}
+
+    \item Saat proses berjalan di foreground, tekan \texttt{Ctrl+Z}.
+
+    \item Lihat job:
+\begin{lstlisting}[language=bash, caption={Melihat job setelah Ctrl+Z}]
+jobs
+\end{lstlisting}
+
+    \item Lanjutkan ke background:
+\begin{lstlisting}[language=bash, caption={Melanjutkan proses ke background}]
+bg
+\end{lstlisting}
+
+    \item Periksa kembali:
+\begin{lstlisting}[language=bash, caption={Memeriksa status job}]
+jobs
+\end{lstlisting}
+
+    \item Bawa kembali ke foreground:
+\begin{lstlisting}[language=bash, caption={Mengembalikan proses ke foreground}]
+fg
+\end{lstlisting}
+\end{enumerate}
+
+% ------------------------------------------------------------------------
 \section{Penjadwalan Proses dan Prioritas}
-\section{Sinyal Proses}
-\section{Manajemen Job}
-\section{Nice dan Renice}
-\section{Pemantauan Proses Lanjutan}
+\label{sec:penjadwalan-prioritas}
+
+\subsection*{Penjelasan Konsep}
+
+CPU adalah resource yang terbatas. Karena banyak proses dapat aktif secara bersamaan,
+Linux membutuhkan mekanisme untuk menentukan proses mana yang memperoleh giliran berjalan.
+Mekanisme ini disebut \textbf{scheduler}.
+
+\begin{definition}[Scheduler]
+Scheduler adalah komponen kernel yang bertugas menentukan proses mana yang dijalankan,
+kapan dijalankan, dan berapa lama memperoleh waktu CPU.
+\end{definition}
+
+Tujuan penjadwalan proses antara lain:
+\begin{itemize}
+    \item menjaga sistem tetap responsif;
+    \item membagi waktu CPU secara adil;
+    \item mencegah satu proses memonopoli CPU;
+    \item memberi preferensi pada pekerjaan tertentu bila diperlukan.
+\end{itemize}
+
+Salah satu konsep penting dalam administrasi Linux adalah \textbf{nice value}.
+Nilai ini berada pada rentang \texttt{-20} sampai \texttt{19}.
+
+\begin{itemize}
+    \item Nilai \texttt{-20} berarti prioritas sangat tinggi.
+    \item Nilai \texttt{0} adalah nilai default banyak proses user.
+    \item Nilai \texttt{19} berarti prioritas sangat rendah.
+\end{itemize}
+
+\begin{notebox}
+Semakin kecil nilai \textit{nice}, semakin besar peluang proses memperoleh jatah CPU.
+Semakin besar nilai \textit{nice}, proses menjadi lebih ``baik hati'' terhadap proses lain.
+\end{notebox}
+
+\begin{warningbox}
+Nilai nice terutama memengaruhi persaingan CPU. Nice tidak secara langsung
+mengendalikan penggunaan memori, disk, atau jaringan.
+\end{warningbox}
+
+Pada Ubuntu 22.04, informasi prioritas dapat diamati dengan \texttt{ps}, \texttt{top},
+atau \texttt{htop}. Pengguna biasa umumnya hanya dapat menaikkan nilai nice prosesnya
+sendiri, yaitu menurunkan prioritas proses tersebut.
+
+\subsection*{Perintah yang Dipakai}
+\begin{itemize}
+    \item \texttt{ps -eo pid,ppid,ni,stat,comm}: melihat nilai nice.
+    \item \texttt{top}: melihat kolom \texttt{PR} dan \texttt{NI}.
+    \item \texttt{nice}: menjalankan proses baru dengan prioritas tertentu.
+    \item \texttt{renice}: mengubah prioritas proses yang sedang berjalan.
+\end{itemize}
+
+\subsection*{Praktikum 6.5 --- Melihat Prioritas Proses (Mudah)}
+\textbf{Tujuan:} melihat informasi prioritas proses pada sistem.
+
+\begin{enumerate}
+    \item Tampilkan beberapa proses beserta nilai nice:
+\begin{lstlisting}[language=bash, caption={Melihat nilai nice beberapa proses}]
+ps -eo pid,ppid,ni,stat,comm | head -n 20
+\end{lstlisting}
+
+    \item Jalankan monitor sistem:
+\begin{lstlisting}[language=bash, caption={Melihat prioritas proses dengan top}]
+top
+\end{lstlisting}
+
+    \item Amati kolom \texttt{PR} dan \texttt{NI}, lalu keluar dengan \texttt{q}.
+\end{enumerate}
+
+\subsection*{Praktikum 6.6 --- Simulasi Dampak Prioritas (Menengah)}
+\textbf{Tujuan:} membandingkan dua proses dengan nilai nice berbeda.
+
+\begin{enumerate}
+    \item Jalankan proses CPU-bound:
+\begin{lstlisting}[language=bash, caption={Menjalankan proses CPU-bound}]
+yes > /dev/null &
+\end{lstlisting}
+
+    \item Jalankan proses kedua dengan prioritas lebih rendah:
+\begin{lstlisting}[language=bash, caption={Menjalankan proses dengan nice lebih rendah}]
+/usr/bin/nice -n 10 yes > /dev/null &
+\end{lstlisting}
+
+    \item Amati dengan:
+\begin{lstlisting}[language=bash, caption={Mengamati perbedaan prioritas}]
+top
+\end{lstlisting}
+
+    \item Hentikan kedua proses:
+\begin{lstlisting}[language=bash, caption={Menghentikan seluruh proses yes}]
+killall yes
+\end{lstlisting}
+\end{enumerate}
+
+\begin{warningbox}
+Perintah \texttt{yes > /dev/null} sengaja digunakan untuk simulasi singkat karena
+dapat membebani CPU secara terus-menerus.
+\end{warningbox}
+
+% ------------------------------------------------------------------------
+\section{Sinyal Proses dan Penanganannya}
+\label{sec:sinyal-proses}
+
+\subsection*{Penjelasan Konsep}
+
+\textbf{Signal} adalah mekanisme notifikasi asinkron yang digunakan kernel atau proses lain
+untuk memberi tahu suatu proses bahwa suatu event telah terjadi.
+
+\begin{definition}[Signal]
+Signal adalah notifikasi singkat yang dikirim ke proses untuk memicu tindakan tertentu,
+misalnya berhenti, menghentikan sementara, melanjutkan, atau menangani event khusus.
+\end{definition}
+
+Beberapa sinyal yang umum digunakan adalah:
+\begin{itemize}
+    \item \texttt{SIGINT}: interupsi, biasanya dari \texttt{Ctrl+C};
+    \item \texttt{SIGTERM}: permintaan terminasi normal;
+    \item \texttt{SIGKILL}: penghentian paksa;
+    \item \texttt{SIGSTOP}: menghentikan proses sementara;
+    \item \texttt{SIGCONT}: melanjutkan proses;
+    \item \texttt{SIGHUP}: sering dipakai untuk reload konfigurasi;
+    \item \texttt{SIGCHLD}: memberi tahu parent bahwa child berubah status.
+\end{itemize}
+
+\begin{tipbox}
+Dalam administrasi sistem, biasakan mencoba \texttt{SIGTERM} terlebih dahulu.
+Gunakan \texttt{SIGKILL} hanya jika proses benar-benar tidak merespons.
+\end{tipbox}
+
+\begin{warningbox}
+\texttt{SIGKILL} tidak dapat ditangkap oleh proses. Karena itu, proses tidak memiliki
+kesempatan untuk membersihkan resource atau menyimpan data sebelum dihentikan.
+\end{warningbox}
+
+Sebagian besar proses interaktif terhubung ke \textit{control terminal}. Karena itu:
+\begin{itemize}
+    \item \texttt{Ctrl+C} biasanya menghasilkan \texttt{SIGINT};
+    \item \texttt{Ctrl+Z} biasanya menghasilkan \texttt{SIGTSTP}.
+\end{itemize}
+
+Pada shell script, signal tertentu dapat ditangani menggunakan \texttt{trap}.
+
+\subsection*{Perintah yang Dipakai}
+\begin{itemize}
+    \item \texttt{kill -l}: menampilkan daftar signal.
+    \item \texttt{kill}: mengirim signal ke PID tertentu.
+    \item \texttt{pkill}: mengirim signal berdasarkan nama proses.
+    \item \texttt{trap}: menangani signal pada shell script.
+\end{itemize}
+
+\subsection*{Praktikum 6.7 --- Mengirim Signal ke Proses (Mudah)}
+\textbf{Tujuan:} mengenal signal dasar untuk mengendalikan proses.
+
+\begin{enumerate}
+    \item Tampilkan daftar signal:
+\begin{lstlisting}[language=bash, caption={Melihat daftar signal}]
+kill -l
+\end{lstlisting}
+
+    \item Jalankan proses:
+\begin{lstlisting}[language=bash, caption={Menjalankan proses sleep untuk simulasi signal}]
+sleep 400 &
+\end{lstlisting}
+
+    \item Lihat PID proses:
+\begin{lstlisting}[language=bash, caption={Melihat PID proses sleep}]
+ps -C sleep -o pid,stat,cmd
+\end{lstlisting}
+
+    \item Kirim \texttt{SIGTERM}:
+\begin{lstlisting}[language=bash, caption={Mengirim SIGTERM ke proses}]
+kill -15 <PID>
+\end{lstlisting}
+
+    \item Jalankan kembali \texttt{sleep 400 \&}, lalu kirim \texttt{SIGKILL}:
+\begin{lstlisting}[language=bash, caption={Mengirim SIGKILL ke proses}]
+kill -9 <PID>
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 6.8 --- Penanganan Signal pada Shell Script (Menengah)}
+\textbf{Tujuan:} memahami bahwa shell script dapat menangani signal tertentu.
+
+\begin{enumerate}
+    \item Buat file \file{signal\_demo.sh}:
+\begin{lstlisting}[language=bash, caption={Membuat file script}]
+nano signal_demo.sh
+\end{lstlisting}
+
+    \item Isi dengan:
+\begin{lstlisting}[language=bash, caption={Script demo penanganan signal}]
+#!/bin/bash
+trap 'echo "SIGINT diterima"; exit 0' INT
+trap 'echo "SIGTERM diterima"; exit 0' TERM
+
+echo "Script berjalan. PID: $$"
+while true
+do
+    sleep 1
+done
+\end{lstlisting}
+
+    \item Beri izin eksekusi dan jalankan:
+\begin{lstlisting}[language=bash, caption={Menjalankan script demo}]
+chmod +x signal_demo.sh
+./signal_demo.sh
+\end{lstlisting}
+
+    \item Tekan \texttt{Ctrl+C}, lalu jalankan kembali di background:
+\begin{lstlisting}[language=bash, caption={Menjalankan script di background}]
+./signal_demo.sh &
+\end{lstlisting}
+
+    \item Hentikan dengan \texttt{SIGTERM}:
+\begin{lstlisting}[language=bash, caption={Menghentikan script dengan SIGTERM}]
+kill -15 <PID>
+\end{lstlisting}
+\end{enumerate}
+
+% ------------------------------------------------------------------------
+\section{Manajemen Job: Foreground dan Background}
+\label{sec:job-control}
+
+\subsection*{Penjelasan Konsep}
+
+Shell interaktif seperti \texttt{bash} mendukung \textbf{job control}, yaitu mekanisme
+untuk mengelola proses yang dijalankan dari terminal.
+
+\begin{definition}[Job Control]
+Job control adalah mekanisme pada shell untuk menjalankan, menghentikan sementara,
+melanjutkan, dan memindahkan proses antara mode foreground dan background.
+\end{definition}
+
+Mode kerja utama:
+\begin{itemize}
+    \item \textbf{foreground}: proses memegang kendali terminal;
+    \item \textbf{background}: proses berjalan tanpa mengambil alih terminal.
+\end{itemize}
+
+Perintah penting:
+\begin{itemize}
+    \item \texttt{command \&}: menjalankan langsung di background;
+    \item \texttt{jobs}: melihat daftar job aktif;
+    \item \texttt{bg}: melanjutkan job ke background;
+    \item \texttt{fg}: membawa job ke foreground;
+    \item \texttt{nohup}: menjaga proses tetap hidup meskipun terminal ditutup.
+\end{itemize}
+
+\begin{tipbox}
+Pada server Ubuntu yang diakses lewat SSH, job control sangat penting karena banyak
+proses berlangsung cukup lama sementara terminal tetap perlu digunakan untuk pekerjaan lain.
+\end{tipbox}
+
+\subsection*{Praktikum 6.9 --- Menjalankan Job di Background (Mudah)}
+\textbf{Tujuan:} menjalankan proses tanpa mengunci terminal.
+
+\begin{enumerate}
+    \item Jalankan:
+\begin{lstlisting}[language=bash, caption={Menjalankan proses di background}]
+sleep 200 &
+\end{lstlisting}
+
+    \item Periksa job:
+\begin{lstlisting}[language=bash, caption={Melihat daftar job aktif}]
+jobs
+\end{lstlisting}
+
+    \item Periksa proses:
+\begin{lstlisting}[language=bash, caption={Melihat proses sleep yang aktif}]
+ps -C sleep -o pid,stat,cmd
+\end{lstlisting}
+
+    \item Hentikan job:
+\begin{lstlisting}[language=bash, caption={Menghentikan job berdasarkan nomor job}]
+kill %1
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 6.10 --- Kontrol Foreground dan Background (Menengah)}
+\textbf{Tujuan:} memindahkan job antar mode foreground dan background.
+
+\begin{enumerate}
+    \item Jalankan:
+\begin{lstlisting}[language=bash, caption={Menjalankan sleep di foreground}]
+sleep 300
+\end{lstlisting}
+
+    \item Tekan \texttt{Ctrl+Z}, lalu cek job:
+\begin{lstlisting}[language=bash, caption={Melihat job setelah Ctrl+Z}]
+jobs
+\end{lstlisting}
+
+    \item Lanjutkan ke background:
+\begin{lstlisting}[language=bash, caption={Melanjutkan job ke background}]
+bg %1
+\end{lstlisting}
+
+    \item Pastikan terminal aktif kembali:
+\begin{lstlisting}[language=bash, caption={Menguji bahwa terminal sudah bisa dipakai kembali}]
+pwd
+ls
+\end{lstlisting}
+
+    \item Kembalikan job ke foreground:
+\begin{lstlisting}[language=bash, caption={Mengembalikan job ke foreground}]
+fg %1
+\end{lstlisting}
+\end{enumerate}
+
+\begin{examplebox}[Menjaga Proses Tetap Berjalan]
+Untuk menjaga proses tetap hidup meskipun terminal ditutup, gunakan:
+\begin{lstlisting}[language=bash]
+nohup sleep 600 > nohup.out 2>&1 &
+\end{lstlisting}
+\end{examplebox}
+
+% ------------------------------------------------------------------------
+\section{Penggunaan \texttt{nice} dan \texttt{renice}}
+\label{sec:nice-renice}
+
+\subsection*{Penjelasan Konsep}
+
+Dua perintah penting untuk mengatur prioritas proses secara manual adalah
+\texttt{nice} dan \texttt{renice}.
+
+\begin{definition}[\texttt{nice}]
+\texttt{nice} digunakan untuk menjalankan proses baru dengan nilai nice tertentu
+sejak awal proses dibuat.
+\end{definition}
+
+\begin{definition}[\texttt{renice}]
+\texttt{renice} digunakan untuk mengubah nilai nice proses yang sudah berjalan.
+\end{definition}
+
+Perbedaan utamanya:
+\begin{itemize}
+    \item \texttt{nice} dipakai sebelum proses berjalan;
+    \item \texttt{renice} dipakai setelah proses berjalan.
+\end{itemize}
+
+\begin{notebox}
+Pada Ubuntu 22.04, pengguna biasa umumnya hanya dapat menaikkan nilai nice prosesnya
+sendiri, yaitu membuat prioritas proses menjadi lebih rendah.
+\end{notebox}
+
+\subsection*{Praktikum 6.11 --- Menjalankan Proses dengan \texttt{nice} (Mudah)}
+\textbf{Tujuan:} memulai proses dengan nilai nice tertentu.
+
+\begin{enumerate}
+    \item Jalankan proses:
+\begin{lstlisting}[language=bash, caption={Menjalankan proses dengan nice 5}]
+/usr/bin/nice -n 5 sleep 200 &
+\end{lstlisting}
+
+    \item Verifikasi nilai nice:
+\begin{lstlisting}[language=bash, caption={Memverifikasi nilai nice proses}]
+ps -o pid,ni,cmd -C sleep
+\end{lstlisting}
+
+    \item Hentikan proses:
+\begin{lstlisting}[language=bash, caption={Menghentikan seluruh proses sleep}]
+killall sleep
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 6.12 --- Mengubah Prioritas dengan \texttt{renice} (Menengah)}
+\textbf{Tujuan:} mengubah prioritas proses yang sudah berjalan.
+
+\begin{enumerate}
+    \item Jalankan proses:
+\begin{lstlisting}[language=bash, caption={Menjalankan sleep di background}]
+sleep 300 &
+\end{lstlisting}
+
+    \item Cari PID:
+\begin{lstlisting}[language=bash, caption={Melihat PID dan nice proses sleep}]
+ps -C sleep -o pid,ni,cmd
+\end{lstlisting}
+
+    \item Ubah nilai nice:
+\begin{lstlisting}[language=bash, caption={Mengubah prioritas proses dengan renice}]
+renice 10 -p <PID>
+\end{lstlisting}
+
+    \item Verifikasi perubahan:
+\begin{lstlisting}[language=bash, caption={Memastikan nilai nice sudah berubah}]
+ps -o pid,ni,cmd -p <PID>
+\end{lstlisting}
+
+    \item Hentikan proses:
+\begin{lstlisting}[language=bash, caption={Menghentikan proses}]
+kill <PID>
+\end{lstlisting}
+\end{enumerate}
+
+% ------------------------------------------------------------------------
+\section{Pemantauan Proses dengan \texttt{htop} dan \texttt{atop}}
+\label{sec:monitoring-proses}
+
+\subsection*{Penjelasan Konsep}
+
+Dalam administrasi sistem, melihat daftar proses saja tidak selalu cukup.
+Administrator juga perlu mengetahui proses mana yang membebani CPU, menggunakan
+memori besar, atau perlu ditangani lebih lanjut.
+
+Linux menyediakan beberapa utilitas monitoring:
+\begin{itemize}
+    \item \texttt{ps}: snapshot proses;
+    \item \texttt{top}: monitoring real-time dasar;
+    \item \texttt{htop}: monitoring interaktif yang lebih nyaman;
+    \item \texttt{atop}: monitoring sistem yang lebih detail.
+\end{itemize}
+
+\begin{definition}[\texttt{htop}]
+\texttt{htop} adalah utilitas monitoring interaktif yang menampilkan penggunaan CPU,
+memori, swap, dan daftar proses dengan antarmuka terminal yang lebih ramah.
+\end{definition}
+
+\begin{definition}[\texttt{atop}]
+\texttt{atop} adalah utilitas monitoring sistem yang menampilkan informasi lebih detail
+mengenai CPU, memori, disk, jaringan, dan aktivitas proses.
+\end{definition}
+
+\begin{tipbox}
+Untuk pembelajaran awal dan diagnosis cepat, \texttt{htop} biasanya lebih mudah digunakan.
+Untuk analisis sistem yang lebih detail, \texttt{atop} lebih kaya informasi.
+\end{tipbox}
+
+\subsection*{Praktikum 6.13 --- Monitoring Interaktif dengan \texttt{htop} (Mudah)}
+\textbf{Tujuan:} mengenali proses aktif dan konsumsi resource secara interaktif.
+
+\begin{enumerate}
+    \item Jika perlu, install terlebih dahulu:
+\begin{lstlisting}[language=bash, caption={Menginstal htop}]
+sudo apt update
+sudo apt install -y htop
+\end{lstlisting}
+
+    \item Jalankan:
+\begin{lstlisting}[language=bash, caption={Menjalankan htop}]
+htop
+\end{lstlisting}
+
+    \item Amati kolom \texttt{PID}, \texttt{USER}, \texttt{PRI}, \texttt{NI},
+    \texttt{CPU\%}, dan \texttt{MEM\%}.
+
+    \item Keluar dengan menekan \texttt{q}.
+\end{enumerate}
+
+\subsection*{Praktikum 6.14 --- Analisis Proses Berat dengan \texttt{htop} dan \texttt{atop} (Menengah)}
+\textbf{Tujuan:} mengidentifikasi proses berat dan mengambil tindakan yang sesuai.
+
+\begin{enumerate}
+    \item Jika perlu, install terlebih dahulu:
+\begin{lstlisting}[language=bash, caption={Menginstal atop}]
+sudo apt update
+sudo apt install -y atop
+\end{lstlisting}
+
+    \item Jalankan proses pembebanan:
+\begin{lstlisting}[language=bash, caption={Menjalankan proses simulasi beban CPU}]
+yes > /dev/null &
+\end{lstlisting}
+
+    \item Buka \texttt{htop}:
+\begin{lstlisting}[language=bash, caption={Memantau beban proses dengan htop}]
+htop
+\end{lstlisting}
+
+    \item Catat PID proses yang paling tinggi penggunaan CPU-nya.
+
+    \item Turunkan prioritas proses:
+\begin{lstlisting}[language=bash, caption={Menurunkan prioritas proses berat}]
+renice 10 -p <PID>
+\end{lstlisting}
+
+    \item Jalankan \texttt{atop}:
+\begin{lstlisting}[language=bash, caption={Melihat kondisi sistem dengan atop}]
+sudo atop
+\end{lstlisting}
+
+    \item Hentikan proses simulasi:
+\begin{lstlisting}[language=bash, caption={Menghentikan proses simulasi}]
+kill <PID>
+\end{lstlisting}
+\end{enumerate}
+
+% ------------------------------------------------------------------------
 \section{Rangkuman}
-\section{Latihan}
-\section{Referensi Tambahan}
+\label{sec:rangkuman-proses}
+
+Pada bab ini telah dipelajari bahwa proses adalah program yang sedang berjalan,
+sedangkan thread adalah unit eksekusi yang lebih ringan di dalam sebuah proses.
+Linux mengelola proses melalui identitas seperti PID, status proses, hubungan
+parent-child, serta resource yang terkait dengan proses tersebut.
+
+Proses pada Linux memiliki siklus hidup, mulai dari dibuat, siap dijalankan,
+berjalan, menunggu, berhenti sementara, hingga selesai. Linux menggunakan scheduler
+untuk membagikan waktu CPU kepada proses-proses aktif, dan prioritas relatifnya dapat
+dipengaruhi melalui nilai nice.
+
+Selain itu, proses dapat dikendalikan menggunakan signal, baik dari perintah seperti
+\texttt{kill} maupun dari terminal melalui \texttt{Ctrl+C} dan \texttt{Ctrl+Z}.
+Shell Linux juga menyediakan job control untuk mengelola proses pada mode foreground
+dan background. Untuk mengatur prioritas secara manual, dapat digunakan \texttt{nice}
+dan \texttt{renice}. Sementara itu, untuk monitoring sistem, utilitas seperti
+\texttt{htop} dan \texttt{atop} sangat membantu dalam mengidentifikasi proses yang
+membebani server Ubuntu 22.04.
+
+% ------------------------------------------------------------------------
+\section{Latihan dan Tugas Praktikum}
+\label{sec:latihan-praktikum-proses}
+
+Bagian ini berisi latihan praktikum terintegrasi untuk membantu mahasiswa
+menghubungkan konsep proses, status proses, signal, job control, prioritas,
+serta monitoring sistem dalam satu alur kerja. Latihan dibagi menjadi dua tingkat,
+yaitu tingkat sederhana untuk penguatan dasar dan tingkat menengah untuk meniru
+situasi yang lebih dekat dengan pekerjaan administrator sistem.
+
+\subsection*{A. Latihan Praktikum Dasar}
+
+\subsubsection*{Latihan 1 --- Identifikasi Proses Aktif}
+\textbf{Tujuan:} melatih kemampuan dasar dalam mengenali proses, PID, PPID, dan status proses.
+
+\textbf{Tugas:}
+\begin{enumerate}
+    \item Jalankan sebuah proses sederhana di background, misalnya:
+\begin{lstlisting}[language=bash, caption={Menjalankan proses sederhana di background}]
+sleep 180 &
+\end{lstlisting}
+
+    \item Tampilkan daftar job aktif menggunakan \texttt{jobs}.
+
+    \item Tampilkan informasi proses tersebut menggunakan \texttt{ps} dengan kolom:
+    PID, PPID, STAT, NI, dan CMD.
+
+    \item Buka \dir{/proc/<PID>/status} dari proses tersebut dan catat informasi penting
+    yang dapat ditemukan.
+
+    \item Hentikan proses dengan \texttt{kill}.
+\end{enumerate}
+
+\textbf{Luaran yang diharapkan:}
+\begin{itemize}
+    \item mahasiswa dapat menunjukkan PID dan PPID proses;
+    \item mahasiswa dapat menjelaskan status proses yang muncul;
+    \item mahasiswa dapat menunjukkan bahwa informasi proses juga tersedia melalui \dir{/proc}.
+\end{itemize}
+
+\subsubsection*{Latihan 2 --- Simulasi Foreground, Stop, dan Background}
+\textbf{Tujuan:} melatih penggunaan job control dan memahami perubahan keadaan proses.
+
+\textbf{Tugas:}
+\begin{enumerate}
+    \item Jalankan perintah \texttt{sleep 300} di foreground.
+    \item Hentikan sementara proses dengan \texttt{Ctrl+Z}.
+    \item Tampilkan daftar job dengan \texttt{jobs}.
+    \item Lanjutkan job tersebut ke background dengan \texttt{bg}.
+    \item Verifikasi status proses dengan \texttt{ps}.
+    \item Bawa kembali proses ke foreground dengan \texttt{fg}.
+    \item Akhiri proses dengan \texttt{Ctrl+C}.
+\end{enumerate}
+
+\textbf{Luaran yang diharapkan:}
+\begin{itemize}
+    \item mahasiswa dapat membedakan fungsi \texttt{Ctrl+Z}, \texttt{bg}, \texttt{fg}, dan \texttt{Ctrl+C};
+    \item mahasiswa dapat menjelaskan perubahan kondisi proses dari foreground ke stopped,
+    lalu ke background, dan kembali lagi ke foreground.
+\end{itemize}
+
+\subsubsection*{Latihan 3 --- Mengamati Prioritas Proses}
+\textbf{Tujuan:} melatih pengamatan nilai nice dan hubungannya dengan monitoring proses.
+
+\textbf{Tugas:}
+\begin{enumerate}
+    \item Jalankan dua proses sederhana, satu dengan prioritas default dan satu lagi
+    menggunakan \texttt{/usr/bin/nice -n 7}.
+    \item Tampilkan kedua proses menggunakan \texttt{ps}.
+    \item Amati keduanya melalui \texttt{top} atau \texttt{htop}.
+    \item Hentikan kedua proses setelah pengamatan selesai.
+\end{enumerate}
+
+\textbf{Luaran yang diharapkan:}
+\begin{itemize}
+    \item mahasiswa dapat menunjukkan perbedaan nilai nice;
+    \item mahasiswa dapat menghubungkan output \texttt{ps} dengan tampilan monitoring real-time.
+\end{itemize}
+
+\subsubsection*{Latihan 4 --- Signal dan Terminasi Proses}
+\textbf{Tujuan:} melatih penghentian proses menggunakan signal yang berbeda.
+
+\textbf{Tugas:}
+\begin{enumerate}
+    \item Jalankan proses \texttt{sleep 400 \&}.
+    \item Hentikan proses tersebut terlebih dahulu menggunakan \texttt{SIGTERM}.
+    \item Jalankan kembali proses yang sama.
+    \item Hentikan proses kedua menggunakan \texttt{SIGKILL}.
+    \item Catat perbedaan pendekatan penggunaan kedua signal tersebut.
+\end{enumerate}
+
+\textbf{Luaran yang diharapkan:}
+\begin{itemize}
+    \item mahasiswa memahami bahwa \texttt{SIGTERM} adalah terminasi yang lebih aman;
+    \item mahasiswa memahami bahwa \texttt{SIGKILL} digunakan ketika proses tidak merespons.
+\end{itemize}
+
+\subsection*{B. Tugas Praktikum Menengah}
+
+\subsubsection*{Tugas 1 --- Simulasi Diagnosis Server Lambat}
+\textbf{Konteks:} seorang administrator mendapati server Ubuntu 22.04 terasa lambat.
+Diduga terdapat proses user yang menggunakan CPU terlalu tinggi.
+
+\begin{notebox}
+Jika \texttt{htop} atau \texttt{atop} belum terpasang, gunakan:
+\begin{lstlisting}[language=bash]
+sudo apt update
+sudo apt install -y htop atop
+\end{lstlisting}
+Sebagai alternatif, \texttt{top} dapat digunakan bila \texttt{htop} belum tersedia.
+\end{notebox}
+
+\textbf{Tugas:}
+\begin{enumerate}
+    \item Jalankan proses pembebanan CPU berikut untuk simulasi:
+\begin{lstlisting}[language=bash, caption={Simulasi proses berat}]
+yes > /dev/null &
+\end{lstlisting}
+
+    \item Gunakan \texttt{ps}, \texttt{top}, atau \texttt{htop} untuk:
+    \begin{itemize}
+        \item mengidentifikasi PID proses yang paling membebani CPU;
+        \item melihat nilai nice dan prioritas proses tersebut.
+    \end{itemize}
+
+    \item Turunkan prioritas proses menggunakan \texttt{renice}.
+
+    \item Amati kembali perubahan pada \texttt{htop} atau \texttt{top}.
+
+    \item Jika proses masih dianggap mengganggu, hentikan proses secara aman
+    menggunakan \texttt{SIGTERM}. Bila perlu, gunakan \texttt{SIGKILL} sebagai langkah terakhir.
+
+    \item Dokumentasikan langkah yang dilakukan secara berurutan.
+\end{enumerate}
+
+\textbf{Kompetensi yang dilatih:}
+\begin{itemize}
+    \item monitoring proses;
+    \item identifikasi PID dan status proses;
+    \item pengaturan prioritas;
+    \item pengiriman signal sesuai prosedur yang benar.
+\end{itemize}
+
+\begin{warningbox}
+Pada praktik administrasi nyata, penghentian proses sebaiknya tidak dilakukan
+secara sembarangan. Administrator perlu memastikan bahwa proses tersebut memang aman
+untuk dihentikan dan tidak sedang menangani layanan penting.
+\end{warningbox}
+
+\subsubsection*{Tugas 2 --- Menjalankan Proses Lama Tanpa Mengganggu Terminal}
+\textbf{Konteks:} administrator ingin menjalankan proses yang cukup lama, tetapi tetap
+harus dapat menggunakan terminal untuk pekerjaan lain.
+
+\textbf{Tugas:}
+\begin{enumerate}
+    \item Jalankan sebuah proses di foreground, misalnya \texttt{sleep 500}.
+    \item Hentikan sementara proses dengan \texttt{Ctrl+Z}.
+    \item Lanjutkan proses tersebut ke background dengan \texttt{bg}.
+    \item Verifikasi bahwa terminal sudah dapat digunakan kembali.
+    \item Jalankan proses kedua menggunakan \texttt{nohup}:
+        \begin{lstlisting}[language=bash]
+        nohup sleep 600 > nohup.out 2>&1 &
+        \end{lstlisting}
+    \item Periksa proses tersebut melalui \texttt{ps} dan daftar file \file{nohup.out}.
+    \item Hentikan kedua proses setelah pengamatan selesai.
+\end{enumerate}
+
+\textbf{Kompetensi yang dilatih:}
+\begin{itemize}
+    \item job control;
+    \item manajemen proses foreground dan background;
+    \item penggunaan \texttt{nohup} dalam konteks administrasi server.
+\end{itemize}
+
+\subsubsection*{Tugas 3 --- Audit Proses dari Shell Aktif}
+\textbf{Konteks:} administrator ingin memeriksa proses yang sedang berjalan dari shell
+yang sedang digunakan dan menelusuri hubungan proses tersebut dengan parent process
+serta resource yang dibuka.
+
+\textbf{Tugas:}
+\begin{enumerate}
+    \item Tampilkan PID shell aktif dengan \texttt{echo \$\$}.
+    \item Gunakan \texttt{ps} untuk melihat PID, PPID, status, dan command shell tersebut.
+    \item Gunakan \texttt{pstree} untuk melihat hubungan parent-child process.
+    \item Telusuri direktori \dir{/proc/<PID>/} milik shell aktif.
+    \item Lihat isi \dir{/proc/<PID>/fd} untuk mengetahui file descriptor yang terbuka.
+    \item Tuliskan simpulan singkat tentang bagaimana Linux merepresentasikan proses
+    melalui tabel proses dan \dir{/proc}.
+\end{enumerate}
+
+\textbf{Kompetensi yang dilatih:}
+\begin{itemize}
+    \item identifikasi proses;
+    \item analisis parent-child process;
+    \item pemanfaatan \dir{/proc} untuk inspeksi proses.
+\end{itemize}
+
+\subsubsection*{Tugas 4 --- Penanganan Script yang Berjalan Terus-Menerus}
+\textbf{Konteks:} administrator memiliki shell script sederhana yang berjalan terus-menerus
+untuk simulasi layanan atau daemon kecil. Administrator ingin memastikan script dapat
+diterminasi secara lebih rapi ketika menerima signal tertentu.
+
+\textbf{Tugas:}
+\begin{enumerate}
+    \item Buat script sederhana yang berjalan terus-menerus dengan loop tak hingga.
+    \item Buat file \file{monitor\_loop.sh}:
+    \begin{lstlisting}[language=bash]
+    nano monitor_loop.sh
+    \end{lstlisting}
+
+    \item Isi file dengan script berikut:
+    \begin{lstlisting}[language=bash]
+    #!/bin/bash
+    trap 'echo "SIGINT diterima"; exit 0' INT
+    trap 'echo "SIGTERM diterima"; exit 0' TERM
+
+    echo "Script berjalan. PID: $$"
+    while true
+    do
+        sleep 1
+    done
+    \end{lstlisting}
+
+    \item Beri izin eksekusi:
+        \begin{lstlisting}[language=bash]
+        chmod +x monitor_loop.sh
+        \end{lstlisting}
+    \item Tambahkan \texttt{trap} untuk menangani \texttt{SIGINT} dan \texttt{SIGTERM}.
+    \item Jalankan script di foreground, lalu uji dengan \texttt{Ctrl+C}.
+    \item Jalankan kembali script di background.
+    \item Hentikan script menggunakan \texttt{kill -15}.
+    \item Jelaskan apa yang terjadi saat signal diterima oleh script.
+\end{enumerate}
+
+\textbf{Kompetensi yang dilatih:}
+\begin{itemize}
+    \item penanganan signal;
+    \item keterkaitan antara proses, shell script, dan control terminal;
+    \item pemahaman bahwa tidak semua signal dapat ditangani secara eksplisit.
+\end{itemize}
+
+% ------------------------------------------------------------------------
+\section{Referensi}
+\label{sec:referensi-proses}
+
+\begin{enumerate}
+    \item Nemeth, E., Snyder, G., Hein, T. R., Whaley, B., \& Mackin, D. (2017).
+    \textit{UNIX and Linux System Administration Handbook} (5th ed.). Boston, MA: Pearson.
+
+    \item Shotts, W. E., Jr. (2019).
+    \textit{The Linux Command Line: A Complete Introduction} (2nd ed.).
+    San Francisco, CA: No Starch Press.
+
+    \item Ward, B. (2021).
+    \textit{How Linux Works: What Every Superuser Should Know} (3rd ed.).
+    San Francisco, CA: No Starch Press.
+\end{enumerate}
+
+% ------------------------------------------------------------------------
+\section{Bahan Belajar Lanjutan}
+\label{sec:bahan-belajar-lanjutan-proses}
+
+Bagian ini memuat sumber belajar tambahan yang direkomendasikan untuk pendalaman
+lebih lanjut. Sumber-sumber berikut dipilih karena berasal dari dokumentasi resmi
+atau referensi teknis yang luas digunakan dalam ekosistem Linux.
+
+\subsection*{A. Buku}
+\begin{enumerate}
+    \item Brian Ward, \textit{How Linux Works, 3rd Edition: What Every Superuser Should Know},
+    No Starch Press.
+
+    \item William Shotts, \textit{The Linux Command Line, 2nd Edition: A Complete Introduction}.
+\end{enumerate}
+
+\subsection*{B. Dokumentasi Resmi dan Referensi Teknis}
+\begin{enumerate}
+    \item Dokumentasi resmi Ubuntu Server:
+\begin{lstlisting}[language={}]
+https://ubuntu.com/server/docs/
+\end{lstlisting}
+
+    \item GNU Bash Reference Manual:
+\begin{lstlisting}[language={}]
+https://www.gnu.org/s/bash/manual/bash.html
+\end{lstlisting}
+
+    \item Dokumentasi kernel Linux untuk \texttt{/proc}:
+\begin{lstlisting}[language={}]
+https://docs.kernel.org/filesystems/proc.html
+\end{lstlisting}
+
+    \item Linux man-pages untuk \texttt{signal(7)}:
+\begin{lstlisting}[language={}]
+https://man7.org/linux/man-pages/man7/signal.7.html
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{C. Saran Urutan Belajar}
+Untuk pendalaman materi secara bertahap, urutan belajar yang disarankan adalah:
+\begin{enumerate}
+    \item pelajari kembali materi modul praktikum ini;
+    \item gunakan \textit{The Linux Command Line} untuk menguatkan penggunaan shell
+    dan command line;
+    \item lanjutkan ke \textit{How Linux Works} untuk memahami keterkaitan proses,
+    kernel, dan \texttt{/proc};
+    \item gunakan dokumentasi resmi Ubuntu Server untuk konteks administrasi sistem
+    pada Ubuntu;
+    \item gunakan GNU Bash manual dan Linux man-pages sebagai rujukan teknis saat
+    praktikum dan troubleshooting.
+\end{enumerate}

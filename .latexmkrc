@@ -8,11 +8,11 @@ $pdf_mode = 1;
 # Use biber for bibliography
 $bibtex_use = 2;
 
-# PDF viewer configuration
-$pdf_previewer = 'zathura %O %S';
+# PDF viewer configuration (disabled by default for headless/CI environments)
+$pdf_previewer = '';
 
-# Enable continuous preview mode to use the configured viewer
-$preview_mode = 1;
+# Disable preview mode to avoid build failures when no viewer is installed
+$preview_mode = 0;
 
 # Extra pdflatex options
 $pdflatex = 'pdflatex -interaction=nonstopmode -file-line-error %O %S';
@@ -28,7 +28,7 @@ $clean_ext = 'aux bbl bcf blg fdb_latexmk fls lof log lot out run.xml synctex.gz
 $biber = 'biber %O %S';
 
 # Maximum number of runs
-$max_repeat = 5;
+$max_repeat = 10;
 
 # Force mode - continue even if there are errors (important for CI/CD)
 # This ensures we get a PDF even with warnings/undefined references on first pass
