@@ -5,16 +5,630 @@
 \chapter{Manajemen Proses}
 \label{ch:process-management}
 
-Bab ini membahas konsep proses dan thread di Linux, siklus hidup proses,
-penjadwalan, sinyal, dan manajemen job.
+Bab ini membahas konsep proses dan thread di Linux, siklus hidup proses, penjadwalan,
+sinyal, manajemen job, serta pemantauan proses secara real-time. Pemahaman manajemen
+proses adalah keterampilan inti administrator sistem Linux untuk menjaga performa dan
+stabilitas server.
 
+\begin{examplebox}[Bayangkan Linux seperti warung makan yang sibuk]
+Anda masuk ke sebuah warung makan. Ada pelanggan yang sedang makan, ada yang
+sedang menunggu pesanan, ada yang antri di kasir, dan ada yang sedang dicatat
+pesanannya. Setiap pelanggan melakukan aktivitas yang berbeda di waktu yang
+hampir bersamaan---itulah gambaran bagaimana Linux mengelola \textbf{proses}.
+
+Setiap program yang berjalan di Linux adalah seperti seorang pelanggan: punya
+nomor antrian sendiri (\textbf{PID}), punya kegiatan yang sedang dilakukan
+(\textbf{status}), dan dilayani secara bergantian oleh kasir (\textbf{CPU}).
+Pelanggan yang lebih VIP dilayani lebih cepat (\textbf{prioritas}), dan jika
+ada pelanggan yang berulah, pemilik warung bisa mengusirnya tanpa mengganggu
+pelanggan lain (\textbf{sinyal kill}).
+
+Tidak perlu takut dengan istilah-istilah teknisnya---semuanya hanya nama
+formal untuk konsep yang sebenarnya sudah sangat familiar dalam kehidupan
+sehari-hari.
+\end{examplebox}
+
+%% ------------------------------------------------------------------------
 \section{Konsep Proses dan Thread}
+\label{sec:process-concept}
+
+\subsection{Proses}
+
+Pernahkah Anda membuka beberapa aplikasi di smartphone sekaligus---misalnya
+musik tetap berbunyi sementara Anda membaca chat? Itulah contoh nyata beberapa
+\textbf{proses} berjalan bersamaan. Di Linux, konsepnya sama persis.
+
+Ketika Anda menjalankan sebuah program, Linux tidak hanya menjalankan instruksinya
+begitu saja. Sistem operasi membuat sebuah \textbf{proses}---\textit{instance} program
+yang sedang dieksekusi, lengkap dengan ruang memori, file descriptor, dan status
+eksekusinya sendiri. Setiap kali sebuah program dijalankan, baik dari terminal maupun
+secara otomatis oleh sistem, Linux membuat proses baru dengan PID (Process ID) yang
+unik.
+
+Isolasi antar proses inilah yang membuat Linux stabil. Jika satu proses crash, proses
+lain tidak terdampak karena masing-masing memiliki ruang memori yang sepenuhnya terpisah.
+Analoginya: jika satu tab browser crash, tab lainnya tetap terbuka dan berjalan normal.
+
+Setiap proses memiliki atribut penting berikut:
+
+\begin{itemize}
+  \item \textbf{PID}: Nomor unik pengenal proses.
+  \item \textbf{PPID}: PID dari proses induk yang menciptakannya (parent PID).
+  \item \textbf{UID/GID}: Identitas pemilik, menentukan hak akses proses.
+  \item \textbf{Status}: Kondisi proses saat ini (running, sleeping, stopped, dll.).
+  \item \textbf{Nice}: Nilai prioritas penjadwalan (-20 hingga +19).
+\end{itemize}
+
+\subsection{Thread}
+
+Di dalam satu proses, dimungkinkan untuk memiliki beberapa alur eksekusi yang berjalan
+secara bersamaan---inilah yang disebut \textbf{thread}. Berbeda dari proses, thread
+berbagi ruang memori dan sumber daya dengan thread lain dalam proses yang sama.
+
+Thread berguna ketika sebuah program perlu melakukan beberapa tugas secara paralel,
+misalnya server web yang melayani banyak request sekaligus tanpa harus membuat proses
+baru untuk setiap request. Membuat thread jauh lebih ringan daripada membuat proses
+baru karena tidak perlu mengalokasikan ruang memori baru. Namun, berbagi memori juga
+berarti satu thread yang bermasalah berpotensi menjatuhkan seluruh proses.
+
+\begin{examplebox}[Analogi Proses dan Thread]
+  \begin{itemize}
+    \item \textbf{Proses} = restoran dengan dapur sendiri. Dua restoran tidak berbagi
+      bahan makanan---masalah di satu restoran tidak mengganggu restoran lain.
+    \item \textbf{Thread} = koki-koki dalam satu dapur. Mereka berbagi kompor dan
+      bahan yang sama sehingga lebih efisien, tetapi jika satu koki menumpahkan
+      minyak panas, semua yang ada di dapur ikut terdampak.
+  \end{itemize}
+\end{examplebox}
+
+\subsection*{Praktikum 6.1 --- Melihat Proses dan Thread}
+
+\begin{enumerate}
+  \item Tampilkan semua proses yang berjalan:
+\begin{lstlisting}[language=bash, caption={Menampilkan semua proses}]
+ps aux
+\end{lstlisting}
+
+  \item Tampilkan proses beserta thread-nya, dapat dilihat pada kolom \texttt{LWP} (Light-Weight Process ID):
+\begin{lstlisting}[language=bash, caption={Menampilkan proses dengan thread}]
+ps aux -L
+\end{lstlisting}
+
+  \item Lihat PID shell aktif dan detail prosesnya:
+\begin{lstlisting}[language=bash, caption={Detail proses shell saat ini}]
+echo $$
+ps -p $$ -f
+\end{lstlisting}
+
+  \item Lihat hierarki proses secara visual:
+\begin{lstlisting}[language=bash, caption={Pohon proses}]
+pstree -p
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[6.1]
+  Jalankan \cmd{ps aux} dan amati outputnya:
+  \begin{enumerate}
+    \item Berapa total proses yang berjalan? Proses apa yang memiliki PID terkecil?
+    \item Jalankan \cmd{pstree -p} dan temukan proses \texttt{bash} Anda. Proses apa
+      yang menjadi induk (PPID) dari bash tersebut?
+    \item Bandingkan output \cmd{ps aux} dan \cmd{ps aux -L}. Apa perbedaan yang
+      Anda lihat?
+  \end{enumerate}
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Siklus Hidup Proses}
+\label{sec:process-lifecycle}
+
+\subsection{Kondisi Proses}
+
+Sebuah proses tidak selalu aktif dieksekusi oleh CPU sepanjang hidupnya. Proses
+berpindah-pindah antara beberapa kondisi (state) sesuai dengan apa yang sedang
+terjadi---dieksekusi, menunggu I/O, dijeda, atau sudah selesai. Kondisi ini dapat
+dilihat pada kolom \texttt{STAT} di output \cmd{ps}.
+
+Mengetahui kondisi proses sangat berguna untuk mendiagnosis masalah. Banyaknya proses
+\texttt{D} mengindikasikan bottleneck I/O, sedangkan menumpuknya proses \texttt{Z}
+mengindikasikan bug pada program induk yang tidak membersihkan proses anaknya.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Kondisi-kondisi proses di Linux}
+  \begin{tabular}{lll}
+    \hline
+    \textbf{Kode} & \textbf{Nama} & \textbf{Keterangan} \\
+    \hline
+    R & Running/Runnable & Sedang dieksekusi CPU atau siap dieksekusi \\
+    S & Sleeping         & Menunggu event; dapat diinterupsi sinyal \\
+    D & Uninterruptible  & Menunggu I/O; tidak bisa diinterupsi sinyal \\
+    T & Stopped          & Dijeda oleh sinyal SIGSTOP atau debugger \\
+    Z & Zombie           & Selesai tapi belum dibersihkan oleh proses induk \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{notebox}
+  Proses \textbf{zombie} tidak mengkonsumsi CPU atau memori yang berarti, tetapi tetap
+  menggunakan slot di tabel proses. Jika menumpuk dalam jumlah besar, sistem bisa
+  kehabisan PID yang tersedia.
+\end{notebox}
+
+\subsection{Mekanisme fork-exec}
+
+Setiap proses baru di Linux lahir melalui dua tahap: \texttt{fork()} dan
+\texttt{exec()}. Saat Anda mengetik sebuah perintah di shell, shell melakukan
+\texttt{fork()}---menyalin dirinya sendiri menjadi proses anak. Proses anak ini
+kemudian melakukan \texttt{exec()}---mengganti isi memorinya dengan program yang ingin
+dijalankan.
+
+Pendekatan dua langkah ini bukan tanpa alasan. Dengan melakukan \texttt{fork()} terlebih
+dahulu, proses anak mewarisi pengaturan lengkap dari induknya (environment variable,
+file descriptor yang terbuka) sebelum program baru dijalankan. Inilah yang memungkinkan
+shell mengatur redirection I/O \textit{sebelum} program dieksekusi.
+
+\begin{tipbox}
+  Periksa exit code perintah terakhir dengan variabel \var{\$?}. Nilai \texttt{0}
+  berarti sukses, nilai lain berarti ada error. Ini berguna untuk membuat script yang
+  merespons keberhasilan atau kegagalan sebuah perintah.
+\begin{lstlisting}[language=bash]
+ls /tmp && echo "Exit code: $?"      # menampilkan 0
+ls /tidak-ada ; echo "Exit code: $?" # menampilkan 2
+\end{lstlisting}
+\end{tipbox}
+
+\subsection*{Praktikum 6.2 --- Mengamati Siklus Hidup Proses}
+
+\begin{enumerate}
+  \item Buat proses di background dan amati kondisinya:
+\begin{lstlisting}[language=bash, caption={Mengamati kondisi proses}]
+sleep 60 &
+ps aux | grep sleep
+\end{lstlisting}
+
+  \item Amati perubahan exit code dari perintah yang berhasil dan gagal:
+\begin{lstlisting}[language=bash, caption={Mengamati exit code}]
+ls /tmp
+echo "Sukses: $?"
+
+ls /direktori-tidak-ada
+echo "Gagal: $?"
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[6.2]
+  \begin{enumerate}
+    \item Jalankan \cmd{sleep 120 \&} dan amati kolom \texttt{STAT} pada \cmd{ps aux}.
+      Kondisi apa yang ditampilkan? Mengapa proses sleep berada di kondisi tersebut?
+    \item Jalankan beberapa perintah yang berhasil dan yang gagal, lalu catat exit
+      code masing-masing. Pola apa yang Anda temukan?
+  \end{enumerate}
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Penjadwalan Proses dan Prioritas}
+\label{sec:process-scheduling}
+
+\subsection{Scheduler dan Nilai Nice}
+
+Sebuah CPU hanya dapat mengeksekusi satu proses per core dalam satu waktu, namun Linux
+mampu menjalankan ratusan proses secara \textit{tampak bersamaan} berkat
+\textbf{scheduler}---komponen kernel yang mengatur giliran proses mendapat jatah waktu
+CPU. Linux menggunakan CFS (Completely Fair Scheduler) yang berusaha memberikan waktu
+CPU secara adil kepada semua proses.
+
+Prioritas setiap proses dikontrol oleh nilai \textbf{nice}, dengan rentang
+\textbf{-20} (prioritas tertinggi) hingga \textbf{+19} (prioritas terendah). Nilai
+defaultnya adalah \textbf{0}. Pengaturan prioritas sangat berguna saat Anda perlu
+memastikan proses penting---seperti layanan database---selalu mendapat jatah CPU yang
+cukup, sekaligus mencegah proses berat seperti backup dari mengganggu kinerja sistem
+secara keseluruhan.
+
+\begin{notebox}
+  Hanya \textbf{root} yang dapat memberikan nilai nice negatif (prioritas lebih tinggi
+  dari default). User biasa hanya bisa menaikkan nilai nice (menurunkan prioritas)
+  untuk proses miliknya sendiri.
+\end{notebox}
+
+\subsection{Perintah nice dan renice}
+
+\cmd{nice} dan \cmd{renice} adalah dua sisi dari satu koin. \cmd{nice} digunakan saat
+\textit{menjalankan} proses baru dengan nilai prioritas tertentu, sedangkan \cmd{renice}
+digunakan untuk mengubah prioritas proses yang \textit{sudah berjalan}. Gunakan
+\cmd{nice} saat akan memulai tugas berat yang tidak mendesak seperti kompresi file
+besar, dan gunakan \cmd{renice} saat Anda baru menyadari proses yang sudah berjalan
+perlu disesuaikan prioritasnya.
+
+\begin{lstlisting}[language=bash, caption={Sintaks nice dan renice}]
+# Jalankan perintah dengan nice +10 (prioritas lebih rendah dari normal)
+nice -n 10 perintah
+
+# Ubah nilai nice proses yang sedang berjalan
+renice -n 15 -p <PID>
+\end{lstlisting}
+
+\subsection*{Praktikum 6.3 --- Mengatur Prioritas Proses}
+
+\begin{enumerate}
+  \item Jalankan proses dengan prioritas rendah:
+\begin{lstlisting}[language=bash, caption={Menjalankan proses dengan nice +10}]
+nice -n 10 sleep 300 &
+\end{lstlisting}
+
+  \item Verifikasi nilai nice pada kolom \texttt{NI}:
+\begin{lstlisting}[language=bash, caption={Melihat nilai nice}]
+ps aux | grep sleep
+\end{lstlisting}
+
+  \item Ubah nilai nice proses yang sudah berjalan:
+\begin{lstlisting}[language=bash, caption={Mengubah nice dengan renice}]
+renice -n 15 -p <PID>
+ps -p <PID> -o pid,ni,cmd
+\end{lstlisting}
+
+  \item Bersihkan proses percobaan:
+\begin{lstlisting}[language=bash, caption={Menghentikan proses percobaan}]
+kill %1
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[6.3]
+  \begin{enumerate}
+    \item Jalankan \cmd{nice -n 5 sleep 200 \&} dan verifikasi nilai NI-nya dengan
+      \cmd{ps}.
+    \item Ubah nilai nice menjadi 10 menggunakan \cmd{renice}, lalu verifikasi kembali.
+    \item Coba ubah nilai nice menjadi -5 tanpa sudo. Apa yang terjadi? Mengapa Linux
+      membatasi hal ini untuk user biasa?
+  \end{enumerate}
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Sinyal Proses}
+\label{sec:process-signals}
+
+\subsection{Sinyal sebagai Mekanisme Komunikasi}
+
+Bagaimana Anda berkomunikasi dengan proses yang sedang berjalan---misalnya memintanya
+berhenti, dijeda, atau memuat ulang konfigurasi---tanpa harus berinteraksi langsung
+dengan program tersebut? Jawabannya adalah \textbf{sinyal}. Sinyal adalah notifikasi
+asinkron yang dikirimkan ke proses untuk menginterupsi eksekusinya dan memicu suatu
+tindakan. Setiap sinyal memiliki nama (misalnya SIGTERM) dan nomor (misalnya 15).
+
+Sinyal adalah satu-satunya cara standar untuk mengirim instruksi ke proses dari luar
+proses itu sendiri---sangat penting untuk proses yang berjalan tanpa antarmuka
+interaktif, seperti layanan sistem di background.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Sinyal-sinyal penting di Linux}
+  \begin{tabular}{llll}
+    \hline
+    \textbf{Nama} & \textbf{No.} & \textbf{Shortcut} & \textbf{Keterangan} \\
+    \hline
+    SIGHUP  & 1  & ---                & Reload konfigurasi (hangup) \\
+    SIGINT  & 2  & \keystroke{Ctrl+C} & Hentikan dari keyboard \\
+    SIGKILL & 9  & ---                & Paksa berhenti; tidak bisa ditangkap \\
+    SIGTERM & 15 & ---                & Minta berhenti secara normal (default) \\
+    SIGSTOP & 19 & \keystroke{Ctrl+Z} & Jeda proses; tidak bisa ditangkap \\
+    SIGCONT & 18 & ---                & Lanjutkan proses yang dijeda \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{Perintah kill, pkill, dan pgrep}
+
+Meskipun namanya \cmd{kill}, perintah ini tidak selalu digunakan untuk mematikan
+proses---fungsi utamanya adalah \textit{mengirim sinyal} ke proses. Tanpa argumen
+sinyal, \cmd{kill} mengirim SIGTERM secara default. \cmd{pkill} bekerja serupa tetapi
+menarget proses berdasarkan nama, bukan PID. \cmd{pgrep} berguna untuk mencari PID
+berdasarkan nama proses sebelum mengirim sinyal dengan \cmd{kill}.
+
+\begin{lstlisting}[language=bash, caption={Penggunaan kill, pkill, dan pgrep}]
+# Kirim SIGTERM (default) ke PID tertentu
+kill 1234
+
+# Kirim SIGKILL ke PID tertentu
+kill -9 1234
+
+# Cari PID berdasarkan nama proses
+pgrep sleep
+
+# Kirim sinyal ke semua proses berdasarkan nama
+pkill sleep
+pkill -9 nama-proses
+\end{lstlisting}
+
+\begin{tipbox}
+  Selalu coba \textbf{SIGTERM} terlebih dahulu sebelum \textbf{SIGKILL}. SIGTERM
+  memberi kesempatan proses untuk menyimpan data dan membersihkan sumber daya sebelum
+  berhenti. SIGKILL mematikan proses secara paksa tanpa cleanup---berisiko menyebabkan
+  data korup atau file lock yang tidak terlepas.
+\end{tipbox}
+
+\subsection*{Praktikum 6.4 --- Mengirim Sinyal ke Proses}
+
+\begin{enumerate}
+  \item Buat proses percobaan:
+\begin{lstlisting}[language=bash, caption={Membuat proses percobaan}]
+sleep 500 &
+sleep 600 &
+sleep 700 &
+ps aux | grep -v grep | grep sleep
+\end{lstlisting}
+
+  \item Hentikan satu proses dengan SIGTERM dan verifikasi:
+\begin{lstlisting}[language=bash, caption={Menghentikan proses dengan SIGTERM}]
+kill <PID-sleep-500>
+ps aux | grep -v grep | grep sleep
+\end{lstlisting}
+
+  \item Jeda dan lanjutkan proses dengan SIGSTOP/SIGCONT:
+\begin{lstlisting}[language=bash, caption={Menjeda dan melanjutkan proses}]
+kill -SIGSTOP <PID-sleep-600>
+ps aux | grep sleep      # amati kolom STAT: berubah menjadi T
+
+kill -SIGCONT <PID-sleep-600>
+ps aux | grep sleep      # STAT kembali ke S
+\end{lstlisting}
+
+  \item Hentikan semua proses sleep sekaligus:
+\begin{lstlisting}[language=bash, caption={Menghentikan semua proses sleep}]
+pkill sleep
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[6.4]
+  \begin{enumerate}
+    \item Jalankan \cmd{sleep 400 \&}, kirim SIGSTOP, dan amati perubahan kolom
+      \texttt{STAT}. Kondisi apa yang muncul?
+    \item Kirim SIGCONT dan verifikasi proses kembali berjalan.
+    \item Hentikan proses dengan SIGTERM lalu verifikasi sudah tidak ada. Kapan
+      Anda memilih SIGKILL daripada SIGTERM?
+  \end{enumerate}
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Manajemen Job}
-\section{Nice dan Renice}
-\section{Pemantauan Proses Lanjutan}
+\label{sec:job-management}
+
+\subsection{Foreground dan Background}
+
+Dalam konteks shell, \textbf{job} adalah proses yang dikelola oleh shell tersebut.
+Setiap job dapat berjalan di \textbf{foreground}---menguasai terminal sehingga Anda
+tidak bisa mengetik perintah lain---atau di \textbf{background}---berjalan di belakang
+layar sementara terminal tetap bebas digunakan.
+
+Tambahkan tanda \texttt{\&} di akhir perintah untuk menjalankannya di background.
+Ini sangat berguna untuk tugas panjang seperti kompresi file atau update sistem,
+sehingga Anda tidak perlu menunggu dan bisa melanjutkan pekerjaan lain. Tanpa
+mekanisme ini, setiap tugas panjang akan memblokir terminal dan memaksa Anda membuka
+sesi baru hanya untuk menjalankan perintah berikutnya.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Perintah dan shortcut manajemen job}
+  \begin{tabular}{ll}
+    \hline
+    \textbf{Perintah/Shortcut} & \textbf{Fungsi} \\
+    \hline
+    \texttt{perintah \&}    & Jalankan perintah di background \\
+    \cmd{jobs}              & Tampilkan daftar job aktif di shell ini \\
+    \cmd{fg \%N}            & Bawa job nomor N ke foreground \\
+    \cmd{bg \%N}            & Lanjutkan job nomor N di background \\
+    \keystroke{Ctrl+Z}      & Jeda job foreground yang sedang berjalan \\
+    \keystroke{Ctrl+C}      & Hentikan job foreground yang sedang berjalan \\
+    \cmd{kill \%N}          & Hentikan job nomor N \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{notebox}
+  Referensi job menggunakan \texttt{\%N} (nomor job di shell ini) berbeda dari PID
+  (nomor unik sistem-lebar). Keduanya dapat digunakan bersama \cmd{kill}:
+  \cmd{kill \%1} atau \cmd{kill 4521} mengacu pada hal yang sama jika job 1 memiliki
+  PID 4521.
+\end{notebox}
+
+\subsection*{Praktikum 6.5 --- Manajemen Job Foreground dan Background}
+
+\begin{enumerate}
+  \item Jalankan tiga job di background:
+\begin{lstlisting}[language=bash, caption={Membuat tiga job di background}]
+sleep 200 &
+sleep 300 &
+sleep 400 &
+jobs
+\end{lstlisting}
+
+  \item Bawa job pertama ke foreground, jeda, lalu kembalikan ke background:
+\begin{lstlisting}[language=bash, caption={Memindahkan job antar foreground-background}]
+fg %1
+# Tekan Ctrl+Z untuk menjeda
+bg %1
+jobs
+\end{lstlisting}
+
+  \item Hentikan semua job:
+\begin{lstlisting}[language=bash, caption={Menghentikan semua job}]
+kill %1 %2 %3
+jobs
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[6.5]
+  \begin{enumerate}
+    \item Jalankan \cmd{top} di foreground. Apa yang terjadi di terminal?
+    \item Tekan \keystroke{Ctrl+Z} dan cek statusnya dengan \cmd{jobs}. Kondisi apa
+      yang ditampilkan?
+    \item Pindahkan ke background dengan \cmd{bg}. Apakah \cmd{top} dapat berjalan
+      dengan baik di background? Mengapa?
+    \item Kembalikan ke foreground dengan \cmd{fg}, lalu keluar dengan \keystroke{q}.
+  \end{enumerate}
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
+\section{Pemantauan Proses}
+\label{sec:process-monitoring}
+
+\subsection{Perintah ps}
+
+\cmd{ps} menampilkan \textit{snapshot} kondisi proses pada saat perintah dijalankan.
+Karena outputnya bersifat statis, \cmd{ps} sangat cocok untuk keperluan scripting---
+outputnya dapat diproses lebih lanjut dengan \cmd{grep}, \cmd{awk}, atau disimpan ke
+file untuk dianalisis nanti.
+
+\begin{lstlisting}[language=bash, caption={Variasi penggunaan ps}]
+# Semua proses dengan format lengkap (paling umum)
+ps aux
+
+# Tampilkan hierarki proses secara visual
+ps aux --forest
+
+# Urutkan berdasarkan penggunaan CPU atau memori
+ps aux --sort=-%cpu | head -10
+ps aux --sort=-%mem | head -10
+
+# Informasi spesifik dari satu proses
+ps -p 1234 -o pid,ppid,ni,stat,cmd
+\end{lstlisting}
+
+\subsection{Perintah top}
+
+Sementara \cmd{ps} hanya mengambil snapshot, \cmd{top} memantau proses secara
+\textit{real-time} dengan tampilan yang diperbarui setiap beberapa detik. Gunakan
+\cmd{top} saat perlu memantau sistem secara langsung, terutama untuk mencari proses
+yang tiba-tiba mengkonsumsi CPU atau memori berlebih---sesuatu yang tidak akan
+tertangkap oleh snapshot \cmd{ps}.
+
+Shortcut keyboard yang berguna di dalam \cmd{top}:
+
+\begin{itemize}
+  \item \keystroke{P}: Urutkan berdasarkan CPU. \quad \keystroke{M}: Urutkan berdasarkan memori.
+  \item \keystroke{k}: Kirim sinyal ke proses. \quad \keystroke{r}: Ubah nilai nice.
+  \item \keystroke{u}: Filter berdasarkan user. \quad \keystroke{1}: Tampilkan tiap core CPU.
+  \item \keystroke{q}: Keluar.
+\end{itemize}
+
+\subsection{Perintah htop}
+
+\cmd{htop} adalah versi modern dari \cmd{top} dengan tampilan berwarna, grafik batang
+CPU dan memori, serta navigasi interaktif menggunakan keyboard dan mouse. Grafik batang
+memudahkan deteksi bottleneck sekilas tanpa perlu menginterpretasikan angka-angka---
+cukup lihat batang mana yang penuh. Tekan \keystroke{F9} untuk langsung mengirim sinyal
+ke proses yang dipilih tanpa perlu mencari PID-nya terlebih dahulu.
+
+\begin{lstlisting}[language=bash, caption={Instalasi dan penggunaan htop}]
+sudo apt install htop
+htop
+\end{lstlisting}
+
+\subsection*{Praktikum 6.6 --- Pemantauan Proses}
+
+\begin{enumerate}
+  \item Temukan proses dengan penggunaan CPU dan memori tertinggi:
+\begin{lstlisting}[language=bash, caption={Proses dengan resource tertinggi}]
+ps aux --sort=-%cpu | head -10
+ps aux --sort=-%mem | head -10
+\end{lstlisting}
+
+  \item Jalankan \cmd{top} dan eksplorasi shortcut-nya:
+\begin{lstlisting}[language=bash, caption={Eksplorasi top}]
+top
+# Tekan M, P, 1, u secara bergantian
+# Tekan q untuk keluar
+\end{lstlisting}
+
+  \item Instal dan jalankan \cmd{htop}:
+\begin{lstlisting}[language=bash, caption={Menggunakan htop}]
+sudo apt install -y htop
+htop
+# Tekan F6 untuk pilih kolom pengurutan
+# Tekan F10 atau q untuk keluar
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[6.6]
+  \begin{enumerate}
+    \item Gunakan \cmd{ps aux --sort=\%mem} untuk menemukan proses yang menggunakan
+      memori paling banyak di VM Anda. Proses apa itu?
+    \item Di dalam \cmd{top}, tekan \keystroke{1}. Apa yang berubah pada tampilan?
+      Mengapa informasi ini berguna?
+    \item Di dalam \cmd{htop}, navigasikan ke proses \texttt{sshd} menggunakan tombol
+      panah. Tekan \keystroke{F9} dan amati opsi sinyal yang tersedia.
+  \end{enumerate}
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Rangkuman}
+\label{sec:process-summary}
+
+\begin{itemize}
+  \item \textbf{Proses} adalah instance program yang berjalan dengan PID unik dan ruang
+    memori terpisah. \textbf{Thread} berbagi memori dalam satu proses---lebih ringan
+    namun lebih rentan saling mempengaruhi.
+  \item \textbf{Siklus hidup proses}: R (running), S (sleeping), D (uninterruptible),
+    T (stopped), Z (zombie). Proses dibuat via \texttt{fork-exec} dan berakhir dengan
+    exit code (0 = sukses).
+  \item \textbf{Prioritas} dikontrol dengan nilai nice (-20 s.d. +19, default 0).
+    \cmd{nice} untuk proses baru, \cmd{renice} untuk proses yang sudah berjalan.
+    Nilai negatif hanya bisa diset oleh root.
+  \item \textbf{Sinyal} adalah cara berkomunikasi dengan proses yang berjalan. Selalu
+    coba SIGTERM (15) sebelum SIGKILL (9). Gunakan \cmd{kill} (berdasarkan PID),
+    \cmd{pkill} (berdasarkan nama), atau \cmd{pgrep} untuk mencari PID.
+  \item \textbf{Manajemen job}: tambahkan \texttt{\&} untuk background, \cmd{fg}/\cmd{bg}
+    untuk berpindah, \keystroke{Ctrl+Z} untuk menjeda.
+  \item \textbf{Pemantauan}: \cmd{ps} untuk snapshot dan scripting, \cmd{top} untuk
+    real-time, \cmd{htop} untuk antarmuka interaktif yang lebih visual.
+\end{itemize}
+
+%% ------------------------------------------------------------------------
 \section{Latihan}
+\label{sec:process-exercises}
+
+\begin{exercisebox}[6.A]
+  \textbf{Eksplorasi Proses Sistem}
+  \begin{enumerate}
+    \item Jalankan \cmd{ps aux --forest} dan temukan proses dengan PID 1. Apa nama
+      dan fungsi proses tersebut dalam sistem Linux modern?
+    \item Hitung berapa proses yang dimiliki oleh user \texttt{root} dan berapa yang
+      dimiliki oleh user Anda. Mengapa root memiliki lebih banyak proses?
+    \item Temukan semua proses yang berada dalam kondisi \texttt{S}. Mengapa sebagian
+      besar proses di sistem berada dalam kondisi ini?
+  \end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[6.B]
+  \textbf{Simulasi Manajemen Job}
+  \begin{enumerate}
+    \item Jalankan tiga perintah \cmd{sleep} dengan durasi 100, 200, dan 300 detik
+      di background. Verifikasi ketiganya dengan \cmd{jobs}.
+    \item Bawa job kedua ke foreground, jeda dengan \keystroke{Ctrl+Z}, lalu
+      kembalikan ke background dengan \cmd{bg}.
+    \item Hentikan job pertama dengan \cmd{kill \%1}. Tampilkan kembali daftar job.
+      Berapa job yang tersisa?
+  \end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[6.C]
+  \textbf{Prioritas dan Sinyal}
+  \begin{enumerate}
+    \item Jalankan dua proses sleep: satu dengan nice +5 dan satu dengan nice +15.
+      Verifikasi nilai NI keduanya dengan \cmd{ps}.
+    \item Gunakan \cmd{renice} untuk mengubah nice proses pertama menjadi +10.
+      Proses mana yang kini lebih diprioritaskan scheduler?
+    \item Kirim SIGSTOP ke salah satu proses, verifikasi kondisi \texttt{T}-nya,
+      lalu kirim SIGCONT. Akhiri semua proses percobaan dengan \cmd{pkill sleep}.
+  \end{enumerate}
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Referensi Tambahan}
+\label{sec:process-references}
+
+\begin{itemize}
+  \item \texttt{man ps} --- dokumentasi lengkap perintah ps dan seluruh opsinya
+  \item \texttt{man top} --- dokumentasi top beserta shortcut keyboard
+  \item \texttt{man 7 signal} --- referensi teknis semua sinyal di Linux
+  \item \texttt{man nice}, \texttt{man renice} --- pengaturan prioritas proses
+  \item \texttt{man kill}, \texttt{man pkill}, \texttt{man pgrep} --- manajemen sinyal
+\end{itemize}
