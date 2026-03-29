@@ -5,16 +5,642 @@
 \chapter{Process Management}
 \label{ch:process-management}
 
-This chapter discusses the concepts of processes and threads in Linux, process lifecycle,
-scheduling, signals, and job management.
+This chapter discusses the concepts of processes and threads in Linux, the
+process lifecycle, scheduling, signals, job management, and real-time process
+monitoring. Understanding process management is a core skill for Linux system
+administrators to maintain server performance and stability.
 
+\begin{examplebox}[Think of Linux as a busy food stall]
+Imagine a busy food stall. Some customers are eating, some are waiting for
+their order, some are queuing at the counter, and some are having their orders
+taken. Each customer is doing something different at roughly the same time---
+that is exactly how Linux manages \textbf{processes}.
+
+Every program running on Linux is like a customer: it has its own queue number
+(\textbf{PID}), its own current activity (\textbf{status}), and it is served
+in turns by the cashier (\textbf{CPU}). VIP customers get served faster
+(\textbf{priority}), and if a customer causes trouble, the owner can remove
+them without disturbing the other customers (\textbf{kill signal}).
+
+There is no need to be intimidated by the technical terms---they are just
+formal names for concepts that are already very familiar in everyday life.
+\end{examplebox}
+
+%% ------------------------------------------------------------------------
 \section{Process and Thread Concepts}
+\label{sec:process-concept}
+
+\subsection{Processes}
+
+Have you ever opened several apps on your smartphone at the same time---for
+example, music keeps playing while you read a chat? That is a real-world
+example of multiple \textbf{processes} running simultaneously. In Linux, the
+concept is exactly the same.
+
+When you run a program, Linux does not simply execute its instructions
+directly. The operating system creates a \textbf{process}---an \textit{instance}
+of the program being executed, complete with its own memory space, file
+descriptors, and execution state. Every time a program is started, whether
+from the terminal or automatically by the system, Linux creates a new process
+with a unique PID (Process ID).
+
+This isolation between processes is what makes Linux stable. If one process
+crashes, other processes are unaffected because each has a completely separate
+memory space. The analogy: if one browser tab crashes, the other tabs stay
+open and keep running normally.
+
+Every process has the following key attributes:
+
+\begin{itemize}
+  \item \textbf{PID}: Unique process identifier number.
+  \item \textbf{PPID}: The PID of the parent process that created it.
+  \item \textbf{UID/GID}: Owner identity, determines the process's access rights.
+  \item \textbf{Status}: Current condition of the process (running, sleeping, stopped, etc.).
+  \item \textbf{Nice}: Scheduling priority value (-20 to +19).
+\end{itemize}
+
+\subsection{Threads}
+
+Within a single process, it is possible to have multiple execution flows
+running concurrently---these are called \textbf{threads}. Unlike processes,
+threads share memory space and resources with other threads in the same process.
+
+Threads are useful when a program needs to perform multiple tasks in parallel,
+for example a web server handling many requests simultaneously without having
+to create a new process for each request. Creating a thread is far lighter than
+creating a new process because no new memory space needs to be allocated.
+However, sharing memory also means that one problematic thread can potentially
+bring down the entire process.
+
+\begin{examplebox}[Process and Thread Analogy]
+  \begin{itemize}
+    \item \textbf{Process} = a restaurant with its own kitchen. Two restaurants
+      do not share ingredients---a problem in one restaurant does not affect
+      the other.
+    \item \textbf{Thread} = chefs working in one shared kitchen. They share
+      the same stove and ingredients, making it more efficient, but if one
+      chef spills hot oil, everyone in the kitchen is affected.
+  \end{itemize}
+\end{examplebox}
+
+\subsection*{Lab 6.1 --- Viewing Processes and Threads}
+
+\begin{enumerate}
+  \item Display all running processes:
+\begin{lstlisting}[language=bash, caption={Displaying all processes}]
+ps aux
+\end{lstlisting}
+
+  \item Display processes along with their threads, visible in the \texttt{LWP}
+    (Light-Weight Process ID) column:
+\begin{lstlisting}[language=bash, caption={Displaying processes with threads}]
+ps aux -L
+\end{lstlisting}
+
+  \item View the PID of the active shell and its process details:
+\begin{lstlisting}[language=bash, caption={Current shell process details}]
+echo $$
+ps -p $$ -f
+\end{lstlisting}
+
+  \item View the process hierarchy visually:
+\begin{lstlisting}[language=bash, caption={Process tree}]
+pstree -p
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[6.1]
+  Run \cmd{ps aux} and observe its output:
+  \begin{enumerate}
+    \item How many processes are running in total? Which process has the
+      smallest PID?
+    \item Run \cmd{pstree -p} and find your \texttt{bash} process. What
+      process is the parent (PPID) of that bash?
+    \item Compare the output of \cmd{ps aux} and \cmd{ps aux -L}. What
+      differences do you observe?
+  \end{enumerate}
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Process Lifecycle}
+\label{sec:process-lifecycle}
+
+\subsection{Process States}
+
+A process is not always being actively executed by the CPU throughout its
+lifetime. Processes transition between several states depending on what is
+happening---executing, waiting for I/O, paused, or finished. These states
+can be seen in the \texttt{STAT} column of \cmd{ps} output.
+
+Knowing the state of a process is very useful for diagnosing problems. A large
+number of \texttt{D} processes indicates an I/O bottleneck, while an
+accumulation of \texttt{Z} processes indicates a bug in the parent program
+that is not cleaning up its child processes.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Process states in Linux}
+  \begin{tabular}{lll}
+    \hline
+    \textbf{Code} & \textbf{Name} & \textbf{Description} \\
+    \hline
+    R & Running/Runnable & Being executed by the CPU or ready to execute \\
+    S & Sleeping         & Waiting for an event; can be interrupted by a signal \\
+    D & Uninterruptible  & Waiting for I/O; cannot be interrupted by a signal \\
+    T & Stopped          & Paused by SIGSTOP signal or a debugger \\
+    Z & Zombie           & Finished but not yet cleaned up by the parent process \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{notebox}
+  A \textbf{zombie} process does not consume meaningful CPU or memory, but it
+  still occupies a slot in the process table. If they accumulate in large
+  numbers, the system can run out of available PIDs.
+\end{notebox}
+
+\subsection{The fork-exec Mechanism}
+
+Every new process in Linux is born through two steps: \texttt{fork()} and
+\texttt{exec()}. When you type a command in the shell, the shell calls
+\texttt{fork()}---copying itself into a child process. This child process then
+calls \texttt{exec()}---replacing its memory contents with the program to be
+run.
+
+This two-step approach is not arbitrary. By calling \texttt{fork()} first, the
+child process inherits the complete configuration of the parent (environment
+variables, open file descriptors) before the new program is launched. This is
+what allows the shell to set up I/O redirection \textit{before} the program
+executes.
+
+\begin{tipbox}
+  Check the exit code of the last command using the variable \var{\$?}. A
+  value of \texttt{0} means success; any other value means there was an error.
+  This is useful for writing scripts that respond to the success or failure of
+  a command.
+\begin{lstlisting}[language=bash]
+ls /tmp && echo "Exit code: $?"      # prints 0
+ls /does-not-exist ; echo "Exit code: $?" # prints 2
+\end{lstlisting}
+\end{tipbox}
+
+\subsection*{Lab 6.2 --- Observing the Process Lifecycle}
+
+\begin{enumerate}
+  \item Create a background process and observe its state:
+\begin{lstlisting}[language=bash, caption={Observing process state}]
+sleep 60 &
+ps aux | grep sleep
+\end{lstlisting}
+
+  \item Observe the exit code of successful and failed commands:
+\begin{lstlisting}[language=bash, caption={Observing exit codes}]
+ls /tmp
+echo "Success: $?"
+
+ls /directory-does-not-exist
+echo "Failed: $?"
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[6.2]
+  \begin{enumerate}
+    \item Run \cmd{sleep 120 \&} and observe the \texttt{STAT} column in
+      \cmd{ps aux}. What state is shown? Why is the sleep process in that
+      state?
+    \item Run several successful and failing commands, then record the exit
+      code of each. What pattern do you find?
+  \end{enumerate}
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Process Scheduling and Priority}
+\label{sec:process-scheduling}
+
+\subsection{The Scheduler and Nice Values}
+
+A single CPU core can only execute one process at a time, yet Linux is capable
+of running hundreds of processes \textit{apparently simultaneously} thanks to
+the \textbf{scheduler}---a kernel component that determines which process gets
+CPU time next. Linux uses the CFS (Completely Fair Scheduler), which attempts
+to distribute CPU time fairly among all processes.
+
+The priority of each process is controlled by the \textbf{nice} value, ranging
+from \textbf{-20} (highest priority) to \textbf{+19} (lowest priority), with a
+default of \textbf{0}. Adjusting priority is very useful when you need to ensure
+that important processes---such as a database service---always receive sufficient
+CPU time, while preventing heavy processes like backups from degrading overall
+system performance.
+
+\begin{notebox}
+  Only \textbf{root} can set a negative nice value (higher priority than
+  default). A regular user can only increase the nice value (lower priority)
+  for their own processes.
+\end{notebox}
+
+\subsection{The nice and renice Commands}
+
+\cmd{nice} and \cmd{renice} are two sides of the same coin. \cmd{nice} is used
+when \textit{starting} a new process with a specific priority value, while
+\cmd{renice} is used to change the priority of a process that is \textit{already
+running}. Use \cmd{nice} when you are about to start a heavy, non-urgent task
+such as compressing a large file, and use \cmd{renice} when you realise a
+running process needs its priority adjusted.
+
+\begin{lstlisting}[language=bash, caption={Syntax of nice and renice}]
+# Run a command with nice +10 (lower priority than normal)
+nice -n 10 command
+
+# Change the nice value of a running process
+renice -n 15 -p <PID>
+\end{lstlisting}
+
+\subsection*{Lab 6.3 --- Adjusting Process Priority}
+
+\begin{enumerate}
+  \item Run a process with low priority:
+\begin{lstlisting}[language=bash, caption={Running a process with nice +10}]
+nice -n 10 sleep 300 &
+\end{lstlisting}
+
+  \item Verify the nice value in the \texttt{NI} column:
+\begin{lstlisting}[language=bash, caption={Viewing the nice value}]
+ps aux | grep sleep
+\end{lstlisting}
+
+  \item Change the nice value of the running process:
+\begin{lstlisting}[language=bash, caption={Changing nice with renice}]
+renice -n 15 -p <PID>
+ps -p <PID> -o pid,ni,cmd
+\end{lstlisting}
+
+  \item Clean up the test process:
+\begin{lstlisting}[language=bash, caption={Stopping the test process}]
+kill %1
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[6.3]
+  \begin{enumerate}
+    \item Run \cmd{nice -n 5 sleep 200 \&} and verify its NI value with
+      \cmd{ps}.
+    \item Change the nice value to 10 using \cmd{renice}, then verify again.
+    \item Try to change the nice value to -5 without sudo. What happens? Why
+      does Linux restrict this for regular users?
+  \end{enumerate}
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Process Signals}
+\label{sec:process-signals}
+
+\subsection{Signals as a Communication Mechanism}
+
+How do you communicate with a running process---for example to ask it to stop,
+pause, or reload its configuration---without interacting directly with the
+program? The answer is \textbf{signals}. A signal is an asynchronous
+notification sent to a process to interrupt its execution and trigger an action.
+Each signal has a name (e.g. SIGTERM) and a number (e.g. 15).
+
+Signals are the only standard way to send instructions to a process from
+outside the process itself---critical for processes running without an
+interactive interface, such as background system services.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Important signals in Linux}
+  \begin{tabular}{llll}
+    \hline
+    \textbf{Name} & \textbf{No.} & \textbf{Shortcut} & \textbf{Description} \\
+    \hline
+    SIGHUP  & 1  & ---                & Reload configuration (hangup) \\
+    SIGINT  & 2  & \keystroke{Ctrl+C} & Stop from keyboard \\
+    SIGKILL & 9  & ---                & Force stop; cannot be caught \\
+    SIGTERM & 15 & ---                & Request graceful stop (default) \\
+    SIGSTOP & 19 & \keystroke{Ctrl+Z} & Pause process; cannot be caught \\
+    SIGCONT & 18 & ---                & Resume a paused process \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{The kill, pkill, and pgrep Commands}
+
+Despite its name, \cmd{kill} is not always used to terminate a process---its
+primary function is to \textit{send a signal} to a process. Without a signal
+argument, \cmd{kill} sends SIGTERM by default. \cmd{pkill} works similarly but
+targets processes by name rather than PID. \cmd{pgrep} is useful for finding
+PIDs by process name before sending a signal with \cmd{kill}.
+
+\begin{lstlisting}[language=bash, caption={Using kill, pkill, and pgrep}]
+# Send SIGTERM (default) to a specific PID
+kill 1234
+
+# Send SIGKILL to a specific PID
+kill -9 1234
+
+# Find PIDs by process name
+pgrep sleep
+
+# Send a signal to all processes matching a name
+pkill sleep
+pkill -9 process-name
+\end{lstlisting}
+
+\begin{tipbox}
+  Always try \textbf{SIGTERM} first before \textbf{SIGKILL}. SIGTERM gives the
+  process a chance to save data and clean up resources before stopping.
+  SIGKILL forcefully terminates the process without any cleanup---risking data
+  corruption or unreleased file locks.
+\end{tipbox}
+
+\subsection*{Lab 6.4 --- Sending Signals to Processes}
+
+\begin{enumerate}
+  \item Create test processes:
+\begin{lstlisting}[language=bash, caption={Creating test processes}]
+sleep 500 &
+sleep 600 &
+sleep 700 &
+ps aux | grep -v grep | grep sleep
+\end{lstlisting}
+
+  \item Stop one process with SIGTERM and verify:
+\begin{lstlisting}[language=bash, caption={Stopping a process with SIGTERM}]
+kill <PID-sleep-500>
+ps aux | grep -v grep | grep sleep
+\end{lstlisting}
+
+  \item Pause and resume a process with SIGSTOP/SIGCONT:
+\begin{lstlisting}[language=bash, caption={Pausing and resuming a process}]
+kill -SIGSTOP <PID-sleep-600>
+ps aux | grep sleep      # observe STAT column: changes to T
+
+kill -SIGCONT <PID-sleep-600>
+ps aux | grep sleep      # STAT returns to S
+\end{lstlisting}
+
+  \item Stop all sleep processes at once:
+\begin{lstlisting}[language=bash, caption={Stopping all sleep processes}]
+pkill sleep
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[6.4]
+  \begin{enumerate}
+    \item Run \cmd{sleep 400 \&}, send SIGSTOP, and observe the change in the
+      \texttt{STAT} column. What state appears?
+    \item Send SIGCONT and verify the process is running again.
+    \item Stop the process with SIGTERM then verify it is gone. When would
+      you choose SIGKILL over SIGTERM?
+  \end{enumerate}
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Job Management}
-\section{Nice and Renice}
-\section{Advanced Process Monitoring}
+\label{sec:job-management}
+
+\subsection{Foreground and Background}
+
+In the context of a shell, a \textbf{job} is a process managed by that shell.
+Each job can run in the \textbf{foreground}---holding the terminal so you
+cannot type other commands---or in the \textbf{background}---running behind the
+scenes while the terminal remains free to use.
+
+Append \texttt{\&} to the end of a command to run it in the background. This
+is very useful for long-running tasks such as file compression or system
+updates, so you do not have to wait and can continue other work. Without this
+mechanism, every long-running task would block the terminal and force you to
+open a new session just to run the next command.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Job management commands and shortcuts}
+  \begin{tabular}{ll}
+    \hline
+    \textbf{Command/Shortcut} & \textbf{Function} \\
+    \hline
+    \texttt{command \&}    & Run command in the background \\
+    \cmd{jobs}             & List active jobs in this shell \\
+    \cmd{fg \%N}           & Bring job number N to the foreground \\
+    \cmd{bg \%N}           & Resume job number N in the background \\
+    \keystroke{Ctrl+Z}     & Pause the currently running foreground job \\
+    \keystroke{Ctrl+C}     & Stop the currently running foreground job \\
+    \cmd{kill \%N}         & Stop job number N \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{notebox}
+  Job references using \texttt{\%N} (job number within this shell) are
+  different from PID (system-wide unique number). Both can be used with
+  \cmd{kill}: \cmd{kill \%1} or \cmd{kill 4521} refer to the same thing if
+  job 1 has PID 4521.
+\end{notebox}
+
+\subsection*{Lab 6.5 --- Foreground and Background Job Management}
+
+\begin{enumerate}
+  \item Start three jobs in the background:
+\begin{lstlisting}[language=bash, caption={Creating three background jobs}]
+sleep 200 &
+sleep 300 &
+sleep 400 &
+jobs
+\end{lstlisting}
+
+  \item Bring the first job to the foreground, pause it, then send it back
+    to the background:
+\begin{lstlisting}[language=bash, caption={Moving a job between foreground and background}]
+fg %1
+# Press Ctrl+Z to pause
+bg %1
+jobs
+\end{lstlisting}
+
+  \item Stop all jobs:
+\begin{lstlisting}[language=bash, caption={Stopping all jobs}]
+kill %1 %2 %3
+jobs
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[6.5]
+  \begin{enumerate}
+    \item Run \cmd{top} in the foreground. What happens in the terminal?
+    \item Press \keystroke{Ctrl+Z} and check its status with \cmd{jobs}.
+      What state is shown?
+    \item Move it to the background with \cmd{bg}. Can \cmd{top} run
+      properly in the background? Why?
+    \item Bring it back to the foreground with \cmd{fg}, then exit with
+      \keystroke{q}.
+  \end{enumerate}
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
+\section{Process Monitoring}
+\label{sec:process-monitoring}
+
+\subsection{The ps Command}
+
+\cmd{ps} displays a \textit{snapshot} of process states at the moment the
+command is run. Because its output is static, \cmd{ps} is well suited for
+scripting---its output can be further processed with \cmd{grep}, \cmd{awk},
+or saved to a file for later analysis.
+
+\begin{lstlisting}[language=bash, caption={Variations of ps usage}]
+# All processes with full format (most common)
+ps aux
+
+# Display process hierarchy visually
+ps aux --forest
+
+# Sort by CPU or memory usage
+ps aux --sort=-%cpu | head -10
+ps aux --sort=-%mem | head -10
+
+# Specific information from a single process
+ps -p 1234 -o pid,ppid,ni,stat,cmd
+\end{lstlisting}
+
+\subsection{The top Command}
+
+While \cmd{ps} only takes a snapshot, \cmd{top} monitors processes in
+\textit{real-time} with a display that refreshes every few seconds. Use
+\cmd{top} when you need to monitor the system live, especially to find
+processes that are suddenly consuming excessive CPU or memory---something a
+\cmd{ps} snapshot would not capture.
+
+Useful keyboard shortcuts inside \cmd{top}:
+
+\begin{itemize}
+  \item \keystroke{P}: Sort by CPU. \quad \keystroke{M}: Sort by memory.
+  \item \keystroke{k}: Send a signal to a process. \quad \keystroke{r}: Change nice value.
+  \item \keystroke{u}: Filter by user. \quad \keystroke{1}: Show each CPU core.
+  \item \keystroke{q}: Quit.
+\end{itemize}
+
+\subsection{The htop Command}
+
+\cmd{htop} is a modern version of \cmd{top} with a coloured display, CPU and
+memory bar graphs, and interactive navigation using both keyboard and mouse.
+The bar graphs make it easy to spot bottlenecks at a glance without having to
+interpret numbers---just look at which bar is full. Press \keystroke{F9} to
+send a signal directly to the selected process without needing to look up its
+PID first.
+
+\begin{lstlisting}[language=bash, caption={Installing and using htop}]
+sudo apt install htop
+htop
+\end{lstlisting}
+
+\subsection*{Lab 6.6 --- Process Monitoring}
+
+\begin{enumerate}
+  \item Find the processes with the highest CPU and memory usage:
+\begin{lstlisting}[language=bash, caption={Processes with the highest resource usage}]
+ps aux --sort=-%cpu | head -10
+ps aux --sort=-%mem | head -10
+\end{lstlisting}
+
+  \item Run \cmd{top} and explore its shortcuts:
+\begin{lstlisting}[language=bash, caption={Exploring top}]
+top
+# Press M, P, 1, u in turn
+# Press q to quit
+\end{lstlisting}
+
+  \item Install and run \cmd{htop}:
+\begin{lstlisting}[language=bash, caption={Using htop}]
+sudo apt install -y htop
+htop
+# Press F6 to select the sort column
+# Press F10 or q to quit
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[6.6]
+  \begin{enumerate}
+    \item Use \cmd{ps aux --sort=\%mem} to find the process using the most
+      memory on your VM. What process is it?
+    \item Inside \cmd{top}, press \keystroke{1}. What changes in the display?
+      Why is this information useful?
+    \item Inside \cmd{htop}, navigate to the \texttt{sshd} process using the
+      arrow keys. Press \keystroke{F9} and observe the signal options
+      available.
+  \end{enumerate}
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Summary}
+\label{sec:process-summary}
+
+\begin{itemize}
+  \item A \textbf{process} is an instance of a running program with a unique
+    PID and a separate memory space. \textbf{Threads} share memory within one
+    process---lighter weight but more susceptible to mutual interference.
+  \item \textbf{Process lifecycle}: R (running), S (sleeping), D (uninterruptible),
+    T (stopped), Z (zombie). Processes are created via \texttt{fork-exec} and
+    end with an exit code (0 = success).
+  \item \textbf{Priority} is controlled by the nice value (-20 to +19, default 0).
+    \cmd{nice} for new processes, \cmd{renice} for already-running processes.
+    Negative values can only be set by root.
+  \item \textbf{Signals} are the way to communicate with running processes.
+    Always try SIGTERM (15) before SIGKILL (9). Use \cmd{kill} (by PID),
+    \cmd{pkill} (by name), or \cmd{pgrep} to find PIDs.
+  \item \textbf{Job management}: append \texttt{\&} for background, \cmd{fg}/\cmd{bg}
+    to switch, \keystroke{Ctrl+Z} to pause.
+  \item \textbf{Monitoring}: \cmd{ps} for snapshots and scripting, \cmd{top} for
+    real-time monitoring, \cmd{htop} for a more visual interactive interface.
+\end{itemize}
+
+%% ------------------------------------------------------------------------
 \section{Exercises}
+\label{sec:process-exercises}
+
+\begin{exercisebox}[6.A]
+  \textbf{Exploring System Processes}
+  \begin{enumerate}
+    \item Run \cmd{ps aux --forest} and find the process with PID 1. What is
+      the name and function of this process in a modern Linux system?
+    \item Count how many processes are owned by user \texttt{root} and how
+      many are owned by your user. Why does root have more processes?
+    \item Find all processes in the \texttt{S} state. Why do most processes
+      on a system reside in this state?
+  \end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[6.B]
+  \textbf{Job Management Simulation}
+  \begin{enumerate}
+    \item Run three \cmd{sleep} commands with durations of 100, 200, and 300
+      seconds in the background. Verify all three with \cmd{jobs}.
+    \item Bring the second job to the foreground, pause it with
+      \keystroke{Ctrl+Z}, then send it back to the background with \cmd{bg}.
+    \item Stop the first job with \cmd{kill \%1}. Display the job list again.
+      How many jobs remain?
+  \end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[6.C]
+  \textbf{Priority and Signals}
+  \begin{enumerate}
+    \item Run two sleep processes: one with nice +5 and one with nice +15.
+      Verify the NI value of both with \cmd{ps}.
+    \item Use \cmd{renice} to change the first process's nice to +10. Which
+      process does the scheduler now prioritise?
+    \item Send SIGSTOP to one of the processes, verify its \texttt{T} state,
+      then send SIGCONT. Terminate all test processes with \cmd{pkill sleep}.
+  \end{enumerate}
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Additional References}
+\label{sec:process-references}
+
+\begin{itemize}
+  \item \texttt{man ps} --- complete documentation for ps and all its options
+  \item \texttt{man top} --- top documentation including keyboard shortcuts
+  \item \texttt{man 7 signal} --- technical reference for all Linux signals
+  \item \texttt{man nice}, \texttt{man renice} --- process priority adjustment
+  \item \texttt{man kill}, \texttt{man pkill}, \texttt{man pgrep} --- signal management
+\end{itemize}
