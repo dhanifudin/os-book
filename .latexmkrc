@@ -8,11 +8,11 @@ $pdf_mode = 1;
 # Use biber for bibliography
 $bibtex_use = 2;
 
-# PDF viewer configuration
+# PDF viewer configuration (used only when -pvc flag is passed explicitly)
 $pdf_previewer = 'zathura %O %S';
 
-# Enable continuous preview mode to use the configured viewer
-$preview_mode = 1;
+# Do not auto-open viewer after build; use 'make view-id' / 'make view-en' instead
+$preview_mode = 0;
 
 # Extra pdflatex options
 $pdflatex = 'pdflatex -interaction=nonstopmode -file-line-error %O %S';
