@@ -1,20 +1,999 @@
 %% ========================================================================
-%% Chapter 7: Bash Shell
+%% Chapter 7: Bash Shell and Shell Basics
 %% ========================================================================
 
-\chapter{Bash Shell}
-\label{ch:bash-shell}
+\chapter{Bash Shell and Shell Basics}
+\label{ch:bash-shell-basic}
 
-This chapter discusses Bash as the default shell in Linux, Bash configuration,
-environment variables, aliases, and other Bash features.
+This chapter covers Bash as the default shell commonly used on Linux, how
+Bash configuration files work, environment variables and \texttt{PATH},
+creating aliases and shell functions, completion and history features,
+wildcards and filename expansion, and quoting and escaping. The focus is on
+everyday lab work and system administration: working faster in the terminal,
+reducing typing mistakes, and building safe working habits.
 
-\section{Introduction to Bash}
-\section{Bash Configuration}
-\section{Environment Variables and PATH}
-\section{Aliases and Shell Functions}
-\section{History and Auto-completion}
-\section{Wildcards and Expansion}
-\section{Quoting and Escaping}
+\begin{examplebox}[Bash as the administrator's ``control panel'']
+Imagine managing a server with no graphical interface. No buttons to click,
+no visual menus, no application windows. Every interaction happens through
+the terminal. In this situation, the \textbf{shell} acts as the main control
+panel between you and the operating system.
+
+Bash accepts the commands you type, runs programs, manages environment
+variables, handles redirection, helps you find past commands through history,
+and even lets you create your own work shortcuts through aliases and
+functions. Understanding Bash is therefore not just about ``being able to
+type commands''---it is about building a workflow that is faster, more
+consistent, and safer.
+
+Think of Bash like a Swiss Army knife: it looks simple on the outside, but
+once you know how to open each tool, your productivity multiplies many times
+over.
+\end{examplebox}
+
+%% ------------------------------------------------------------------------
+\section{Introduction to Bash as the Default Linux Shell}
+\label{sec:bash-introduction}
+
+Bash (\textit{Bourne Again Shell}) is the shell most commonly found on modern
+Linux systems. It is the interface that translates the commands you type into
+actions the operating system can carry out. Bash also provides many practical
+features: history, completion, environment variables, aliases, functions, and
+basic scripting.
+
+In the context of system administration, Bash is important because almost
+every operational task on a Linux server is performed from the terminal:
+reading logs, managing services, checking disk usage, creating backups, and
+running simple automation. If the terminal is your ``workspace'', then Bash
+is your primary tool.
+
+\begin{tipbox}
+On Linux, the \textit{login shell} is the shell assigned to your user account,
+while the \textit{active shell} in the current terminal window may be
+different. Always distinguish between \texttt{\$SHELL} (login shell) and
+\texttt{\$0} (active shell).
+\end{tipbox}
+
+\subsection*{Commands Used in This Section}
+
+\begin{itemize}
+  \item \texttt{echo \$SHELL}: show the user's login shell.
+  \item \texttt{echo \$0}: show the name of the currently active shell.
+  \item \texttt{ps -p \$\$ -o pid,ppid,args=}: show the active shell process.
+  \item \texttt{bash --version}: show the Bash version.
+  \item \texttt{help}: help for \textit{built-in commands}.
+  \item \texttt{man bash}: full Bash documentation.
+  \item \texttt{mkdir}, \texttt{touch}: prepare the lab workspace.
+\end{itemize}
+
+\subsection*{Lab 7.1 --- Getting to Know Bash and Preparing the Workspace}
+
+Objective: identify the active shell and prepare a safe working area for all
+labs in this chapter.
+
+\begin{enumerate}
+  \item View the login shell and the currently active shell:
+\begin{lstlisting}[language=bash, caption={Checking the login shell and active shell}]
+echo "Login shell  : $SHELL"
+echo "Active shell : $0"
+bash --version | head -n 1
+\end{lstlisting}
+
+  \item View the currently running shell process:
+\begin{lstlisting}[language=bash, caption={Viewing the active shell process}]
+echo $$
+ps -p $$ -o pid,ppid,args=
+\end{lstlisting}
+
+  \item Create the lab workspace:
+\begin{lstlisting}[language=bash, caption={Creating the Bash lab workspace}]
+mkdir -p ~/lab-os/week07-bash/{bin,backup,logs,samples,named-files}
+cd ~/lab-os/week07-bash
+pwd
+\end{lstlisting}
+
+  \item Create some example files used in the following labs:
+\begin{lstlisting}[language=bash, caption={Creating example files for subsequent labs}]
+touch sample-app.conf
+touch logs/app-01.log logs/app-02.log logs/app-03.log
+touch samples/note-a.txt samples/note-b.txt
+touch samples/backup-01.tar samples/backup-02.tar
+touch samples/daily-report.log samples/weekly-report.log
+touch samples/monthly-report.log
+touch "named-files/server april report.txt"
+touch "named-files/backup [weekly] server.conf"
+ls -R
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Lab 7.2 --- Creating a Terminal Session Summary}
+
+Objective: get administrators into the habit of verifying their working
+context before performing maintenance.
+
+\begin{enumerate}
+  \item Enter the lab workspace:
+\begin{lstlisting}[language=bash, caption={Entering the lab workspace}]
+cd ~/lab-os/week07-bash
+\end{lstlisting}
+
+  \item Save terminal session information to a report file:
+\begin{lstlisting}[language=bash, caption={Creating a terminal session summary}]
+{
+  echo "=== BASH SESSION SUMMARY ==="
+  date
+  echo "User        : $(whoami)"
+  echo "Hostname    : $(hostname)"
+  echo "Login shell : $SHELL"
+  echo "Active shell: $0"
+  echo "Shell PID   : $$"
+  echo "Directory   : $(pwd)"
+} | tee session-info.txt
+\end{lstlisting}
+
+  \item Verify the contents of the report file:
+\begin{lstlisting}[language=bash, caption={Reading the session summary}]
+cat session-info.txt
+\end{lstlisting}
+\end{enumerate}
+
+\begin{notebox}
+Small habits like recording the user, host, shell, and active directory can
+prevent fatal mistakes---for example, accidentally running commands on the
+wrong server or in the wrong directory.
+\end{notebox}
+
+%% ------------------------------------------------------------------------
+\section{Bash Configuration (\texttt{.bashrc} and \texttt{.bash\_profile})}
+\label{sec:bash-configuration}
+
+Bash reads several configuration files depending on the context. Simply put,
+\texttt{.bashrc} is used for interactive shell settings: aliases, the prompt,
+functions, and variables you want available whenever you open a terminal.
+\texttt{.bash\_profile} is generally used for login shells.
+
+On many Ubuntu systems, the active login file is often \texttt{.profile}.
+However, if \texttt{.bash\_profile} exists, Bash usually gives it priority.
+The common safe practice is to make \texttt{.bash\_profile} call
+\texttt{.bashrc}, so that interactive settings remain consistent across both
+login and non-login shells.
+
+\begin{notebox}
+Do not replace the entire contents of \texttt{.bashrc} or
+\texttt{.bash\_profile} on a production server without a backup. In lab
+sessions, always add your own configuration block and mark it clearly with a
+comment.
+\end{notebox}
+
+\subsection*{Commands Used in This Section}
+
+\begin{itemize}
+  \item \texttt{ls -la \textasciitilde}: list configuration files in the home directory.
+  \item \texttt{cp}: create a backup of a configuration file.
+  \item \texttt{cat <<'EOF' >> file}: safely append a configuration block.
+  \item \texttt{source \textasciitilde/.bashrc}: apply configuration without logging out.
+  \item \texttt{bash -l}: start a new login shell for testing.
+\end{itemize}
+
+\subsection*{Lab 7.3 --- Adding Safe Configuration to \texttt{.bashrc}}
+
+Objective: understand the role of \texttt{.bashrc} and apply changes safely.
+
+\begin{enumerate}
+  \item View the Bash configuration files in the home directory:
+\begin{lstlisting}[language=bash, caption={Listing Bash configuration files}]
+ls -la ~ | grep -E 'bashrc|bash_profile|profile'
+\end{lstlisting}
+
+  \item Back up \texttt{.bashrc}:
+\begin{lstlisting}[language=bash, caption={Backing up .bashrc}]
+cp ~/.bashrc ~/.bashrc.bak-lab
+\end{lstlisting}
+
+  \item Append a lab configuration block:
+\begin{lstlisting}[language=bash, caption={Adding configuration to .bashrc}]
+cat <<'EOF' >> ~/.bashrc
+
+# --- Week 7 Bash Lab ---
+export BASH_LAB_DIR="$HOME/lab-os/week07-bash"
+export EDITOR=nano
+# --- End Week 7 Bash Lab ---
+
+EOF
+\end{lstlisting}
+
+  \item Apply the configuration without logging out:
+\begin{lstlisting}[language=bash, caption={Reloading .bashrc}]
+source ~/.bashrc
+echo "$BASH_LAB_DIR"
+echo "$EDITOR"
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Lab 7.4 --- Setting Up \texttt{.bash\_profile} for Login Shell}
+
+Objective: understand the relationship between \texttt{.bash\_profile} and
+\texttt{.bashrc} in a login shell scenario.
+
+\begin{enumerate}
+  \item Back up \texttt{.bash\_profile} if it already exists:
+\begin{lstlisting}[language=bash, caption={Backing up .bash_profile if present}]
+[ -f ~/.bash_profile ] \
+  && cp ~/.bash_profile ~/.bash_profile.bak-lab
+\end{lstlisting}
+
+  \item Add login shell configuration:
+\begin{lstlisting}[language=bash, caption={Adding configuration to .bash_profile}]
+cat <<'EOF' >> ~/.bash_profile
+
+# --- Week 7 Bash Login Shell ---
+if [ -f ~/.bashrc ]; then
+  . ~/.bashrc
+fi
+
+echo "Bash login at $(date '+%F %T')" \
+  >> "$HOME/lab-os/week07-bash/login-audit.log"
+# --- End Week 7 Bash Login Shell ---
+
+EOF
+\end{lstlisting}
+
+  \item Test by opening a new login shell:
+\begin{lstlisting}[language=bash, caption={Testing .bash_profile with a login shell}]
+bash -l
+tail -n 3 ~/lab-os/week07-bash/login-audit.log
+exit
+\end{lstlisting}
+\end{enumerate}
+
+%% ------------------------------------------------------------------------
+\section{Environment Variables and \texttt{PATH}}
+\label{sec:env-variables-path}
+
+Shell variables are name–value pairs stored inside the shell. Some variables
+are local to the current shell only, while \textit{environment variables} are
+exported so they are inherited by child processes. The most important example
+for administrators is \texttt{PATH}: the list of directories Bash searches
+when you type a command name without a full path.
+
+Understanding \texttt{PATH} is essential. If a script lives in a directory
+that is not in \texttt{PATH}, you cannot call it directly by name. Conversely,
+a poorly configured \texttt{PATH} is also dangerous---placing an untrusted
+directory at the front of the path, for instance, could run a malicious
+program instead of a system command.
+
+\begin{tipbox}
+Remember the difference:
+\begin{itemize}
+  \item \texttt{VAR=value} --- only available in the current shell.
+  \item \texttt{export VAR=value} --- passed on to child processes.
+\end{itemize}
+\end{tipbox}
+
+\subsection*{Commands Used in This Section}
+
+\begin{itemize}
+  \item \texttt{echo \$VARIABLE}: display the value of a variable.
+  \item \texttt{VAR=value}: create a local shell variable.
+  \item \texttt{export VAR=value}: create an environment variable.
+  \item \texttt{printenv}: list all environment variables.
+  \item \texttt{which} and \texttt{type}: show the location/type of a command.
+  \item \texttt{chmod +x}: grant execute permission to a script.
+\end{itemize}
+
+\subsection*{Lab 7.5 --- Distinguishing Shell Variables from Environment Variables}
+
+Objective: understand the difference between local variables and environment
+variables.
+
+\begin{enumerate}
+  \item Create a local variable:
+\begin{lstlisting}[language=bash, caption={Creating a local shell variable}]
+OS_CLASS="Operating Systems A"
+echo "$OS_CLASS"
+\end{lstlisting}
+
+  \item Open a subshell and check whether the variable is still available:
+\begin{lstlisting}[language=bash, caption={Testing a local variable in a subshell}]
+bash
+echo "$OS_CLASS"
+exit
+\end{lstlisting}
+
+  \item Now turn it into an environment variable:
+\begin{lstlisting}[language=bash, caption={Creating an environment variable}]
+export OS_CLASS="Operating Systems A"
+bash
+echo "$OS_CLASS"
+exit
+\end{lstlisting}
+
+  \item View the contents of \texttt{PATH} and the location of a few commands:
+\begin{lstlisting}[language=bash, caption={Viewing PATH and command locations}]
+echo "$PATH"
+which bash
+type ls
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Lab 7.6 --- Adding a Personal Script Directory to \texttt{PATH}}
+
+Objective: create a simple administration command that can be called from
+anywhere.
+
+\begin{enumerate}
+  \item Make sure the lab \texttt{bin} directory exists:
+\begin{lstlisting}[language=bash, caption={Preparing the bin directory}]
+mkdir -p ~/lab-os/week07-bash/bin
+\end{lstlisting}
+
+  \item Add that directory to \texttt{PATH} via \texttt{.bashrc}:
+\begin{lstlisting}[language=bash, caption={Adding the bin directory to PATH}]
+cat <<'EOF' >> ~/.bashrc
+
+# --- Week 7 PATH ---
+export PATH="$HOME/lab-os/week07-bash/bin:$PATH"
+# --- End Week 7 PATH ---
+
+EOF
+
+source ~/.bashrc
+echo "$PATH"
+\end{lstlisting}
+
+  \item Create a system summary script:
+\begin{lstlisting}[language=bash, caption={Creating a system-summary script}]
+cat <<'EOF' > ~/lab-os/week07-bash/bin/system-summary
+#!/usr/bin/env bash
+echo "Hostname : $(hostname)"
+echo "User     : $(whoami)"
+echo "Uptime   : $(uptime -p)"
+echo "Disk /   :"
+df -h /
+EOF
+
+chmod +x ~/lab-os/week07-bash/bin/system-summary
+\end{lstlisting}
+
+  \item Run the script from a different directory:
+\begin{lstlisting}[language=bash, caption={Running the script from any location}]
+cd ~
+system-summary
+\end{lstlisting}
+\end{enumerate}
+
+\begin{notebox}
+Placing a personal directory at the front of \texttt{PATH} is convenient, but
+be careful that your script names do not clash with system commands such as
+\texttt{ls}, \texttt{cp}, or \texttt{find}.
+\end{notebox}
+
+%% ------------------------------------------------------------------------
+\section{Creating Aliases and Shell Functions}
+\label{sec:aliases-functions}
+
+When working in the terminal, some commands are used over and over. Aliases
+help shorten simple, frequently used commands. Shell functions are used when
+the logic is more complex---for example, accepting arguments, running several
+steps, or including basic validation.
+
+In administration work, aliases are ideal for safe, frequently used shortcuts
+such as \texttt{ll}, \texttt{hist10}, or \texttt{grep --color=auto}. For
+tasks with more ``moving parts''---such as backing up a configuration file
+with a timestamp---a shell function is more appropriate.
+
+\begin{examplebox}[Alias vs Function analogy]
+  \begin{itemize}
+    \item \textbf{Alias} is like a speed-dial button on a phone. One press,
+      one fixed action.
+    \item \textbf{Function} is like a recipe: it has steps, accepts
+      ingredients (arguments), and can make decisions (if the file exists,
+      copy it; otherwise, show an error).
+  \end{itemize}
+\end{examplebox}
+
+\subsection*{Commands Used in This Section}
+
+\begin{itemize}
+  \item \texttt{alias}: create and list aliases.
+  \item \texttt{unalias}: remove an alias.
+  \item \texttt{function\_name() \{ ... \}}: define a shell function.
+  \item \texttt{type}: determine whether something is an alias, function,
+    built-in, or file.
+  \item \texttt{source \textasciitilde/.bashrc}: reload aliases and functions.
+\end{itemize}
+
+\subsection*{Lab 7.7 --- Creating Basic Productivity Aliases}
+
+Objective: create shortcuts for frequently used commands.
+
+\begin{enumerate}
+  \item Add aliases to \texttt{.bashrc}:
+\begin{lstlisting}[language=bash, caption={Adding aliases to .bashrc}]
+cat <<'EOF' >> ~/.bashrc
+
+# --- Week 7 Aliases ---
+alias ll='ls -lah --color=auto'
+alias hist10='history | tail -n 10'
+alias cdlab='cd $HOME/lab-os/week07-bash'
+# --- End Week 7 Aliases ---
+
+EOF
+
+source ~/.bashrc
+\end{lstlisting}
+
+  \item Test the aliases:
+\begin{lstlisting}[language=bash, caption={Testing the aliases}]
+ll
+hist10
+cdlab
+pwd
+type ll
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Lab 7.8 --- Creating a Configuration Backup Function}
+
+Objective: create a reusable shell function for backing up configuration
+files.
+
+\begin{enumerate}
+  \item Prepare a sample configuration file:
+\begin{lstlisting}[language=bash, caption={Creating a sample configuration file}]
+echo "PORT=8080" > ~/lab-os/week07-bash/sample-app.conf
+cat ~/lab-os/week07-bash/sample-app.conf
+\end{lstlisting}
+
+  \item Add the function to \texttt{.bashrc}:
+\begin{lstlisting}[language=bash, caption={Adding the backup_conf function to .bashrc}]
+cat <<'EOF' >> ~/.bashrc
+
+# --- Week 7 Shell Functions ---
+backup_conf() {
+  if [ $# -ne 1 ]; then
+    echo "Usage: backup_conf <file>"
+    return 1
+  fi
+
+  local src="$1"
+  local dst="$HOME/lab-os/week07-bash/backup"
+
+  if [ ! -f "$src" ]; then
+    echo "File not found: $src"
+    return 2
+  fi
+
+  mkdir -p "$dst"
+  cp -- "$src" "$dst/$(basename "$src").$(date +%F-%H%M%S).bak"
+  echo "Backup saved to $dst"
+}
+# --- End Week 7 Shell Functions ---
+
+EOF
+
+source ~/.bashrc
+\end{lstlisting}
+
+  \item Test the function:
+\begin{lstlisting}[language=bash, caption={Testing the backup_conf function}]
+backup_conf ~/lab-os/week07-bash/sample-app.conf
+ls -lah ~/lab-os/week07-bash/backup
+type backup_conf
+\end{lstlisting}
+\end{enumerate}
+
+%% ------------------------------------------------------------------------
+\section{Bash Completion and History}
+\label{sec:completion-history}
+
+Bash helps you type faster through \textit{completion}. When you press
+\keystroke{Tab}, Bash tries to complete the file name, directory, or command
+you are typing. This feature looks simple, but in system administration it
+significantly reduces path typos and wrong command names.
+
+In addition, Bash keeps a \textit{history}---a list of commands you have run
+before. History is useful for repeating past steps, tracing commands used
+during troubleshooting, and documenting your workflow. Searching history with
+\keystroke{Ctrl+r} is one of the most valuable skills for anyone who spends
+a lot of time in the terminal.
+
+\begin{tipbox}
+\keystroke{Ctrl+r} opens a reverse search through your history. Start typing
+part of a previous command and Bash will find the most recent match. Press
+\keystroke{Ctrl+r} again to cycle back further.
+\end{tipbox}
+
+\subsection*{Commands Used in This Section}
+
+\begin{itemize}
+  \item \keystroke{Tab}: complete a file name or command.
+  \item \texttt{history}: show the command history list.
+  \item \texttt{history | grep pattern}: search for a specific command in history.
+  \item \texttt{!<number>}: re-run a command by its history number.
+  \item \texttt{!!}: re-run the last command.
+  \item \keystroke{Ctrl+r}: interactive reverse history search.
+\end{itemize}
+
+\begin{warningbox}
+History is very helpful, but also risky if used without thinking. Re-running
+a command with \texttt{!!} or \texttt{!<number>} can cause serious damage if
+the previous command was destructive (for example, \texttt{rm -rf}).
+Always glance at what the command says before pressing \keystroke{Enter}.
+\end{warningbox}
+
+\subsection*{Lab 7.9 --- Using Basic Completion and Viewing History}
+
+Objective: use the \keystroke{Tab} key and history to work faster.
+
+\begin{enumerate}
+  \item Make sure the sample files are available:
+\begin{lstlisting}[language=bash, caption={Preparing files for completion}]
+cd ~/lab-os/week07-bash/samples
+ls
+\end{lstlisting}
+
+  \item Test file completion:
+  \begin{enumerate}
+    \item Type \texttt{cat dai} then press \keystroke{Tab} twice.
+    \item Observe the list of files that start with \texttt{dai}.
+    \item Type more specifically, e.g. \texttt{cat daily-r} then press
+      \keystroke{Tab}.
+  \end{enumerate}
+
+  \item Run a few simple commands to build history:
+\begin{lstlisting}[language=bash, caption={Running commands to populate history}]
+pwd
+ls -lah
+date
+whoami
+history | tail -n 10
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Lab 7.10 --- Searching Diagnostic Commands with History}
+
+Objective: use history to quickly repeat system diagnostic steps.
+
+\begin{enumerate}
+  \item Run a few diagnostic commands:
+\begin{lstlisting}[language=bash, caption={Running diagnostic commands}]
+df -h
+free -h
+uptime
+ps aux | head
+\end{lstlisting}
+
+  \item Search for diagnostic commands in the history:
+\begin{lstlisting}[language=bash, caption={Searching commands from history}]
+history | grep -E 'df -h|free -h|uptime|ps aux'
+\end{lstlisting}
+
+  \item Re-run one of the commands using its history number:
+\begin{lstlisting}[language=bash, caption={Re-running a command from history}]
+!<YOUR_HISTORY_NUMBER>
+\end{lstlisting}
+
+  \item Save a snippet of history to a documentation file:
+\begin{lstlisting}[language=bash, caption={Saving history to a file}]
+history | tail -n 20 \
+  > ~/lab-os/week07-bash/diag-history.txt
+cat ~/lab-os/week07-bash/diag-history.txt
+\end{lstlisting}
+\end{enumerate}
+
+\begin{tipbox}
+If the \texttt{bash-completion} package is installed, completion becomes far
+richer for many commands. However, basic completion for file names,
+directories, and commands already works without any extra configuration.
+\end{tipbox}
+
+%% ------------------------------------------------------------------------
+\section{Wildcards and Filename Expansion}
+\label{sec:wildcards-expansion}
+
+Bash supports \textit{wildcards} (also called \textit{globbing}) to match
+many file names at once. This is essential for operational work because
+administrators often need to process a group of log files, backup files, or
+configuration files that share a naming pattern.
+
+Beyond wildcards, Bash also has brace expansion and tilde expansion.
+Understanding the differences helps you work faster and more safely---
+especially when a pattern will be used with commands like \texttt{cp},
+\texttt{mv}, or \texttt{rm}.
+
+\begin{tipbox}
+\textbf{Safe wildcard habit}: always preview the result first with
+\texttt{echo}. Never run \texttt{rm *.log} or \texttt{mv *.conf ...} without
+first seeing exactly which files will be matched.
+\end{tipbox}
+
+\subsection*{Commands Used in This Section}
+
+\begin{itemize}
+  \item \texttt{*}: match zero or more characters.
+  \item \texttt{?}: match exactly one character.
+  \item \texttt{[abc]} or \texttt{[0-9]}: match specific characters or a range.
+  \item \texttt{\{a,b,c\}}: brace expansion.
+  \item \texttt{\textasciitilde}: expands to the user's home directory.
+  \item \texttt{echo pattern}: preview the expansion result before using it
+    in a risky command.
+\end{itemize}
+
+\subsection*{Lab 7.11 --- Trying Basic Wildcards}
+
+Objective: understand wildcard patterns and filename expansion.
+
+\begin{enumerate}
+  \item Enter the samples directory:
+\begin{lstlisting}[language=bash, caption={Entering the samples directory}]
+cd ~/lab-os/week07-bash/samples
+ls
+\end{lstlisting}
+
+  \item Try a few wildcard patterns:
+\begin{lstlisting}[language=bash, caption={Trying basic wildcards}]
+ls *.log
+ls note-?.txt
+ls backup-0[12].tar
+\end{lstlisting}
+
+  \item Try a few other expansions:
+\begin{lstlisting}[language=bash, caption={Trying brace and tilde expansion}]
+echo log-{morning,afternoon,evening}.txt
+echo ~
+echo ~/lab-os/week07-bash
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Lab 7.12 --- Archiving Multiple Log Files at Once}
+
+Objective: use wildcards safely for routine administration tasks.
+
+\begin{enumerate}
+  \item Prepare additional log files:
+\begin{lstlisting}[language=bash, caption={Preparing additional log files}]
+cd ~/lab-os/week07-bash/logs
+touch access-01.log access-02.log access-03.log
+ls
+\end{lstlisting}
+
+  \item Preview the files that will be processed:
+\begin{lstlisting}[language=bash, caption={Previewing the wildcard result}]
+echo *.log
+echo access-0?.log
+\end{lstlisting}
+
+  \item Move all log files to an archive folder:
+\begin{lstlisting}[language=bash, caption={Moving log files to the archive folder}]
+mkdir -p log-archive
+mv *.log log-archive/
+ls log-archive
+\end{lstlisting}
+
+  \item Compress the archive folder:
+\begin{lstlisting}[language=bash, caption={Creating a compressed archive}]
+tar -czf log-archive-$(date +%F).tar.gz log-archive
+ls -lah
+\end{lstlisting}
+\end{enumerate}
+
+%% ------------------------------------------------------------------------
+\section{Quoting and Escaping in Bash}
+\label{sec:quoting-escaping}
+
+One of the most common sources of errors in Bash is quoting. Many beginners
+assume the shell simply reads word by word, but Bash actually performs many
+types of expansion \textit{before} running a command: variable expansion,
+wildcard matching, command substitution, and word splitting on spaces. This
+is why using quotation marks correctly is so important.
+
+\begin{examplebox}[A quoting analogy]
+  Imagine telling someone: \textit{``Call my friend John Smith''}.
+  \begin{itemize}
+    \item Without quotes, the listener might hear three separate things:
+      ``Call'', ``my friend John'', ``Smith''---and get confused about what
+      to do with ``Smith''.
+    \item With double quotes, the entire phrase is treated as one unit:
+      \textit{``John Smith''} is one person's name.
+    \item With single quotes, absolutely nothing inside is interpreted---it is
+      taken 100\% literally, dollar signs and all.
+  \end{itemize}
+  Bash works exactly the same way.
+\end{examplebox}
+
+In general:
+\begin{itemize}
+  \item \textbf{Single quotes} (\texttt{'...'}) keep the content completely
+    literal---no expansion of any kind.
+  \item \textbf{Double quotes} (\texttt{"..."}) still allow variable
+    expansion and command substitution, but preserve spaces as part of a
+    single argument.
+  \item \textbf{Backslash} (\texttt{\textbackslash}) escapes a single
+    specific character.
+\end{itemize}
+
+Correct quoting is especially important when dealing with filenames that
+contain spaces, square brackets, asterisks, or when building commands from
+variables.
+
+\subsection*{Commands Used in This Section}
+
+\begin{itemize}
+  \item \texttt{echo '...'}: display literal text.
+  \item \texttt{echo "..."}: display text with variable expansion.
+  \item \texttt{\textbackslash}: escape a special character.
+  \item \texttt{cp -- "source" "destination"}: copy a file with a complex name.
+  \item \texttt{printf '\%s\textbackslash n' "\$var"}: safely display a variable value.
+\end{itemize}
+
+\begin{tipbox}
+A very useful rule of thumb: \textbf{always double-quote variables that
+represent a path or file name}, for example \texttt{"\$file"}. This prevents
+Bash from splitting the value on spaces.
+\end{tipbox}
+
+\subsection*{Lab 7.13 --- Comparing Single Quotes, Double Quotes, and Escape}
+
+Objective: understand the effect of different quoting styles on Bash
+expansion.
+
+\begin{enumerate}
+  \item Test single and double quotes:
+\begin{lstlisting}[language=bash, caption={Testing the difference between quote types}]
+echo '$USER is working in $HOME'
+echo "$USER is working in $HOME"
+\end{lstlisting}
+
+  \item Test escaping a filename with spaces:
+\begin{lstlisting}[language=bash, caption={Using escape on a path with spaces}]
+cd ~/lab-os/week07-bash/named-files
+ls server\ april\ report.txt
+\end{lstlisting}
+
+  \item Access the same file using double quotes:
+\begin{lstlisting}[language=bash, caption={Using double quotes on a path with spaces}]
+cat "server april report.txt"
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Lab 7.14 --- Handling Files with Difficult Names Safely}
+
+Objective: process files containing spaces and special characters without
+errors.
+
+\begin{enumerate}
+  \item Make sure the target files are available:
+\begin{lstlisting}[language=bash, caption={Verifying the target files exist}]
+cd ~/lab-os/week07-bash/named-files
+ls -lah
+\end{lstlisting}
+
+  \item Copy the file with a complex name to the backup folder:
+\begin{lstlisting}[language=bash, caption={Safely copying a file with a complex name}]
+cp -- "backup [weekly] server.conf" \
+  "$HOME/lab-os/week07-bash/backup/backup-weekly-server.conf"
+\end{lstlisting}
+
+  \item Use variables to handle the path safely:
+\begin{lstlisting}[language=bash, caption={Using variables to handle a complex path safely}]
+src="$HOME/lab-os/week07-bash/named-files/backup [weekly] server.conf"
+dst="$HOME/lab-os/week07-bash/backup/backup-weekly-server-v2.conf"
+
+cp -- "$src" "$dst"
+ls -lah "$HOME/lab-os/week07-bash/backup"
+\end{lstlisting}
+
+  \item Display the list of backed-up files:
+\begin{lstlisting}[language=bash, caption={Displaying the backup files safely}]
+for file in "$HOME"/lab-os/week07-bash/backup/*; do
+  printf 'Backup result: %s\n' "$file"
+done
+\end{lstlisting}
+\end{enumerate}
+
+\begin{notebox}
+The classic mistake is writing \texttt{cp \$file destination/} without quotes.
+If the variable \texttt{\$file} contains spaces, Bash splits it into multiple
+arguments and the command either fails or processes the wrong files entirely.
+\end{notebox}
+
+%% ------------------------------------------------------------------------
+\section{Lab Assignments}
+\label{sec:lab-assignments-bash}
+
+\begin{warningbox}
+All assignments must be completed inside your own lab workspace, for example
+\texttt{\$HOME/lab-os/week07-bash}, unless the instructions explicitly ask you
+to read system files such as \texttt{/etc} or \texttt{/proc}. Do not modify
+important system files directly without a backup.
+\end{warningbox}
+
+\subsection*{Assignment 1 --- Personal Bash Administrator Toolkit}
+\textbf{Real-world context:} an administrator often repeats the same commands
+every day. To work more efficiently and consistently, they need a personal
+Bash \textit{toolkit} that activates automatically on every login.
+
+\textbf{Instructions:}
+\begin{enumerate}
+  \item Add configuration to \texttt{.bashrc} to:
+  \begin{itemize}
+    \item add a personal \texttt{bin} directory to \texttt{PATH},
+    \item create at least 2 aliases that help with daily work,
+    \item create at least 1 shell function useful for administration.
+  \end{itemize}
+  \item Ensure the configuration is active again when a login shell is opened.
+  \item Create one simple script in the personal \texttt{bin} directory, for
+    example a script that displays a system summary.
+  \item Test from a different directory to confirm the script can be called
+    without typing the full path.
+  \item Save the test evidence to a file named \texttt{toolkit-bash-report.txt}.
+\end{enumerate}
+
+\textbf{Minimum deliverables:}
+\begin{itemize}
+  \item the configuration block added to \texttt{.bashrc},
+  \item output of \texttt{echo \$PATH},
+  \item output of \texttt{type} for the alias, function, and script,
+  \item the report file \texttt{toolkit-bash-report.txt}.
+\end{itemize}
+
+\subsection*{Assignment 2 --- Configuration File Audit and Safe Logging}
+\textbf{Real-world context:} when troubleshooting, an administrator often
+needs to inventory configuration files and separate normal output from error
+messages.
+
+\textbf{Instructions:}
+\begin{enumerate}
+  \item Create a report file named
+    \texttt{config-audit-\$(date +\%F).txt}.
+  \item Search for \texttt{*.conf} files under \texttt{/etc} and save the
+    results to the report file.
+  \item Record the total number of configuration files found.
+  \item If any error messages occur, save them to a separate file, e.g.
+    \texttt{audit-error.log}.
+  \item Display the report to the terminal and save it simultaneously using
+    \texttt{tee}.
+  \item Add a brief 3--5 line summary explaining why separating
+    \texttt{stdout} and \texttt{stderr} matters in system audits.
+\end{enumerate}
+
+\textbf{Required concepts:}
+\begin{itemize}
+  \item redirection (\texttt{>}, \texttt{2>}, or \texttt{\&>}),
+  \item pipeline,
+  \item \texttt{tee},
+  \item variables or command substitution.
+\end{itemize}
+
+\textbf{Minimum deliverables:}
+\begin{itemize}
+  \item the audit report file,
+  \item the error log file,
+  \item the commands used,
+  \item a brief analysis of the audit results.
+\end{itemize}
+
+\subsection*{Assignment 3 --- Daily Server Mini Health Check}
+\textbf{Real-world context:} an administrator needs a quick \textit{health
+check} to know the basic condition of a server before and after maintenance.
+
+\textbf{Instructions:}
+\begin{enumerate}
+  \item Create a Bash script named \texttt{daily-healthcheck} in the personal
+    \texttt{bin} directory.
+  \item The script must display at minimum:
+  \begin{itemize}
+    \item date and time,
+    \item hostname,
+    \item active user,
+    \item active shell,
+    \item uptime,
+    \item memory usage,
+    \item root filesystem usage,
+    \item the last 10 history entries relevant to health checks.
+  \end{itemize}
+  \item Save the output to a daily log file, e.g.
+    \texttt{healthcheck-\$(date +\%F).log}.
+  \item Display the output to the terminal and to the file simultaneously.
+  \item If you use a pipeline with \texttt{tee}, also check the exit status
+    of the main command.
+\end{enumerate}
+
+\textbf{Required concepts:}
+\begin{itemize}
+  \item environment variables,
+  \item \texttt{PATH},
+  \item supporting aliases or functions,
+  \item history,
+  \item \texttt{tee},
+  \item basic error handling.
+\end{itemize}
+
+\textbf{Minimum deliverables:}
+\begin{itemize}
+  \item the executable script file,
+  \item an example of the log file contents after running,
+  \item a brief explanation of what each part of the script does.
+\end{itemize}
+
+\subsection*{Assignment 4 --- Handling Complex Filenames and Safe Archiving}
+\textbf{Real-world context:} backup files, exports, and reports often have
+names containing spaces or special characters. Administrators must still be
+able to process these files without targeting the wrong one.
+
+\textbf{Instructions:}
+\begin{enumerate}
+  \item Create at least 4 sample files with varied names, including:
+  \begin{itemize}
+    \item a filename containing spaces,
+    \item a filename containing square brackets or other special characters,
+    \item files with a similar naming pattern to test with wildcards.
+  \end{itemize}
+  \item Demonstrate the difference in result when accessing a file without
+    quoting versus with correct quoting.
+  \item Use \texttt{echo} to preview the wildcard expansion before performing
+    the real operation.
+  \item Copy the files to a backup directory using safe names.
+  \item Create a \texttt{tar.gz} archive of the backup.
+  \item Save the history of commands you used to a file named
+    \texttt{archive-history.txt}.
+\end{enumerate}
+
+\textbf{Required concepts:}
+\begin{itemize}
+  \item single quotes, double quotes, and escaping,
+  \item wildcards,
+  \item path variables,
+  \item history,
+  \item safe advanced file operations.
+\end{itemize}
+
+\textbf{Minimum deliverables:}
+\begin{itemize}
+  \item the initial file list,
+  \item the backed-up file list,
+  \item the \texttt{tar.gz} archive file,
+  \item the \texttt{archive-history.txt} file,
+  \item a short reflection on why quoting matters in Bash.
+\end{itemize}
+
+%% ------------------------------------------------------------------------
 \section{Summary}
-\section{Exercises}
-\section{Additional References}
+\label{sec:bash-summary}
+
+\begin{itemize}
+  \item Bash is the most widely used shell on Linux and is the primary tool
+    for administrator interaction with the system.
+  \item \texttt{.bashrc} is for interactive shell configuration; \texttt{.bash\_profile}
+    is for login shell context.
+  \item Environment variables and \texttt{PATH} define the shell's working
+    context and how Bash locates commands and scripts.
+  \item Aliases suit simple shortcuts; shell functions suit more complex,
+    repeatable logic.
+  \item Completion and history speed up work and reduce typing errors.
+  \item Wildcards and filename expansion make it easy to process many files
+    at once---but always preview with \texttt{echo} before acting on them.
+  \item Quoting and escaping are a critical foundation for ensuring Bash
+    handles variables, spaces, and special characters correctly.
+\end{itemize}
+
+%% ------------------------------------------------------------------------
+\section{Further Reading}
+\label{sec:bash-references}
+
+For deeper study, students are encouraged to explore the following references:
+
+\begin{enumerate}
+  \item GNU Bash Reference Manual.
+  \item Bash manual page (\texttt{man bash}).
+  \item Bash Guide for Beginners.
+  \item William Shotts, \textit{The Linux Command Line}.
+  \item Evi Nemeth, Garth Snyder, Trent R. Hein, Ben Whaley, Dan Mackin,
+    \textit{UNIX and Linux System Administration Handbook}, 5th Edition.
+  \item Arnold Robbins and Nelson H. F. Beebe,
+    \textit{Classic Shell Scripting}.
+  \item Mark G. Sobell,
+    \textit{A Practical Guide to Linux Commands, Editors, and Shell Programming}.
+  \item Richard Blum and Christine Bresnahan,
+    \textit{Linux Command Line and Shell Scripting Bible}.
+\end{enumerate}
