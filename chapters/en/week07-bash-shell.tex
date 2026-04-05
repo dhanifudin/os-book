@@ -216,13 +216,13 @@ Objective: understand the relationship between \texttt{.bash\_profile} and
 
 \begin{enumerate}
   \item Back up \texttt{.bash\_profile} if it already exists:
-\begin{lstlisting}[language=bash, caption={Backing up .bash_profile if present}]
+\begin{lstlisting}[language=bash, caption={Backing up .bash\_profile if present}]
 [ -f ~/.bash_profile ] \
   && cp ~/.bash_profile ~/.bash_profile.bak-lab
 \end{lstlisting}
 
   \item Add login shell configuration:
-\begin{lstlisting}[language=bash, caption={Adding configuration to .bash_profile}]
+\begin{lstlisting}[language=bash, caption={Adding configuration to .bash\_profile}]
 cat <<'EOF' >> ~/.bash_profile
 
 # --- Week 7 Bash Login Shell ---
@@ -238,7 +238,7 @@ EOF
 \end{lstlisting}
 
   \item Test by opening a new login shell:
-\begin{lstlisting}[language=bash, caption={Testing .bash_profile with a login shell}]
+\begin{lstlisting}[language=bash, caption={Testing .bash\_profile with a login shell}]
 bash -l
 tail -n 3 ~/lab-os/week07-bash/login-audit.log
 exit
@@ -445,7 +445,7 @@ cat ~/lab-os/week07-bash/sample-app.conf
 \end{lstlisting}
 
   \item Add the function to \texttt{.bashrc}:
-\begin{lstlisting}[language=bash, caption={Adding the backup_conf function to .bashrc}]
+\begin{lstlisting}[language=bash, caption={Adding the backup\_conf function to .bashrc}]
 cat <<'EOF' >> ~/.bashrc
 
 # --- Week 7 Shell Functions ---
@@ -475,7 +475,7 @@ source ~/.bashrc
 \end{lstlisting}
 
   \item Test the function:
-\begin{lstlisting}[language=bash, caption={Testing the backup_conf function}]
+\begin{lstlisting}[language=bash, caption={Testing the backup\_conf function}]
 backup_conf ~/lab-os/week07-bash/sample-app.conf
 ls -lah ~/lab-os/week07-bash/backup
 type backup_conf

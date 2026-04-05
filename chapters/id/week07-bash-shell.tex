@@ -205,12 +205,12 @@ Tujuan: memahami hubungan \texttt{.bash\_profile} dan \texttt{.bashrc} pada sken
 
 \begin{enumerate}
   \item Backup \texttt{.bash\_profile} jika sudah ada:
-\begin{lstlisting}[language=bash, caption={Backup .bash_profile jika tersedia}]
+\begin{lstlisting}[language=bash, caption={Backup .bash\_profile jika tersedia}]
 [ -f ~/.bash_profile ] && cp ~/.bash_profile ~/.bash_profile.bak-praktikum
 \end{lstlisting}
 
   \item Tambahkan konfigurasi login shell:
-\begin{lstlisting}[language=bash, caption={Menambahkan konfigurasi ke .bash_profile}]
+\begin{lstlisting}[language=bash, caption={Menambahkan konfigurasi ke .bash\_profile}]
 cat <<'EOF' >> ~/.bash_profile
 
 # --- Praktikum Bash Login Shell ---
@@ -225,7 +225,7 @@ EOF
 \end{lstlisting}
 
   \item Uji dengan membuka login shell baru:
-\begin{lstlisting}[language=bash, caption={Menguji .bash_profile dengan login shell}]
+\begin{lstlisting}[language=bash, caption={Menguji .bash\_profile dengan login shell}]
 bash -l
 tail -n 3 ~/praktikum-os/week07-bash/login-audit.log
 exit
@@ -418,7 +418,7 @@ cat ~/praktikum-os/week07-bash/sample-app.conf
 \end{lstlisting}
 
   \item Tambahkan fungsi ke \texttt{.bashrc}:
-\begin{lstlisting}[language=bash, caption={Menambahkan fungsi backup_conf ke .bashrc}]
+\begin{lstlisting}[language=bash, caption={Menambahkan fungsi backup\_conf ke .bashrc}]
 cat <<'EOF' >> ~/.bashrc
 
 # --- Praktikum Fungsi Shell ---
@@ -448,7 +448,7 @@ source ~/.bashrc
 \end{lstlisting}
 
   \item Uji fungsi:
-\begin{lstlisting}[language=bash, caption={Menguji fungsi backup_conf}]
+\begin{lstlisting}[language=bash, caption={Menguji fungsi backup\_conf}]
 backup_conf ~/praktikum-os/week07-bash/sample-app.conf
 ls -lah ~/praktikum-os/week07-bash/backup
 type backup_conf
