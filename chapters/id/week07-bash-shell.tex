@@ -1,20 +1,946 @@
 %% ========================================================================
-%% Chapter 7: Bash Shell
+%% Chapter X: Bash Shell dan Shell Basic
 %% ========================================================================
 
-\chapter{Bash Shell}
-\label{ch:bash-shell}
+\chapter{Bash Shell dan Shell Basic}
+\label{ch:bash-shell-basic}
 
-Bab ini membahas Bash sebagai shell default di Linux, konfigurasi Bash,
-variabel lingkungan, alias, dan fitur-fitur Bash lainnya.
+Bab ini membahas Bash sebagai shell default yang umum digunakan pada Linux,
+cara kerja file konfigurasi Bash, variabel lingkungan dan \texttt{PATH}, pembuatan
+alias dan fungsi shell, fitur completion dan history, wildcard dan ekspansi nama file,
+serta quoting dan escaping. Fokus pembahasan diarahkan pada kebutuhan praktikum
+dan administrasi sistem sehari-hari: bekerja lebih cepat di terminal, mengurangi
+kesalahan saat mengetik perintah, dan membangun kebiasaan kerja yang aman.
 
-\section{Pengenalan Bash}
-\section{Konfigurasi Bash}
-\section{Variabel Lingkungan dan PATH}
-\section{Alias dan Fungsi Shell}
-\section{History dan Auto-completion}
-\section{Wildcards dan Ekspansi}
-\section{Quoting dan Escaping}
+\begin{examplebox}[Bash sebagai ``panel kendali'' administrator]
+Bayangkan Anda sedang mengelola sebuah server tanpa antarmuka grafis.
+Tidak ada tombol klik, tidak ada menu visual, dan tidak ada jendela aplikasi.
+Semua interaksi dilakukan melalui terminal. Dalam kondisi seperti ini,
+\textbf{shell} berperan sebagai panel kendali utama antara pengguna dan sistem operasi.
+
+Bash menerima perintah yang Anda ketik, menjalankan program, mengatur
+variabel lingkungan, menangani redirection, membantu pencarian perintah
+melalui history, bahkan memungkinkan Anda membuat shortcut kerja sendiri
+melalui alias dan fungsi. Karena itu, memahami Bash bukan hanya soal
+``bisa mengetik command'', tetapi juga soal membangun workflow kerja yang
+lebih cepat, konsisten, dan aman.
+\end{examplebox}
+
+%% ------------------------------------------------------------------------
+\section{Pengenalan Bash sebagai Shell Default di Linux}
+\label{sec:pengenalan-bash}
+
+Bash (\textit{Bourne Again Shell}) adalah shell yang sangat umum dijumpai
+pada sistem Linux modern. Shell ini menjadi antarmuka yang menerjemahkan
+perintah dari pengguna menjadi aksi yang dapat dijalankan sistem operasi.
+Bash juga menyediakan banyak fasilitas praktis seperti history, completion,
+variabel lingkungan, alias, fungsi, dan scripting sederhana.
+
+Dalam konteks administrasi sistem, Bash penting karena hampir seluruh
+aktivitas operasional pada server Linux dilakukan dari terminal:
+membaca log, mengelola service, memeriksa disk, membuat backup, hingga
+menjalankan otomasi sederhana. Jika terminal adalah ``ruang kerja'' Anda,
+maka Bash adalah alat kerja utamanya.
+
+\subsection*{Fungsi Perintah yang Digunakan}
+
+\begin{itemize}
+  \item \texttt{echo \$SHELL}: melihat shell login pengguna.
+  \item \texttt{echo \$0}: melihat nama shell aktif saat ini.
+  \item \texttt{ps -p \$\$ -o pid,ppid,args=}: melihat proses shell yang sedang aktif.
+  \item \texttt{bash --version}: melihat versi Bash.
+  \item \texttt{help}: bantuan untuk \textit{builtin command}.
+  \item \texttt{man bash}: dokumentasi lengkap Bash.
+  \item \texttt{mkdir}, \texttt{touch}: menyiapkan workspace praktikum.
+\end{itemize}
+
+\begin{tipbox}
+Pada Linux, istilah \textit{default shell} bisa merujuk ke shell login pengguna,
+sedangkan shell yang sedang aktif pada terminal saat ini bisa saja berbeda.
+Karena itu, biasakan membedakan \texttt{\$SHELL} dan \texttt{\$0}.
+\end{tipbox}
+
+\subsection*{Praktikum 6.1 --- Mengenali Bash dan Menyiapkan Workspace (Mudah)}
+
+Tujuan: mengenali shell aktif dan menyiapkan area kerja yang aman untuk seluruh praktikum bab ini.
+
+\begin{enumerate}
+  \item Lihat shell login dan shell aktif saat ini:
+\begin{lstlisting}[language=bash, caption={Melihat shell login dan shell aktif}]
+echo "Shell login : $SHELL"
+echo "Shell aktif : $0"
+bash --version | head -n 1
+\end{lstlisting}
+
+  \item Lihat proses shell yang sedang berjalan:
+\begin{lstlisting}[language=bash, caption={Melihat proses shell aktif}]
+echo $$
+ps -p $$ -o pid,ppid,args=
+\end{lstlisting}
+
+  \item Buat workspace praktikum:
+\begin{lstlisting}[language=bash, caption={Membuat workspace Bash}]
+mkdir -p ~/praktikum-os/week07-bash/{bin,backup,logs,sampel,ruang-nama}
+cd ~/praktikum-os/week04-bash
+pwd
+\end{lstlisting}
+
+  \item Buat beberapa file contoh yang akan dipakai pada praktikum berikutnya:
+\begin{lstlisting}[language=bash, caption={Membuat file contoh untuk praktikum lanjutan}]
+touch sample-app.conf
+touch logs/app-01.log logs/app-02.log logs/app-03.log
+touch sampel/catatan-a.txt sampel/catatan-b.txt
+touch sampel/backup-01.tar sampel/backup-02.tar
+touch sampel/laporan-harian.log sampel/laporan-mingguan.log sampel/laporan-bulanan.log
+touch "ruang-nama/laporan server april.txt"
+touch "ruang-nama/backup [mingguan] server.conf"
+ls -R
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 6.2 --- Membuat Ringkasan Sesi Terminal (Menengah, Kondisi Riil)}
+
+Tujuan: membiasakan administrator memverifikasi konteks kerja sebelum melakukan maintenance.
+
+\begin{enumerate}
+  \item Masuk ke workspace praktikum:
+\begin{lstlisting}[language=bash, caption={Masuk ke workspace praktikum}]
+cd ~/praktikum-os/week04-bash
+\end{lstlisting}
+
+  \item Simpan informasi sesi terminal ke file laporan:
+\begin{lstlisting}[language=bash, caption={Membuat ringkasan sesi terminal}]
+{
+  echo "=== RINGKASAN SESI BASH ==="
+  date
+  echo "User       : $(whoami)"
+  echo "Hostname   : $(hostname)"
+  echo "Shell login: $SHELL"
+  echo "Shell aktif: $0"
+  echo "PID shell  : $$"
+  echo "Direktori  : $(pwd)"
+} | tee session-info.txt
+\end{lstlisting}
+
+  \item Verifikasi isi file laporan:
+\begin{lstlisting}[language=bash, caption={Membaca ringkasan sesi}]
+cat session-info.txt
+\end{lstlisting}
+\end{enumerate}
+
+\begin{notebox}
+Kebiasaan kecil seperti mencatat user, host, shell, dan direktori aktif
+sering membantu mencegah kesalahan fatal, misalnya salah bekerja di server
+atau direktori yang bukan target maintenance.
+\end{notebox}
+
+%% ------------------------------------------------------------------------
+\section{Konfigurasi Bash (\texttt{.bashrc} dan \texttt{.bash\_profile})}
+\label{sec:konfigurasi-bash}
+
+Bash memiliki beberapa file konfigurasi yang dibaca dalam konteks berbeda.
+Secara sederhana, \texttt{.bashrc} biasa dipakai untuk pengaturan shell interaktif:
+alias, prompt, fungsi, dan variabel yang ingin tersedia saat membuka terminal.
+Sementara itu, \texttt{.bash\_profile} umumnya dipakai untuk shell login.
+
+Pada banyak sistem Ubuntu, file login yang aktif sering kali adalah \texttt{.profile}.
+Namun, jika \texttt{.bash\_profile} ada, maka file ini biasanya diprioritaskan oleh Bash.
+Karena itu, praktik aman yang umum dilakukan adalah membuat \texttt{.bash\_profile}
+agar memanggil \texttt{.bashrc}, sehingga konfigurasi interaktif tetap konsisten.
+
+\subsection*{Fungsi Perintah yang Digunakan}
+
+\begin{itemize}
+  \item \texttt{ls -la \textasciitilde}: melihat file konfigurasi pada home directory.
+  \item \texttt{cp}: membuat backup file konfigurasi.
+  \item \texttt{cat <<'EOF' >> file}: menambahkan blok konfigurasi secara aman.
+  \item \texttt{source \textasciitilde/.bashrc}: menerapkan konfigurasi tanpa logout.
+  \item \texttt{bash -l}: menjalankan shell login baru untuk pengujian.
+\end{itemize}
+
+\begin{notebox}
+Jangan mengganti seluruh isi \texttt{.bashrc} atau \texttt{.bash\_profile}
+di server produksi tanpa backup. Untuk praktikum, biasakan menambahkan blok
+konfigurasi sendiri dan menandainya dengan komentar yang jelas.
+\end{notebox}
+
+\subsection*{Praktikum 6.3 --- Menambahkan Konfigurasi Aman pada \texttt{.bashrc} (Mudah)}
+
+Tujuan: memahami peran \texttt{.bashrc} dan menerapkan perubahan secara aman.
+
+\begin{enumerate}
+  \item Lihat file konfigurasi Bash pada home directory:
+\begin{lstlisting}[language=bash, caption={Melihat file konfigurasi Bash}]
+ls -la ~ | grep -E 'bashrc|bash_profile|profile'
+\end{lstlisting}
+
+  \item Buat backup \texttt{.bashrc}:
+\begin{lstlisting}[language=bash, caption={Backup .bashrc}]
+cp ~/.bashrc ~/.bashrc.bak-praktikum
+\end{lstlisting}
+
+  \item Tambahkan blok konfigurasi praktikum:
+\begin{lstlisting}[language=bash, caption={Menambahkan konfigurasi ke .bashrc}]
+cat <<'EOF' >> ~/.bashrc
+
+# --- Praktikum Bash Shell ---
+export PRAKTIKUM_BASH_DIR="$HOME/praktikum-os/week04-bash"
+export EDITOR=nano
+# --- End Praktikum Bash Shell ---
+
+EOF
+\end{lstlisting}
+
+  \item Terapkan konfigurasi tanpa logout:
+\begin{lstlisting}[language=bash, caption={Memuat ulang .bashrc}]
+source ~/.bashrc
+echo "$PRAKTIKUM_BASH_DIR"
+echo "$EDITOR"
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 6.4 --- Menyiapkan \texttt{.bash\_profile} untuk Shell Login (Menengah, Kondisi Riil)}
+
+Tujuan: memahami hubungan \texttt{.bash\_profile} dan \texttt{.bashrc} pada skenario login shell.
+
+\begin{enumerate}
+  \item Backup \texttt{.bash\_profile} jika sudah ada:
+\begin{lstlisting}[language=bash, caption={Backup .bash_profile jika tersedia}]
+[ -f ~/.bash_profile ] && cp ~/.bash_profile ~/.bash_profile.bak-praktikum
+\end{lstlisting}
+
+  \item Tambahkan konfigurasi login shell:
+\begin{lstlisting}[language=bash, caption={Menambahkan konfigurasi ke .bash_profile}]
+cat <<'EOF' >> ~/.bash_profile
+
+# --- Praktikum Bash Login Shell ---
+if [ -f ~/.bashrc ]; then
+  . ~/.bashrc
+fi
+
+echo "Login Bash pada $(date '+%F %T')" >> "$HOME/praktikum-os/week07-bash/login-audit.log"
+# --- End Praktikum Bash Login Shell ---
+
+EOF
+\end{lstlisting}
+
+  \item Uji dengan membuka login shell baru:
+\begin{lstlisting}[language=bash, caption={Menguji .bash_profile dengan login shell}]
+bash -l
+tail -n 3 ~/praktikum-os/week07-bash/login-audit.log
+exit
+\end{lstlisting}
+\end{enumerate}
+
+%% ------------------------------------------------------------------------
+\section{Variabel Lingkungan dan \texttt{PATH}}
+\label{sec:variabel-lingkungan-path}
+
+Variabel shell adalah pasangan nama dan nilai yang disimpan di dalam shell.
+Sebagian variabel hanya berlaku lokal pada shell saat ini, sedangkan variabel
+lingkungan (\textit{environment variable}) diekspor sehingga ikut diwariskan
+ke proses anak. Contoh yang sangat penting bagi administrator adalah
+\texttt{PATH}, yaitu daftar direktori yang dicari Bash saat Anda mengetik nama
+perintah tanpa path lengkap.
+
+Memahami \texttt{PATH} sangat penting. Jika sebuah script berada di direktori
+yang belum masuk \texttt{PATH}, maka script itu tidak bisa dipanggil langsung.
+Sebaliknya, konfigurasi \texttt{PATH} yang buruk juga berbahaya, misalnya
+menaruh direktori yang tidak terpercaya di depan path sistem.
+
+\subsection*{Fungsi Perintah yang Digunakan}
+
+\begin{itemize}
+  \item \texttt{echo \$NAMA\_VAR}: melihat isi variabel.
+  \item \texttt{VAR=nilai}: membuat variabel shell lokal.
+  \item \texttt{export VAR=nilai}: membuat variabel lingkungan.
+  \item \texttt{printenv}: melihat environment variable.
+  \item \texttt{which} dan \texttt{type}: melihat lokasi/jenis perintah.
+  \item \texttt{chmod +x}: memberi izin eksekusi pada script.
+\end{itemize}
+
+\begin{tipbox}
+Ingat perbedaannya:
+\begin{itemize}
+  \item \texttt{VAR=nilai} hanya berlaku di shell saat ini.
+  \item \texttt{export VAR=nilai} mewariskan variabel itu ke proses anak.
+\end{itemize}
+\end{tipbox}
+
+\subsection*{Praktikum 6.5 --- Membedakan Variabel Shell dan Environment Variable (Mudah)}
+
+Tujuan: memahami perbedaan variabel lokal dan variabel lingkungan.
+
+\begin{enumerate}
+  \item Buat variabel lokal:
+\begin{lstlisting}[language=bash, caption={Membuat variabel shell lokal}]
+KELAS_OS="Sistem Operasi A"
+echo "$KELAS_OS"
+\end{lstlisting}
+
+  \item Buka subshell dan cek apakah variabel masih ada:
+\begin{lstlisting}[language=bash, caption={Menguji variabel lokal pada subshell}]
+bash
+echo "$KELAS_OS"
+exit
+\end{lstlisting}
+
+  \item Sekarang ubah menjadi environment variable:
+\begin{lstlisting}[language=bash, caption={Membuat environment variable}]
+export KELAS_OS="Sistem Operasi A"
+bash
+echo "$KELAS_OS"
+exit
+\end{lstlisting}
+
+  \item Lihat isi \texttt{PATH} dan lokasi beberapa perintah:
+\begin{lstlisting}[language=bash, caption={Melihat PATH dan lokasi perintah}]
+echo "$PATH"
+which bash
+type ls
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 6.6 --- Menambahkan Direktori Script Pribadi ke \texttt{PATH} (Menengah, Kondisi Riil)}
+
+Tujuan: membuat perintah administrasi sederhana yang bisa dipanggil dari mana saja.
+
+\begin{enumerate}
+  \item Pastikan direktori \texttt{bin} praktikum tersedia:
+\begin{lstlisting}[language=bash, caption={Menyiapkan direktori bin}]
+mkdir -p ~/praktikum-os/week07-bash/bin
+\end{lstlisting}
+
+  \item Tambahkan direktori tersebut ke \texttt{PATH} melalui \texttt{.bashrc}:
+\begin{lstlisting}[language=bash, caption={Menambahkan direktori bin ke PATH}]
+cat <<'EOF' >> ~/.bashrc
+
+# --- Praktikum PATH ---
+export PATH="$HOME/praktikum-os/week07-bash/bin:$PATH"
+# --- End Praktikum PATH ---
+
+EOF
+
+source ~/.bashrc
+echo "$PATH"
+\end{lstlisting}
+
+  \item Buat script ringkasan sistem:
+\begin{lstlisting}[language=bash, caption={Membuat script ringkas-sistem}]
+cat <<'EOF' > ~/praktikum-os/week07-bash/bin/ringkas-sistem
+#!/usr/bin/env bash
+echo "Hostname : $(hostname)"
+echo "User     : $(whoami)"
+echo "Uptime   : $(uptime -p)"
+echo "Disk /   :"
+df -h /
+EOF
+
+chmod +x ~/praktikum-os/week07-bash/bin/ringkas-sistem
+\end{lstlisting}
+
+  \item Jalankan script dari direktori yang berbeda:
+\begin{lstlisting}[language=bash, caption={Menjalankan script dari sembarang lokasi}]
+cd ~
+ringkas-sistem
+\end{lstlisting}
+\end{enumerate}
+
+\begin{notebox}
+Menaruh direktori personal di awal \texttt{PATH} memudahkan pemanggilan script,
+tetapi tetap harus hati-hati agar nama script Anda tidak bentrok dengan perintah
+sistem seperti \texttt{ls}, \texttt{cp}, atau \texttt{find}.
+\end{notebox}
+
+%% ------------------------------------------------------------------------
+\section{Membuat Alias dan Fungsi Shell}
+\label{sec:alias-fungsi-shell}
+
+Saat bekerja di terminal, sering ada perintah yang berulang-ulang dipakai.
+Alias membantu mempersingkat perintah yang sederhana, sedangkan fungsi shell
+digunakan jika logika yang dibutuhkan lebih kompleks, misalnya menerima argumen,
+menjalankan beberapa langkah, atau memuat validasi.
+
+Dalam pekerjaan administrator, alias cocok untuk shortcut yang aman dan sering dipakai,
+misalnya \texttt{ll}, \texttt{hist10}, atau \texttt{grep --color=auto}.
+Untuk tugas yang lebih ``hidup'', seperti backup file konfigurasi dengan timestamp,
+fungsi shell lebih tepat digunakan daripada alias.
+
+\subsection*{Fungsi Perintah yang Digunakan}
+
+\begin{itemize}
+  \item \texttt{alias}: membuat dan melihat alias.
+  \item \texttt{unalias}: menghapus alias.
+  \item \texttt{function\_name() \{ ... \}}: membuat fungsi shell.
+  \item \texttt{type}: membedakan apakah sesuatu adalah alias, fungsi, builtin, atau file.
+  \item \texttt{source ~/.bashrc}: memuat ulang alias dan fungsi.
+\end{itemize}
+
+\subsection*{Praktikum 6.7 --- Membuat Alias Produktivitas Dasar (Mudah)}
+
+Tujuan: membuat shortcut perintah yang sering dipakai.
+
+\begin{enumerate}
+  \item Tambahkan alias ke \texttt{.bashrc}:
+\begin{lstlisting}[language=bash, caption={Menambahkan alias ke .bashrc}]
+cat <<'EOF' >> ~/.bashrc
+
+# --- Praktikum Alias ---
+alias ll='ls -lah --color=auto'
+alias hist10='history | tail -n 10'
+alias cdbashlab='cd $HOME/praktikum-os/week04-bash'
+# --- End Praktikum Alias ---
+
+EOF
+
+source ~/.bashrc
+\end{lstlisting}
+
+  \item Uji alias:
+\begin{lstlisting}[language=bash, caption={Menguji alias}]
+ll
+hist10
+cdbashlab
+pwd
+type ll
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 6.8 --- Membuat Fungsi Backup Konfigurasi (Menengah, Kondisi Riil)}
+
+Tujuan: membuat fungsi shell yang dapat dipakai berulang untuk backup file konfigurasi.
+
+\begin{enumerate}
+  \item Siapkan file konfigurasi contoh:
+\begin{lstlisting}[language=bash, caption={Membuat file konfigurasi contoh}]
+echo "PORT=8080" > ~/praktikum-os/week07-bash/sample-app.conf
+cat ~/praktikum-os/week07-bash/sample-app.conf
+\end{lstlisting}
+
+  \item Tambahkan fungsi ke \texttt{.bashrc}:
+\begin{lstlisting}[language=bash, caption={Menambahkan fungsi backup_conf ke .bashrc}]
+cat <<'EOF' >> ~/.bashrc
+
+# --- Praktikum Fungsi Shell ---
+backup_conf() {
+  if [ $# -ne 1 ]; then
+    echo "Usage: backup_conf <file>"
+    return 1
+  fi
+
+  local src="$1"
+  local dst="$HOME/praktikum-os/week07-bash/backup"
+
+  if [ ! -f "$src" ]; then
+    echo "File tidak ditemukan: $src"
+    return 2
+  fi
+
+  mkdir -p "$dst"
+  cp -- "$src" "$dst/$(basename "$src").$(date +%F-%H%M%S).bak"
+  echo "Backup selesai di $dst"
+}
+# --- End Praktikum Fungsi Shell ---
+
+EOF
+
+source ~/.bashrc
+\end{lstlisting}
+
+  \item Uji fungsi:
+\begin{lstlisting}[language=bash, caption={Menguji fungsi backup_conf}]
+backup_conf ~/praktikum-os/week07-bash/sample-app.conf
+ls -lah ~/praktikum-os/week07-bash/backup
+type backup_conf
+\end{lstlisting}
+\end{enumerate}
+
+%% ------------------------------------------------------------------------
+\section{Penyelesaian (Completion) dan History Bash}
+\label{sec:completion-history}
+
+Bash membantu pengguna mengetik lebih cepat melalui fitur \textit{completion}.
+Saat Anda menekan tombol \texttt{Tab}, Bash mencoba melengkapi nama file,
+direktori, atau perintah yang sedang diketik. Fitur ini terlihat sederhana,
+tetapi dalam praktik administrasi sistem sangat membantu karena dapat
+mengurangi kesalahan pengetikan path atau nama command.
+
+Selain itu, Bash juga menyimpan \textit{history}, yaitu daftar perintah yang pernah
+dijalankan. History berguna untuk mengulang langkah kerja, menelusuri perintah
+yang pernah dipakai saat troubleshooting, dan mendokumentasikan workflow kerja.
+Fitur pencarian history dengan \texttt{Ctrl+r} adalah salah satu senjata penting
+administrator yang sering bekerja di terminal.
+
+\subsection*{Fungsi Perintah yang Digunakan}
+
+\begin{itemize}
+  \item tombol \texttt{Tab}: completion nama file/perintah.
+  \item \texttt{history}: melihat riwayat perintah.
+  \item \texttt{history | grep pola}: mencari perintah tertentu dari history.
+  \item \texttt{!\textless nomor\textgreater}: menjalankan ulang perintah berdasarkan nomor history.
+  \item \texttt{!!}: menjalankan ulang perintah terakhir.
+  \item \texttt{Ctrl+r}: pencarian interaktif ke history.
+\end{itemize}
+
+\begin{notebox}
+History sangat membantu, tetapi juga berbahaya jika dipakai tanpa berpikir.
+Menjalankan ulang perintah dengan \texttt{!!} atau \texttt{!\textless nomor\textgreater}
+dapat berisiko jika perintah sebelumnya bersifat destruktif.
+\end{notebox}
+
+\subsection*{Praktikum 6.9 --- Menggunakan Completion Dasar dan Melihat History (Mudah)}
+
+Tujuan: menggunakan fitur \texttt{Tab} dan history untuk mempercepat kerja.
+
+\begin{enumerate}
+  \item Pastikan file contoh tersedia:
+\begin{lstlisting}[language=bash, caption={Menyiapkan file untuk completion}]
+cd ~/praktikum-os/week07-bash/sampel
+touch laporan-harian.log laporan-mingguan.log laporan-bulanan.log
+ls
+\end{lstlisting}
+
+  \item Uji completion file:
+  \begin{enumerate}
+    \item Ketik \texttt{cat lap} lalu tekan \texttt{Tab} dua kali.
+    \item Amati daftar file yang memiliki prefix \texttt{lap}.
+    \item Ketik lebih spesifik, misalnya \texttt{cat laporan-h} lalu tekan \texttt{Tab}.
+  \end{enumerate}
+
+  \item Jalankan beberapa perintah sederhana:
+\begin{lstlisting}[language=bash, caption={Menjalankan beberapa perintah untuk history}]
+pwd
+ls -lah
+date
+whoami
+history | tail -n 10
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 6.10 --- Menelusuri Perintah Diagnostik dengan History (Menengah, Kondisi Riil)}
+
+Tujuan: menggunakan history untuk mengulang langkah diagnosis sistem secara cepat.
+
+\begin{enumerate}
+  \item Jalankan beberapa perintah diagnostik:
+\begin{lstlisting}[language=bash, caption={Menjalankan perintah diagnostik}]
+df -h
+free -h
+uptime
+ps aux | head
+\end{lstlisting}
+
+  \item Cari ulang perintah diagnostik dari history:
+\begin{lstlisting}[language=bash, caption={Mencari perintah dari history}]
+history | grep -E 'df -h|free -h|uptime|ps aux'
+\end{lstlisting}
+
+  \item Jalankan ulang salah satu perintah berdasarkan nomor history:
+\begin{lstlisting}[language=bash, caption={Menjalankan ulang perintah dari history}]
+!<NOMOR_HISTORY_ANDA>
+\end{lstlisting}
+
+  \item Simpan potongan history ke file dokumentasi:
+\begin{lstlisting}[language=bash, caption={Menyimpan history ke file}]
+history | tail -n 20 > ~/praktikum-os/week07-bash/diag-history.txt
+cat ~/praktikum-os/week07-bash/diag-history.txt
+\end{lstlisting}
+\end{enumerate}
+
+\begin{tipbox}
+Jika paket \texttt{bash-completion} tersedia pada sistem Anda, maka completion
+untuk banyak command akan menjadi lebih kaya. Namun, completion dasar untuk
+nama file, direktori, dan command sudah tersedia tanpa konfigurasi tambahan.
+\end{tipbox}
+
+%% ------------------------------------------------------------------------
+\section{Wildcards dan Ekspansi Nama File}
+\label{sec:wildcards-ekspansi}
+
+Bash mendukung \textit{wildcards} atau \textit{globbing} untuk mencocokkan banyak
+nama file sekaligus. Fitur ini sangat penting untuk pekerjaan operasional karena
+administrator sering harus memproses sekelompok file log, file backup, atau file
+konfigurasi yang namanya berpola serupa.
+
+Selain wildcard, Bash juga memiliki ekspansi lain seperti brace expansion dan tilde
+expansion. Memahami perbedaan di antara semuanya membantu Anda bekerja lebih
+cepat, tetapi juga lebih aman, terutama ketika suatu pola akan digunakan bersama
+perintah seperti \texttt{cp}, \texttt{mv}, atau \texttt{rm}.
+
+\subsection*{Fungsi Perintah yang Digunakan}
+
+\begin{itemize}
+  \item \texttt{*}: mencocokkan nol atau lebih karakter.
+  \item \texttt{?}: mencocokkan tepat satu karakter.
+  \item \texttt{[abc]} atau \texttt{[0-9]}: mencocokkan karakter tertentu/rentang.
+  \item \texttt{\{a,b,c\}}: brace expansion.
+  \item \texttt{\textasciitilde}: mengembang menjadi home directory pengguna.
+  \item \texttt{echo pola}: mem-preview hasil ekspansi sebelum dipakai pada command berisiko.
+\end{itemize}
+
+\begin{notebox}
+Kebiasaan aman saat bekerja dengan wildcard adalah mem-preview dulu hasilnya
+menggunakan \texttt{echo}. Jangan langsung memakai \texttt{rm *.log} atau
+\texttt{mv *.conf ...} tanpa melihat apa saja yang akan cocok dengan pola tersebut.
+\end{notebox}
+
+\subsection*{Praktikum 6.11 --- Mencoba Wildcard Dasar (Mudah)}
+
+Tujuan: memahami pola wildcard dan ekspansi nama file.
+
+\begin{enumerate}
+  \item Masuk ke direktori sampel:
+\begin{lstlisting}[language=bash, caption={Masuk ke direktori sampel}]
+cd ~/praktikum-os/week07-bash/sampel
+ls
+\end{lstlisting}
+
+  \item Coba beberapa pola wildcard:
+\begin{lstlisting}[language=bash, caption={Mencoba wildcard dasar}]
+ls *.log
+ls catatan-?.txt
+ls backup-0[12].tar
+\end{lstlisting}
+
+  \item Coba beberapa ekspansi lain:
+\begin{lstlisting}[language=bash, caption={Mencoba brace dan tilde expansion}]
+echo log-{pagi,siang,malam}.txt
+echo ~
+echo ~/praktikum-os/week04-bash
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 6.12 --- Mengarsipkan Banyak Log Sekaligus (Menengah, Kondisi Riil)}
+
+Tujuan: menggunakan wildcard secara aman untuk pekerjaan rutin administrator.
+
+\begin{enumerate}
+  \item Siapkan file log tambahan:
+\begin{lstlisting}[language=bash, caption={Menyiapkan file log tambahan}]
+cd ~/praktikum-os/week07-bash/logs
+touch access-01.log access-02.log access-03.log
+ls
+\end{lstlisting}
+
+  \item Preview file yang akan diproses:
+\begin{lstlisting}[language=bash, caption={Preview hasil wildcard}]
+echo *.log
+echo access-0?.log
+\end{lstlisting}
+
+  \item Pindahkan semua file log ke folder arsip:
+\begin{lstlisting}[language=bash, caption={Memindahkan file log ke folder arsip}]
+mkdir -p arsip-log
+mv *.log arsip-log/
+ls arsip-log
+\end{lstlisting}
+
+  \item Kompres folder arsip:
+\begin{lstlisting}[language=bash, caption={Membuat arsip terkompresi}]
+tar -czf arsip-log-$(date +%F).tar.gz arsip-log
+ls -lah
+\end{lstlisting}
+\end{enumerate}
+
+%% ------------------------------------------------------------------------
+\section{Quoting dan Escaping di Bash}
+\label{sec:quoting-escaping}
+
+Salah satu sumber kesalahan yang paling sering terjadi di Bash adalah masalah
+\textit{quoting}. Banyak pemula menganggap shell hanya membaca kata per kata,
+padahal Bash melakukan banyak jenis ekspansi sebelum perintah dijalankan:
+ekspansi variabel, wildcard, command substitution, dan pemisahan berdasarkan spasi.
+Karena itu, penulisan tanda kutip yang tepat sangat penting.
+
+Secara umum:
+\begin{itemize}
+  \item \textbf{Single quote} (\texttt{'...'}) menjaga isi tetap literal.
+  \item \textbf{Double quote} (\texttt{"..."}) tetap mengizinkan ekspansi variabel
+        dan command substitution, tetapi mempertahankan spasi sebagai satu argumen.
+  \item \textbf{Backslash} (\texttt{\textbackslash}) digunakan untuk meng-escape
+        satu karakter tertentu.
+\end{itemize}
+
+Dalam pekerjaan administrator, quoting yang benar sangat penting saat menangani
+nama file yang mengandung spasi, tanda kurung siku, tanda bintang, atau saat
+membangun command berbasis variabel.
+
+\subsection*{Fungsi Perintah yang Digunakan}
+
+\begin{itemize}
+  \item \texttt{echo '...'}: menampilkan teks literal.
+  \item \texttt{echo "..."}: menampilkan teks dengan ekspansi variabel.
+  \item \texttt{\textbackslash}: meng-escape karakter khusus.
+  \item \texttt{cp -- "sumber" "tujuan"}: menyalin file dengan nama yang kompleks.
+  \item \texttt{printf '\%s\textbackslash n' "\$var"}: menampilkan nilai variabel dengan aman.
+\end{itemize}
+
+\begin{tipbox}
+Aturan praktis yang sangat berguna: \textbf{selalu beri tanda kutip ganda pada variabel
+yang merepresentasikan path atau nama file}, misalnya \texttt{"\$file"}.
+\end{tipbox}
+
+\subsection*{Praktikum 6.13 --- Membedakan Single Quote, Double Quote, dan Escape (Mudah)}
+
+Tujuan: memahami efek tanda kutip terhadap ekspansi Bash.
+
+\begin{enumerate}
+  \item Uji single quote dan double quote:
+\begin{lstlisting}[language=bash, caption={Menguji perbedaan jenis quote}]
+echo '$USER bekerja di $HOME'
+echo "$USER bekerja di $HOME"
+\end{lstlisting}
+
+  \item Uji escape karakter spasi:
+\begin{lstlisting}[language=bash, caption={Menggunakan escape pada path}]
+cd ~/praktikum-os/week07-bash/ruang-nama
+ls laporan\ server\ april.txt
+\end{lstlisting}
+
+  \item Uji akses file yang sama dengan double quote:
+\begin{lstlisting}[language=bash, caption={Menggunakan double quote pada path}]
+cat "laporan server april.txt"
+\end{lstlisting}
+\end{enumerate}
+
+\subsection*{Praktikum 6.14 --- Menangani File dengan Nama Sulit Secara Aman (Menengah, Kondisi Riil)}
+
+Tujuan: memproses file yang mengandung spasi dan karakter khusus tanpa error.
+
+\begin{enumerate}
+  \item Pastikan file target tersedia:
+\begin{lstlisting}[language=bash, caption={Memastikan file target tersedia}]
+cd ~/praktikum-os/week07-bash/ruang-nama
+ls -lah
+\end{lstlisting}
+
+  \item Salin file dengan nama kompleks ke folder backup:
+\begin{lstlisting}[language=bash, caption={Menyalin file dengan nama kompleks secara aman}]
+cp -- "backup [mingguan] server.conf" \
+  "$HOME/praktikum-os/week07-bash/backup/backup-mingguan-server.conf"
+\end{lstlisting}
+
+  \item Gunakan variabel untuk memproses path dengan aman:
+\begin{lstlisting}[language=bash, caption={Menggunakan variabel berisi path dengan aman}]
+file_asli="$HOME/praktikum-os/week07-bash/ruang-nama/backup [mingguan] server.conf"
+file_salinan="$HOME/praktikum-os/week07-bash/backup/backup-mingguan-server-v2.conf"
+
+cp -- "$file_asli" "$file_salinan"
+ls -lah "$HOME/praktikum-os/week07-bash/backup"
+\end{lstlisting}
+
+  \item Tampilkan daftar file hasil backup:
+\begin{lstlisting}[language=bash, caption={Menampilkan file hasil backup dengan aman}]
+for file in "$HOME"/praktikum-os/week07-bash/backup/*; do
+  printf 'Hasil backup: %s\n' "$file"
+done
+\end{lstlisting}
+\end{enumerate}
+
+\begin{notebox}
+Kesalahan klasik adalah menulis \texttt{cp \$file tujuan/} tanpa tanda kutip.
+Jika isi variabel \texttt{\$file} mengandung spasi, Bash akan memecahnya menjadi
+beberapa argumen dan command bisa gagal atau bahkan memproses file yang salah.
+\end{notebox}
+
+%% ------------------------------------------------------------------------
+\section{Tugas Praktikum}
+\label{sec:tugas-praktikum-bash}
+
+\begin{warningbox}
+Seluruh tugas dikerjakan pada workspace praktikum sendiri, misalnya
+\texttt{\$HOME/praktikum-os/week04-bash}, kecuali jika instruksi secara eksplisit
+meminta membaca file sistem seperti \texttt{/etc} atau \texttt{/proc}. Hindari
+mengubah file sistem penting secara langsung tanpa backup.
+\end{warningbox}
+
+\subsection*{Tugas Praktikum 1 --- Toolkit Bash Administrator Pribadi}
+\textbf{Konteks riil:} seorang administrator sering mengulang perintah yang sama
+setiap hari. Agar pekerjaan lebih efisien dan konsisten, ia perlu memiliki
+\textit{toolkit} Bash pribadi yang otomatis aktif setiap login.
+
+\textbf{Instruksi tugas:}
+\begin{enumerate}
+    \item Tambahkan konfigurasi pada \texttt{.bashrc} untuk:
+    \begin{itemize}
+        \item menambahkan direktori \texttt{bin} pribadi ke \texttt{PATH},
+        \item membuat minimal 2 alias yang membantu kerja harian,
+        \item membuat minimal 1 fungsi shell yang berguna untuk administrasi.
+    \end{itemize}
+    \item Pastikan konfigurasi tersebut aktif kembali saat membuka shell login.
+    \item Buat satu script sederhana di direktori \texttt{bin} pribadi, misalnya
+    script untuk menampilkan ringkasan sistem.
+    \item Uji dari direktori yang berbeda untuk memastikan script dapat dipanggil
+    tanpa menuliskan path lengkap.
+    \item Simpan bukti pengujian ke file \texttt{toolkit-bash-report.txt}.
+\end{enumerate}
+
+\textbf{Minimal luaran:}
+\begin{itemize}
+    \item isi blok konfigurasi yang ditambahkan ke \texttt{.bashrc},
+    \item output \texttt{echo \$PATH},
+    \item output \texttt{type} untuk alias, fungsi, dan script,
+    \item file laporan \texttt{toolkit-bash-report.txt}.
+\end{itemize}
+
+\subsection*{Tugas Praktikum 2 --- Audit File Konfigurasi dan Logging Aman}
+\textbf{Konteks riil:} saat troubleshooting, administrator sering perlu
+menginventarisasi file konfigurasi dan memisahkan output normal dari pesan error.
+
+\textbf{Instruksi tugas:}
+\begin{enumerate}
+    \item Buat file laporan bernama
+    \texttt{audit-konfigurasi-\$(date +\%F).txt}.
+    \item Cari file \texttt{*.conf} di dalam \texttt{/etc} dan simpan hasilnya
+    ke file laporan.
+    \item Catat jumlah total file konfigurasi yang ditemukan.
+    \item Jika ada pesan error, simpan ke file terpisah, misalnya
+    \texttt{audit-error.log}.
+    \item Tampilkan isi laporan ke terminal dan sekaligus simpan menggunakan
+    \texttt{tee}.
+    \item Tambahkan ringkasan singkat 3--5 baris yang menjelaskan mengapa
+    pemisahan \texttt{stdout} dan \texttt{stderr} penting dalam audit sistem.
+\end{enumerate}
+
+\textbf{Syarat konsep yang harus muncul:}
+\begin{itemize}
+    \item redirection \texttt{>}, \texttt{2>}, atau \texttt{\&>},
+    \item pipeline,
+    \item \texttt{tee},
+    \item penggunaan variabel atau \texttt{command substitution}.
+\end{itemize}
+
+\textbf{Minimal luaran:}
+\begin{itemize}
+    \item file laporan audit,
+    \item file log error,
+    \item perintah yang digunakan,
+    \item analisis singkat hasil audit.
+\end{itemize}
+
+\subsection*{Tugas Praktikum 3 --- Mini Health Check Harian Server}
+\textbf{Konteks riil:} administrator perlu membuat pemeriksaan cepat
+(\textit{health check}) untuk mengetahui kondisi dasar server sebelum dan sesudah
+maintenance.
+
+\textbf{Instruksi tugas:}
+\begin{enumerate}
+    \item Buat script Bash bernama \texttt{daily-healthcheck} pada direktori
+    \texttt{bin} pribadi.
+    \item Script minimal harus menampilkan:
+    \begin{itemize}
+        \item tanggal dan waktu,
+        \item hostname,
+        \item user aktif,
+        \item shell aktif,
+        \item uptime,
+        \item penggunaan memori,
+        \item penggunaan filesystem root,
+        \item 10 baris terakhir history command yang relevan dengan pengecekan.
+    \end{itemize}
+    \item Simpan hasil ke file log harian, misalnya
+    \texttt{healthcheck-\$(date +\%F).log}.
+    \item Tampilkan hasil ke terminal dan ke file secara bersamaan.
+    \item Jika Anda menggunakan pipeline dengan \texttt{tee}, cek juga status
+    exit command utama.
+\end{enumerate}
+
+\textbf{Syarat konsep yang harus muncul:}
+\begin{itemize}
+    \item environment variable,
+    \item \texttt{PATH},
+    \item alias atau fungsi pendukung,
+    \item history,
+    \item \texttt{tee},
+    \item penanganan error dasar.
+\end{itemize}
+
+\textbf{Minimal luaran:}
+\begin{itemize}
+    \item file script yang executable,
+    \item contoh isi file log hasil eksekusi,
+    \item penjelasan singkat fungsi tiap bagian script.
+\end{itemize}
+
+\subsection*{Tugas Praktikum 4 --- Penanganan File dengan Nama Kompleks dan Arsip Aman}
+\textbf{Konteks riil:} file hasil backup, ekspor, atau laporan sering memiliki nama
+yang mengandung spasi atau karakter khusus. Administrator harus tetap dapat
+memproses file-file tersebut tanpa salah target.
+
+\textbf{Instruksi tugas:}
+\begin{enumerate}
+    \item Buat minimal 4 file contoh dengan nama yang bervariasi, termasuk:
+    \begin{itemize}
+        \item nama file yang mengandung spasi,
+        \item nama file yang mengandung tanda kurung siku atau karakter khusus,
+        \item file dengan pola nama serupa untuk diuji dengan wildcard.
+    \end{itemize}
+    \item Tunjukkan perbedaan hasil jika file diakses tanpa quoting dan dengan
+    quoting yang benar.
+    \item Lakukan \textit{preview} wildcard dengan \texttt{echo} sebelum dipakai
+    untuk operasi nyata.
+    \item Salin file-file tersebut ke direktori backup dengan nama yang aman.
+    \item Buat arsip \texttt{tar.gz} dari hasil backup.
+    \item Simpan riwayat perintah yang Anda gunakan ke file
+    \texttt{riwayat-arsip.txt}.
+\end{enumerate}
+
+\textbf{Syarat konsep yang harus muncul:}
+\begin{itemize}
+    \item single quote, double quote, dan escaping,
+    \item wildcard,
+    \item variabel path,
+    \item history,
+    \item operasi file lanjutan yang aman.
+\end{itemize}
+
+\textbf{Minimal luaran:}
+\begin{itemize}
+    \item daftar file awal,
+    \item daftar file hasil backup,
+    \item file arsip \texttt{tar.gz},
+    \item file \texttt{riwayat-arsip.txt},
+    \item refleksi singkat tentang pentingnya quoting di Bash.
+\end{itemize}
+
+%% ------------------------------------------------------------------------
 \section{Rangkuman}
-\section{Latihan}
-\section{Referensi Tambahan}
+\label{sec:rangkuman-bash}
+
+\begin{itemize}
+  \item Bash adalah shell yang sangat umum digunakan pada Linux dan menjadi alat utama
+        interaksi administrator dengan sistem.
+  \item \texttt{.bashrc} dipakai untuk konfigurasi shell interaktif, sedangkan
+        \texttt{.bash\_profile} dipakai pada konteks login shell.
+  \item Variabel lingkungan dan \texttt{PATH} menentukan konteks kerja shell serta
+        bagaimana Bash menemukan command dan script.
+  \item Alias cocok untuk shortcut sederhana, sedangkan fungsi shell cocok untuk
+        logika yang lebih kompleks dan berulang.
+  \item Completion dan history membantu mempercepat kerja serta mengurangi
+        kesalahan pengetikan.
+  \item Wildcard dan ekspansi nama file memudahkan pemrosesan banyak file sekaligus,
+        tetapi harus digunakan dengan kebiasaan preview yang aman.
+  \item Quoting dan escaping adalah fondasi penting agar Bash menangani variabel,
+        spasi, dan karakter khusus dengan benar.
+\end{itemize}
+
+%% ------------------------------------------------------------------------
+\section{Referensi dan Bahan Belajar Lanjutan}
+\label{sec:referensi-lanjutan-bash}
+
+Untuk pendalaman materi, mahasiswa disarankan mempelajari referensi berikut:
+
+\begin{enumerate}
+    \item GNU Bash Reference Manual.
+    \item Bash manual page (\texttt{man bash}).
+    \item Bash Guide for Beginners.
+    \item William Shotts, \textit{The Linux Command Line}.
+    \item Evi Nemeth, Garth Snyder, Trent R. Hein, Ben Whaley, Dan Mackin,
+    \textit{UNIX and Linux System Administration Handbook}, 5th Edition.
+    \item Arnold Robbins dan Nelson H. F. Beebe,
+    \textit{Classic Shell Scripting}.
+    \item Mark G. Sobell,
+    \textit{A Practical Guide to Linux Commands, Editors, and Shell Programming}.
+    \item Richard Blum dan Christine Bresnahan,
+    \textit{Linux Command Line and Shell Scripting Bible}.
+\end{enumerate}
