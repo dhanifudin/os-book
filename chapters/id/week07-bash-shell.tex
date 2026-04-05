@@ -60,7 +60,7 @@ sedangkan shell yang sedang aktif pada terminal saat ini bisa saja berbeda.
 Karena itu, biasakan membedakan \texttt{\$SHELL} dan \texttt{\$0}.
 \end{tipbox}
 
-\subsection*{Praktikum 6.1 --- Mengenali Bash dan Menyiapkan Workspace (Mudah)}
+\subsection*{Praktikum 6.1 --- Mengenali Bash dan Menyiapkan Workspace }
 
 Tujuan: mengenali shell aktif dan menyiapkan area kerja yang aman untuk seluruh praktikum bab ini.
 
@@ -98,7 +98,7 @@ ls -R
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 6.2 --- Membuat Ringkasan Sesi Terminal (Menengah, Kondisi Riil)}
+\subsection*{Praktikum 6.2 --- Membuat Ringkasan Sesi Terminal }
 
 Tujuan: membiasakan administrator memverifikasi konteks kerja sebelum melakukan maintenance.
 
@@ -164,7 +164,7 @@ di server produksi tanpa backup. Untuk praktikum, biasakan menambahkan blok
 konfigurasi sendiri dan menandainya dengan komentar yang jelas.
 \end{notebox}
 
-\subsection*{Praktikum 6.3 --- Menambahkan Konfigurasi Aman pada \texttt{.bashrc} (Mudah)}
+\subsection*{Praktikum 6.3 --- Menambahkan Konfigurasi Aman pada \texttt{.bashrc} }
 
 Tujuan: memahami peran \texttt{.bashrc} dan menerapkan perubahan secara aman.
 
@@ -199,7 +199,7 @@ echo "$EDITOR"
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 6.4 --- Menyiapkan \texttt{.bash\_profile} untuk Shell Login (Menengah, Kondisi Riil)}
+\subsection*{Praktikum 6.4 --- Menyiapkan \texttt{.bash\_profile} untuk Shell Login }
 
 Tujuan: memahami hubungan \texttt{.bash\_profile} dan \texttt{.bashrc} pada skenario login shell.
 
@@ -267,7 +267,7 @@ Ingat perbedaannya:
 \end{itemize}
 \end{tipbox}
 
-\subsection*{Praktikum 6.5 --- Membedakan Variabel Shell dan Environment Variable (Mudah)}
+\subsection*{Praktikum 6.5 --- Membedakan Variabel Shell dan Environment Variable }
 
 Tujuan: memahami perbedaan variabel lokal dan variabel lingkungan.
 
@@ -301,7 +301,7 @@ type ls
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 6.6 --- Menambahkan Direktori Script Pribadi ke \texttt{PATH} (Menengah, Kondisi Riil)}
+\subsection*{Praktikum 6.6 --- Menambahkan Direktori Script Pribadi ke \texttt{PATH} }
 
 Tujuan: membuat perintah administrasi sederhana yang bisa dipanggil dari mana saja.
 
@@ -376,7 +376,7 @@ fungsi shell lebih tepat digunakan daripada alias.
   \item \texttt{source ~/.bashrc}: memuat ulang alias dan fungsi.
 \end{itemize}
 
-\subsection*{Praktikum 6.7 --- Membuat Alias Produktivitas Dasar (Mudah)}
+\subsection*{Praktikum 6.7 --- Membuat Alias Produktivitas Dasar }
 
 Tujuan: membuat shortcut perintah yang sering dipakai.
 
@@ -406,7 +406,7 @@ type ll
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 6.8 --- Membuat Fungsi Backup Konfigurasi (Menengah, Kondisi Riil)}
+\subsection*{Praktikum 6.8 --- Membuat Fungsi Backup Konfigurasi }
 
 Tujuan: membuat fungsi shell yang dapat dipakai berulang untuk backup file konfigurasi.
 
@@ -488,7 +488,7 @@ Menjalankan ulang perintah dengan \texttt{!!} atau \texttt{!\textless nomor\text
 dapat berisiko jika perintah sebelumnya bersifat destruktif.
 \end{notebox}
 
-\subsection*{Praktikum 6.9 --- Menggunakan Completion Dasar dan Melihat History (Mudah)}
+\subsection*{Praktikum 6.9 --- Menggunakan Completion Dasar dan Melihat History }
 
 Tujuan: menggunakan fitur \texttt{Tab} dan history untuk mempercepat kerja.
 
@@ -517,7 +517,7 @@ history | tail -n 10
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 6.10 --- Menelusuri Perintah Diagnostik dengan History (Menengah, Kondisi Riil)}
+\subsection*{Praktikum 6.10 --- Menelusuri Perintah Diagnostik dengan History }
 
 Tujuan: menggunakan history untuk mengulang langkah diagnosis sistem secara cepat.
 
@@ -584,7 +584,7 @@ menggunakan \texttt{echo}. Jangan langsung memakai \texttt{rm *.log} atau
 \texttt{mv *.conf ...} tanpa melihat apa saja yang akan cocok dengan pola tersebut.
 \end{notebox}
 
-\subsection*{Praktikum 6.11 --- Mencoba Wildcard Dasar (Mudah)}
+\subsection*{Praktikum 6.11 --- Mencoba Wildcard Dasar }
 
 Tujuan: memahami pola wildcard dan ekspansi nama file.
 
@@ -610,7 +610,7 @@ echo ~/praktikum-os/week04-bash
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 6.12 --- Mengarsipkan Banyak Log Sekaligus (Menengah, Kondisi Riil)}
+\subsection*{Praktikum 6.12 --- Mengarsipkan Banyak Log Sekaligus }
 
 Tujuan: menggunakan wildcard secara aman untuk pekerjaan rutin administrator.
 
@@ -680,7 +680,7 @@ Aturan praktis yang sangat berguna: \textbf{selalu beri tanda kutip ganda pada v
 yang merepresentasikan path atau nama file}, misalnya \texttt{"\$file"}.
 \end{tipbox}
 
-\subsection*{Praktikum 6.13 --- Membedakan Single Quote, Double Quote, dan Escape (Mudah)}
+\subsection*{Praktikum 6.13 --- Membedakan Single Quote, Double Quote, dan Escape }
 
 Tujuan: memahami efek tanda kutip terhadap ekspansi Bash.
 
@@ -703,7 +703,7 @@ cat "laporan server april.txt"
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 6.14 --- Menangani File dengan Nama Sulit Secara Aman (Menengah, Kondisi Riil)}
+\subsection*{Praktikum 6.14 --- Menangani File dengan Nama Sulit Secara Aman }
 
 Tujuan: memproses file yang mengandung spasi dan karakter khusus tanpa error.
 
