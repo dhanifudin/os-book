@@ -5,16 +5,945 @@
 \chapter{Bash Programming}
 \label{ch:bash-programming}
 
-This chapter discusses the basics of Bash scripting, variables, control structures,
-functions, and best practices in creating shell scripts.
+This chapter covers the fundamentals of Bash programming: creating scripts,
+managing variables, writing control structures, defining functions,
+processing arguments, and debugging. The concepts are compared with Java so
+that students who already know programming can build understanding more
+quickly.
 
+\begin{examplebox}[Bash as a programming language]
+Imagine that you have already written Java programs. Java has variables,
+conditions, loops, and functions. Bash does too, but with one important
+difference: Bash executes \textit{operating system commands} as part of the
+program logic. A Bash script is \textbf{a list of terminal commands stored in
+a file}, enriched with control logic so it can run automatically without
+human involvement.
+\end{examplebox}
+
+%%---------------------------------------------------------------------
 \section{Bash Scripting Basics}
+\label{sec:creating-scripts}
+
+\subsection*{How to Create and Edit Script Files}
+
+This chapter uses two ways to create files: \textbf{nano} for interactive
+editing, and a \textbf{heredoc} for creating files directly from the
+terminal.
+
+\textbf{Using nano:}
+\begin{enumerate}
+  \item Open or create a file: \texttt{nano file-name.sh}
+  \item Type the contents directly; the cursor is immediately active and
+    there is no special mode.
+  \item Important keys:
+  \begin{itemize}
+    \item \keystroke{Ctrl+O} then \keystroke{Enter} to save the file
+    \item \keystroke{Ctrl+X} to exit nano
+    \item \keystroke{Ctrl+W} to search for text in the file
+  \end{itemize}
+\end{enumerate}
+
+\begin{notebox}
+At the bottom of the nano screen, you will always see a list of active
+shortcuts. The symbol \texttt{\^{}} means \texttt{Ctrl}, so
+\texttt{\^{}O} = \keystroke{Ctrl+O}.
+\end{notebox}
+
+\textbf{Using a heredoc} (for short scripts or automation):
+\begin{lstlisting}[language=bash, caption={Creating a file with a heredoc}]
+cat <<'EOF' > file-name.sh
+#!/bin/bash
+echo "Hello from the script"
+EOF
+\end{lstlisting}
+
+\subsection*{Basic Structure and the Shebang Line}
+
+Every Bash script starts with a \textit{shebang line}:
+
+\begin{lstlisting}[language=bash, caption={Basic structure of a Bash script}]
+#!/bin/bash
+# Comment: explain what this script does
+
+echo "Script is running"
+\end{lstlisting}
+
+The \texttt{\#!} line tells the Linux kernel which interpreter to use. Two
+common forms are:
+
+\begin{itemize}
+  \item \texttt{\#!/bin/bash}: the absolute path to Bash. This is the most
+    common form on Linux, simple and direct.
+  \item \texttt{\#!/usr/bin/env bash}: asks the \texttt{env} command to find
+    Bash in \var{PATH}. This is more portable across operating systems.
+\end{itemize}
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+\textbf{Aspect} & \textbf{\#!/bin/bash} & \textbf{\#!/usr/bin/env bash} \\
+\hline
+Bash location & Fixed at \texttt{/bin/bash} & Searched in \texttt{PATH} \\
+Portability & Standard Linux & Linux and macOS \\
+Recommendation & This lab & Cross-platform scripts \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{notebox}
+The shebang only works if the file has execute permission (\texttt{chmod +x})
+and is run directly (\texttt{./script.sh}). If you call
+\texttt{bash script.sh}, the shebang is ignored because the interpreter has
+already been specified explicitly.
+\end{notebox}
+
+After creating the script, give it execute permission and run it:
+
+\begin{lstlisting}[language=bash, caption={Granting permission and running a script}]
+chmod +x file-name.sh
+./file-name.sh
+\end{lstlisting}
+
+\subsection*{Lab 7.1 First Script: System Report}
+
+Objective: create, save, and run your first Bash script.
+
+\begin{enumerate}
+  \item Create the lab workspace:
+\begin{lstlisting}[language=bash, caption={Preparing the workspace}]
+mkdir -p ~/lab-os/week09/{scripts,logs,data}
+cd ~/lab-os/week09/scripts
+\end{lstlisting}
+
+  \item Create a script with nano:
+\begin{lstlisting}[language=bash, caption={Opening nano}]
+nano system-report.sh
+\end{lstlisting}
+
+  \item Type the following content, save it (\keystroke{Ctrl+O}
+    \keystroke{Enter}), then exit (\keystroke{Ctrl+X}):
+\begin{lstlisting}[language=bash, caption={Contents of system-report.sh}]
+#!/bin/bash
+# Script: system-report.sh
+
+echo "================================"
+echo "  SYSTEM REPORT"
+echo "================================"
+echo "Date      : $(date '+%A, %d %B %Y')"
+echo "Time      : $(date '+%H:%M:%S')"
+echo "Hostname  : $(hostname)"
+echo "User      : $(whoami)"
+echo "CPU cores : $(nproc)"
+echo "Free RAM  : $(free -h | awk '/^Mem/ {print $4}')"
+echo "Disk /    : $(df -h / | awk 'NR==2 {print $5}') used"
+echo "================================"
+\end{lstlisting}
+
+  \item Grant permission and run it:
+\begin{lstlisting}[language=bash, caption={Running the script}]
+chmod +x system-report.sh
+./system-report.sh
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[Exercise 9.1]
+Modify \texttt{system-report.sh} so that it saves the output to a file named
+\texttt{report-YYYY-MM-DD.txt} while also displaying it in the terminal.
+Hint: use \texttt{tee}, which was introduced in the previous chapter.
+\end{exercisebox}
+
+%%---------------------------------------------------------------------
 \section{Variables and Positional Parameters}
+\label{sec:variables-parameters}
+
+\subsection*{Variables in Bash vs Java}
+
+In Java: \texttt{String name = "Budi";}. In Bash, the rules are different:
+
+\begin{itemize}
+  \item \textbf{Declaration}: \texttt{NAME="Budi"} with no spaces around
+    \texttt{=}
+  \item \textbf{Accessing the value}: \texttt{\$NAME} or
+    \texttt{\$\{NAME\}}
+  \item \textbf{Data types}: none. All Bash variables are strings by
+    default; arithmetic requires special syntax.
+\end{itemize}
+
+\begin{warningbox}
+\texttt{NAME = "Budi"} (with spaces) causes an error because Bash thinks
+\texttt{NAME} is a command name. Always write assignments without spaces.
+\end{warningbox}
+
+The special variables most often used in scripting are:
+
+\begin{center}
+\begin{tabular}{ll}
+\hline
+\textbf{Variable} & \textbf{Value} \\
+\hline
+\texttt{\$0} & Name of the currently running script \\
+\texttt{\$1}, \texttt{\$2}, \ldots & First argument, second argument, etc. \\
+\texttt{\$\#} & Number of arguments provided \\
+\texttt{\$@} & All arguments as a separated list \\
+\texttt{\$?} & Exit code of the last command (0 = success) \\
+\texttt{\$\$} & PID of the current script \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection*{Positional Parameters and Default Values}
+
+Just like a Java method that accepts arguments
+(\texttt{void function(String a, String b)}), a Bash script accepts arguments
+from the command line. Arguments are read with \texttt{\$1}, \texttt{\$2},
+and so on.
+
+The form \texttt{\$\{1:-"default"\}} reads \texttt{\$1}; if it is empty,
+use a default value instead. This is equivalent to
+\texttt{args.length > 0 ? args[0] : "default"} in Java.
+
+\subsection*{Arithmetic and Command Substitution}
+
+Bash does not calculate arithmetic expressions directly. Use
+\texttt{\$(( ))}:
+
+\begin{lstlisting}[language=bash, caption={Arithmetic and command substitution}]
+A=10
+B=3
+
+echo "Sum       : $((A + B))"
+echo "Modulo    : $((A % B))"
+echo "Division  : $((A / B))"   # Integer result, just like int in Java
+
+# Command substitution: store output in a variable
+DATE=$(date '+%F')
+FILE_COUNT=$(ls | wc -l)
+echo "Date: $DATE, Files: $FILE_COUNT"
+\end{lstlisting}
+
+\begin{notebox}
+In Java, \texttt{10 / 3} with type \texttt{int} produces \texttt{3}. In
+Bash, \texttt{\$((10 / 3))} also produces \texttt{3}. Use \texttt{bc} if
+you need decimal precision.
+\end{notebox}
+
+\subsection*{Lab 7.2 System Info Script with Arguments}
+
+Objective: practice variables, command substitution, positional parameters,
+and default values.
+
+\begin{enumerate}
+  \item Create the script:
+\begin{lstlisting}[language=bash, caption={Creating system-info.sh}]
+nano ~/lab-os/week09/scripts/system-info.sh
+\end{lstlisting}
+
+  \item Type the following contents:
+\begin{lstlisting}[language=bash, caption={Contents of system-info.sh}]
+#!/bin/bash
+# Usage: ./system-info.sh [admin-name] [disk-threshold-percent]
+
+ADMIN=${1:-"Unknown"}
+THRESHOLD=${2:-80}
+DATE=$(date '+%F %T')
+DISK_PERCENT=$(df / | awk 'NR==2 {print $5}' | tr -d '%')
+
+echo "Admin     : $ADMIN"
+echo "Date      : $DATE"
+echo "Disk /    : ${DISK_PERCENT}% used"
+echo "Threshold : ${THRESHOLD}%"
+
+if [ "$DISK_PERCENT" -gt "$THRESHOLD" ]; then
+    echo "STATUS    : WARNING - disk usage exceeds threshold!"
+else
+    REMAINING=$((THRESHOLD - DISK_PERCENT))
+    echo "STATUS    : Normal (${REMAINING}% tolerance remaining)"
+fi
+\end{lstlisting}
+
+  \item Save it, grant permission, and test it with different argument
+    combinations:
+\begin{lstlisting}[language=bash, caption={Testing the script}]
+chmod +x ~/lab-os/week09/scripts/system-info.sh
+./system-info.sh
+./system-info.sh "Dian" 50
+./system-info.sh "Dian" 10
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[Exercise 9.2]
+Create a script named \texttt{calculator.sh} that accepts three arguments:
+\texttt{<number1> <operator> <number2>} where the operator is one of
+\texttt{+}, \texttt{-}, \texttt{*}, or \texttt{/}. Example:
+\texttt{./calculator.sh 20 + 5} produces \texttt{25}. Use \texttt{case} to
+choose the operation, and validate incomplete arguments.
+\end{exercisebox}
+
+%%---------------------------------------------------------------------
 \section{Control Structures}
+\label{sec:control-structures}
+
+Control structures in Bash follow the same concepts as Java, but the syntax is
+different.
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+\textbf{Concept} & \textbf{Java} & \textbf{Bash} \\
+\hline
+If condition & \texttt{if (x > 5) \{} & \texttt{if [ \$x -gt 5 ]; then} \\
+Code block & curly braces & \texttt{then ... fi} \\
+Else if & \texttt{else if (...) \{} & \texttt{elif ...; then} \\
+Not equal & \texttt{!=} & \texttt{!=} (string), \texttt{-ne} (number) \\
+And / Or & \texttt{\&\&} / \texttt{||} & \texttt{\&\&} / \texttt{||} \\
+Switch & \texttt{switch (x) \{ case "a": \}} & \texttt{case \$x in "a") ... ;;} \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection*{Comparison Operators}
+
+\textbf{Numbers:} \texttt{-eq}, \texttt{-ne}, \texttt{-gt}, \texttt{-lt},
+\texttt{-ge}, \texttt{-le}
+
+\textbf{Strings:} \texttt{=} or \texttt{==} (equal), \texttt{!=} (not
+equal), \texttt{-z} (empty), \texttt{-n} (not empty)
+
+\textbf{Files:} \texttt{-f} (file exists), \texttt{-d} (directory exists),
+\texttt{-r} (readable), \texttt{-x} (executable)
+
+\subsection*{\texttt{for} and \texttt{while} Loops}
+
+\begin{lstlisting}[language=bash, caption={for and while loops}]
+# for loop over a list (similar to Java for-each)
+for MONTH in January February March; do
+    echo "Month: $MONTH"
+done
+
+# C-style for loop (similar to Java)
+for ((I=1; I<=5; I++)); do
+    echo "Number: $I"
+done
+
+# loop over files
+for FILE in ~/lab-os/week09/scripts/*.sh; do
+    echo "Script: $(basename "$FILE")"
+done
+
+# while loop while condition is true
+COUNTER=1
+while [ $COUNTER -le 3 ]; do
+    echo "Iteration $COUNTER"
+    COUNTER=$((COUNTER + 1))
+done
+\end{lstlisting}
+
+\subsection*{The \texttt{case} Structure}
+
+\texttt{case} is equivalent to \texttt{switch} in Java. Each block ends with
+\texttt{;;} (not \texttt{break}). The pattern \texttt{*)} is equivalent to
+\texttt{default:}.
+
+\begin{notebox}
+In Java, forgetting to write \texttt{break} causes \textit{fall-through}. In
+Bash, \texttt{;;} already stops execution of the current block, so there is no
+fall-through by default.
+\end{notebox}
+
+\subsection*{Lab 7.3 Grading Script and Interactive Menu}
+
+Objective: combine \texttt{if}, \texttt{for}, \texttt{while}, and
+\texttt{case} in one session.
+
+\begin{enumerate}
+  \item Create a grading script (using \texttt{if} and \texttt{for}):
+\begin{lstlisting}[language=bash, caption={Creating batch-grading.sh}]
+nano ~/lab-os/week09/scripts/batch-grading.sh
+\end{lstlisting}
+
+  \item Type the following contents:
+\begin{lstlisting}[language=bash, caption={Contents of batch-grading.sh}]
+#!/bin/bash
+# Script: batch-grading.sh
+# Process a list of student scores
+
+STUDENTS=("Andi:92" "Budi:73" "Citra:55" "Deni:80" "Eka:45")
+
+echo "=== GRADING RESULTS ==="
+for ENTRY in "${STUDENTS[@]}"; do
+    NAME=$(echo "$ENTRY" | cut -d: -f1)
+    SCORE=$(echo "$ENTRY" | cut -d: -f2)
+
+    if [ "$SCORE" -ge 85 ]; then
+        GRADE="A"
+    elif [ "$SCORE" -ge 75 ]; then
+        GRADE="B"
+    elif [ "$SCORE" -ge 65 ]; then
+        GRADE="C"
+    elif [ "$SCORE" -ge 55 ]; then
+        GRADE="D"
+    else
+        GRADE="E"
+    fi
+
+    printf "%-10s %3d  %s\n" "$NAME" "$SCORE" "$GRADE"
+done
+echo "======================="
+\end{lstlisting}
+
+  \item Save it, grant permission, and run it:
+\begin{lstlisting}[language=bash, caption={Running the grading script}]
+chmod +x ~/lab-os/week09/scripts/batch-grading.sh
+./batch-grading.sh
+\end{lstlisting}
+
+  \item Create an interactive menu script (\texttt{while} + \texttt{case}):
+\begin{lstlisting}[language=bash, caption={Creating system-menu.sh}]
+nano ~/lab-os/week09/scripts/system-menu.sh
+\end{lstlisting}
+
+  \item Type the following contents:
+\begin{lstlisting}[language=bash, caption={Contents of system-menu.sh}]
+#!/bin/bash
+# Interactive system monitoring menu
+
+while true; do
+    echo ""
+    echo "===== MONITOR MENU ====="
+    echo "1) Disk info"
+    echo "2) Memory info"
+    echo "3) Top processes"
+    echo "4) Exit"
+    echo -n "Choose [1-4]: "
+    read CHOICE
+
+    case $CHOICE in
+        1) df -h ;;
+        2) free -h ;;
+        3) ps aux --sort=-%cpu | head -6 ;;
+        4) echo "Goodbye!"; exit 0 ;;
+        *) echo "Invalid choice." ;;
+    esac
+done
+\end{lstlisting}
+
+  \item Grant permission and run it, trying each option:
+\begin{lstlisting}[language=bash, caption={Running the menu}]
+chmod +x ~/lab-os/week09/scripts/system-menu.sh
+./system-menu.sh
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[Exercise 9.3]
+Add a summary section to the bottom of \texttt{batch-grading.sh} that shows
+the number of students in each grade (A, B, C, D, E) using a second
+\texttt{for} loop that iterates over the \texttt{STUDENTS} array.
+\end{exercisebox}
+
+%%---------------------------------------------------------------------
 \section{Functions in Shell Scripts}
-\section{Argument Processing}
+\label{sec:functions-shell-scripts}
+
+\subsection*{Functions in Bash vs Java}
+
+In Java: \texttt{void methodName(String p1, String p2) \{ ... \}}. In Bash,
+functions are defined without an explicit parameter list; arguments are passed
+like command-line arguments and read with \texttt{\$1}, \texttt{\$2}, and so
+on.
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+\textbf{Concept} & \textbf{Java} & \textbf{Bash} \\
+\hline
+Definition & \texttt{void f(String a, int b)} & \texttt{f() \{ ... \}} \\
+Call & \texttt{f("x", 2)} & \texttt{f x 2} \\
+Arguments & \texttt{a}, \texttt{b} & \texttt{\$1}, \texttt{\$2} \\
+Return value & \texttt{return value} & \texttt{echo value} (via stdout) \\
+Return status & exception & \texttt{return 0--255} \\
+Local variables & local by default & must write \texttt{local} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{notebox}
+In Bash, \texttt{return} only returns a status code (0--255). To return a
+value such as a string, use \texttt{echo} inside the function, then capture
+it with substitution: \texttt{RESULT=\$(function\_name arg)}. In Java,
+variables inside methods are automatically local. In Bash, without
+\texttt{local}, variables leak into the global scope.
+\end{notebox}
+
+\begin{lstlisting}[language=bash, caption={Defining and calling functions}]
+#!/bin/bash
+
+# Function returns a value via stdout
+calculate_area() {
+    local LENGTH=$1
+    local WIDTH=$2
+    echo $((LENGTH * WIDTH))
+}
+
+# Capture the value with command substitution
+AREA=$(calculate_area 8 5)
+echo "Area: $AREA cm2"
+
+# Function returns success/failure status
+divide() {
+    local A=$1 B=$2
+    if [ "$B" -eq 0 ]; then
+        echo "Error: division by zero" >&2
+        return 1
+    fi
+    echo $((A / B))
+}
+
+RESULT=$(divide 20 4) && echo "Result: $RESULT"
+divide 10 0 || echo "Exit code: $?"
+\end{lstlisting}
+
+\subsection*{Lab 7.4 Validation Function Library}
+
+Objective: create a function library file that can be loaded
+(\texttt{source}) by other scripts, similar to \textit{import} in Java.
+
+\begin{enumerate}
+  \item Create the library file:
+\begin{lstlisting}[language=bash, caption={Creating lib-validation.sh}]
+nano ~/lab-os/week09/scripts/lib-validation.sh
+\end{lstlisting}
+
+  \item Type the following contents:
+\begin{lstlisting}[language=bash, caption={Contents of lib-validation.sh}]
+#!/bin/bash
+# lib-validation.sh - Validation function library
+
+is_number() {
+    [[ "$1" =~ ^[0-9]+$ ]]
+}
+
+is_readable_file() {
+    [ -f "$1" ] && [ -r "$1" ]
+}
+
+error_exit() {
+    echo "ERROR: $1" >&2
+    exit 1
+}
+
+info()    { echo "[INFO] $1"; }
+success() { echo "[OK]   $1"; }
+\end{lstlisting}
+
+  \item Create a script that uses the library:
+\begin{lstlisting}[language=bash, caption={Creating use-library.sh}]
+nano ~/lab-os/week09/scripts/use-library.sh
+\end{lstlisting}
+
+  \item Type the following contents:
+\begin{lstlisting}[language=bash, caption={Contents of use-library.sh}]
+#!/bin/bash
+# Load the library (similar to import in Java)
+source ~/lab-os/week09/scripts/lib-validation.sh
+
+NUMBER=$1
+FILE=$2
+
+[ -z "$NUMBER" ] || [ -z "$FILE" ] && \
+    error_exit "Usage: $0 <number> <file-path>"
+
+if is_number "$NUMBER"; then
+    success "Input '$NUMBER' is a valid number"
+else
+    error_exit "'$NUMBER' is not a number"
+fi
+
+if is_readable_file "$FILE"; then
+    success "File '$FILE' is readable"
+    info "Line count: $(wc -l < "$FILE")"
+else
+    error_exit "File '$FILE' does not exist or is not readable"
+fi
+\end{lstlisting}
+
+  \item Grant permission and test every scenario:
+\begin{lstlisting}[language=bash, caption={Testing all scenarios}]
+chmod +x ~/lab-os/week09/scripts/use-library.sh
+./use-library.sh 42 /etc/hostname
+./use-library.sh abc /etc/hostname
+./use-library.sh 42 /does-not-exist.txt
+./use-library.sh
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[Exercise 9.4]
+Add a \texttt{confirm()} function to \texttt{lib-validation.sh}. This
+function should display a question, read Y/N input from the user, return
+\texttt{0} for Y and \texttt{1} for N. Create a demo script that calls this
+function before deleting a file.
+\end{exercisebox}
+
+%%---------------------------------------------------------------------
+\section{Command-Line Argument Processing}
+\label{sec:argument-processing}
+
+Good scripts process arguments flexibly: validate the number of arguments, and
+handle options such as \texttt{-v} or \texttt{-o file}.
+
+\texttt{getopts} is Bash's standard way to process options, similar to how
+Unix commands such as \texttt{ls -la} or \texttt{grep -i} work:
+
+\begin{lstlisting}[language=bash, caption={Basic getopts pattern}]
+#!/bin/bash
+VERBOSE=false
+OUTPUT_FILE=""
+
+while getopts "vo:" OPTION; do
+    case $OPTION in
+        v) VERBOSE=true ;;
+        o) OUTPUT_FILE="$OPTARG" ;;
+        *) echo "Usage: $0 [-v] [-o file]"; exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))   # Shift so that $1 = first non-option argument
+
+echo "Verbose : $VERBOSE"
+echo "Output  : ${OUTPUT_FILE:-none}"
+echo "Remain  : $@"
+\end{lstlisting}
+
+In \texttt{"vo:"}, the \texttt{:} after a letter means that option requires
+a value (\texttt{-o file-name}), not just a flag (\texttt{-v}).
+
+\subsection*{Lab 7.5 Backup Script with Options}
+
+Objective: create a script that processes \texttt{getopts} options and
+integrates all the earlier concepts.
+
+\begin{enumerate}
+  \item Create the script:
+\begin{lstlisting}[language=bash, caption={Creating backup-data.sh}]
+nano ~/lab-os/week09/scripts/backup-data.sh
+\end{lstlisting}
+
+  \item Type the following contents:
+\begin{lstlisting}[language=bash, caption={Contents of backup-data.sh}]
+#!/bin/bash
+# Usage: ./backup-data.sh [-v] [-c] [-l logfile] <source> <destination>
+
+VERBOSE=false
+COMPRESS=false
+LOG_FILE=""
+
+while getopts "vcl:" OPTION; do
+    case $OPTION in
+        v) VERBOSE=true ;;
+        c) COMPRESS=true ;;
+        l) LOG_FILE="$OPTARG" ;;
+        *) echo "Usage: $0 [-v] [-c] [-l logfile] <source> <destination>"
+           exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+SOURCE=$1
+DESTINATION=$2
+
+log() {
+    local MSG="[$(date '+%T')] $1"
+    echo "$MSG"
+    [ -n "$LOG_FILE" ] && echo "$MSG" >> "$LOG_FILE"
+}
+
+[ -z "$SOURCE" ] || [ -z "$DESTINATION" ] && {
+    echo "ERROR: source and destination are required"; exit 1; }
+
+[ ! -d "$SOURCE" ] && { log "ERROR: $SOURCE does not exist"; exit 2; }
+
+mkdir -p "$DESTINATION"
+DATE=$(date '+%F-%H%M%S')
+[ "$VERBOSE" = true ] && log "Source: $SOURCE | Destination: $DESTINATION"
+
+if [ "$COMPRESS" = true ]; then
+    ARCHIVE="$DESTINATION/backup-$(basename "$SOURCE")-$DATE.tar.gz"
+    tar -czf "$ARCHIVE" -C "$(dirname "$SOURCE")" "$(basename "$SOURCE")"
+    log "Archive: $ARCHIVE ($(du -sh "$ARCHIVE" | cut -f1))"
+else
+    cp -r "$SOURCE" "$DESTINATION/backup-$(basename "$SOURCE")-$DATE"
+    log "Backup completed."
+fi
+\end{lstlisting}
+
+  \item Grant permission and test it:
+\begin{lstlisting}[language=bash, caption={Testing the backup script}]
+chmod +x ~/lab-os/week09/scripts/backup-data.sh
+cd ~/lab-os/week09/scripts
+
+# Without options
+./backup-data.sh ~/lab-os/week09/data ~/lab-os/week09/logs
+
+# With verbose and compression + logging to file
+./backup-data.sh -v -c -l ../logs/backup.log \
+  ~/lab-os/week09/data ~/lab-os/week09/logs
+
+cat ../logs/backup.log
+\end{lstlisting}
+\end{enumerate}
+
+%%---------------------------------------------------------------------
 \section{Debugging Shell Scripts}
+\label{sec:debugging-script}
+
+Debugging in Bash is different from Java, which has interactive debuggers.
+Bash provides tracing mechanisms to show each line before it is executed.
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+\textbf{Flag} & \textbf{Meaning} & \textbf{How to enable it} \\
+\hline
+\texttt{-x} & Show each command before it runs & \texttt{bash -x script.sh} \\
+\texttt{-e} & Exit when a command fails & \texttt{set -e} \\
+\texttt{-u} & Exit on undefined variables & \texttt{set -u} \\
+\texttt{-n} & Check syntax without executing & \texttt{bash -n script.sh} \\
+\hline
+\end{tabular}
+\end{center}
+
+The combination \texttt{set -euo pipefail} at the top of a script catches many
+common errors automatically. Add \texttt{trap} for cleanup:
+
+\begin{lstlisting}[language=bash, caption={Defensive script pattern}]
+#!/bin/bash
+set -euo pipefail
+
+cleanup() { echo "[CLEANUP] done."; }
+trap cleanup EXIT      # cleanup always runs when the script ends
+
+DEBUG=${DEBUG:-false}
+debug() { [ "$DEBUG" = true ] && echo "[DEBUG] $*" >&2; }
+
+debug "Script started with PID $$"
+echo "Script is running normally"
+\end{lstlisting}
+
+\begin{notebox}
+\texttt{trap cleanup EXIT} is similar to \texttt{finally} in Java: it ensures
+cleanup runs even if the script fails partway through.
+\end{notebox}
+
+\subsection*{Lab 7.6 Debugging a Script}
+
+Objective: use debugging techniques to analyze and fix a script.
+
+\begin{enumerate}
+  \item Create the script to analyze:
+\begin{lstlisting}[language=bash, caption={Creating debug-practice.sh}]
+nano ~/lab-os/week09/scripts/debug-practice.sh
+\end{lstlisting}
+
+  \item Type the following contents:
+\begin{lstlisting}[language=bash, caption={Contents of debug-practice.sh}]
+#!/bin/bash
+# Script: debug-practice.sh
+# Usage: ./debug-practice.sh <directory> <limit-MB>
+
+DIRECTORY=$1
+LIMIT=$2
+
+if [ $# -ne 2 ]; then
+    echo "Usage: $0 <directory> <limit-MB>"
+    exit 1
+fi
+
+SIZE=$(du -sm "$DIRECTORY" | cut -f1)
+
+echo "Directory : $DIRECTORY"
+echo "Size      : ${SIZE} MB"
+echo "Limit     : ${LIMIT} MB"
+
+if [ "$SIZE" -gt "$LIMIT" ]; then
+    echo "WARNING: Size exceeds the limit!"
+    echo "Excess: $((SIZE - LIMIT)) MB"
+else
+    echo "Status: Normal (remaining: $((LIMIT - SIZE)) MB)"
+fi
+\end{lstlisting}
+
+  \item Check the syntax, then run it with tracing:
+\begin{lstlisting}[language=bash, caption={Analyzing the script with debugging}]
+chmod +x ~/lab-os/week09/scripts/debug-practice.sh
+bash -n debug-practice.sh && echo "Syntax OK"
+bash -x debug-practice.sh /etc 10
+./debug-practice.sh /var 50
+./debug-practice.sh
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[Exercise 9.5]
+The script \texttt{debug-practice.sh} does not handle missing directories.
+Fix it by adding:
+\begin{itemize}
+  \item \texttt{set -e} on the second line
+  \item A \texttt{-d "\$DIRECTORY"} check before calling \texttt{du}
+  \item An informative error message if the directory is not found
+\end{itemize}
+Test it with a directory that does not exist.
+\end{exercisebox}
+
+%%---------------------------------------------------------------------
 \section{Best Practices}
+\label{sec:best-practices}
+
+Good Bash scripts follow these principles:
+
+\begin{enumerate}
+  \item \textbf{Always write a shebang} (\texttt{\#!/bin/bash}).
+  \item \textbf{Use \texttt{set -euo pipefail}} at the start of the script.
+  \item \textbf{Quote all variables}: \texttt{"\$NAME"}, not
+    \texttt{\$NAME}, to prevent problems when values contain spaces.
+  \item \textbf{Use \texttt{local}} inside functions to prevent variables
+    from leaking into the global scope.
+  \item \textbf{Validate all input} before processing it.
+  \item \textbf{Use descriptive variable names}: \texttt{BACKUP\_DIRECTORY}
+    is clearer than \texttt{D}.
+  \item \textbf{Use \texttt{trap}} for cleanup when the script exits.
+  \item \textbf{Separate configuration from logic}: place configuration
+    variables at the top of the script.
+\end{enumerate}
+
+Professional script template that applies all of the principles above:
+
+\begin{longlisting}[language=bash, caption={Professional Bash script template}]
+#!/bin/bash
+# ====================================================
+# Script: script-name.sh
+# Description: Brief explanation of this script
+# Usage: ./script-name.sh [-v] [-h] <arguments>
+# ====================================================
+
+set -euo pipefail
+
+SCRIPT_NAME=$(basename "$0")
+VERBOSE=false
+
+usage() {
+    echo "Usage: $SCRIPT_NAME [-v] [-h] <arguments>"
+    echo "  -v  Verbose mode"
+    echo "  -h  Show help"
+    exit 0
+}
+
+log()         { echo "[$SCRIPT_NAME] $*"; }
+log_verbose() { [ "$VERBOSE" = true ] && log "$*"; }
+error_exit()  { echo "ERROR: $*" >&2; exit 1; }
+cleanup()     { log_verbose "Cleanup finished."; }
+
+trap cleanup EXIT
+
+while getopts "vh" OPTION; do
+    case $OPTION in
+        v) VERBOSE=true ;;
+        h) usage ;;
+        *) error_exit "Unknown option. Use -h." ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+[ $# -lt 1 ] && error_exit "Incomplete arguments. Use -h."
+
+log "Script started"
+log_verbose "Arguments: $*"
+
+# Main logic goes here
+
+log "Done."
+\end{longlisting}
+
+%%---------------------------------------------------------------------
+\section{Lab Assignments}
+\label{sec:lab-assignment-bash-prog}
+
+\begin{warningbox}
+Do the assignments in \texttt{\$HOME/lab-os/week09/}. Put scripts in
+\texttt{scripts/} and output files in \texttt{logs/}.
+\end{warningbox}
+
+\subsection*{Assignment 1 Class Attendance Script}
+
+\textbf{Context:} an instructor records student attendance from the command
+line.
+
+\textbf{Instructions:}
+\begin{enumerate}
+  \item Create a script named \texttt{attendance.sh} that:
+  \begin{itemize}
+    \item Accepts student name and status arguments
+      (\texttt{present}/\texttt{excused}/\texttt{absent})
+    \item Saves each entry to \texttt{attendance-YYYY-MM-DD.txt} in the format
+      \texttt{[HH:MM] NAME - STATUS}
+    \item Supports the \texttt{-r} option to show a recap (count per status)
+    \item Supports the \texttt{-h} option to show help
+  \end{itemize}
+  \item Record at least 5 entries and display the recap.
+\end{enumerate}
+
+\textbf{Required concepts:} variables, positional parameters,
+\texttt{getopts}, \texttt{if}, \texttt{for}, functions, and file
+redirection.
+
+\subsection*{Assignment 2 System Health Check Script}
+
+\textbf{Context:} an administrator performs a server health check before
+maintenance.
+
+\textbf{Instructions:}
+\begin{enumerate}
+  \item Create a script named \texttt{healthcheck.sh} using the professional
+    template from the Best Practices section.
+  \item The script should display: date/time, hostname, uptime, CPU usage,
+    memory usage, and disk usage for every mounted filesystem.
+  \item If any disk usage exceeds 80\%, display a warning.
+  \item Save the result to \texttt{healthcheck-YYYY-MM-DD.log} and also show
+    it in the terminal using \texttt{tee}.
+  \item The option \texttt{-t <percent>} changes the disk warning threshold
+    (default 80).
+\end{enumerate}
+
+\textbf{Required concepts:} \texttt{set -euo pipefail}, \texttt{trap},
+\texttt{getopts}, functions with \texttt{local}, \texttt{for},
+\texttt{if}, and \texttt{tee}.
+
+%%---------------------------------------------------------------------
 \section{Summary}
-\section{Exercises}
-\section{Additional References}
+\label{sec:summary-bash-prog}
+
+\begin{itemize}
+  \item The shebang (\texttt{\#!/bin/bash}) determines the interpreter.
+    Without a shebang, script behavior is undefined.
+  \item Bash variables are untyped; arithmetic uses \texttt{\$(( ))}; command
+    output is captured with \texttt{\$( )}.
+  \item Positional parameters (\texttt{\$1}, \texttt{\$\#}, \texttt{\$@})
+    let scripts receive arguments from the command line.
+  \item The control structures \texttt{if}, \texttt{for}, \texttt{while},
+    and \texttt{case} are conceptually equivalent to Java, with different
+    syntax.
+  \item Functions receive arguments via \texttt{\$1}/\texttt{\$2}; use
+    \texttt{local} for local variables and \texttt{echo} to return values.
+  \item \texttt{getopts} processes options like \texttt{-x} in standard Unix
+    commands.
+  \item \texttt{set -euo pipefail} and \texttt{trap} are the foundation of
+    reliable, debuggable scripts.
+\end{itemize}
+
+%%---------------------------------------------------------------------
+\section{References}
+\label{sec:references-bash-prog}
+
+\begin{enumerate}
+  \item GNU Bash Reference Manual \url{https://www.gnu.org/software/bash/manual/}
+  \item William Shotts, \textit{The Linux Command Line}, 2nd Edition. No Starch Press.
+  \item Arnold Robbins and Nelson H.F.\ Beebe, \textit{Classic Shell Scripting}. O'Reilly.
+  \item Richard Blum and Christine Bresnahan, \textit{Linux Command Line and Shell Scripting Bible}, 4th Edition.
+  \item ShellCheck, a static analysis tool for Bash scripts: \url{https://www.shellcheck.net}
+\end{enumerate}

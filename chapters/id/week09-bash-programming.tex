@@ -5,16 +5,935 @@
 \chapter{Pemrograman Bash}
 \label{ch:bash-programming}
 
-Bab ini membahas dasar-dasar scripting Bash, variabel, struktur kontrol,
-fungsi, dan best practices dalam membuat shell script.
+Bab ini membahas dasar-dasar pemrograman Bash: membuat script, mengelola
+variabel, menulis struktur kontrol, mendefinisikan fungsi, memproses argumen,
+dan melakukan debugging. Konsep dibandingkan dengan Java agar mahasiswa yang
+sudah mengenal pemrograman dapat membangun pemahaman lebih cepat.
 
+\begin{examplebox}[Bash sebagai bahasa pemrograman]
+Bayangkan Anda sudah pernah menulis program Java. Java pun memiliki
+variabel, kondisi, perulangan, dan fungsi. Bash pun demikian, bedanya,
+Bash menjalankan \textit{perintah sistem operasi} sebagai bagian dari logika
+programnya. Sebuah script Bash adalah \textbf{daftar perintah terminal yang
+disimpan dalam file}, dilengkapi logika kontrol agar dapat berjalan otomatis
+tanpa keterlibatan manusia.
+\end{examplebox}
+
+%% ------------------------------------------------------------------------
 \section{Dasar-dasar Scripting Bash}
+\label{sec:membuat-script}
+
+\subsection*{Cara Membuat dan Mengedit File Script}
+
+Bab ini menggunakan dua cara membuat file: \textbf{nano} untuk menulis
+interaktif, dan \textbf{heredoc} untuk membuat file langsung dari terminal.
+
+\textbf{Menggunakan nano:}
+\begin{enumerate}
+  \item Buka atau buat file: \texttt{nano nama-file.sh}
+  \item Ketik isi file kursor langsung aktif, tidak ada mode khusus.
+  \item Tombol penting:
+  \begin{itemize}
+    \item \keystroke{Ctrl+O} lalu \keystroke{Enter} simpan file
+    \item \keystroke{Ctrl+X} keluar dari nano
+    \item \keystroke{Ctrl+W} cari teks dalam file
+  \end{itemize}
+\end{enumerate}
+
+\begin{notebox}
+Di bagian bawah layar nano, selalu tampil daftar shortcut aktif. Tanda
+\texttt{\^{}} berarti \texttt{Ctrl}, jadi \texttt{\^{}O} = \keystroke{Ctrl+O}.
+\end{notebox}
+
+\textbf{Menggunakan heredoc} (untuk script pendek atau otomatisasi):
+\begin{lstlisting}[language=bash, caption={Membuat file dengan heredoc}]
+cat <<'EOF' > nama-file.sh
+#!/bin/bash
+echo "Halo dari script"
+EOF
+\end{lstlisting}
+
+\subsection*{Struktur Dasar dan Shebang Line}
+
+Setiap script Bash diawali dengan \textit{shebang line}:
+
+\begin{lstlisting}[language=bash, caption={Struktur dasar script Bash}]
+#!/bin/bash
+# Komentar: jelaskan fungsi script ini
+
+echo "Script berjalan"
+\end{lstlisting}
+
+Baris \texttt{\#!} memberi tahu kernel Linux interpreter mana yang
+digunakan. Ada dua bentuk yang umum:
+
+\begin{itemize}
+  \item \texttt{\#!/bin/bash} path absolut ke Bash. Paling umum di
+    Linux, sederhana, dan langsung.
+  \item \texttt{\#!/usr/bin/env bash} meminta perintah \texttt{env}
+    mencari Bash di \var{PATH}. Lebih portabel lintas sistem operasi.
+\end{itemize}
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+\textbf{Aspek} & \textbf{\#!/bin/bash} & \textbf{\#!/usr/bin/env bash} \\
+\hline
+Lokasi Bash & Tetap \texttt{/bin/bash} & Dicari di \texttt{PATH} \\
+Portabilitas & Linux standar & Linux dan macOS \\
+Rekomendasi & Praktikum ini & Script lintas platform \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{notebox}
+Shebang hanya bekerja jika file memiliki izin eksekusi (\texttt{chmod +x})
+dan dijalankan langsung (\texttt{./script.sh}). Jika dipanggil
+\texttt{bash script.sh}, shebang diabaikan karena interpreter
+sudah ditentukan eksplisit.
+\end{notebox}
+
+Setelah membuat script, beri izin eksekusi dan jalankan:
+
+\begin{lstlisting}[language=bash, caption={Memberi izin dan menjalankan script}]
+chmod +x nama-file.sh
+./nama-file.sh
+\end{lstlisting}
+
+\subsection*{Praktikum 7.1 Script Pertama: Laporan Sistem}
+
+Tujuan: membuat, menyimpan, dan menjalankan script Bash pertama.
+
+\begin{enumerate}
+  \item Buat workspace praktikum:
+\begin{lstlisting}[language=bash, caption={Menyiapkan workspace}]
+mkdir -p ~/praktikum-os/week09/{scripts,logs,data}
+cd ~/praktikum-os/week09/scripts
+\end{lstlisting}
+
+  \item Buat script dengan nano:
+\begin{lstlisting}[language=bash, caption={Membuka nano}]
+nano laporan-sistem.sh
+\end{lstlisting}
+
+  \item Ketik isi berikut, simpan (\keystroke{Ctrl+O} \keystroke{Enter}),
+    lalu keluar (\keystroke{Ctrl+X}):
+\begin{lstlisting}[language=bash, caption={Isi laporan-sistem.sh}]
+#!/bin/bash
+# Script: laporan-sistem.sh
+
+echo "================================"
+echo "  LAPORAN SISTEM"
+echo "================================"
+echo "Tanggal  : $(date '+%A, %d %B %Y')"
+echo "Jam      : $(date '+%H:%M:%S')"
+echo "Hostname : $(hostname)"
+echo "User     : $(whoami)"
+echo "CPU core : $(nproc)"
+echo "RAM bebas: $(free -h | awk '/^Mem/ {print $4}')"
+echo "Disk /   : $(df -h / | awk 'NR==2 {print $5}') terpakai"
+echo "================================"
+\end{lstlisting}
+
+  \item Beri izin dan jalankan:
+\begin{lstlisting}[language=bash, caption={Menjalankan script}]
+chmod +x laporan-sistem.sh
+./laporan-sistem.sh
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[Latihan 9.1]
+Modifikasi \texttt{laporan-sistem.sh} agar menyimpan output ke file
+\texttt{laporan-YYYY-MM-DD.txt} sekaligus menampilkannya di terminal.
+Petunjuk: gunakan \texttt{tee} yang sudah dipelajari di bab sebelumnya.
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Variabel dan Parameter Posisional}
+\label{sec:variabel-parameter}
+
+\subsection*{Variabel di Bash vs Java}
+
+Di Java: \texttt{String nama = "Budi";}. Di Bash, aturannya berbeda:
+
+\begin{itemize}
+  \item \textbf{Deklarasi}: \texttt{NAMA="Budi"} tanpa spasi di sekitar \texttt{=}
+  \item \textbf{Akses nilai}: \texttt{\$NAMA} atau \texttt{\$\{NAMA\}}
+  \item \textbf{Tipe data}: tidak ada. Semua variabel Bash adalah string
+    secara default; aritmetika memerlukan sintaks khusus.
+\end{itemize}
+
+\begin{warningbox}
+\texttt{NAMA = "Budi"} (dengan spasi) menghasilkan error Bash mengira
+\texttt{NAMA} adalah nama perintah. Selalu tulis tanpa spasi.
+\end{warningbox}
+
+Variabel khusus yang paling sering dipakai dalam scripting:
+
+\begin{center}
+\begin{tabular}{ll}
+\hline
+\textbf{Variabel} & \textbf{Nilai} \\
+\hline
+\texttt{\$0} & Nama script yang sedang berjalan \\
+\texttt{\$1}, \texttt{\$2}, \ldots & Argumen ke-1, ke-2, dst. \\
+\texttt{\$\#} & Jumlah argumen yang diberikan \\
+\texttt{\$@} & Semua argumen sebagai daftar terpisah \\
+\texttt{\$?} & Exit code perintah terakhir (0 = sukses) \\
+\texttt{\$\$} & PID script saat ini \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection*{Parameter Posisional dan Nilai Default}
+
+Seperti metode Java yang menerima argumen
+(\texttt{void fungsi(String a, String b)}), script Bash menerima argumen
+dari command line. Argumen dibaca dengan \texttt{\$1}, \texttt{\$2}, dst.
+
+Konstruk \texttt{\$\{1:-"default"\}} membaca \texttt{\$1}; jika kosong,
+gunakan nilai default. Setara dengan
+\texttt{args.length > 0 ? args[0] : "default"} di Java.
+
+\subsection*{Aritmetika dan Substitusi Perintah}
+
+Bash tidak langsung menghitung ekspresi aritmetika. Gunakan \texttt{\$(( ))}:
+
+\begin{lstlisting}[language=bash, caption={Aritmetika dan substitusi perintah}]
+A=10
+B=3
+
+echo "Jumlah  : $((A + B))"
+echo "Modulo  : $((A % B))"
+echo "Pembagian: $((A / B))"   # Hasil bulat, sama seperti int di Java
+
+# Substitusi perintah: simpan output ke variabel
+TANGGAL=$(date '+%F')
+JUMLAH_FILE=$(ls | wc -l)
+echo "Tanggal: $TANGGAL, File: $JUMLAH_FILE"
+\end{lstlisting}
+
+\begin{notebox}
+Di Java, \texttt{10 / 3} untuk tipe \texttt{int} menghasilkan \texttt{3}.
+Di Bash, \texttt{\$((10 / 3))} juga menghasilkan \texttt{3}. Gunakan
+\texttt{bc} jika butuh presisi desimal.
+\end{notebox}
+
+\subsection*{Praktikum 7.2 Script Info Sistem dengan Argumen}
+
+Tujuan: berlatih variabel, substitusi perintah, parameter posisional,
+dan nilai default.
+
+\begin{enumerate}
+  \item Buat script:
+\begin{lstlisting}[language=bash, caption={Membuat script info-sistem.sh}]
+nano ~/praktikum-os/week09/scripts/info-sistem.sh
+\end{lstlisting}
+
+  \item Ketik isi berikut:
+\begin{lstlisting}[language=bash, caption={Isi info-sistem.sh}]
+#!/bin/bash
+# Penggunaan: ./info-sistem.sh [nama-admin] [batas-disk-persen]
+
+ADMIN=${1:-"Tidak dikenal"}
+BATAS=${2:-80}
+TANGGAL=$(date '+%F %T')
+DISK_PERSEN=$(df / | awk 'NR==2 {print $5}' | tr -d '%')
+
+echo "Admin    : $ADMIN"
+echo "Tanggal  : $TANGGAL"
+echo "Disk /   : ${DISK_PERSEN}% terpakai"
+echo "Batas    : ${BATAS}%"
+
+if [ "$DISK_PERSEN" -gt "$BATAS" ]; then
+    echo "STATUS   : PERINGATAN - disk melebihi batas!"
+else
+    SISA=$((BATAS - DISK_PERSEN))
+    echo "STATUS   : Normal (sisa toleransi ${SISA}%)"
+fi
+\end{lstlisting}
+
+  \item Simpan, beri izin, uji dengan berbagai kombinasi argumen:
+\begin{lstlisting}[language=bash, caption={Menguji script}]
+chmod +x ~/praktikum-os/week09/scripts/info-sistem.sh
+./info-sistem.sh
+./info-sistem.sh "Dian" 50
+./info-sistem.sh "Dian" 10
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[Latihan 9.2]
+Buat script \texttt{kalkulator.sh} yang menerima tiga argumen:
+\texttt{<angka1> <operator> <angka2>} dengan operator \texttt{+},
+\texttt{-}, \texttt{*}, atau \texttt{/}. Contoh:
+\texttt{./kalkulator.sh 20 + 5} menghasilkan \texttt{25}.
+Gunakan \texttt{case} untuk memilih operasi, dan validasi jika argumen
+tidak lengkap.
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Struktur Kontrol}
+\label{sec:struktur-kontrol}
+
+Struktur kontrol di Bash konsepnya sama dengan Java, hanya sintaksnya berbeda.
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+\textbf{Konsep} & \textbf{Java} & \textbf{Bash} \\
+\hline
+Kondisi if & \texttt{if (x > 5) \{} & \texttt{if [ \$x -gt 5 ]; then} \\
+Blok kode & kurung kurawal & \texttt{then ... fi} \\
+Else if & \texttt{else if (...) \{} & \texttt{elif ...; then} \\
+Tidak sama & \texttt{!=} & \texttt{!=} (string), \texttt{-ne} (angka) \\
+Dan / Atau & \texttt{\&\&} / \texttt{||} & \texttt{\&\&} / \texttt{||} \\
+Switch & \texttt{switch (x) \{ case "a": \}} & \texttt{case \$x in "a") ... ;;} \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection*{Operator Perbandingan}
+
+\textbf{Angka:} \texttt{-eq}, \texttt{-ne}, \texttt{-gt}, \texttt{-lt},
+\texttt{-ge}, \texttt{-le}
+
+\textbf{String:} \texttt{=} atau \texttt{==} (sama), \texttt{!=} (tidak sama),
+\texttt{-z} (kosong), \texttt{-n} (tidak kosong)
+
+\textbf{File:} \texttt{-f} (file ada), \texttt{-d} (direktori ada),
+\texttt{-r} (bisa dibaca), \texttt{-x} (bisa dieksekusi)
+
+\subsection*{Perulangan \texttt{for} dan \texttt{while}}
+
+\begin{lstlisting}[language=bash, caption={Perulangan for dan while}]
+# for iterasi atas daftar (mirip for-each Java)
+for BULAN in Januari Februari Maret; do
+    echo "Bulan: $BULAN"
+done
+
+# for C-style (mirip Java)
+for ((I=1; I<=5; I++)); do
+    echo "Angka: $I"
+done
+
+# for atas file
+for FILE in ~/praktikum-os/week09/scripts/*.sh; do
+    echo "Script: $(basename $FILE)"
+done
+
+# while selama kondisi benar
+COUNTER=1
+while [ $COUNTER -le 3 ]; do
+    echo "Iterasi $COUNTER"
+    COUNTER=$((COUNTER + 1))
+done
+\end{lstlisting}
+
+\subsection*{Struktur \texttt{case}}
+
+\texttt{case} setara \texttt{switch} di Java. Setiap blok diakhiri \texttt{;;}
+(bukan \texttt{break}). Pola \texttt{*)} setara \texttt{default:}.
+
+\begin{notebox}
+Di Java, lupa menulis \texttt{break} menyebabkan \textit{fall-through}.
+Di Bash, \texttt{;;} sudah otomatis menghentikan eksekusi blok
+tidak ada fall-through secara default.
+\end{notebox}
+
+\subsection*{Praktikum 7.3 Script Grading dan Menu Interaktif}
+
+Tujuan: menggabungkan \texttt{if}, \texttt{for}, \texttt{while}, dan
+\texttt{case} dalam satu session.
+
+\begin{enumerate}
+  \item Buat script grading (menggunakan \texttt{if} dan \texttt{for}):
+\begin{lstlisting}[language=bash, caption={Membuat script grading-batch.sh}]
+nano ~/praktikum-os/week09/scripts/grading-batch.sh
+\end{lstlisting}
+
+  \item Ketik isi berikut:
+\begin{lstlisting}[language=bash, caption={Isi grading-batch.sh}]
+#!/bin/bash
+# Script: grading-batch.sh
+# Proses daftar nilai mahasiswa
+
+MAHASISWA=("Andi:92" "Budi:73" "Citra:55" "Deni:80" "Eka:45")
+
+echo "=== HASIL GRADING ==="
+for ENTRI in "${MAHASISWA[@]}"; do
+    NAMA=$(echo "$ENTRI" | cut -d: -f1)
+    NILAI=$(echo "$ENTRI" | cut -d: -f2)
+
+    if [ "$NILAI" -ge 85 ]; then
+        GRADE="A"
+    elif [ "$NILAI" -ge 75 ]; then
+        GRADE="B"
+    elif [ "$NILAI" -ge 65 ]; then
+        GRADE="C"
+    elif [ "$NILAI" -ge 55 ]; then
+        GRADE="D"
+    else
+        GRADE="E"
+    fi
+
+    printf "%-10s %3d  %s\n" "$NAMA" "$NILAI" "$GRADE"
+done
+echo "====================="
+\end{lstlisting}
+
+  \item Simpan, beri izin, dan jalankan:
+\begin{lstlisting}[language=bash, caption={Menjalankan script grading}]
+chmod +x ~/praktikum-os/week09/scripts/grading-batch.sh
+./grading-batch.sh
+\end{lstlisting}
+
+  \item Buat script menu interaktif (\texttt{while} + \texttt{case}):
+\begin{lstlisting}[language=bash, caption={Membuat script menu-sistem.sh}]
+nano ~/praktikum-os/week09/scripts/menu-sistem.sh
+\end{lstlisting}
+
+  \item Ketik isi berikut:
+\begin{lstlisting}[language=bash, caption={Isi menu-sistem.sh}]
+#!/bin/bash
+# Menu interaktif pemantauan sistem
+
+while true; do
+    echo ""
+    echo "===== MENU MONITOR ====="
+    echo "1) Info disk"
+    echo "2) Info memori"
+    echo "3) Proses teratas"
+    echo "4) Keluar"
+    echo -n "Pilih [1-4]: "
+    read PILIHAN
+
+    case $PILIHAN in
+        1) df -h ;;
+        2) free -h ;;
+        3) ps aux --sort=-%cpu | head -6 ;;
+        4) echo "Sampai jumpa!"; exit 0 ;;
+        *) echo "Pilihan tidak valid." ;;
+    esac
+done
+\end{lstlisting}
+
+  \item Beri izin dan jalankan, coba setiap opsi:
+\begin{lstlisting}[language=bash, caption={Menjalankan menu}]
+chmod +x ~/praktikum-os/week09/scripts/menu-sistem.sh
+./menu-sistem.sh
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[Latihan 9.3]
+Tambahkan ke script \texttt{grading-batch.sh} sebuah ringkasan di bagian
+bawah yang menampilkan: jumlah mahasiswa per grade (A, B, C, D, E)
+menggunakan perulangan \texttt{for} kedua yang mengiterasi array
+\texttt{MAHASISWA}.
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Fungsi dalam Shell Script}
-\section{Pengolahan Argumen}
+\label{sec:fungsi-shell-script}
+
+\subsection*{Fungsi di Bash vs Java}
+
+Di Java: \texttt{void namaMetode(String p1, String p2) \{ ... \}}.
+Di Bash, fungsi didefinisikan tanpa daftar parameter eksplisit argumen
+dikirim seperti command line dan dibaca dengan \texttt{\$1}, \texttt{\$2}, dst.
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+\textbf{Konsep} & \textbf{Java} & \textbf{Bash} \\
+\hline
+Definisi & \texttt{void f(String a, int b)} & \texttt{f() \{ ... \}} \\
+Panggil & \texttt{f("x", 2)} & \texttt{f x 2} \\
+Argumen & \texttt{a}, \texttt{b} & \texttt{\$1}, \texttt{\$2} \\
+Return nilai & \texttt{return nilai} & \texttt{echo nilai} (via stdout) \\
+Return status & exception & \texttt{return 0--255} \\
+Variabel lokal & default lokal & wajib tulis \texttt{local} \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{notebox}
+Di Bash, \texttt{return} hanya mengembalikan kode status (0--255). Untuk
+mengembalikan nilai seperti string, gunakan \texttt{echo} di dalam fungsi
+lalu tangkap dengan substitusi: \texttt{HASIL=\$(nama\_fungsi arg)}.
+Di Java, variabel dalam metode otomatis lokal. Di Bash, tanpa \texttt{local},
+variabel bocor ke lingkup global.
+\end{notebox}
+
+\begin{lstlisting}[language=bash, caption={Mendefinisikan dan memanggil fungsi}]
+#!/bin/bash
+
+# Fungsi mengembalikan nilai via stdout
+hitung_luas() {
+    local PANJANG=$1
+    local LEBAR=$2
+    echo $((PANJANG * LEBAR))
+}
+
+# Tangkap nilai dengan substitusi perintah
+LUAS=$(hitung_luas 8 5)
+echo "Luas: $LUAS cm2"
+
+# Fungsi mengembalikan status sukses/gagal
+bagi() {
+    local A=$1 B=$2
+    if [ "$B" -eq 0 ]; then
+        echo "Error: pembagi nol" >&2
+        return 1
+    fi
+    echo $((A / B))
+}
+
+HASIL=$(bagi 20 4) && echo "Hasil: $HASIL"
+bagi 10 0 || echo "Exit code: $?"
+\end{lstlisting}
+
+\subsection*{Praktikum 7.4 Library Fungsi Validasi}
+
+Tujuan: membuat file library fungsi yang dapat dimuat (\texttt{source})
+oleh script lain konsep serupa dengan \textit{import} di Java.
+
+\begin{enumerate}
+  \item Buat file library:
+\begin{lstlisting}[language=bash, caption={Membuat lib-validasi.sh}]
+nano ~/praktikum-os/week09/scripts/lib-validasi.sh
+\end{lstlisting}
+
+  \item Ketik isi berikut:
+\begin{lstlisting}[language=bash, caption={Isi lib-validasi.sh}]
+#!/bin/bash
+# lib-validasi.sh - Library fungsi validasi
+
+adalah_angka() {
+    [[ "$1" =~ ^[0-9]+$ ]]
+}
+
+file_bisa_dibaca() {
+    [ -f "$1" ] && [ -r "$1" ]
+}
+
+error_exit() {
+    echo "ERROR: $1" >&2
+    exit 1
+}
+
+info()   { echo "[INFO] $1"; }
+sukses() { echo "[OK]   $1"; }
+\end{lstlisting}
+
+  \item Buat script yang menggunakan library:
+\begin{lstlisting}[language=bash, caption={Membuat script pakai-library.sh}]
+nano ~/praktikum-os/week09/scripts/pakai-library.sh
+\end{lstlisting}
+
+  \item Ketik isi berikut:
+\begin{lstlisting}[language=bash, caption={Isi pakai-library.sh}]
+#!/bin/bash
+# Muat library (seperti import di Java)
+source ~/praktikum-os/week09/scripts/lib-validasi.sh
+
+ANGKA=$1
+FILE=$2
+
+[ -z "$ANGKA" ] || [ -z "$FILE" ] && \
+    error_exit "Penggunaan: $0 <angka> <path-file>"
+
+if adalah_angka "$ANGKA"; then
+    sukses "Input '$ANGKA' adalah angka valid"
+else
+    error_exit "'$ANGKA' bukan angka"
+fi
+
+if file_bisa_dibaca "$FILE"; then
+    sukses "File '$FILE' bisa dibaca"
+    info "Jumlah baris: $(wc -l < "$FILE")"
+else
+    error_exit "File '$FILE' tidak ada atau tidak bisa dibaca"
+fi
+\end{lstlisting}
+
+  \item Beri izin dan uji semua skenario:
+\begin{lstlisting}[language=bash, caption={Menguji semua skenario}]
+chmod +x ~/praktikum-os/week09/scripts/pakai-library.sh
+./pakai-library.sh 42 /etc/hostname
+./pakai-library.sh abc /etc/hostname
+./pakai-library.sh 42 /tidak-ada.txt
+./pakai-library.sh
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[Latihan 9.4]
+Tambahkan fungsi \texttt{konfirmasi()} ke \texttt{lib-validasi.sh}.
+Fungsi ini menampilkan pertanyaan, membaca input Y/N dari user,
+mengembalikan \texttt{0} jika Y dan \texttt{1} jika N. Buat script demo
+yang memanggil fungsi ini sebelum menghapus sebuah file.
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
+\section{Pengolahan Argumen Command Line}
+\label{sec:pengolahan-argumen}
+
+Script yang baik memproses argumen secara fleksibel: validasi jumlah
+argumen, dan opsi seperti \texttt{-v} atau \texttt{-o file}.
+
+\texttt{getopts} adalah cara standar Bash memproses opsi mirip cara
+kerja perintah Unix seperti \texttt{ls -la} atau \texttt{grep -i}:
+
+\begin{lstlisting}[language=bash, caption={Pola dasar getopts}]
+#!/bin/bash
+VERBOSE=false
+OUTPUT_FILE=""
+
+while getopts "vo:" OPSI; do
+    case $OPSI in
+        v) VERBOSE=true ;;
+        o) OUTPUT_FILE="$OPTARG" ;;
+        *) echo "Penggunaan: $0 [-v] [-o file]"; exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))   # Geser argumen agar $1 = argumen non-opsi pertama
+
+echo "Verbose : $VERBOSE"
+echo "Output  : ${OUTPUT_FILE:-tidak ada}"
+echo "Sisa    : $@"
+\end{lstlisting}
+
+Dalam \texttt{"vo:"}, tanda \texttt{:} setelah huruf berarti opsi itu
+memerlukan nilai (\texttt{-o nama-file}), bukan sekadar flag (\texttt{-v}).
+
+\subsection*{Praktikum 7.5 Script Backup dengan Opsi}
+
+Tujuan: membuat script yang memproses opsi \texttt{getopts} dan
+mengintegrasikan semua konsep sebelumnya.
+
+\begin{enumerate}
+  \item Buat script:
+\begin{lstlisting}[language=bash, caption={Membuat backup-data.sh}]
+nano ~/praktikum-os/week09/scripts/backup-data.sh
+\end{lstlisting}
+
+  \item Ketik isi berikut:
+\begin{lstlisting}[language=bash, caption={Isi backup-data.sh}]
+#!/bin/bash
+# Penggunaan: ./backup-data.sh [-v] [-c] [-l logfile] <sumber> <tujuan>
+
+VERBOSE=false
+COMPRESS=false
+LOG_FILE=""
+
+while getopts "vcl:" OPSI; do
+    case $OPSI in
+        v) VERBOSE=true ;;
+        c) COMPRESS=true ;;
+        l) LOG_FILE="$OPTARG" ;;
+        *) echo "Penggunaan: $0 [-v] [-c] [-l logfile] <sumber> <tujuan>"
+           exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+SUMBER=$1
+TUJUAN=$2
+
+log() {
+    local MSG="[$(date '+%T')] $1"
+    echo "$MSG"
+    [ -n "$LOG_FILE" ] && echo "$MSG" >> "$LOG_FILE"
+}
+
+[ -z "$SUMBER" ] || [ -z "$TUJUAN" ] && {
+    echo "ERROR: sumber dan tujuan wajib diisi"; exit 1; }
+
+[ ! -d "$SUMBER" ] && { log "ERROR: $SUMBER tidak ada"; exit 2; }
+
+mkdir -p "$TUJUAN"
+TANGGAL=$(date '+%F-%H%M%S')
+[ "$VERBOSE" = true ] && log "Sumber: $SUMBER | Tujuan: $TUJUAN"
+
+if [ "$COMPRESS" = true ]; then
+    ARSIP="$TUJUAN/backup-$(basename "$SUMBER")-$TANGGAL.tar.gz"
+    tar -czf "$ARSIP" -C "$(dirname "$SUMBER")" "$(basename "$SUMBER")"
+    log "Arsip: $ARSIP ($(du -sh "$ARSIP" | cut -f1))"
+else
+    cp -r "$SUMBER" "$TUJUAN/backup-$(basename "$SUMBER")-$TANGGAL"
+    log "Backup selesai."
+fi
+\end{lstlisting}
+
+  \item Beri izin dan uji:
+\begin{lstlisting}[language=bash, caption={Menguji script backup}]
+chmod +x ~/praktikum-os/week09/scripts/backup-data.sh
+cd ~/praktikum-os/week09/scripts
+
+# Tanpa opsi
+./backup-data.sh ~/praktikum-os/week09/data ~/praktikum-os/week09/logs
+
+# Dengan verbose dan kompresi + log ke file
+./backup-data.sh -v -c -l ../logs/backup.log \
+  ~/praktikum-os/week09/data ~/praktikum-os/week09/logs
+
+cat ../logs/backup.log
+\end{lstlisting}
+\end{enumerate}
+
+%% ------------------------------------------------------------------------
 \section{Debugging Shell Script}
+\label{sec:debugging-script}
+
+Debugging Bash berbeda dari Java yang memiliki debugger interaktif.
+Bash menyediakan mekanisme tracing untuk memperlihatkan setiap baris yang
+dieksekusi.
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+\textbf{Flag} & \textbf{Arti} & \textbf{Cara aktifkan} \\
+\hline
+\texttt{-x} & Tampilkan setiap perintah sebelum dijalankan & \texttt{bash -x script.sh} \\
+\texttt{-e} & Keluar jika ada perintah gagal & \texttt{set -e} \\
+\texttt{-u} & Keluar jika variabel tidak terdefinisi & \texttt{set -u} \\
+\texttt{-n} & Cek sintaks tanpa menjalankan & \texttt{bash -n script.sh} \\
+\hline
+\end{tabular}
+\end{center}
+
+Kombinasi \texttt{set -euo pipefail} di awal script menangkap banyak
+kesalahan umum secara otomatis. Tambahkan \texttt{trap} untuk cleanup:
+
+\begin{lstlisting}[language=bash, caption={Pola script defensif}]
+#!/bin/bash
+set -euo pipefail
+
+cleanup() { echo "[CLEANUP] selesai."; }
+trap cleanup EXIT      # cleanup dipanggil selalu saat script berakhir
+
+DEBUG=${DEBUG:-false}
+debug() { [ "$DEBUG" = true ] && echo "[DEBUG] $*" >&2; }
+
+debug "Script dimulai dengan PID $$"
+echo "Script berjalan normal"
+\end{lstlisting}
+
+\begin{notebox}
+\texttt{trap cleanup EXIT} setara dengan \texttt{finally} di Java
+memastikan cleanup dijalankan meskipun script gagal di tengah jalan.
+\end{notebox}
+
+\subsection*{Praktikum 7.6 Debugging Script}
+
+Tujuan: menggunakan teknik debugging untuk menganalisis dan memperbaiki
+script.
+
+\begin{enumerate}
+  \item Buat script untuk dianalisis:
+\begin{lstlisting}[language=bash, caption={Membuat debug-latihan.sh}]
+nano ~/praktikum-os/week09/scripts/debug-latihan.sh
+\end{lstlisting}
+
+  \item Ketik isi berikut:
+\begin{lstlisting}[language=bash, caption={Isi debug-latihan.sh}]
+#!/bin/bash
+# Script: debug-latihan.sh
+# Penggunaan: ./debug-latihan.sh <direktori> <batas-MB>
+
+DIREKTORI=$1
+BATAS=$2
+
+if [ $# -ne 2 ]; then
+    echo "Penggunaan: $0 <direktori> <batas-MB>"
+    exit 1
+fi
+
+UKURAN=$(du -sm "$DIREKTORI" | cut -f1)
+
+echo "Direktori : $DIREKTORI"
+echo "Ukuran    : ${UKURAN} MB"
+echo "Batas     : ${BATAS} MB"
+
+if [ "$UKURAN" -gt "$BATAS" ]; then
+    echo "PERINGATAN: Ukuran melebihi batas!"
+    echo "Kelebihan: $((UKURAN - BATAS)) MB"
+else
+    echo "Status: Normal (sisa: $((BATAS - UKURAN)) MB)"
+fi
+\end{lstlisting}
+
+  \item Cek sintaks, lalu jalankan dengan tracing:
+\begin{lstlisting}[language=bash, caption={Menganalisis script dengan debugging}]
+chmod +x ~/praktikum-os/week09/scripts/debug-latihan.sh
+bash -n debug-latihan.sh && echo "Sintaks OK"
+bash -x debug-latihan.sh /etc 10
+./debug-latihan.sh /var 50
+./debug-latihan.sh
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[Latihan 9.5]
+Script \texttt{debug-latihan.sh} tidak menangani direktori yang tidak ada.
+Perbaiki dengan menambahkan:
+\begin{itemize}
+  \item \texttt{set -e} di baris kedua
+  \item Pengecekan \texttt{-d "\$DIREKTORI"} sebelum memanggil \texttt{du}
+  \item Pesan error yang informatif jika direktori tidak ditemukan
+\end{itemize}
+Uji dengan direktori yang tidak ada.
+\end{exercisebox}
+
+%% ------------------------------------------------------------------------
 \section{Best Practices}
+\label{sec:best-practices}
+
+Script Bash yang baik mengikuti prinsip berikut:
+
+\begin{enumerate}
+  \item \textbf{Selalu tulis shebang} (\texttt{\#!/bin/bash}).
+  \item \textbf{Gunakan \texttt{set -euo pipefail}} di awal script.
+  \item \textbf{Kutip semua variabel}: \texttt{"\$NAMA"}, bukan \texttt{\$NAMA}
+    mencegah masalah jika nilai mengandung spasi.
+  \item \textbf{Gunakan \texttt{local}} di dalam fungsi untuk mencegah
+    variabel bocor ke global.
+  \item \textbf{Validasi semua input} sebelum diproses.
+  \item \textbf{Nama variabel deskriptif}: \texttt{DIREKTORI\_BACKUP}
+    lebih jelas dari \texttt{D}.
+  \item \textbf{Gunakan \texttt{trap}} untuk cleanup saat script berakhir.
+  \item \textbf{Pisahkan konfigurasi dari logika}: taruh variabel konfigurasi
+    di bagian atas script.
+\end{enumerate}
+
+Template script profesional yang menerapkan semua prinsip di atas:
+
+\begin{longlisting}[language=bash, caption={Template script Bash profesional}]
+#!/bin/bash
+# ====================================================
+# Script: nama-script.sh
+# Deskripsi: Penjelasan singkat fungsi script ini
+# Penggunaan: ./nama-script.sh [-v] [-h] <argumen>
+# ====================================================
+
+set -euo pipefail
+
+SCRIPT_NAME=$(basename "$0")
+VERBOSE=false
+
+usage() {
+    echo "Penggunaan: $SCRIPT_NAME [-v] [-h] <argumen>"
+    echo "  -v  Verbose mode"
+    echo "  -h  Tampilkan bantuan"
+    exit 0
+}
+
+log()         { echo "[$SCRIPT_NAME] $*"; }
+log_verbose() { [ "$VERBOSE" = true ] && log "$*"; }
+error_exit()  { echo "ERROR: $*" >&2; exit 1; }
+cleanup()     { log_verbose "Cleanup selesai."; }
+
+trap cleanup EXIT
+
+while getopts "vh" OPSI; do
+    case $OPSI in
+        v) VERBOSE=true ;;
+        h) usage ;;
+        *) error_exit "Opsi tidak dikenal. Gunakan -h." ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+[ $# -lt 1 ] && error_exit "Argumen tidak lengkap. Gunakan -h."
+
+log "Script dimulai"
+log_verbose "Argumen: $*"
+
+# Logika utama di sini
+
+log "Selesai."
+\end{longlisting}
+
+%% ------------------------------------------------------------------------
+\section{Tugas Praktikum}
+\label{sec:tugas-praktikum-bash-prog}
+
+\begin{warningbox}
+Kerjakan tugas di \texttt{\$HOME/praktikum-os/week09/}. Script di
+\texttt{scripts/}, output di \texttt{logs/}.
+\end{warningbox}
+
+\subsection*{Tugas 1 Script Absensi Kelas}
+
+\textbf{Konteks:} instruktur mencatat kehadiran mahasiswa dari command line.
+
+\textbf{Instruksi:}
+\begin{enumerate}
+  \item Buat script \texttt{absensi.sh} yang:
+  \begin{itemize}
+    \item Menerima argumen nama mahasiswa dan status
+      (\texttt{hadir}/\texttt{izin}/\texttt{alpha})
+    \item Menyimpan entri ke \texttt{absensi-YYYY-MM-DD.txt}
+      dengan format \texttt{[HH:MM] NAMA - STATUS}
+    \item Opsi \texttt{-r}: tampilkan rekapitulasi (jumlah per status)
+    \item Opsi \texttt{-h}: tampilkan bantuan
+  \end{itemize}
+  \item Rekam minimal 5 entri dan tampilkan rekapitulasinya.
+\end{enumerate}
+
+\textbf{Konsep wajib:} variabel, parameter posisional, \texttt{getopts},
+\texttt{if}, \texttt{for}, fungsi, dan redirection ke file.
+
+\subsection*{Tugas 2 Script Health Check Sistem}
+
+\textbf{Konteks:} administrator membuat pemeriksaan kondisi server
+sebelum maintenance.
+
+\textbf{Instruksi:}
+\begin{enumerate}
+  \item Buat script \texttt{healthcheck.sh} menggunakan template
+    profesional dari bagian Best Practices.
+  \item Script menampilkan: tanggal/waktu, hostname, uptime, penggunaan
+    CPU, memori, dan disk untuk setiap filesystem yang terpasang.
+  \item Jika penggunaan disk mana pun melebihi 80\%, tampilkan peringatan.
+  \item Simpan hasil ke \texttt{healthcheck-YYYY-MM-DD.log} dan tampilkan
+    ke terminal sekaligus menggunakan \texttt{tee}.
+  \item Opsi \texttt{-t <persen>} mengubah batas peringatan disk
+    (default 80).
+\end{enumerate}
+
+\textbf{Konsep wajib:} \texttt{set -euo pipefail}, \texttt{trap},
+\texttt{getopts}, fungsi dengan \texttt{local}, \texttt{for},
+\texttt{if}, dan \texttt{tee}.
+
+%% ------------------------------------------------------------------------
 \section{Rangkuman}
-\section{Latihan}
-\section{Referensi Tambahan}
+\label{sec:rangkuman-bash-prog}
+
+\begin{itemize}
+  \item Shebang (\texttt{\#!/bin/bash}) menentukan interpreter. Tanpa
+    shebang, perilaku script tidak terdefinisi.
+  \item Variabel Bash tidak bertipe; aritmetika pakai \texttt{\$(( ))};
+    output perintah ditangkap dengan \texttt{\$( )}.
+  \item Parameter posisional (\texttt{\$1}, \texttt{\$\#}, \texttt{\$@})
+    memungkinkan script menerima argumen dari command line.
+  \item Struktur kontrol \texttt{if}, \texttt{for}, \texttt{while}, dan
+    \texttt{case} setara dengan Java, hanya sintaksnya berbeda.
+  \item Fungsi menerima argumen via \texttt{\$1}/\texttt{\$2}; gunakan
+    \texttt{local} untuk variabel lokal dan \texttt{echo} untuk
+    mengembalikan nilai.
+  \item \texttt{getopts} memproses opsi \texttt{-x} seperti perintah Unix
+    standar.
+  \item \texttt{set -euo pipefail} dan \texttt{trap} adalah fondasi script
+    yang andal dan mudah di-debug.
+\end{itemize}
+
+%% ------------------------------------------------------------------------
+\section{Referensi}
+\label{sec:referensi-bash-prog}
+
+\begin{enumerate}
+  \item GNU Bash Reference Manual \url{https://www.gnu.org/software/bash/manual/}
+  \item William Shotts, \textit{The Linux Command Line}, 2nd Edition. No Starch Press.
+  \item Arnold Robbins dan Nelson H.F.\ Beebe, \textit{Classic Shell Scripting}. O'Reilly.
+  \item Richard Blum dan Christine Bresnahan, \textit{Linux Command Line and Shell Scripting Bible}, 4th Edition.
+  \item ShellCheck alat analisis statis untuk script Bash: \url{https://www.shellcheck.net}
+\end{enumerate}
