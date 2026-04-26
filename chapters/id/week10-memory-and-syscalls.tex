@@ -1,20 +1,678 @@
 %% ========================================================================
 %% Chapter 10: Manajemen Memori & System Call
 %% ========================================================================
-
 \chapter{Manajemen Memori \& System Call}
 \label{ch:memory-and-syscalls}
 
-Bab ini membahas arsitektur memori di Linux, manajemen memori virtual,
-swap space, dan pengenalan system call.
+Bab ini membahas bagaimana sistem operasi Linux mengelola memori serta bagaimana program berinteraksi dengan kernel melalui system call. Dalam konteks administrasi sistem, pemahaman terhadap penggunaan memori sangat penting untuk menjaga performa server, sementara system call menjadi fondasi komunikasi antara aplikasi dan kernel.
+
+Contoh: Memori dan system call dalam pekerjaan administrator
+
+Bayangkan Anda mengelola sebuah server aplikasi. Ketika server terasa lambat,
+administrator tidak cukup hanya melihat apakah program masih berjalan atau tidak.
+Administrator perlu memahami apakah RAM penuh, apakah swap digunakan terlalu
+banyak, proses mana yang menggunakan memori besar, dan apakah program sedang
+menunggu operasi tertentu dari kernel. Pada titik inilah pemahaman tentang
+manajemen memori dan system call menjadi penting.
+
+\textbf{Tujuan Praktikum}
+
+Setelah menyelesaikan praktikum ini, mahasiswa diharapkan mampu:
+
+\begin{enumerate}
+    \item memahami arsitektur memori pada Linux;
+    \item menjelaskan konsep memori virtual;
+    \item mengelola dan mengonfigurasi swap space;
+    \item memantau penggunaan memori pada sistem;
+    \item memahami konsep system call;
+    \item mengidentifikasi jenis-jenis system call umum;
+    \item menjelaskan interaksi antara user space dan kernel space.
+\end{enumerate}
 
 \section{Arsitektur Memori di Linux}
+
+\textbf{Penjelasan Konsep}
+
+Pada Linux, memori tidak hanya dipahami sebagai RAM fisik. Sistem operasi mengatur memori melalui beberapa lapisan agar program dapat berjalan aman, efisien, dan terisolasi satu sama lain.
+
+Secara umum, memori pada Linux dapat dipahami melalui beberapa bagian berikut:
+
+\begin{itemize}
+    \item \textbf{User Space}: ruang memori tempat aplikasi pengguna berjalan.
+    \item \textbf{Kernel Space}: ruang memori khusus kernel untuk mengelola perangkat keras, proses, memori, dan layanan sistem.
+    \item \textbf{Stack}: area memori untuk menyimpan variabel lokal, parameter fungsi, dan call stack.
+    \item \textbf{Heap}: area memori untuk alokasi dinamis saat program berjalan.
+    \item \textbf{Text Segment}: area yang berisi instruksi atau kode program.
+\end{itemize}
+
+Setiap proses memiliki ruang alamat virtual sendiri. Dengan demikian, satu proses tidak dapat langsung membaca atau menulis memori proses lain tanpa izin khusus dari kernel. Mekanisme ini penting untuk menjaga stabilitas dan keamanan sistem.
+
+\begin{notebox}
+Kernel bertugas memastikan isolasi antar proses agar tidak terjadi konflik akses memori. Jika sebuah program mengalami error, kerusakan tersebut idealnya hanya berdampak pada proses tersebut, bukan seluruh sistem.
+\end{notebox}
+
+\textbf{Perintah yang Digunakan}
+
+\begin{itemize}
+    \item \texttt{free}: melihat ringkasan penggunaan RAM dan swap.
+    \item \texttt{top}: memantau penggunaan resource sistem secara real-time.
+    \item \texttt{htop}: alternatif \texttt{top} yang lebih interaktif.
+    \item \texttt{cat /proc/meminfo}: melihat detail informasi memori dari kernel.
+\end{itemize}
+
+\subsection*{Praktikum 10.1 --- Melihat Struktur Memori}
+
+\textbf{Tujuan}: mengenali penggunaan memori pada sistem Linux.
+
+\begin{lstlisting}[caption={Melihat penggunaan memori}]
+free -h
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Melihat detail memori}]
+cat /proc/meminfo | head -n 20
+\end{lstlisting}
+
+\textbf{Analisis:}
+
+\begin{itemize}
+    \item Bandingkan nilai total, used, free, dan available memory.
+    \item Identifikasi bagian buffer dan cache.
+    \item Amati apakah swap sudah digunakan.
+\end{itemize}
+
+\subsection*{Studi Kasus 10.1 --- Server Lambat karena Penggunaan Memori}
+
+Skenario: Sebuah server aplikasi terasa lambat saat banyak user aktif. Administrator perlu melakukan pemeriksaan awal untuk mengetahui apakah masalah berkaitan dengan penggunaan memori.
+
+Langkah pemeriksaan:
+
+\begin{lstlisting}[caption={Pemeriksaan awal kondisi memori}]
+free -h
+top
+\end{lstlisting}
+
+\textbf{Analisis yang Dilakukan}
+
+\begin{itemize}
+    \item Apakah nilai \texttt{available} sangat kecil?
+    \item Apakah swap mulai digunakan?
+    \item Apakah ada proses tertentu yang menggunakan memori besar?
+\end{itemize}
+
+\begin{tipbox}
+Pada Linux, nilai \texttt{used} yang tinggi tidak selalu berarti sistem kekurangan memori. Linux menggunakan RAM kosong sebagai buffer dan cache agar akses file lebih cepat. Perhatikan nilai \texttt{available} untuk melihat estimasi memori yang masih dapat digunakan aplikasi.
+\end{tipbox}
+
 \section{Manajemen Memori Virtual}
+
+\textbf{Penjelasan Konsep}
+
+Memori virtual memungkinkan sistem menggunakan ruang alamat virtual yang lebih besar daripada RAM fisik. Program tidak berinteraksi langsung dengan alamat memori fisik, tetapi menggunakan alamat virtual yang dipetakan oleh kernel ke RAM atau swap.
+
+Salah satu mekanisme penting dalam memori virtual adalah \textit{paging}. Ketika sebagian data tidak aktif atau RAM mulai penuh, kernel dapat memindahkan halaman memori tertentu ke swap space.
+
+Keuntungan memori virtual:
+
+\begin{itemize}
+    \item memungkinkan program berjalan dengan ruang alamat yang lebih besar;
+    \item menjaga isolasi antar proses;
+    \item meningkatkan efisiensi penggunaan RAM;
+    \item memungkinkan penggunaan swap sebagai cadangan ketika RAM terbatas.
+\end{itemize}
+
+\textbf{Perintah yang Digunakan}
+
+\begin{itemize}
+    \item \texttt{vmstat}: melihat statistik memori virtual, CPU, proses, dan I/O.
+    \item \texttt{top}: melihat penggunaan memori dan swap secara real-time.
+\end{itemize}
+
+\subsection*{Praktikum 10.2 --- Mengamati Paging}
+
+\textbf{Tujuan}: memahami aktivitas memori virtual dan indikasi penggunaan swap.
+
+\begin{lstlisting}[caption={Melihat statistik memori virtual}]
+vmstat 1 5
+\end{lstlisting}
+
+\textbf{Analisis:}
+
+\begin{itemize}
+    \item Perhatikan kolom \texttt{si} dan \texttt{so}.
+    \item \texttt{si} berarti swap in, yaitu data dipindahkan dari swap ke RAM.
+    \item \texttt{so} berarti swap out, yaitu data dipindahkan dari RAM ke swap.
+\end{itemize}
+
+\subsection*{Studi Kasus 10.2 --- Sistem Lambat Tanpa Beban CPU Tinggi}
+
+Skenario: CPU usage tidak tinggi, tetapi sistem tetap terasa lambat. Administrator mencurigai adanya aktivitas paging yang terlalu tinggi.
+
+Langkah pemeriksaan:
+
+\begin{lstlisting}[caption={Mengamati aktivitas swap in dan swap out}]
+vmstat 1 10
+\end{lstlisting}
+
+\textbf{Analisis yang Dilakukan}
+
+\begin{itemize}
+    \item Apakah nilai \texttt{si} dan \texttt{so} sering muncul lebih dari 0?
+    \item Apakah proses terasa lambat meskipun CPU idle masih tersedia?
+    \item Apakah swap digunakan secara aktif?
+\end{itemize}
+
+\begin{warningbox}
+Nilai \texttt{si} dan \texttt{so} yang tinggi secara terus-menerus dapat menjadi indikasi bahwa sistem terlalu sering memindahkan data antara RAM dan disk. Kondisi ini dapat menyebabkan performa turun drastis karena akses disk jauh lebih lambat daripada akses RAM.
+\end{warningbox}
+
+\begin{tipbox}
+Jika paging tinggi terjadi terus-menerus, solusi yang dapat dipertimbangkan adalah menambah RAM, mengurangi proses yang berjalan, mengoptimasi aplikasi, atau meninjau kembali konfigurasi swap.
+\end{tipbox}
+
 \section{Konfigurasi Swap Space}
+
+\textbf{Penjelasan Konsep}
+
+Swap space adalah ruang pada disk yang digunakan sebagai cadangan ketika RAM tidak mencukupi. Swap dapat berupa partisi khusus atau file biasa yang dikonfigurasi sebagai swap.
+
+Swap membantu sistem tetap berjalan saat RAM penuh, tetapi swap bukan pengganti RAM. Karena berada di disk, swap memiliki kecepatan jauh lebih lambat dibanding RAM.
+
+\textbf{Perintah yang Digunakan}
+
+\begin{itemize}
+    \item \texttt{swapon -s}: melihat swap aktif.
+    \item \texttt{swapon --show}: melihat daftar swap aktif.
+    \item \texttt{fallocate}: membuat file dengan ukuran tertentu.
+    \item \texttt{chmod}: mengatur permission file swap.
+    \item \texttt{mkswap}: memformat file atau partisi sebagai swap.
+    \item \texttt{swapon}: mengaktifkan swap.
+    \item \texttt{swapoff}: menonaktifkan swap.
+\end{itemize}
+
+\subsection*{Praktikum 10.3 --- Membuat Swap File}
+
+\textbf{Tujuan}: menambahkan swap space pada sistem menggunakan swap file khusus praktikum.
+
+\begin{lstlisting}[caption={Membuat swap file 512MB}]
+sudo fallocate -l 512M /swapfile-week10
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Mengatur permission swap file}]
+sudo chmod 600 /swapfile-week10
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Mengaktifkan swap}]
+sudo mkswap /swapfile-week10
+sudo swapon /swapfile-week10
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Verifikasi swap}]
+swapon --show
+free -h
+\end{lstlisting}
+
+\begin{warningbox}
+Jangan memberikan permission terlalu terbuka pada file swap. File swap dapat berisi potongan data dari memori, sehingga permission yang aman adalah \texttt{600}.
+\end{warningbox}
+
+\begin{notebox}
+File \texttt{/swapfile-week10} digunakan agar tidak mengganggu konfigurasi swap utama sistem. Jika praktikum diulang, nonaktifkan swap file lama terlebih dahulu menggunakan \texttt{sudo swapoff /swapfile-week10}, lalu hapus dengan \texttt{sudo rm /swapfile-week10}.
+\end{notebox}
+
+\subsection*{Studi Kasus 10.3 --- Swap Digunakan Berlebihan}
+
+Skenario: Pada sebuah server, swap aktif cukup tinggi meskipun RAM masih terlihat tersedia. Administrator ingin melihat kecenderungan sistem dalam menggunakan swap.
+
+Langkah pemeriksaan:
+
+\begin{lstlisting}[caption={Melihat nilai swappiness}]
+cat /proc/sys/vm/swappiness
+\end{lstlisting}
+
+Eksperimen sementara:
+
+\begin{lstlisting}[caption={Mengubah swappiness sementara}]
+sudo sysctl vm.swappiness=10
+\end{lstlisting}
+
+\begin{notebox}
+Parameter \texttt{swappiness} mengatur kecenderungan kernel Linux dalam menggunakan swap. Nilai lebih tinggi membuat sistem lebih agresif menggunakan swap, sedangkan nilai lebih rendah membuat sistem lebih mengutamakan RAM.
+\end{notebox}
+
+\begin{warningbox}
+Perubahan menggunakan \texttt{sysctl vm.swappiness=10} bersifat sementara dan akan hilang setelah reboot. Untuk konfigurasi permanen, administrator perlu mengatur parameter tersebut pada file konfigurasi \texttt{/etc/sysctl.conf} atau file di \texttt{/etc/sysctl.d/}.
+\end{warningbox}
+
+\begin{tipbox}
+Untuk banyak server aplikasi, nilai swappiness rendah seperti 10 atau 20 sering digunakan agar sistem lebih mengutamakan RAM. Namun, nilai ideal tetap bergantung pada karakteristik workload.
+\end{tipbox}
+
 \section{Pemantauan Penggunaan Memori}
-\section{Pengenalan System Call}
-\section{Jenis-jenis System Call}
-\section{User Space dan Kernel Space}
-\section{Rangkuman}
-\section{Latihan}
-\section{Referensi Tambahan}
+
+\textbf{Penjelasan Konsep}
+
+Monitoring memori penting untuk mendeteksi bottleneck sistem. Administrator perlu mengetahui proses mana yang menggunakan memori besar, apakah swap digunakan, dan apakah sistem mengalami tekanan memori.
+
+Monitoring dapat dilakukan secara real-time maupun menggunakan snapshot. \texttt{top} cocok untuk pengamatan real-time, sedangkan \texttt{ps} cocok untuk mengambil daftar proses pada saat tertentu.
+
+\textbf{Perintah yang Digunakan}
+
+\begin{itemize}
+    \item \texttt{top}: monitoring proses dan resource secara real-time.
+    \item \texttt{htop}: monitoring interaktif dengan tampilan lebih mudah dibaca.
+    \item \texttt{ps aux}: melihat snapshot proses.
+    \item \texttt{ps aux --sort=-\%mem}: mengurutkan proses berdasarkan penggunaan memori.
+\end{itemize}
+
+\subsection*{Praktikum 10.4 --- Monitoring Memory}
+
+\textbf{Tujuan}: mengidentifikasi proses dengan penggunaan memori terbesar.
+
+\begin{lstlisting}[caption={Melihat penggunaan memori per proses}]
+ps aux --sort=-%mem | head
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Monitoring real-time dengan top}]
+top
+\end{lstlisting}
+
+\textbf{Analisis:}
+
+\begin{itemize}
+    \item Identifikasi proses yang paling banyak menggunakan memori.
+    \item Catat nilai \texttt{\%MEM}, \texttt{RSS}, dan nama proses.
+    \item Bandingkan hasil \texttt{ps} dengan tampilan \texttt{top}.
+\end{itemize}
+
+\subsection*{Studi Kasus 10.4 --- Identifikasi Proses Boros Memori}
+
+Skenario: Server mengalami penurunan performa. Administrator perlu menemukan proses yang paling banyak menggunakan memori.
+
+Langkah pemeriksaan:
+
+\begin{lstlisting}[caption={Mengurutkan proses berdasarkan penggunaan memori}]
+ps aux --sort=-%mem | head -n 10
+\end{lstlisting}
+
+\textbf{Analisis yang Dilakukan}
+
+\begin{itemize}
+    \item Proses apa yang berada di urutan paling atas?
+    \item Berapa nilai \texttt{\%MEM} dan \texttt{RSS}?
+    \item Apakah proses tersebut memang wajar menggunakan memori sebesar itu?
+\end{itemize}
+
+\begin{notebox}
+Satu proses yang menggunakan memori sangat besar dapat menjadi bottleneck utama sistem, terutama pada server dengan RAM terbatas.
+\end{notebox}
+
+\begin{tipbox}
+Gunakan kombinasi \texttt{top}, \texttt{ps}, dan \texttt{free} agar diagnosis lebih lengkap. \texttt{free} menunjukkan kondisi global, \texttt{top} menunjukkan kondisi real-time, dan \texttt{ps} memberikan snapshot proses.
+\end{tipbox}
+
+\section{Pengenalan System Call di Linux}
+
+\textbf{Penjelasan Konsep}
+
+System call adalah mekanisme bagi program di user space untuk meminta layanan dari kernel. Program user tidak dapat langsung mengakses perangkat keras, filesystem, atau resource kernel. Semua permintaan tersebut harus melewati system call.
+
+Contoh aktivitas yang menggunakan system call:
+
+\begin{itemize}
+    \item membaca file;
+    \item menulis ke terminal;
+    \item membuat proses baru;
+    \item membuka koneksi jaringan;
+    \item meminta alokasi memori.
+\end{itemize}
+
+Contoh system call:
+
+\begin{itemize}
+    \item \texttt{read}
+    \item \texttt{write}
+    \item \texttt{open}
+    \item \texttt{fork}
+    \item \texttt{exec}
+\end{itemize}
+
+\begin{notebox}
+Program user tidak dapat langsung mengakses hardware. System call menjadi jalur resmi dan terkontrol agar program dapat meminta layanan kernel.
+\end{notebox}
+
+\subsection*{Studi Kasus 10.5 --- Program Tidak Responsif}
+
+Skenario: Sebuah program berjalan tetapi tidak memberikan output. Program tidak selalu benar-benar macet; bisa jadi program sedang menunggu operasi tertentu dari kernel.
+
+Kemungkinan penyebab:
+
+\begin{itemize}
+    \item menunggu pembacaan file;
+    \item menunggu input dari user;
+    \item menunggu koneksi jaringan;
+    \item menunggu operasi I/O selesai.
+\end{itemize}
+
+\begin{tipbox}
+Gunakan \texttt{strace} untuk melihat apakah program sedang melakukan system call tertentu secara berulang atau sedang menunggu operasi I/O.
+\end{tipbox}
+
+\subsection{Jenis-Jenis System Call}
+
+System call dapat dikelompokkan menjadi beberapa kategori utama:
+
+\begin{itemize}
+    \item \textbf{Manajemen Proses}: \texttt{fork}, \texttt{exec}, \texttt{wait}, \texttt{exit}
+    \item \textbf{Manajemen File}: \texttt{open}, \texttt{read}, \texttt{write}, \texttt{close}
+    \item \textbf{Manajemen Memori}: \texttt{mmap}, \texttt{brk}
+    \item \textbf{Komunikasi}: \texttt{pipe}, \texttt{socket}, \texttt{send}, \texttt{recv}
+    \item \textbf{Informasi Sistem}: \texttt{getpid}, \texttt{uname}, \texttt{time}
+\end{itemize}
+
+\begin{notebox}
+Banyak perintah Linux sederhana sebenarnya memanggil banyak system call. Misalnya, perintah \texttt{ls} perlu membaca direktori, membaca metadata file, dan menulis hasilnya ke terminal.
+\end{notebox}
+
+\subsection*{Studi Kasus 10.6 --- Gagal Akses File}
+
+Skenario: Program tidak dapat membaca file konfigurasi. Masalah seperti ini sering terjadi karena file tidak ada, path salah, atau permission tidak sesuai. Untuk praktikum ini, file konfigurasi contoh dibuat terlebih dahulu agar tidak bergantung pada file yang belum tersedia.
+
+Langkah persiapan:
+
+\begin{lstlisting}[caption={Membuat file konfigurasi contoh}]
+mkdir -p ~/praktikum-os/week10-memory/syscall-case
+cd ~/praktikum-os/week10-memory/syscall-case
+echo "PORT=8080" > app.conf
+\end{lstlisting}
+
+Langkah pemeriksaan awal:
+
+\begin{lstlisting}[caption={Memeriksa file dan permission}]
+ls -l app.conf
+cat app.conf
+\end{lstlisting}
+
+Simulasi permission bermasalah:
+
+\begin{lstlisting}[caption={Menghapus izin baca file}]
+chmod 000 app.conf
+cat app.conf
+\end{lstlisting}
+
+Kembalikan permission agar file dapat dibaca kembali:
+
+\begin{lstlisting}[caption={Mengembalikan permission file}]
+chmod 644 app.conf
+cat app.conf
+\end{lstlisting}
+
+Kemungkinan system call yang gagal:
+
+\begin{itemize}
+    \item \texttt{open()} atau \texttt{openat()} gagal karena file tidak ditemukan.
+    \item \texttt{open()} atau \texttt{openat()} gagal karena permission tidak mencukupi.
+    \item \texttt{read()} gagal karena file tidak dapat dibaca.
+\end{itemize}
+
+\begin{warningbox}
+Kesalahan pada level system call sering muncul sebagai pesan error sederhana di aplikasi, misalnya \texttt{Permission denied} atau \texttt{No such file or directory}. Administrator perlu menelusuri penyebabnya dari sisi filesystem dan permission.
+\end{warningbox}
+
+\begin{tipbox}
+Sebelum debugging lebih jauh, selalu verifikasi lokasi file, ownership, dan permission menggunakan \texttt{ls -l}, \texttt{stat}, atau \texttt{namei -l}.
+\end{tipbox}
+
+\section{Interaksi User Space dan Kernel Space}
+
+\textbf{Penjelasan Konsep}
+
+User space dan kernel space dipisahkan untuk keamanan dan stabilitas sistem. Program biasa berjalan pada user space, sedangkan kernel berjalan pada kernel space dengan hak akses penuh terhadap hardware dan resource sistem.
+
+Interaksi antara user space dan kernel space terjadi melalui:
+
+\begin{itemize}
+    \item system call;
+    \item interrupt;
+    \item exception;
+    \item signal.
+\end{itemize}
+
+Alur sederhana system call:
+
+\begin{enumerate}
+    \item Program user memanggil fungsi library, misalnya \texttt{printf()}.
+    \item Library memanggil system call, misalnya \texttt{write()}.
+    \item CPU berpindah ke mode kernel.
+    \item Kernel memvalidasi request.
+    \item Kernel menjalankan operasi yang diminta.
+    \item Hasil dikembalikan ke program user.
+\end{enumerate}
+
+\textbf{Perintah yang Digunakan}
+
+\begin{itemize}
+    \item \texttt{strace}: melihat system call yang dilakukan program.
+    \item \texttt{strace -c}: menampilkan ringkasan statistik system call.
+\end{itemize}
+
+\subsection*{Praktikum 10.5 --- Mengamati System Call}
+
+\textbf{Tujuan}: melihat system call dari suatu program.
+
+\begin{lstlisting}[caption={Menggunakan strace}]
+strace ls
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Melihat ringkasan system call}]
+strace -c ls
+\end{lstlisting}
+
+\textbf{Analisis:}
+
+\begin{itemize}
+    \item Identifikasi system call seperti \texttt{openat}, \texttt{read}, \texttt{write}, dan \texttt{close}.
+    \item Amati system call mana yang paling sering muncul.
+    \item Jelaskan mengapa perintah sederhana seperti \texttt{ls} tetap membutuhkan banyak system call.
+\end{itemize}
+
+\subsection*{Studi Kasus 10.7 --- Analisis Perilaku Program}
+
+Skenario: Administrator ingin mengetahui apa yang dilakukan suatu program ketika dijalankan. Program tampak sederhana, tetapi mungkin melakukan banyak operasi file dan library.
+
+Langkah pemeriksaan:
+
+\begin{lstlisting}[caption={Tracing ringkas system call}]
+strace -c ls
+\end{lstlisting}
+
+\textbf{Analisis yang Dilakukan}
+
+\begin{itemize}
+    \item System call apa yang paling sering digunakan?
+    \item Apakah ada system call yang gagal?
+    \item Apakah program banyak melakukan operasi file?
+\end{itemize}
+
+\begin{notebox}
+Setiap program user bergantung pada system call untuk berinteraksi dengan kernel. Tanpa system call, program tidak dapat membaca file, menulis output, membuat proses, atau menggunakan perangkat.
+\end{notebox}
+
+\begin{tipbox}
+Opsi \texttt{-c} pada \texttt{strace} berguna untuk melihat ringkasan system call. Untuk melihat detail lengkap urutan system call, gunakan \texttt{strace} tanpa opsi \texttt{-c}.
+\end{tipbox}
+
+\section{Tugas Praktikum}
+
+\textbf{Instruksi Umum}
+
+Kerjakan seluruh tugas pada direktori berikut:
+
+\begin{lstlisting}[caption={Membuat direktori tugas praktikum}]
+mkdir -p ~/praktikum-os/week10-memory
+cd ~/praktikum-os/week10-memory
+\end{lstlisting}
+
+\subsubsection{Tugas 10.1 --- Audit Penggunaan Memori Sistem}
+
+\textbf{Instruksi}
+
+Jalankan perintah berikut untuk membuat file laporan:
+
+\begin{lstlisting}[caption={Membuat laporan penggunaan memori}]
+{
+    echo "=== LAPORAN MEMORI SISTEM ==="
+    date
+    echo
+    echo "--- Ringkasan free -h ---"
+    free -h
+    echo
+    echo "--- /proc/meminfo ---"
+    cat /proc/meminfo | head -n 20
+} > memory-report.txt
+\end{lstlisting}
+
+Kemudian baca kembali hasilnya:
+
+\begin{lstlisting}[caption={Membaca laporan memori}]
+cat memory-report.txt
+\end{lstlisting}
+
+\textbf{Analisis}
+
+\begin{enumerate}
+    \item Jelaskan kondisi total, used, free, dan available memory.
+    \item Jelaskan peran buffer dan cache.
+    \item Jelaskan apakah swap sudah digunakan.
+\end{enumerate}
+
+\subsubsection{Tugas 10.2 --- Identifikasi Proses dengan Memori Tertinggi}
+
+\textbf{Instruksi}
+
+Jalankan perintah berikut:
+
+\begin{lstlisting}[caption={Menyimpan proses dengan penggunaan memori tertinggi}]
+ps aux --sort=-%mem | head -n 10 > top-memory-process.txt
+\end{lstlisting}
+
+Kemudian baca kembali hasilnya:
+
+\begin{lstlisting}[caption={Membaca hasil proses tertinggi}]
+cat top-memory-process.txt
+\end{lstlisting}
+
+\textbf{Analisis}
+
+\begin{enumerate}
+    \item Identifikasi proses dengan penggunaan memori terbesar.
+    \item Catat nilai \texttt{\%MEM} dan nama prosesnya.
+    \item Jelaskan apakah proses tersebut wajar menggunakan memori besar.
+\end{enumerate}
+
+\subsubsection{Tugas 10.3 --- Membuat dan Memverifikasi Swap File}
+
+\textbf{Instruksi}
+
+Buat swap file khusus tugas sebesar 256MB:
+
+\begin{lstlisting}[caption={Membuat swap file untuk tugas}]
+sudo fallocate -l 256M /swapfile-tugas-week10
+sudo chmod 600 /swapfile-tugas-week10
+sudo mkswap /swapfile-tugas-week10
+sudo swapon /swapfile-tugas-week10
+\end{lstlisting}
+
+Verifikasi swap dan simpan hasilnya:
+
+\begin{lstlisting}[caption={Menyimpan hasil verifikasi swap}]
+{
+    echo "=== VERIFIKASI SWAP ==="
+    swapon --show
+    echo
+    free -h
+} > swap-check.txt
+\end{lstlisting}
+
+Baca kembali hasil verifikasi:
+
+\begin{lstlisting}[caption={Membaca hasil verifikasi swap}]
+cat swap-check.txt
+\end{lstlisting}
+
+\begin{warningbox}
+Jangan lupa mengatur permission swap file menjadi \texttt{600} sebelum menjalankan \texttt{mkswap}. Permission yang salah dapat menyebabkan swap file tidak aman atau gagal digunakan.
+\end{warningbox}
+
+\begin{notebox}
+Jika ingin membersihkan swap file setelah praktikum, jalankan \texttt{sudo swapoff /swapfile-tugas-week10}, lalu hapus file dengan \texttt{sudo rm /swapfile-tugas-week10}.
+\end{notebox}
+
+\subsubsection{Tugas 10.4 --- Analisis System Call dengan strace}
+
+\textbf{Instruksi}
+
+Jalankan perintah berikut:
+
+\begin{lstlisting}[caption={Menyimpan ringkasan system call}]
+strace -c ls 2> strace-summary.txt
+\end{lstlisting}
+
+Jalankan tracing detail pada direktori sistem yang pasti tersedia:
+
+\begin{lstlisting}[caption={Menyimpan detail system call pada ls /etc}]
+strace ls /etc 2> strace-ls-etc.txt
+\end{lstlisting}
+
+Baca kembali ringkasan hasil tracing:
+
+\begin{lstlisting}[caption={Membaca ringkasan strace}]
+cat strace-summary.txt
+\end{lstlisting}
+
+\textbf{Analisis}
+
+\begin{enumerate}
+    \item Sebutkan minimal 5 system call yang muncul.
+    \item Jelaskan fungsi singkat dari masing-masing system call tersebut.
+    \item Amati apakah ada system call yang gagal.
+\end{enumerate}
+
+\subsubsection{Tugas 10.5 --- Studi Kasus Diagnosa Server Lambat}
+
+\textbf{Skenario}
+
+Sebuah server terasa lambat. Anda diminta melakukan diagnosis awal menggunakan perintah yang sudah dipelajari pada bab ini.
+
+\textbf{Instruksi}
+
+Gunakan kombinasi perintah berikut:
+
+\begin{itemize}
+    \item \texttt{free -h}
+    \item \texttt{vmstat 1 5}
+    \item \texttt{top}
+    \item \texttt{ps aux --sort=-\%mem | head}
+\end{itemize}
+
+Jawab pertanyaan berikut:
+
+\begin{enumerate}
+    \item Apakah masalah lebih mengarah ke RAM, swap, atau proses tertentu?
+    \item Proses apa yang paling banyak menggunakan memori?
+    \item Apakah terjadi indikasi paging berlebihan?
+    \item Apa rekomendasi tindakan administrator?
+\end{enumerate}
+
+Simpan jawaban ke file:
+
+\begin{lstlisting}[caption={Nama file jawaban studi kasus}]
+diagnosa-server-lambat.txt
+\end{lstlisting}
+
+\section{Referensi}
+
+\begin{itemize}
+    \item Nemeth et al., \textit{UNIX and Linux System Administration Handbook}.
+    \item Dokumentasi Linux Kernel (\texttt{/proc}, \texttt{man 2 syscall}).
+    \item Manual page: \texttt{man free}, \texttt{man vmstat}, \texttt{man swapon}, \texttt{man strace}, \texttt{man 2 syscall}.
+\end{itemize}
