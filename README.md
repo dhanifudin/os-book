@@ -1,6 +1,6 @@
 # Buku Sistem Operasi Linux (Bilingual Edition)
 
-Template LaTeX untuk buku teks "Sistem Operasi Linux: Panduan Komprehensif untuk Mahasiswa"
+Template LaTeX untuk buku teks "Mastering Linux: Pemahaman Sistem Operasi untuk Pemula"
 
 **🌏 Available in two languages:** Indonesian (Bahasa Indonesia) and English
 
@@ -186,8 +186,8 @@ Edit file-file berikut untuk menyesuaikan dengan informasi Anda:
 
 **main.tex** (baris 20-24):
 ```latex
-\title{Sistem Operasi Linux}
-\subtitle{Panduan Komprehensif untuk Mahasiswa}
+\title{Mastering Linux}
+\subtitle{Pemahaman Sistem Operasi untuk Pemula}
 \author{[Nama Penulis]}
 \date{\today}
 \publishers{[Nama Penerbit]}
