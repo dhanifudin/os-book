@@ -370,7 +370,7 @@ harus menjalankan \cmd{chmod} secara eksplisit.
 \end{notebox}
 
 %% --- Praktikum ---
-\subsection*{Praktikum 11.1 --- Eksplorasi dan Modifikasi Permissions}
+\subsection*{Praktikum 9.1 --- Eksplorasi dan Modifikasi Permissions}
 \textbf{Tujuan:} memahami pembacaan izin, penggunaan \cmd{chmod}, \cmd{chown}, dan
 special bits secara langsung.
 
@@ -419,7 +419,7 @@ ls -l testfile-*
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[11.1]
+\begin{exercisebox}[9.1]
 \begin{enumerate}
     \item Jelaskan perbedaan izin antara \texttt{testfile-default} dan \texttt{testfile-027}.
         Mengapa berbeda?
@@ -989,13 +989,13 @@ getfacl /srv/webapp
 \end{examplebox}
 
 %% --- Praktikum ---
-\subsection*{Praktikum 11.2 --- Implementasi ACL}
+\subsection*{Praktikum 9.2 --- Implementasi ACL}
 \textbf{Tujuan:} menggunakan ACL untuk mengatur akses granular yang tidak dapat dilakukan
 dengan permission standar.
 
 \begin{notebox}
 Praktikum ini memerlukan setidaknya dua akun pengguna. Jika belum ada, buat dua user
-uji terlebih dahulu: \texttt{userA} dan \texttt{userB} (lihat Praktikum 11.3).
+uji terlebih dahulu: \texttt{userA} dan \texttt{userB} (lihat Praktikum 9.3).
 \end{notebox}
 
 \textbf{Langkah-langkah:}
@@ -1036,7 +1036,7 @@ getfacl ~/lab-acl/shared/inherited.txt
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[11.2]
+\begin{exercisebox}[9.2]
 \begin{enumerate}
     \item Apa perbedaan izin \texttt{confidential.txt} sebelum dan sesudah \cmd{setfacl}?
     \item Mengapa \texttt{userB} tidak bisa menulis ke \dir{shared} meskipun direktorinya
@@ -1501,7 +1501,7 @@ sudo chage -l contractor
 \end{examplebox}
 
 %% --- Praktikum ---
-\subsection*{Praktikum 11.3 --- Manajemen User dan Group}
+\subsection*{Praktikum 9.3 --- Manajemen User dan Group}
 \textbf{Tujuan:} membuat, memodifikasi, dan mengelola akun pengguna dan group di Linux.
 
 \textbf{Langkah-langkah:}
@@ -1546,7 +1546,7 @@ sudo passwd -S userB    # status harus 'L' (locked)
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[11.3]
+\begin{exercisebox}[9.3]
 \begin{enumerate}
     \item Apa perbedaan antara \cmd{useradd} dan \cmd{adduser} di Ubuntu?
     \item Mengapa mengunci akun (\cmd{usermod -L}) berbeda dengan menghapusnya
@@ -1870,7 +1870,7 @@ terminal mana. Konfigurasikan log rotation dan retention yang tepat di
 \end{tipbox}
 
 %% --- Praktikum ---
-\subsection*{Praktikum 11.4 --- Konfigurasi sudo}
+\subsection*{Praktikum 9.4 --- Konfigurasi sudo}
 \textbf{Tujuan:} mengkonfigurasi hak sudo secara granular dan memverifikasi logging.
 
 \textbf{Langkah-langkah:}
@@ -1905,7 +1905,7 @@ sudo grep "userA" /var/log/auth.log | tail -10
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[11.4]
+\begin{exercisebox}[9.4]
 \begin{enumerate}
     \item Apa risiko keamanan jika memberikan \texttt{NOPASSWD: ALL} kepada semua user?
     \item Bagaimana cara memberikan izin kepada \texttt{userB} untuk mengelola (start/stop/restart)
@@ -2253,7 +2253,7 @@ enforcement sudah benar-benar berhenti dan kernel tidak lagi memantau penggunaan
 terhadap batas yang ditetapkan.
 
 %% --- Praktikum ---
-\subsection*{Praktikum 11.5 --- Implementasi Disk Quota}
+\subsection*{Praktikum 9.5 --- Implementasi Disk Quota}
 \textbf{Tujuan:} mengkonfigurasi dan menguji disk quota pada filesystem lokal.
 
 \begin{notebox}
@@ -2318,7 +2318,7 @@ sudo rm /tmp/quota-test.img
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[11.5]
+\begin{exercisebox}[9.5]
 \begin{enumerate}
     \item Apa yang terjadi ketika pengguna melampaui soft limit tetapi masih di bawah
         hard limit? Berapa lama kondisi ini diizinkan?
@@ -2368,7 +2368,7 @@ Bab ini telah membahas lima topik utama manajemen file dan pengguna di Linux:
 \label{sec:file-user-exercises}
 %% ========================================================================
 
-\begin{exercisebox}[Latihan 11.A --- Audit Keamanan Permissions]
+\begin{exercisebox}[Latihan 9.A --- Audit Keamanan Permissions]
 Lakukan audit izin pada sistem Anda:
 \begin{enumerate}
     \item Cari semua file dengan SUID bit yang aktif di seluruh sistem:
@@ -2382,7 +2382,7 @@ Lakukan audit izin pada sistem Anda:
 \end{enumerate}
 \end{exercisebox}
 
-\begin{exercisebox}[Latihan 11.B --- Skenario Kolaborasi Tim]
+\begin{exercisebox}[Latihan 9.B --- Skenario Kolaborasi Tim]
 Sebuah tim pengembang memiliki kebutuhan berikut:
 \begin{itemize}
     \item Direktori proyek: \dir{/srv/webapp}
@@ -2395,7 +2395,7 @@ Tuliskan langkah-langkah lengkap (perintah-perintah) untuk mengkonfigurasi situa
 menggunakan kombinasi permissions standar dan ACL.
 \end{exercisebox}
 
-\begin{exercisebox}[Latihan 11.C --- Kebijakan Pengguna Komprehensif]
+\begin{exercisebox}[Latihan 9.C --- Kebijakan Pengguna Komprehensif]
 Buat skrip shell \file{setup-user.sh} yang ketika dijalankan akan:
 \begin{enumerate}
     \item Membuat user baru bernama \texttt{intern} dengan shell \texttt{/bin/bash}
