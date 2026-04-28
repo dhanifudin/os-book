@@ -1,20 +1,921 @@
 %% ========================================================================
 %% Chapter 10: Manajemen Memori & System Call
 %% ========================================================================
-
 \chapter{Manajemen Memori \& System Call}
 \label{ch:memory-and-syscalls}
 
-Bab ini membahas arsitektur memori di Linux, manajemen memori virtual,
-swap space, dan pengenalan system call.
+Bayangkan meja kerja Anda. Di atas meja tersimpan dokumen yang sedang aktif digunakan
+--- inilah yang diibaratkan sebagai \textbf{RAM}. Saat meja mulai penuh, beberapa
+dokumen dipindahkan ke laci agar ada ruang baru --- inilah yang diibaratkan sebagai
+\textbf{swap}. Jika semua dokumen tersimpan di laci dan Anda terus bolak-balik
+mengambilnya, pekerjaan menjadi lambat. Itulah gambaran sederhana bagaimana sistem
+operasi Linux mengelola memori.
+
+Pada bab ini kita akan memahami konsep tersebut lebih dalam, sekaligus mempelajari
+\textbf{system call} --- mekanisme yang digunakan program untuk meminta layanan dari
+kernel. Kita juga akan memanfaatkan kemampuan Bash dari Bab~9 untuk membangun script
+monitoring yang nyata dan berguna.
+
+\textbf{Tujuan Praktikum}
+
+Setelah menyelesaikan praktikum ini, mahasiswa diharapkan mampu:
+
+\begin{enumerate}
+    \item memahami arsitektur memori pada Linux;
+    \item menjelaskan konsep memori virtual dan mekanisme paging;
+    \item mengelola dan mengonfigurasi swap space;
+    \item memantau penggunaan memori menggunakan berbagai alat;
+    \item memahami konsep dan jenis-jenis system call;
+    \item mengamati interaksi antara user space dan kernel space.
+\end{enumerate}
+
+\begin{notebox}
+Seluruh praktikum dijalankan sebagai pengguna biasa kecuali perintah yang secara
+eksplisit menggunakan \texttt{sudo}. Buat direktori kerja terlebih dahulu:
+\begin{lstlisting}
+mkdir -p ~/praktikum-os/week10-memory
+\end{lstlisting}
+\end{notebox}
 
 \section{Arsitektur Memori di Linux}
+
+\textbf{Penjelasan Konsep}
+
+Setiap program yang berjalan di Linux mendapatkan \textit{ruang alamat virtual} sendiri.
+Artinya, setiap program seolah-olah memiliki memori pribadi yang tidak dapat diganggu
+program lain. Kernel bertugas mengatur pemetaan antara alamat virtual tersebut dengan
+memori fisik (RAM).
+
+Ruang alamat virtual sebuah proses dibagi menjadi beberapa area dengan fungsi berbeda,
+seperti terlihat pada \cref{fig:memory-layout}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[font=\small]
+    % Kernel Space
+    \filldraw[fill=gray!40, draw=black] (0,5.0) rectangle (8,5.7);
+    \node[font=\small\bfseries] at (4, 5.45) {Kernel Space};
+    \node[font=\footnotesize] at (4, 5.1) {hanya dapat diakses kernel};
+    % Boundary
+    \draw[dashed, thick] (0,5.0) -- (8,5.0);
+    % Stack
+    \filldraw[fill=blue!15, draw=black] (0,4.1) rectangle (8,5.0);
+    \node[font=\small\bfseries] at (4, 4.7) {Stack};
+    \node[font=\footnotesize] at (4, 4.3) {variabel lokal, return address \quad ↓ tumbuh ke bawah};
+    % Free space
+    \draw[draw=gray!50] (0,3.1) rectangle (8,4.1);
+    \node[font=\footnotesize\itshape, gray] at (4, 3.6) {(ruang bebas)};
+    % Heap
+    \filldraw[fill=green!15, draw=black] (0,2.2) rectangle (8,3.1);
+    \node[font=\small\bfseries] at (4, 2.8) {Heap};
+    \node[font=\footnotesize] at (4, 2.4) {alokasi dinamis \texttt{malloc()} \quad ↑ tumbuh ke atas};
+    % Data
+    \filldraw[fill=yellow!25, draw=black] (0,1.3) rectangle (8,2.2);
+    \node[font=\small\bfseries] at (4, 1.85) {Data Segment};
+    \node[font=\footnotesize] at (4, 1.5) {variabel global dan statis};
+    % Text
+    \filldraw[fill=orange!15, draw=black] (0,0.4) rectangle (8,1.3);
+    \node[font=\small\bfseries] at (4, 0.95) {Text Segment};
+    \node[font=\footnotesize] at (4, 0.6) {instruksi kode program (read-only)};
+    % User Space bracket (left side, inside figure bounds)
+    \draw[thick] (-0.2,0.4) -- (-0.5,0.4) -- (-0.5,5.0) -- (-0.2,5.0);
+    \node[font=\footnotesize, rotate=90, anchor=south] at (-0.8, 2.7) {User Space};
+\end{tikzpicture}
+\caption{Peta memori virtual sebuah proses Linux. Setiap proses memiliki ruang alamat
+virtual sendiri yang diisolasi dari proses lain.}
+\label{fig:memory-layout}
+\end{figure}
+
+\begin{notebox}
+Isolasi antar proses menjamin stabilitas sistem. Jika satu program crash, kerusakan
+hanya berdampak pada proses tersebut --- proses lain tetap berjalan normal karena
+tidak dapat saling mengakses memori satu sama lain.
+\end{notebox}
+
+\textbf{Perintah yang Digunakan}
+
+\begin{itemize}
+    \item \texttt{free -h}: ringkasan penggunaan RAM dan swap dalam format mudah dibaca.
+    \item \texttt{cat /proc/meminfo}: detail informasi memori langsung dari kernel.
+    \item \texttt{top}: memantau penggunaan resource sistem secara real-time.
+\end{itemize}
+
+\subsection*{Praktikum 10.1 Melihat Penggunaan Memori}
+
+\textbf{Tujuan}: mengenali struktur dan penggunaan memori pada sistem Linux.
+
+\textbf{Langkah 1}: Jalankan \texttt{free -h} untuk melihat ringkasan RAM dan swap.
+
+\begin{lstlisting}[caption={Melihat penggunaan memori}]
+free -h
+\end{lstlisting}
+
+Output \texttt{free -h} menampilkan dua baris: \texttt{Mem} untuk RAM dan \texttt{Swap}
+untuk swap. Kolom penting pada baris \texttt{Mem}:
+\begin{itemize}
+    \item \texttt{total}: jumlah total RAM yang terpasang.
+    \item \texttt{used}: memori yang sedang digunakan proses dan kernel.
+    \item \texttt{free}: memori yang benar-benar kosong, belum dipakai sama sekali.
+    \item \texttt{available}: estimasi memori yang \textit{benar-benar tersedia} untuk
+    aplikasi baru, termasuk cache yang bisa dibebaskan. Gunakan nilai ini, bukan
+    \texttt{free}, untuk menilai kondisi memori sistem.
+    \item \texttt{buff/cache}: memori yang digunakan kernel sebagai buffer I/O dan cache
+    file. Linux membebaskan cache ini secara otomatis jika ada aplikasi yang membutuhkan.
+\end{itemize}
+
+\textbf{Langkah 2}: Lihat detail memori dari kernel melalui \texttt{/proc/meminfo}.
+
+\begin{lstlisting}[caption={Melihat detail memori kernel}]
+cat /proc/meminfo | head -n 20
+\end{lstlisting}
+
+\textbf{Analisis:}
+
+\begin{enumerate}
+    \item Hitung persentase memori tersedia: \texttt{available / total × 100\%}.
+    Jika hasilnya di bawah 10\%, sistem mulai kekurangan memori.
+    \item Pada baris \texttt{Swap}, apakah kolom \texttt{used} bernilai 0? Jika lebih
+    dari 0, kernel sudah pernah memindahkan data ke disk karena RAM tidak cukup.
+    \item Perhatikan field \texttt{Cached} dan \texttt{Buffers} di \texttt{/proc/meminfo}.
+    Nilai ini sesuai dengan kolom \texttt{buff/cache} pada \texttt{free -h}.
+\end{enumerate}
+
+\begin{tipbox}
+Jangan khawatir jika nilai \texttt{used} tampak besar. Linux sengaja menggunakan RAM
+yang kosong sebagai cache untuk mempercepat akses file. Fokus pada \texttt{available}
+--- inilah memori yang sesungguhnya tersedia.
+\end{tipbox}
+
+\subsection*{Studi Kasus 10.1 Server Lambat karena Memori}
+
+\textbf{Skenario}: Server aplikasi terasa lambat saat banyak pengguna aktif.
+Administrator perlu menentukan apakah penyebabnya adalah kekurangan memori.
+
+\textbf{Langkah 1}: Periksa kondisi memori secara keseluruhan.
+
+\begin{lstlisting}[caption={Pemeriksaan awal kondisi memori}]
+free -h
+\end{lstlisting}
+
+\textbf{Langkah 2}: Pantau proses secara real-time.
+
+\begin{lstlisting}[caption={Pemantauan real-time dengan top}]
+top
+\end{lstlisting}
+
+Di dalam \texttt{top}: tekan \keystroke{M} untuk mengurutkan berdasarkan memori, tekan
+\keystroke{q} untuk keluar.
+
+\textbf{Analisis:}
+
+\begin{enumerate}
+    \item Apakah nilai \texttt{available} sangat kecil (misalnya di bawah 200~MB pada
+    server dengan RAM 2~GB)? Jika ya, server kemungkinan kekurangan memori.
+    \item Apakah kolom \texttt{used} pada baris \texttt{Swap} lebih dari 0? Jika ya,
+    kernel sedang menggunakan swap, yang berarti performa menurun.
+    \item Di tampilan \texttt{top}, proses apa yang memiliki \texttt{\%MEM} terbesar?
+    Proses tersebut menjadi kandidat utama penyebab lambatnya server.
+\end{enumerate}
+
 \section{Manajemen Memori Virtual}
+
+\textbf{Penjelasan Konsep}
+
+Bayangkan sebuah perpustakaan besar dengan ribuan buku. Anda hanya dapat meletakkan
+beberapa buku di meja baca (RAM), sementara sisanya tersimpan di rak (disk/swap).
+Saat Anda butuh buku dari rak, Anda harus mengambilnya dan mungkin menyimpan buku
+lain kembali ke rak. Itulah cara kerja \textit{memori virtual} dan \textit{paging}.
+
+Memori virtual memungkinkan program menggunakan lebih banyak memori daripada RAM
+yang tersedia. Data dibagi dalam blok berukuran tetap yang disebut \textbf{page}.
+Kernel secara otomatis memindahkan page yang tidak aktif ke swap (\textit{swap out})
+dan memuatnya kembali saat dibutuhkan (\textit{swap in}), seperti digambarkan pada
+\cref{fig:virtual-memory}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[font=\small, >=latex]
+    % RAM box (0..4 x 0..4)
+    \draw[fill=blue!5, thick] (0,0) rectangle (4,4);
+    \node[font=\small\bfseries] at (2, 4.35) {RAM (cepat)};
+    \filldraw[fill=blue!25]  (0.2,3.2) rectangle (3.8,3.8); \node at (2,3.5) {Page A};
+    \filldraw[fill=blue!25]  (0.2,2.4) rectangle (3.8,3.0); \node at (2,2.7) {Page B};
+    \filldraw[fill=gray!25]  (0.2,1.6) rectangle (3.8,2.2); \node[gray] at (2,1.9) {Page C};
+    \filldraw[fill=blue!25]  (0.2,0.8) rectangle (3.8,1.4); \node at (2,1.1) {Page D};
+    \draw (0.2,0.1) rectangle (3.8,0.6); \node[gray!60] at (2,0.35) {kosong};
+    % Swap box (5.5..9.5 x 0..4)
+    \draw[fill=orange!5, thick] (5.5,0) rectangle (9.5,4);
+    \node[font=\small\bfseries] at (7.5, 4.35) {Swap (disk, lambat)};
+    \filldraw[fill=orange!30] (5.7,3.2) rectangle (9.3,3.8); \node at (7.5,3.5) {Page E};
+    \filldraw[fill=orange!30] (5.7,2.4) rectangle (9.3,3.0); \node at (7.5,2.7) {Page F};
+    \draw (5.7,0.1) rectangle (9.3,2.2); \node[gray!60] at (7.5,1.15) {kosong};
+    % Arrows (between boxes, labels inside the gap)
+    \draw[->, thick, red!60!black] (4,1.9) -- (5.5,2.7);
+    \node[font=\footnotesize, red!60!black] at (4.75, 2.8) {swap out (\texttt{so})};
+    \draw[->, thick, blue!60!black] (5.5,3.5) -- (4,3.5);
+    \node[font=\footnotesize, blue!60!black] at (4.75, 3.7) {swap in (\texttt{si})};
+\end{tikzpicture}
+\caption{Mekanisme paging: kernel memindahkan page tidak aktif ke swap saat RAM penuh,
+dan memuatnya kembali (\texttt{si}/\texttt{so} pada \texttt{vmstat}) saat dibutuhkan.}
+\label{fig:virtual-memory}
+\end{figure}
+
+\textbf{Perintah yang Digunakan}
+
+\begin{itemize}
+    \item \texttt{vmstat 1 5}: statistik memori virtual, CPU, dan I/O setiap 1 detik
+    sebanyak 5 kali. Kolom \texttt{si} (swap in) dan \texttt{so} (swap out) adalah
+    indikator utama aktivitas paging.
+\end{itemize}
+
+\subsection*{Praktikum 10.2 Mengamati Aktivitas Paging}
+
+\textbf{Tujuan}: memahami aktivitas memori virtual melalui kolom swap pada \texttt{vmstat}.
+
+\textbf{Langkah 1}: Jalankan \texttt{vmstat} dengan interval 1 detik, 5 sampel.
+
+\begin{lstlisting}[caption={Melihat statistik memori virtual}]
+vmstat 1 5
+\end{lstlisting}
+
+Pada output, temukan kolom \texttt{swap} yang berisi dua sub-kolom:
+\begin{itemize}
+    \item \texttt{si}: KB/detik yang dipindahkan dari disk ke RAM. Nilai 0 = tidak ada
+    data yang sedang dimuat dari swap.
+    \item \texttt{so}: KB/detik yang dipindahkan dari RAM ke disk. Nilai 0 = RAM masih
+    cukup, tidak ada data yang dikeluarkan ke swap.
+\end{itemize}
+
+\textbf{Analisis:}
+
+\begin{enumerate}
+    \item Amati nilai \texttt{si} dan \texttt{so} pada kelima baris. Pada sistem normal
+    dengan RAM cukup, kedua nilai ini selalu 0.
+    \item Jika nilai \texttt{si} atau \texttt{so} sesekali muncul lebih dari 0, artinya
+    pernah ada aktivitas swap. Ini masih wajar jika tidak terus-menerus.
+    \item Jika \texttt{si} dan \texttt{so} terus-menerus lebih dari 0, sistem dalam
+    kondisi \textit{memory pressure} serius --- performa turun drastis karena akses
+    disk jauh lebih lambat dari RAM.
+    \item Perhatikan juga kolom \texttt{free} (RAM kosong) dan \texttt{buff} (buffer)
+    untuk memahami kondisi keseluruhan RAM saat itu.
+\end{enumerate}
+
+\begin{warningbox}
+Nilai \texttt{si} dan \texttt{so} yang tinggi terus-menerus menandakan sistem butuh
+lebih banyak RAM. Solusi: tambah RAM, kurangi jumlah proses yang berjalan bersamaan,
+atau optimalkan konfigurasi aplikasi.
+\end{warningbox}
+
 \section{Konfigurasi Swap Space}
+
+\textbf{Penjelasan Konsep}
+
+Swap space adalah area di disk yang berfungsi sebagai perpanjangan RAM. Swap mencegah
+sistem crash saat RAM penuh, tetapi karena berada di disk, aksesnya jauh lebih lambat.
+Swap adalah \textit{jaring pengaman}, bukan pengganti RAM.
+
+Parameter \texttt{swappiness} (nilai 0--100) mengatur agresivitas kernel dalam
+menggunakan swap:
+\begin{itemize}
+    \item \textbf{Nilai tinggi (60--100)}: kernel cepat memindahkan data ke swap meski
+    RAM masih tersedia. Ini nilai default Linux (60).
+    \item \textbf{Nilai rendah (10--20)}: kernel lebih mengutamakan RAM dan hanya
+    menggunakan swap jika benar-benar terpaksa. Disarankan untuk server aplikasi.
+\end{itemize}
+
+\textbf{Perintah yang Digunakan}
+
+\begin{itemize}
+    \item \texttt{swapon --show}: daftar swap aktif beserta ukuran dan penggunaannya.
+    \item \texttt{fallocate -l \textit{ukuran} \textit{file}}: membuat file kosong
+    berukuran tertentu secara efisien.
+    \item \texttt{mkswap \textit{file}}: memformat file sebagai area swap.
+    \item \texttt{swapon}/\texttt{swapoff}: mengaktifkan/menonaktifkan swap.
+    \item \texttt{sysctl vm.swappiness=\textit{nilai}}: mengubah swappiness sementara.
+\end{itemize}
+
+\subsection*{Praktikum 10.3 Membuat dan Mengonfigurasi Swap File}
+
+\textbf{Tujuan}: menambahkan swap space dan memahami parameter swappiness.
+
+\textbf{Langkah 1}: Buat file berukuran 512~MB sebagai calon swap.
+
+\begin{lstlisting}[caption={Membuat swap file 512MB}]
+sudo fallocate -l 512M /swapfile-week10
+\end{lstlisting}
+
+\textbf{Langkah 2}: Atur permission file menjadi \texttt{600} --- hanya root yang
+boleh membaca dan menulis.
+
+\begin{lstlisting}[caption={Mengamankan permission swap file}]
+sudo chmod 600 /swapfile-week10
+\end{lstlisting}
+
+\begin{warningbox}
+Langkah ini \textbf{wajib} dilakukan sebelum \texttt{mkswap}. File swap dapat berisi
+potongan data sensitif dari memori program. Permission terbuka (\texttt{644}) membuat
+pengguna lain bisa membaca isi memori tersebut.
+\end{warningbox}
+
+\textbf{Langkah 3}: Format file sebagai area swap, lalu aktifkan.
+
+\begin{lstlisting}[caption={Memformat dan mengaktifkan swap}]
+sudo mkswap /swapfile-week10
+sudo swapon /swapfile-week10
+\end{lstlisting}
+
+\textbf{Langkah 4}: Verifikasi swap aktif. Anda akan melihat entri
+\texttt{/swapfile-week10} dengan ukuran 512M, dan nilai \texttt{total} pada baris
+\texttt{Swap} di \texttt{free -h} bertambah 512M.
+
+\begin{lstlisting}[caption={Verifikasi swap aktif}]
+swapon --show
+free -h
+\end{lstlisting}
+
+\textbf{Langkah 5}: Periksa nilai swappiness, ubah sementara, dan verifikasi perubahan.
+
+\begin{lstlisting}[caption={Melihat dan mengubah swappiness}]
+cat /proc/sys/vm/swappiness
+sudo sysctl vm.swappiness=10
+cat /proc/sys/vm/swappiness
+\end{lstlisting}
+
+\textbf{Analisis:}
+
+\begin{enumerate}
+    \item Berapa nilai swappiness default? Apa artinya bagi perilaku kernel dalam
+    menggunakan swap?
+    \item Setelah diubah ke 10, konfirmasi nilai berubah pada output \texttt{cat} kedua.
+    Apa dampak nilai 10 terhadap penggunaan swap dibanding nilai 60?
+    \item Apakah entri \texttt{/swapfile-week10} muncul di \texttt{swapon --show}?
+    Jika tidak, pastikan Langkah~2 (chmod 600) sudah dijalankan sebelum Langkah~3.
+\end{enumerate}
+
+\begin{notebox}
+Perubahan \texttt{sysctl} bersifat sementara dan hilang setelah reboot. Untuk
+konfigurasi permanen, tambahkan \texttt{vm.swappiness=10} pada \texttt{/etc/sysctl.conf}.
+
+Bersihkan swap file setelah praktikum:
+\begin{lstlisting}
+sudo swapoff /swapfile-week10
+sudo rm /swapfile-week10
+\end{lstlisting}
+\end{notebox}
+
 \section{Pemantauan Penggunaan Memori}
-\section{Pengenalan System Call}
-\section{Jenis-jenis System Call}
-\section{User Space dan Kernel Space}
-\section{Rangkuman}
-\section{Latihan}
-\section{Referensi Tambahan}
+
+\textbf{Penjelasan Konsep}
+
+Pemantauan memori membantu administrator mendeteksi masalah sebelum berdampak ke
+pengguna. Ada dua pendekatan:
+\begin{itemize}
+    \item \textbf{Real-time} dengan \texttt{top}: melihat perubahan dinamis yang
+    terjadi saat ini.
+    \item \textbf{Snapshot} dengan \texttt{ps aux}: mengambil daftar proses pada satu
+    titik waktu, cocok disimpan ke file laporan.
+\end{itemize}
+
+Kolom penting pada output \texttt{ps aux}:
+\begin{itemize}
+    \item \texttt{\%MEM}: persentase RAM yang digunakan proses terhadap total RAM.
+    \item \texttt{RSS} (Resident Set Size): ukuran RAM fisik yang \textit{benar-benar
+    dipakai} proses saat ini (KB).
+    \item \texttt{VSZ} (Virtual Memory Size): total memori virtual yang dialokasikan,
+    termasuk bagian yang belum dimuat ke RAM (selalu lebih besar dari RSS).
+\end{itemize}
+
+\subsection*{Praktikum 10.4 Monitoring Memory}
+
+\textbf{Tujuan}: mengidentifikasi proses dengan penggunaan memori terbesar.
+
+\textbf{Langkah 1}: Ambil snapshot proses diurutkan dari penggunaan memori terbesar.
+
+\begin{lstlisting}[caption={Proses dengan memori terbesar}]
+ps aux --sort=-%mem | head
+\end{lstlisting}
+
+Baris pertama adalah header (nama kolom). Proses di baris kedua adalah pengguna memori
+terbesar saat perintah dijalankan.
+
+\textbf{Langkah 2}: Pantau secara real-time dengan \texttt{top}.
+
+\begin{lstlisting}[caption={Monitoring real-time}]
+top
+\end{lstlisting}
+
+Di dalam \texttt{top}: \keystroke{M} = urutkan berdasarkan memori,
+\keystroke{P} = urutkan berdasarkan CPU, \keystroke{q} = keluar.
+
+\textbf{Analisis:}
+
+\begin{enumerate}
+    \item Proses apa yang berada di urutan pertama? Catat nilai \texttt{\%MEM} dan
+    \texttt{RSS}-nya.
+    \item Konversikan \texttt{RSS} dari KB ke MB (bagi 1024). Misalnya,
+    \texttt{RSS=524288} berarti proses menggunakan 512~MB RAM. Apakah wajar untuk
+    jenis program tersebut?
+    \item Mengapa \texttt{VSZ} selalu lebih besar dari \texttt{RSS} pada proses yang
+    sama?
+    \item Apakah urutan proses di \texttt{ps} konsisten dengan tampilan \texttt{top}
+    saat diurutkan berdasarkan \texttt{\%MEM}?
+\end{enumerate}
+
+\begin{tipbox}
+Kombinasikan tiga alat: \texttt{free} untuk kondisi global, \texttt{top} untuk
+dinamika real-time, dan \texttt{ps} untuk snapshot yang dapat disimpan ke file.
+\end{tipbox}
+
+\subsection*{Praktikum 10.5 Script Monitor Memori}
+
+\textbf{Tujuan}: mengotomasi pemantauan memori menggunakan Bash script.
+
+\begin{notebox}
+Script ini menerapkan konsep dari Bab~9: variabel (\texttt{THRESHOLD}), kondisi
+\texttt{if}, parsing output dengan \texttt{awk}, dan perintah \texttt{date} untuk
+mencatat waktu pemantauan.
+\end{notebox}
+
+Masuk ke direktori kerja dan buat file script:
+
+\begin{lstlisting}[caption={Pindah ke direktori dan buka nano}]
+cd ~/praktikum-os/week10-memory
+nano monitor-memori.sh
+\end{lstlisting}
+
+Ketik script berikut:
+
+\begin{lstlisting}[caption={Isi file monitor-memori.sh}]
+#!/bin/bash
+set -euo pipefail
+
+THRESHOLD=20
+
+echo "=== Monitor Memori ==="
+date
+echo
+
+free -h
+echo
+
+AVAIL=$(free | awk '/Mem/ {printf "%d", $7/$2*100}')
+if [ "$AVAIL" -lt "$THRESHOLD" ]; then
+    echo "PERINGATAN: Memori tersedia hanya ${AVAIL}%!"
+else
+    echo "Status: Memori tersedia ${AVAIL}% (normal)"
+fi
+echo
+
+echo "--- 5 Proses Memori Tertinggi ---"
+ps aux --sort=-%mem | head -n 6 | tail -n 5
+\end{lstlisting}
+
+\begin{notebox}
+Simpan: \keystroke{Ctrl+O} $\to$ \keystroke{Enter} $\to$ keluar: \keystroke{Ctrl+X}.
+\end{notebox}
+
+\begin{lstlisting}[caption={Menjalankan script monitor}]
+chmod +x monitor-memori.sh
+bash monitor-memori.sh
+\end{lstlisting}
+
+\textbf{Analisis:}
+
+\begin{enumerate}
+    \item Variabel \texttt{THRESHOLD=20} menetapkan batas persentase. Perintah
+    \texttt{free | awk '/Mem/ \{printf "\%d", \$7/\$2*100\}'} mengambil kolom ke-7
+    (available) dibagi kolom ke-2 (total) dari baris \texttt{Mem}, lalu dikalikan 100
+    untuk menghasilkan persentase bilangan bulat.
+    \item Kondisi \texttt{if [ "\$AVAIL" -lt "\$THRESHOLD" ]} bernilai benar jika
+    persentase memori tersedia di bawah 20.
+    \item Ubah \texttt{THRESHOLD} menjadi \texttt{90} dan jalankan ulang. Apa yang
+    berubah pada output? Mengapa demikian?
+\end{enumerate}
+
+\section{System Call dan Interaksi User-Kernel}
+
+\textbf{Penjelasan Konsep}
+
+Bayangkan sebuah restoran. Anda (program) tidak bisa langsung masuk ke dapur (kernel)
+untuk memasak sendiri --- Anda harus memesan melalui pramusaji (system call). Pramusaji
+meneruskan pesanan ke dapur, memastikan pesanan valid, dan membawa hasilnya kembali ke
+meja Anda.
+
+Itulah cara kerja system call: mekanisme bagi program di \textit{user space} untuk
+meminta layanan dari kernel. Program tidak dapat langsung mengakses hardware, filesystem,
+atau sumber daya kernel --- semua permintaan harus melalui system call. Alur lengkapnya
+ditunjukkan pada \cref{fig:syscall-flow}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[font=\small, >=latex,
+    ub/.style={draw, fill=blue!12, rounded corners=3pt,
+               minimum width=3.8cm, minimum height=0.8cm, align=center},
+    kb/.style={draw, fill=orange!18, rounded corners=3pt,
+               minimum width=3.8cm, minimum height=0.8cm, align=center}
+]
+    % Column headers (within 0..9.5 x range)
+    \node[font=\small\bfseries, blue!70!black]   at (2.0, 5.8) {User Space};
+    \node[font=\small\bfseries, orange!70!black] at (7.5, 5.8) {Kernel Space};
+    % Dividing line (within bounding box)
+    \draw[dashed, thick, gray!60] (4.75, 0.0) -- (4.75, 5.5);
+
+    % User side (x=2.0)
+    \node[ub] (app) at (2.0, 5.0) {\texttt{printf("Hello")}};
+    \node[ub] (lib) at (2.0, 3.7) {library C:\\\texttt{write(1,"Hello",5)}};
+    \node[ub] (fin) at (2.0, 0.5) {program lanjutkan};
+
+    % Kernel side (x=7.5)
+    \node[kb] (val) at (7.5, 3.7) {validasi parameter};
+    \node[kb] (exe) at (7.5, 2.4) {kirim ke terminal};
+    \node[kb] (ret) at (7.5, 1.1) {kembalikan nilai = 5};
+
+    % Arrows (all labels inside the 0..9.5 bounding box)
+    \draw[->] (app) -- (lib) node[midway, right, font=\footnotesize] {panggil};
+    \draw[->, thick, red!60!black] (lib) -- (val)
+        node[midway, above, font=\footnotesize] {system call};
+    \draw[->] (val) -- (exe);
+    \draw[->] (exe) -- (ret);
+    \draw[->, thick, blue!60!black] (ret) -- (fin)
+        node[midway, above, font=\footnotesize] {nilai kembali};
+\end{tikzpicture}
+\caption{Alur system call \texttt{printf}: program user meminta layanan kernel melalui
+antarmuka yang terkontrol, bukan langsung ke hardware.}
+\label{fig:syscall-flow}
+\end{figure}
+
+\subsection{Jenis-Jenis System Call}
+
+System call dikelompokkan berdasarkan fungsinya:
+
+\begin{itemize}
+    \item \textbf{Manajemen Proses}: \texttt{fork}, \texttt{exec}, \texttt{wait},
+    \texttt{exit} --- membuat, menjalankan, menunggu, dan mengakhiri proses.
+    \item \textbf{Manajemen File}: \texttt{open}, \texttt{read}, \texttt{write},
+    \texttt{close} --- membuka, membaca, menulis, dan menutup file.
+    \item \textbf{Manajemen Memori}: \texttt{mmap}, \texttt{brk} --- memetakan file
+    ke memori dan mengatur batas heap.
+    \item \textbf{Komunikasi}: \texttt{pipe}, \texttt{socket}, \texttt{send},
+    \texttt{recv} --- komunikasi antar proses dan jaringan.
+    \item \textbf{Informasi Sistem}: \texttt{getpid}, \texttt{uname}, \texttt{time}
+    --- mengambil informasi proses dan sistem.
+\end{itemize}
+
+\begin{notebox}
+Perintah sederhana seperti \texttt{ls} sebenarnya memanggil puluhan system call:
+\texttt{openat} (buka direktori), \texttt{getdents64} (baca isi), \texttt{newfstatat}
+(baca metadata), \texttt{write} (tampilkan ke terminal), dan masih banyak lagi.
+\end{notebox}
+
+\subsection*{Studi Kasus 10.2 Gagal Akses File}
+
+\textbf{Skenario}: Program tidak dapat membaca file konfigurasi. Penyebab umum: file
+tidak ada, path salah, atau permission tidak sesuai. Kita akan mensimulasikan kondisi
+ini dan mengamati pesan error yang dihasilkan.
+
+\textbf{Langkah 1}: Buat direktori dan file konfigurasi contoh.
+
+\begin{lstlisting}[caption={Membuat file konfigurasi contoh}]
+mkdir -p ~/praktikum-os/week10-memory/syscall-case
+cd ~/praktikum-os/week10-memory/syscall-case
+echo "PORT=8080" > app.conf
+ls -l app.conf
+cat app.conf
+\end{lstlisting}
+
+\textbf{Langkah 2}: Simulasikan permission bermasalah.
+
+\begin{lstlisting}[caption={Menghapus semua izin akses}]
+chmod 000 app.conf
+cat app.conf
+\end{lstlisting}
+
+Output akan menampilkan: \texttt{cat: app.conf: Permission denied}. Ini terjadi karena
+system call \texttt{openat()} gagal --- kernel menolak permintaan membuka file karena
+tidak ada bit izin baca (\texttt{r}).
+
+\textbf{Langkah 3}: Kembalikan permission dan verifikasi.
+
+\begin{lstlisting}[caption={Mengembalikan permission file}]
+chmod 644 app.conf
+cat app.conf
+\end{lstlisting}
+
+\textbf{Analisis:}
+
+\begin{enumerate}
+    \item Mengapa \texttt{cat} menghasilkan \texttt{Permission denied} setelah
+    \texttt{chmod 000}? System call apa yang gagal?
+    \item Apa perbedaan pesan error \texttt{Permission denied} vs \texttt{No such file
+    or directory}? Coba \texttt{rm app.conf} lalu \texttt{cat app.conf} untuk melihat
+    perbedaannya.
+    \item Permission \texttt{644} berarti apa untuk owner, group, dan others?
+\end{enumerate}
+
+\begin{warningbox}
+Pesan error seperti \texttt{Permission denied} berasal dari system call yang gagal di
+level kernel. Sebelum debugging lebih jauh, selalu verifikasi dengan \texttt{ls -l}
+atau \texttt{stat \textit{namafile}}.
+\end{warningbox}
+
+\subsection*{Praktikum 10.6 Mengamati System Call dengan strace}
+
+\textbf{Tujuan}: melihat dan menganalisis system call yang dilakukan suatu perintah.
+
+\textbf{Perintah yang Digunakan}:
+\begin{itemize}
+    \item \texttt{strace \textit{perintah}}: jalankan perintah sambil catat semua
+    system call (argumen dan nilai kembalian).
+    \item \texttt{strace -c \textit{perintah}}: tampilkan ringkasan statistik
+    (jumlah pemanggilan, waktu, error).
+\end{itemize}
+
+\textbf{Langkah 1}: Lihat 30 baris pertama system call dari perintah \texttt{ls}.
+
+\begin{lstlisting}[caption={Detail system call ls}]
+strace ls 2>&1 | head -n 30
+\end{lstlisting}
+
+Setiap baris mengikuti format: \texttt{namasyscall(argumen) = nilai\_kembali}.
+Contoh interpretasi:
+\begin{itemize}
+    \item \texttt{openat(AT\_FDCWD, "/etc/ld.so.cache", O\_RDONLY) = 3}: membuka file
+    untuk dibaca, berhasil (file descriptor = 3).
+    \item \texttt{read(3, "...", 4096) = 1234}: membaca hingga 4096 byte dari fd~3,
+    berhasil membaca 1234 byte.
+    \item \texttt{close(3) = 0}: menutup fd~3, berhasil.
+    \item \texttt{openat(\ldots) = -1 ENOENT}: gagal karena file tidak ditemukan.
+\end{itemize}
+
+\textbf{Langkah 2}: Lihat ringkasan statistik dan bandingkan dua direktori berbeda.
+
+\begin{lstlisting}[caption={Ringkasan dan perbandingan system call}]
+strace -c ls
+strace -c ls /etc 2>&1 | tail -5
+\end{lstlisting}
+
+\textbf{Analisis:}
+
+\begin{enumerate}
+    \item Dari output Langkah~1, identifikasi minimal 4 system call berbeda. Jelaskan
+    fungsi singkat masing-masing berdasarkan argumen yang terlihat.
+    \item Dari ringkasan \texttt{strace -c}, system call mana yang paling sering
+    dipanggil? Mengapa?
+    \item Apakah ada system call dengan \texttt{errors} lebih dari 0? Apakah itu
+    berarti program bermasalah, ataukah bagian normal dari logika program?
+    \item Apakah jumlah system call berbeda antara \texttt{ls} dan \texttt{ls /etc}?
+    Faktor apa yang menyebabkan perbedaan tersebut?
+\end{enumerate}
+
+\begin{tipbox}
+Gunakan \texttt{strace -c} untuk gambaran umum cepat. Untuk mendiagnosis masalah
+konkret (misalnya program tidak bisa buka file tertentu), gunakan \texttt{strace} tanpa
+\texttt{-c} agar dapat melihat urutan dan argumen lengkap setiap system call.
+\end{tipbox}
+
+\section{Tugas Praktikum}
+
+\textbf{Instruksi Umum}: Kerjakan seluruh tugas pada direktori berikut.
+
+\begin{lstlisting}[caption={Persiapan direktori tugas}]
+mkdir -p ~/praktikum-os/week10-memory
+cd ~/praktikum-os/week10-memory
+\end{lstlisting}
+
+\subsubsection{Tugas 10.1 Audit Penggunaan Memori Sistem}
+
+\textbf{Instruksi}: Buat script \texttt{memory-audit.sh} yang menghasilkan laporan
+kondisi memori sistem secara otomatis.
+
+\begin{lstlisting}[caption={Buka file dengan nano}]
+nano ~/praktikum-os/week10-memory/memory-audit.sh
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Isi file memory-audit.sh}]
+#!/bin/bash
+set -euo pipefail
+
+LAPORAN="memory-report.txt"
+
+{
+    echo "=== LAPORAN MEMORI SISTEM ==="
+    date
+    echo
+    echo "--- Ringkasan free -h ---"
+    free -h
+    echo
+    echo "--- /proc/meminfo ---"
+    cat /proc/meminfo | head -n 20
+} > "$LAPORAN"
+
+echo "Laporan disimpan ke: $LAPORAN"
+cat "$LAPORAN"
+\end{lstlisting}
+
+\begin{notebox}
+Simpan: \keystroke{Ctrl+O} $\to$ \keystroke{Enter} $\to$ keluar: \keystroke{Ctrl+X}.
+\end{notebox}
+
+\begin{lstlisting}[caption={Jalankan script audit}]
+chmod +x ~/praktikum-os/week10-memory/memory-audit.sh
+cd ~/praktikum-os/week10-memory
+bash memory-audit.sh
+\end{lstlisting}
+
+\textbf{Analisis}
+
+\begin{enumerate}
+    \item Hitung persentase memori tersedia (\texttt{available / total × 100\%}).
+    Apakah sistem dalam kondisi normal?
+    \item Mengapa \texttt{buff/cache} tidak dihitung sebagai memori yang \textit{terpakai}
+    dari sudut pandang ketersediaan untuk aplikasi?
+    \item Dari \texttt{/proc/meminfo}, apakah \texttt{SwapTotal} lebih besar dari 0?
+    Berapa nilai \texttt{SwapFree}?
+\end{enumerate}
+
+\subsubsection{Tugas 10.2 Identifikasi Proses dengan Memori Tertinggi}
+
+\textbf{Instruksi}: Simpan daftar 10 proses pengguna memori terbesar ke file.
+
+\begin{lstlisting}[caption={Simpan dan tampilkan proses teratas}]
+ps aux --sort=-%mem | head -n 10 > top-memory-process.txt
+cat top-memory-process.txt
+\end{lstlisting}
+
+\textbf{Analisis}
+
+\begin{enumerate}
+    \item Proses apa di urutan pertama? Catat nilai \texttt{\%MEM} dan \texttt{RSS}.
+    \item Konversikan \texttt{RSS} ke MB (bagi 1024). Apakah wajar?
+    \item Jumlahkan \texttt{\%MEM} dari 5 proses teratas. Berapa persen RAM yang mereka
+    gunakan bersama?
+\end{enumerate}
+
+\subsubsection{Tugas 10.3 Membuat dan Memverifikasi Swap File}
+
+\textbf{Instruksi}: Buat swap file khusus tugas sebesar 256~MB dan verifikasi.
+
+\begin{lstlisting}[caption={Buat dan aktifkan swap file tugas}]
+sudo fallocate -l 256M /swapfile-tugas-week10
+sudo chmod 600 /swapfile-tugas-week10
+sudo mkswap /swapfile-tugas-week10
+sudo swapon /swapfile-tugas-week10
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Verifikasi dan simpan hasil}]
+{
+    echo "=== VERIFIKASI SWAP ==="
+    swapon --show
+    echo
+    free -h
+} > swap-check.txt
+cat swap-check.txt
+\end{lstlisting}
+
+\begin{notebox}
+Bersihkan setelah selesai:\\
+\texttt{sudo swapoff /swapfile-tugas-week10 \&\& sudo rm /swapfile-tugas-week10}
+\end{notebox}
+
+\textbf{Analisis}
+
+\begin{enumerate}
+    \item Identifikasi kolom \texttt{NAME}, \texttt{TYPE}, \texttt{SIZE}, dan
+    \texttt{USED} pada output \texttt{swapon --show}.
+    \item Apakah nilai \texttt{total} pada baris \texttt{Swap} di \texttt{free -h}
+    bertambah 256~MB?
+    \item Mengapa permission \texttt{600} penting? Apa risiko jika diatur ke \texttt{644}?
+\end{enumerate}
+
+\subsubsection{Tugas 10.4 Analisis System Call dengan strace}
+
+\textbf{Instruksi}: Analisis system call yang dipanggil perintah \texttt{ls}.
+
+\begin{lstlisting}[caption={Simpan ringkasan dan detail system call}]
+strace -c ls 2> strace-summary.txt
+strace ls /etc 2> strace-ls-etc.txt
+cat strace-summary.txt
+\end{lstlisting}
+
+\textbf{Analisis}
+
+\begin{enumerate}
+    \item Sebutkan minimal 5 system call dari \texttt{strace-summary.txt} beserta
+    fungsi singkatnya.
+    \item System call mana yang paling sering dipanggil? Mengapa?
+    \item Apakah ada \texttt{errors} lebih dari 0? Apakah program tetap berjalan
+    normal meskipun ada kegagalan tersebut?
+\end{enumerate}
+
+\subsubsection{Tugas 10.5 Studi Kasus Diagnosa Server Lambat}
+
+\textbf{Skenario}: Server terasa lambat. Buat script diagnosa yang menggabungkan
+semua pemeriksaan dari bab ini menggunakan fungsi Bash.
+
+\begin{lstlisting}[caption={Buka file dengan nano}]
+nano ~/praktikum-os/week10-memory/diagnosa-server.sh
+\end{lstlisting}
+
+\begin{longlisting}[language=bash, caption={Isi file diagnosa-server.sh}]
+#!/bin/bash
+set -euo pipefail
+
+LAPORAN="diagnosa-server-lambat.txt"
+WARN_MEM=false
+WARN_SWAP=0
+
+cek_memori() {
+    echo "--- Kondisi Memori ---"
+    free -h
+    echo
+    AVAIL_PCT=$(free | awk '/Mem/ {printf "%d", $7/$2*100}')
+    if [ "$AVAIL_PCT" -lt 20 ]; then
+        echo "PERINGATAN: Memori tersedia hanya ${AVAIL_PCT}%"
+        WARN_MEM=true
+    fi
+}
+
+cek_swap() {
+    echo "--- Penggunaan Swap ---"
+    swapon --show 2>/dev/null || echo "Tidak ada swap aktif"
+    echo
+    WARN_SWAP=$(free | awk '/Swap/ {print $3}')
+    if [ "$WARN_SWAP" -gt 0 ]; then
+        echo "INFO: Swap digunakan (${WARN_SWAP} kB)"
+    fi
+}
+
+cek_proses() {
+    echo "--- 10 Proses Memori Tertinggi ---"
+    ps aux --sort=-%mem | head -n 11
+    echo
+}
+
+cek_paging() {
+    echo "--- Aktivitas Paging (5 sampel) ---"
+    vmstat 1 5
+    echo
+}
+
+ringkasan() {
+    echo "=== RINGKASAN ==="
+    if [ "$WARN_MEM" = true ]; then
+        echo "- Memori: KRITIS - perlu tindakan segera"
+    else
+        echo "- Memori: normal"
+    fi
+    if [ "$WARN_SWAP" -gt 0 ]; then
+        echo "- Swap: aktif - pantau aktivitas paging"
+    else
+        echo "- Swap: tidak digunakan"
+    fi
+}
+
+{
+    echo "=== LAPORAN DIAGNOSA SERVER ==="
+    date
+    echo
+
+    cek_memori
+    cek_swap
+    cek_proses
+    cek_paging
+    ringkasan
+} | tee "$LAPORAN"
+
+echo
+echo "Laporan disimpan ke: $LAPORAN"
+\end{longlisting}
+
+\begin{notebox}
+Simpan: \keystroke{Ctrl+O} $\to$ \keystroke{Enter} $\to$ keluar: \keystroke{Ctrl+X}.
+\end{notebox}
+
+\begin{lstlisting}[caption={Jalankan script diagnosa}]
+chmod +x ~/praktikum-os/week10-memory/diagnosa-server.sh
+cd ~/praktikum-os/week10-memory
+bash diagnosa-server.sh
+\end{lstlisting}
+
+\textbf{Analisis}
+
+\begin{enumerate}
+    \item Jelaskan peran masing-masing fungsi: \texttt{cek\_memori}, \texttt{cek\_swap},
+    \texttt{cek\_proses}, \texttt{cek\_paging}, dan \texttt{ringkasan}. Mengapa diagnosa
+    dipecah menjadi fungsi terpisah?
+    \item Berdasarkan bagian \texttt{RINGKASAN}, apakah kondisi sistem normal atau
+    kritis? Jelaskan berdasarkan nilai threshold yang digunakan script.
+    \item Mengapa script menggunakan \texttt{tee "\$LAPORAN"} bukan redirection biasa
+    \texttt{> "\$LAPORAN"}? Apa keuntungannya?
+    \item Dari output \texttt{cek\_paging}, apakah ada aktivitas \texttt{si} atau
+    \texttt{so}? Jika ada, apa implikasinya terhadap performa server?
+\end{enumerate}
+
+\section{Referensi}
+
+\begin{itemize}
+    \item Nemeth et al., \textit{UNIX and Linux System Administration Handbook}.
+    \item Dokumentasi Linux Kernel (\texttt{/proc}, \texttt{man 2 syscall}).
+    \item Manual page: \texttt{man free}, \texttt{man vmstat}, \texttt{man swapon},
+    \texttt{man strace}, \texttt{man 2 syscall}.
+\end{itemize}
