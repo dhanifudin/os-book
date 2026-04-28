@@ -5,14 +5,1494 @@
 \chapter{Backup dan Pemulihan Sistem}
 \label{ch:backup-and-recovery}
 
-Bab ini membahas strategi backup di Linux, tools backup, implementasi backup
-terjadwal, dan disaster recovery planning.
+Bab ini membahas strategi backup di lingkungan Linux secara menyeluruh: konsep
+dan teori backup, tiga alat utama (\cmd{tar}, \cmd{rsync}, dan \cmd{dd}),
+implementasi backup terjadwal dengan cron, prosedur pemulihan dari backup, serta
+perencanaan pemulihan bencana (\emph{disaster recovery}). Setiap topik disajikan
+mulai dari teori kemudian dilanjutkan dengan praktikum di Ubuntu Server 22.04.
 
+%% ========================================================================
 \section{Strategi Backup di Linux}
+\label{sec:backup-strategy}
+%% ========================================================================
+
+\subsection{Mengapa Backup Sangat Penting}
+
+Kegagalan sistem bukan soal \emph{apakah} akan terjadi, melainkan \emph{kapan}
+akan terjadi. Disk keras memiliki angka kegagalan yang terukur, kesalahan
+manusia adalah penyebab kehilangan data terbesar, dan ransomware dapat mengenkripsi
+seluruh filesystem dalam hitungan menit. Backup yang baik adalah satu-satunya jaring
+pengaman yang dapat diandalkan.
+
+\begin{examplebox}[Skenario Kehilangan Data yang Umum]
+\begin{itemize}
+    \item \textbf{Kegagalan hardware}: hard disk rusak, RAID controller gagal
+    \item \textbf{Kesalahan manusia}: \cmd{rm -rf /var/www} yang tidak disengaja
+    \item \textbf{Korupsi data}: filesystem error, bug aplikasi yang menulis data
+        tidak valid
+    \item \textbf{Serangan ransomware}: seluruh data dienkripsi oleh malware
+    \item \textbf{Bencana fisik}: kebakaran, banjir, atau pencurian server
+\end{itemize}
+Setiap skenario di atas dapat ditangani dengan backup yang benar. Tanpa backup,
+pemulihan adalah mustahil atau sangat mahal.
+\end{examplebox}
+
+\subsection{Jenis-Jenis Backup}
+
+Ada tiga jenis backup yang umum digunakan, masing-masing dengan kelebihan dan
+kekurangan dari sisi ruang penyimpanan dan waktu pemulihan:
+
+\begin{description}
+    \item[Full Backup] Menyalin \emph{seluruh} data yang dipilih tanpa pengecualian.
+        Pemulihan paling sederhana karena hanya membutuhkan satu set backup. Kelemahannya
+        adalah ukuran backup besar dan waktu proses lama, sehingga tidak praktis untuk
+        dilakukan setiap hari pada data bervolume besar.
+
+    \item[Incremental Backup] Menyalin hanya file yang berubah \emph{sejak backup
+        terakhir} (baik full maupun incremental sebelumnya). Ukurannya kecil dan cepat,
+        tetapi pemulihan memerlukan rekonstruksi dari backup full ditambah semua
+        incremental secara berurutan.
+
+    \item[Differential Backup] Menyalin file yang berubah \emph{sejak full backup
+        terakhir}. Ukurannya lebih besar dari incremental tetapi pemulihan lebih
+        sederhana --- hanya butuh backup full dan differential terbaru.
+\end{description}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Perbandingan Jenis Backup}
+    \label{tab:backup-types}
+    \begin{tabular}{@{}lllll@{}}
+        \toprule
+        \textbf{Jenis} & \textbf{Ukuran} & \textbf{Waktu Backup} & \textbf{Waktu Restore} & \textbf{Kompleksitas} \\
+        \midrule
+        Full         & Besar   & Lama   & Cepat   & Rendah \\
+        Incremental  & Kecil   & Cepat  & Lambat  & Tinggi \\
+        Differential & Sedang  & Sedang & Sedang  & Sedang \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Strategi 3-2-1}
+
+Strategi 3-2-1 adalah standar industri yang direkomendasikan untuk memastikan backup
+tidak menjadi \emph{single point of failure}:
+
+\begin{description}
+    \item[\textbf{3} salinan data] Satu data asli dan dua salinan backup. Jika satu
+        backup rusak atau hilang, masih ada cadangan lain.
+    \item[\textbf{2} media berbeda] Simpan backup di dua jenis media yang berbeda,
+        misalnya disk lokal dan tape, atau disk lokal dan NAS. Kegagalan satu media
+        tidak mempengaruhi media lainnya.
+    \item[\textbf{1} salinan offsite] Simpan setidaknya satu salinan di lokasi fisik
+        berbeda (kantor lain, cloud, atau media yang dibawa pulang). Bencana fisik
+        seperti kebakaran tidak akan menghancurkan semua salinan.
+\end{description}
+
+\begin{notebox}
+Di era cloud, implementasi praktis strategi 3-2-1 adalah: data asli di server
+produksi (1), backup di NAS/disk lokal (2, media berbeda), dan backup di cloud
+storage seperti AWS S3 atau Backblaze B2 (3, offsite). Biaya cloud storage
+sangat terjangkau untuk sebagian besar ukuran data.
+\end{notebox}
+
+\subsection{RPO dan RTO: Dua Ukuran Kritis Backup}
+
+Dua metrik ini harus ditentukan \emph{sebelum} merancang sistem backup, karena
+nilai keduanya menentukan frekuensi backup dan jenis infrastruktur yang diperlukan:
+
+\begin{description}
+    \item[RPO (Recovery Point Objective)] Berapa \emph{maksimum kehilangan data}
+        yang dapat ditoleransi? Jika RPO adalah 4 jam, berarti backup harus
+        dilakukan setidaknya setiap 4 jam. Jika sistem rusak, data dari 4 jam
+        terakhir sebelum backup boleh hilang.
+    \item[RTO (Recovery Time Objective)] Berapa \emph{maksimum waktu pemulihan}
+        yang dapat ditoleransi? Jika RTO adalah 2 jam, berarti seluruh proses
+        restore harus selesai dalam 2 jam setelah kegagalan terjadi.
+\end{description}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Contoh RPO dan RTO Berdasarkan Jenis Sistem}
+    \label{tab:rpo-rto}
+    \begin{tabular}{@{}lll@{}}
+        \toprule
+        \textbf{Jenis Sistem} & \textbf{RPO Tipikal} & \textbf{RTO Tipikal} \\
+        \midrule
+        Database transaksi keuangan  & $<$ 1 menit   & $<$ 15 menit \\
+        Aplikasi web e-commerce      & $<$ 1 jam     & $<$ 2 jam    \\
+        Server file kantor           & $<$ 4 jam     & $<$ 8 jam    \\
+        Server development/testing   & $<$ 24 jam    & $<$ 24 jam   \\
+        Arsip data historis          & $<$ 1 minggu  & $<$ 3 hari   \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+RPO yang ketat membutuhkan backup lebih sering atau teknologi replikasi real-time,
+sedangkan RTO yang ketat membutuhkan prosedur restore yang teruji dan mungkin
+infrastruktur standby. Semakin kecil nilai RPO dan RTO, semakin mahal infrastruktur
+yang dibutuhkan.
+
+%% --- Praktikum ---
+\subsection*{Praktikum 12.1 --- Perencanaan Strategi Backup}
+\textbf{Tujuan:} memahami jenis-jenis backup dan menentukan strategi yang tepat
+berdasarkan kebutuhan sistem nyata.
+
+\textbf{Langkah-langkah:}
+\begin{enumerate}
+    \item Buat direktori simulasi data yang akan di-backup:
+\begin{lstlisting}[language=bash, caption={Menyiapkan data simulasi}]
+mkdir -p ~/lab-backup/{data,config,logs}
+echo "data penting v1" > ~/lab-backup/data/file1.txt
+echo "konfigurasi aplikasi" > ~/lab-backup/config/app.conf
+for i in {1..10}; do echo "log entry $i" >> ~/lab-backup/logs/app.log; done
+du -sh ~/lab-backup/*/
+\end{lstlisting}
+
+    \item Ukur ukuran masing-masing direktori dan catat hasilnya:
+\begin{lstlisting}[language=bash, caption={Mengukur ukuran data sumber}]
+du -sh ~/lab-backup/
+du -sh ~/lab-backup/data/ ~/lab-backup/config/ ~/lab-backup/logs/
+find ~/lab-backup -type f | wc -l
+\end{lstlisting}
+
+    \item Buat dokumen perencanaan backup berdasarkan karakteristik data:
+\begin{lstlisting}[language=bash, caption={Mendokumentasikan strategi backup}]
+cat > ~/lab-backup/backup-strategy.txt << 'EOF'
+Sistem: Lab Ubuntu Server 22.04
+Tanggal: $(date +%F)
+
+Inventaris Data:
+  data/    : data aplikasi, berubah setiap hari, KRITIS
+  config/  : konfigurasi, berubah setiap minggu, KRITIS
+  logs/    : log sistem, berubah setiap jam, TIDAK KRITIS
+
+RPO ditentukan : 24 jam
+RTO ditentukan : 2 jam
+
+Strategi:
+  - Full backup setiap Minggu (data + config)
+  - Incremental backup Senin-Sabtu (data + config)
+  - Logs: TIDAK dibackup (dapat diregenerasi)
+  - Lokasi backup: lokal /backup/ + remote server
+EOF
+cat ~/lab-backup/backup-strategy.txt
+\end{lstlisting}
+
+    \item Hitung estimasi kebutuhan ruang backup untuk 30 hari:
+\begin{lstlisting}[language=bash, caption={Estimasi kebutuhan ruang backup}]
+DATA_SIZE=$(du -sb ~/lab-backup/data/ ~/lab-backup/config/ | \
+    awk '{sum+=$1} END{print sum}')
+echo "Ukuran data sumber: $DATA_SIZE bytes"
+echo "Full backup (4x/bulan): $((DATA_SIZE * 4)) bytes"
+echo "Incremental est. 10% (24x/bulan): $((DATA_SIZE * 24 / 10)) bytes"
+echo "Total estimasi: $((DATA_SIZE * 4 + DATA_SIZE * 24 / 10)) bytes"
+rm -rf ~/lab-backup
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[12.1]
+\begin{enumerate}
+    \item Jika RPO diubah menjadi 4 jam, apa yang perlu diubah dari strategi
+        yang telah Anda buat? Berapa kali backup harus berjalan per hari?
+    \item Berdasarkan hasil kalkulasi di langkah 4, berapa perbandingan kebutuhan
+        ruang antara strategi full-only (backup full setiap hari) vs
+        full+incremental (full mingguan + incremental harian)?
+    \item Mengapa direktori \dir{logs} tidak perlu dimasukkan ke dalam backup?
+        Berikan dua alasan yang berbeda.
+\end{enumerate}
+\end{exercisebox}
+
+%% ========================================================================
 \section{Tools Backup}
+\label{sec:backup-tools}
+%% ========================================================================
+
+Linux menyediakan beberapa alat backup yang masing-masing cocok untuk kasus penggunaan
+yang berbeda. Memahami kelebihan dan keterbatasan setiap alat adalah kunci memilih
+strategi yang tepat.
+
+\subsection{tar --- Pengarsipan dan Kompresi}
+
+\cmd{tar} (\textit{tape archiver}) adalah alat pengarsipan paling klasik di Unix/Linux.
+Meskipun namanya berasal dari era tape, \cmd{tar} sangat umum digunakan untuk membuat
+arsip file ke disk. \cmd{tar} menggabungkan banyak file dan direktori menjadi satu file
+arsip (\file{.tar}) yang opsional dapat dikompresi dengan gzip, bzip2, atau xz.
+
+\subsubsection{Membuat Arsip dengan tar}
+
+\begin{lstlisting}[language=bash, caption={Membuat arsip dengan tar}]
+tar -czf backup-home.tar.gz /home/alice/
+tar -cjf backup-etc.tar.bz2 /etc/
+tar -cJf backup-data.tar.xz /var/www/
+tar -czf backup-$(date +%F).tar.gz /home/alice/
+tar -czf backup.tar.gz --exclude='*.log' --exclude='.cache' /home/alice/
+tar -czf backup.tar.gz -X /etc/backup-excludes.txt /home/alice/
+\end{lstlisting}
+
+Opsi \texttt{-c} membuat arsip baru (\textit{create}), \texttt{-f} menentukan nama file
+output, dan opsi kompresi menentukan algoritma: \texttt{-z} untuk gzip (cepat, kompresi
+sedang), \texttt{-j} untuk bzip2 (lebih lambat, kompresi lebih baik), dan \texttt{-J}
+untuk xz (paling lambat, kompresi terbaik). Konstruksi \texttt{\$(date +\%F)}
+menyisipkan tanggal dalam format \texttt{YYYY-MM-DD} ke nama file secara otomatis,
+sehingga setiap backup memiliki nama unik. Opsi \texttt{--exclude} mengecualikan pola
+file tertentu; bisa digunakan berkali-kali. Opsi \texttt{-X} membaca daftar pola
+pengecualian dari file teks, lebih rapi untuk daftar yang panjang.
+
+\begin{tipbox}
+Selalu gunakan path absolut di dalam \cmd{tar} agar saat restore tidak bergantung
+pada direktori kerja saat ini. Namun, secara default \cmd{tar} menghapus
+\texttt{/} di depan path sehingga arsip tidak bisa langsung menimpa path absolut
+saat diekstrak. Gunakan opsi \texttt{-P} (preserve leading slash) jika Anda
+benar-benar ingin restore ke path absolut.
+\end{tipbox}
+
+\subsubsection{Melihat Isi dan Mengekstrak Arsip}
+
+\begin{lstlisting}[language=bash, caption={Melihat isi dan mengekstrak arsip tar}]
+tar -tzf backup-home.tar.gz
+tar -tzf backup-home.tar.gz | grep "\.conf$"
+tar -xzf backup-home.tar.gz
+tar -xzf backup-home.tar.gz -C /restore/
+tar -xzf backup-home.tar.gz home/alice/Documents/
+tar -xzf backup-home.tar.gz -C /tmp/ home/alice/.bashrc
+\end{lstlisting}
+
+Opsi \texttt{-t} menampilkan daftar isi arsip tanpa mengekstrak. Kombinasi dengan
+\cmd{grep} berguna untuk mencari file tertentu di dalam arsip besar. Opsi \texttt{-x}
+mengekstrak arsip; tanpa \texttt{-C} file diekstrak ke direktori kerja saat ini,
+sedangkan \texttt{-C} menentukan direktori tujuan. Dua perintah terakhir menunjukkan
+cara mengekstrak hanya file atau direktori tertentu dari arsip, berguna untuk pemulihan
+file individual tanpa mengekstrak seluruh arsip.
+
+\subsubsection{Backup Incremental dengan tar}
+
+\begin{lstlisting}[language=bash, caption={Backup incremental dengan tar dan snapshot file}]
+tar -czf full-backup-$(date +%F).tar.gz \
+    --listed-incremental=/var/backup/snapshot.snar \
+    /home/
+
+tar -czf incr-backup-$(date +%F-%H%M).tar.gz \
+    --listed-incremental=/var/backup/snapshot.snar \
+    /home/
+
+tar -czf full-backup-$(date +%F).tar.gz \
+    --listed-incremental=/dev/null \
+    /home/
+\end{lstlisting}
+
+Opsi \texttt{--listed-incremental} membuat \cmd{tar} menggunakan file snapshot
+(\file{.snar}) untuk melacak perubahan. Perintah pertama yang menggunakan file snapshot
+yang belum ada akan otomatis membuat full backup sekaligus menginisialisasi file snapshot.
+Perintah berikutnya menggunakan file snapshot yang sama akan menghasilkan incremental
+backup --- hanya file yang berubah sejak run terakhir yang disertakan. Menggunakan
+\texttt{/dev/null} sebagai snapshot file memaksa full backup meskipun file snapshot
+sudah ada.
+
+%% --- Praktikum ---
+\subsection*{Praktikum 12.2 --- Backup dan Restore dengan tar}
+\textbf{Tujuan:} membuat arsip backup dengan berbagai opsi kompresi, memeriksa isi
+arsip, dan melakukan restore file individual dari arsip.
+
+\textbf{Langkah-langkah:}
+\begin{enumerate}
+    \item Siapkan direktori dan data uji:
+\begin{lstlisting}[language=bash, caption={Menyiapkan data uji tar}]
+mkdir -p ~/lab-tar/{sumber/config,backup,incremental}
+echo "database_host=localhost" > ~/lab-tar/sumber/config/db.conf
+echo "app_port=8080" >> ~/lab-tar/sumber/config/db.conf
+cp ~/.bashrc ~/lab-tar/sumber/
+cp /etc/hosts ~/lab-tar/sumber/
+du -sh ~/lab-tar/sumber/
+\end{lstlisting}
+
+    \item Buat arsip gzip dan lihat ukurannya:
+\begin{lstlisting}[language=bash, caption={Membuat arsip gzip}]
+tar -czf ~/lab-tar/backup/sumber-$(date +%F).tar.gz \
+    -C ~/lab-tar sumber/
+ls -lh ~/lab-tar/backup/
+\end{lstlisting}
+
+    \item Periksa isi arsip dan cari file konfigurasi:
+\begin{lstlisting}[language=bash, caption={Memeriksa isi arsip}]
+tar -tzf ~/lab-tar/backup/sumber-$(date +%F).tar.gz
+tar -tzf ~/lab-tar/backup/sumber-$(date +%F).tar.gz | grep "\.conf"
+\end{lstlisting}
+
+    \item Simulasikan kehilangan file, lalu restore dari arsip:
+\begin{lstlisting}[language=bash, caption={Restore file individual dari arsip}]
+rm ~/lab-tar/sumber/config/db.conf
+ls ~/lab-tar/sumber/config/
+mkdir -p /tmp/tar-restore
+tar -xzf ~/lab-tar/backup/sumber-$(date +%F).tar.gz \
+    -C /tmp/tar-restore \
+    sumber/config/db.conf
+ls /tmp/tar-restore/sumber/config/
+cp /tmp/tar-restore/sumber/config/db.conf ~/lab-tar/sumber/config/
+cat ~/lab-tar/sumber/config/db.conf
+\end{lstlisting}
+
+    \item Buat backup incremental: full pertama, ubah satu file, lalu incremental:
+\begin{lstlisting}[language=bash, caption={Backup incremental dengan snapshot file}]
+tar -czf ~/lab-tar/incremental/full-$(date +%F).tar.gz \
+    --listed-incremental=~/lab-tar/incremental/snapshot.snar \
+    -C ~/lab-tar sumber/
+echo "app_timeout=30" >> ~/lab-tar/sumber/config/db.conf
+tar -czf ~/lab-tar/incremental/incr-$(date +%F-%H%M).tar.gz \
+    --listed-incremental=~/lab-tar/incremental/snapshot.snar \
+    -C ~/lab-tar sumber/
+ls -lh ~/lab-tar/incremental/
+rm -rf ~/lab-tar /tmp/tar-restore
+\end{lstlisting}
+
+    Bandingkan ukuran arsip full dan incremental. Arsip incremental seharusnya
+    jauh lebih kecil karena hanya mengandung file yang berubah.
+\end{enumerate}
+
+\begin{exercisebox}[12.2]
+\begin{enumerate}
+    \item Berapa perbedaan ukuran antara arsip full dan arsip incremental yang
+        Anda buat? Mengapa arsip incremental bisa sangat kecil meskipun proses
+        backup berjalan pada seluruh direktori sumber?
+    \item Jalankan \cmd{tar -czf} dan \cmd{tar -cjf} pada direktori yang sama.
+        Algoritma kompresi mana yang menghasilkan arsip lebih kecil? Berapa
+        selisih ukurannya dalam persentase?
+    \item Jelaskan mengapa opsi \texttt{-C} penting saat membuat dan mengekstrak
+        arsip. Apa yang terjadi jika tidak menggunakannya saat restore?
+\end{enumerate}
+\end{exercisebox}
+
+\subsection{rsync --- Sinkronisasi File Efisien}
+
+\cmd{rsync} (\textit{remote sync}) adalah alat sinkronisasi yang sangat efisien karena
+menggunakan algoritma delta-transfer: hanya bagian file yang berubah yang dikirimkan,
+bukan seluruh file. Ini membuatnya ideal untuk backup inkremental berulang, terutama
+melalui jaringan.
+
+\subsubsection{Sinkronisasi Lokal dan Remote}
+
+\begin{lstlisting}[language=bash, caption={Penggunaan dasar rsync}]
+rsync -av /home/alice/ /backup/alice/
+rsync -av --delete /home/alice/ /backup/alice/
+rsync -avz /home/ user@backup-server:/backup/home/
+rsync -avz --delete -e "ssh -p 2222 -i /root/.ssh/backup_key" \
+    /var/www/ user@backup-server:/backup/www/
+rsync -avn /home/alice/ /backup/alice/
+\end{lstlisting}
+
+Opsi \texttt{-a} (archive) adalah kombinasi dari \texttt{-r} (rekursif), \texttt{-l}
+(simpan symlink), \texttt{-p} (simpan permission), \texttt{-t} (simpan timestamp),
+\texttt{-g} (simpan group), dan \texttt{-o} (simpan owner). Hampir selalu digunakan
+bersama \texttt{-v} (verbose) untuk melihat kemajuan. Opsi \texttt{--delete}
+menghapus file di tujuan yang sudah tidak ada di sumber --- membuat tujuan menjadi
+cerminan tepat sumber. Opsi \texttt{-z} mengaktifkan kompresi data selama transfer,
+berguna untuk koneksi lambat. Opsi \texttt{-e} menentukan program shell remote beserta
+parameternya. Opsi \texttt{-n} (dry run) mensimulasikan proses tanpa benar-benar
+mengubah apa pun --- selalu jalankan dry run sebelum rsync dengan \texttt{--delete}.
+
+\begin{warningbox}
+Perhatikan perbedaan trailing slash pada path sumber:
+\begin{itemize}
+    \item \cmd{rsync -av /home/alice/ /backup/} --- menyalin \emph{isi} direktori
+        \dir{alice} ke \dir{/backup/}
+    \item \cmd{rsync -av /home/alice /backup/} --- menyalin direktori \dir{alice}
+        itu sendiri, menghasilkan \dir{/backup/alice/}
+\end{itemize}
+Kesalahan trailing slash adalah sumber kebingungan yang sangat umum dengan \cmd{rsync}.
+\end{warningbox}
+
+\subsubsection{Backup Incremental Mirrornya dengan rsync}
+
+\begin{lstlisting}[language=bash, caption={Hard-link incremental backup dengan rsync}]
+BACKUP_DIR="/backup/daily"
+TODAY=$(date +%F)
+YESTERDAY=$(date -d yesterday +%F)
+
+rsync -av --delete \
+    --link-dest="$BACKUP_DIR/$YESTERDAY" \
+    /home/ \
+    "$BACKUP_DIR/$TODAY/"
+\end{lstlisting}
+
+Opsi \texttt{--link-dest} adalah fitur canggih rsync yang memungkinkan backup
+incremental berbasis hard link. File yang tidak berubah tidak disalin ulang --- sebagai
+gantinya, rsync membuat hard link ke file yang sudah ada di direktori referensi
+(\texttt{\$YESTERDAY}). Hasilnya: setiap direktori backup terlihat seperti full backup
+yang lengkap (karena semua file terlihat di sana), tetapi ruang disk yang digunakan
+hanya sebesar perubahan karena file yang tidak berubah berbagi inode yang sama. Teknik
+ini sering disebut \emph{snapshot backup} atau \emph{Apple Time Machine-style backup}.
+
+\subsubsection{Opsi-Opsi Penting rsync}
+
+\begin{lstlisting}[language=bash, caption={Opsi-opsi penting rsync}]
+rsync -av --exclude='*.tmp' --exclude='.cache/' /home/ /backup/home/
+rsync -av --exclude-from='/etc/rsync-excludes.txt' /home/ /backup/home/
+rsync -av --bwlimit=5000 /var/www/ user@backup:/backup/www/
+rsync -av --checksum /home/ /backup/home/
+rsync --progress -av /large-dir/ /backup/large-dir/
+rsync -av --log-file=/var/log/rsync-backup.log /home/ /backup/home/
+\end{lstlisting}
+
+Opsi \texttt{--exclude} mengecualikan file atau direktori berdasarkan pola; \texttt{--exclude-from}
+membaca pola pengecualian dari file. Opsi \texttt{--bwlimit} membatasi bandwidth dalam
+kilobyte per detik, berguna agar backup tidak mempengaruhi layanan jaringan. Secara
+default rsync mendeteksi perubahan berdasarkan waktu modifikasi dan ukuran file; opsi
+\texttt{--checksum} memaksa perbandingan checksum MD5 yang lebih akurat tetapi jauh
+lebih lambat. Opsi \texttt{--progress} menampilkan kemajuan transfer per file.
+Opsi \texttt{--log-file} mencatat semua aktivitas ke file log untuk audit.
+
+%% --- Praktikum ---
+\subsection*{Praktikum 12.3 --- Sinkronisasi Backup dengan rsync}
+\textbf{Tujuan:} menggunakan rsync untuk sinkronisasi lokal, memahami efek
+\texttt{--delete} dan perbedaan trailing slash, serta memverifikasi mekanisme
+hard link pada backup snapshot.
+
+\textbf{Langkah-langkah:}
+\begin{enumerate}
+    \item Siapkan direktori sumber dan tujuan:
+\begin{lstlisting}[language=bash, caption={Menyiapkan direktori untuk rsync}]
+mkdir -p ~/lab-rsync/{sumber,backup,snap-1,snap-2}
+echo "file A" > ~/lab-rsync/sumber/fileA.txt
+echo "file B" > ~/lab-rsync/sumber/fileB.txt
+mkdir ~/lab-rsync/sumber/subdir
+echo "sub file" > ~/lab-rsync/sumber/subdir/sub.txt
+\end{lstlisting}
+
+    \item Jalankan dry run terlebih dahulu, lalu sinkronisasi sebenarnya:
+\begin{lstlisting}[language=bash, caption={rsync dry run dan eksekusi}]
+rsync -avn ~/lab-rsync/sumber/ ~/lab-rsync/backup/
+rsync -av ~/lab-rsync/sumber/ ~/lab-rsync/backup/
+ls -la ~/lab-rsync/backup/
+\end{lstlisting}
+
+    \item Tambah file baru, hapus satu file, lalu amati efek \texttt{--delete}:
+\begin{lstlisting}[language=bash, caption={Mengamati efek --delete}]
+echo "file C baru" > ~/lab-rsync/sumber/fileC.txt
+rm ~/lab-rsync/sumber/fileA.txt
+rsync -av --delete ~/lab-rsync/sumber/ ~/lab-rsync/backup/
+ls ~/lab-rsync/backup/
+\end{lstlisting}
+
+    Perhatikan bahwa \file{fileA.txt} terhapus dari backup dan \file{fileC.txt}
+    ditambahkan --- backup menjadi cerminan tepat dari sumber.
+
+    \item Buat dua snapshot berbasis hard link:
+\begin{lstlisting}[language=bash, caption={Membuat snapshot dengan --link-dest}]
+rsync -av ~/lab-rsync/sumber/ ~/lab-rsync/snap-1/
+echo "file C dimodifikasi" > ~/lab-rsync/sumber/fileC.txt
+rsync -av --link-dest=~/lab-rsync/snap-1 \
+    ~/lab-rsync/sumber/ ~/lab-rsync/snap-2/
+\end{lstlisting}
+
+    \item Verifikasi hard link: file yang tidak berubah harus berbagi inode:
+\begin{lstlisting}[language=bash, caption={Verifikasi hard link}]
+ls -lai ~/lab-rsync/snap-1/
+ls -lai ~/lab-rsync/snap-2/
+du -sh ~/lab-rsync/snap-1/ ~/lab-rsync/snap-2/
+du -sh ~/lab-rsync/
+rm -rf ~/lab-rsync
+\end{lstlisting}
+
+    File \file{fileB.txt} di snap-1 dan snap-2 seharusnya memiliki inode number
+    yang sama (kolom pertama \cmd{ls -lai}), membuktikan keduanya adalah hard
+    link ke inode yang sama sehingga tidak ada duplikasi data di disk.
+\end{enumerate}
+
+\begin{exercisebox}[12.3]
+\begin{enumerate}
+    \item Jalankan \cmd{rsync -av /etc/ ~/test-trailing/} (dengan trailing slash),
+        kemudian \cmd{rsync -av /etc ~/test-trailing/} (tanpa trailing slash).
+        Apa perbedaan struktur direktori yang dihasilkan?
+    \item Berapa total ukuran disk yang digunakan snap-1 dan snap-2 bersama-sama
+        (dari output \cmd{du})? Bandingkan dengan jika Anda menyalin direktori
+        sumber dua kali tanpa \texttt{--link-dest}. Berapa penghematan ruangnya?
+    \item Sebutkan dua situasi di mana \cmd{rsync} lebih tepat digunakan daripada
+        \cmd{tar}, dan dua situasi di mana \cmd{tar} lebih tepat.
+\end{enumerate}
+\end{exercisebox}
+
+\subsection{dd --- Backup Level Blok}
+
+\cmd{dd} (\textit{data duplicator}) bekerja di level blok mentah (\emph{raw block}),
+menyalin data byte per byte tanpa mempedulikan struktur filesystem. Ini membuatnya
+cocok untuk backup disk/partisi secara penuh, kloning disk, dan pembuatan image untuk
+forensik atau virtualisasi.
+
+\subsubsection{Membuat Image Disk dan Partisi}
+
+\begin{lstlisting}[language=bash, caption={Membuat image disk dengan dd}]
+sudo dd if=/dev/sda of=/backup/sda-image.img bs=4M status=progress
+sudo dd if=/dev/sda1 of=/backup/sda1-boot.img bs=4M status=progress
+sudo dd if=/dev/sda of=- bs=4M status=progress | \
+    gzip -9 > /backup/sda-$(date +%F).img.gz
+sudo dd if=/dev/sda bs=4M status=progress | \
+    ssh user@backup-server "dd of=/backup/sda-image.img"
+\end{lstlisting}
+
+Opsi \texttt{if} (\textit{input file}) menentukan sumber, \texttt{of} (\textit{output
+file}) menentukan tujuan, \texttt{bs} (\textit{block size}) menentukan ukuran blok
+per operasi baca/tulis (4M adalah nilai umum yang memberikan performa baik).
+Opsi \texttt{status=progress} menampilkan kemajuan secara real-time. Baris ketiga
+menunjukkan cara mengompresi image secara langsung melalui pipe, menghemat ruang
+penyimpanan secara signifikan. Baris keempat mengirimkan image langsung ke server
+backup melalui SSH tanpa menyimpan sementara di disk lokal.
+
+\begin{warningbox}
+\cmd{dd} tidak memberikan konfirmasi apapun sebelum menimpa data. Selalu verifikasi
+nilai \texttt{if} dan \texttt{of} dengan teliti sebelum menjalankan perintah.
+Menukar \texttt{if} dan \texttt{of} secara tidak sengaja akan menghancurkan disk
+sumber dengan image kosong. Selain itu, \cmd{dd} pada disk yang sedang aktif digunakan
+(\emph{live disk}) dapat menghasilkan image yang tidak konsisten --- idealnya
+disk harus di-unmount terlebih dahulu.
+\end{warningbox}
+
+\subsubsection{Restore dan Verifikasi Image}
+
+\begin{lstlisting}[language=bash, caption={Restore dan verifikasi image disk}]
+sudo dd if=/backup/sda-image.img of=/dev/sdb bs=4M status=progress
+
+gunzip -c /backup/sda-20240115.img.gz | \
+    sudo dd of=/dev/sdb bs=4M status=progress
+
+sudo md5sum /backup/sda-image.img
+sudo dd if=/dev/sda bs=4M | md5sum
+
+sudo blockdev --getsize64 /dev/sda
+ls -lh /backup/sda-image.img
+\end{lstlisting}
+
+Restore dilakukan dengan menukar \texttt{if} dan \texttt{of}: sekarang image menjadi
+input dan disk tujuan menjadi output. Baris kedua menunjukkan restore dari image
+terkompresi. Verifikasi integritas image dapat dilakukan dengan membandingkan
+checksum MD5 antara image file dan disk asli; keduanya harus menghasilkan hash
+yang sama jika image dibuat saat disk tidak aktif. Dua perintah terakhir memverifikasi
+bahwa ukuran disk tujuan setidaknya sama besar dengan sumber, karena merestore ke disk
+yang lebih kecil akan memotong data.
+
+%% --- Praktikum ---
+\subsection*{Praktikum 12.4 --- Backup Level Blok dengan dd}
+\textbf{Tujuan:} membuat image disk menggunakan loopback device, membuat checksum
+untuk verifikasi integritas, dan mempraktikkan restore image.
+
+\textbf{Langkah-langkah:}
+\begin{enumerate}
+    \item Identifikasi perangkat disk yang tersedia di sistem:
+\begin{lstlisting}[language=bash, caption={Mengidentifikasi perangkat disk}]
+lsblk
+lsblk -f
+df -h
+\end{lstlisting}
+
+    \item Buat loopback device sebagai pengganti disk fisik untuk praktikum:
+\begin{lstlisting}[language=bash, caption={Membuat dan memformat loopback device}]
+mkdir -p ~/lab-dd
+dd if=/dev/zero of=~/lab-dd/virtual-disk.img bs=1M count=50 status=progress
+mkfs.ext4 -F ~/lab-dd/virtual-disk.img
+sudo mkdir -p /mnt/virtual-disk
+sudo mount -o loop ~/lab-dd/virtual-disk.img /mnt/virtual-disk
+echo "data penting" | sudo tee /mnt/virtual-disk/important.txt
+sudo cp /etc/hosts /mnt/virtual-disk/
+ls /mnt/virtual-disk/
+sudo umount /mnt/virtual-disk
+\end{lstlisting}
+
+    \item Buat image dari loopback device dan simpan checksumnya:
+\begin{lstlisting}[language=bash, caption={Membuat image dan checksum}]
+dd if=~/lab-dd/virtual-disk.img \
+   of=~/lab-dd/disk-backup.img \
+   bs=4M status=progress
+md5sum ~/lab-dd/virtual-disk.img ~/lab-dd/disk-backup.img
+ls -lh ~/lab-dd/
+\end{lstlisting}
+
+    Kedua hash MD5 harus identik, membuktikan image adalah salinan tepat.
+
+    \item Verifikasi isi image dengan mount tanpa restore:
+\begin{lstlisting}[language=bash, caption={Memeriksa isi image disk}]
+sudo mount -o loop ~/lab-dd/disk-backup.img /mnt/virtual-disk
+ls /mnt/virtual-disk/
+cat /mnt/virtual-disk/important.txt
+sudo umount /mnt/virtual-disk
+\end{lstlisting}
+
+    \item Buat image terkompresi dan bandingkan ukurannya:
+\begin{lstlisting}[language=bash, caption={Membuat image terkompresi}]
+dd if=~/lab-dd/virtual-disk.img bs=4M status=progress | \
+    gzip -9 > ~/lab-dd/disk-backup.img.gz
+ls -lh ~/lab-dd/
+rm -rf ~/lab-dd
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[12.4]
+\begin{enumerate}
+    \item Berapa ukuran file \file{disk-backup.img} dibandingkan
+        \file{virtual-disk.img}? Mengapa ukurannya sama meskipun filesystem
+        hanya menggunakan sebagian kecil dari 50~MB?
+    \item Berapa rasio kompresi yang dicapai oleh \file{disk-backup.img.gz}
+        dibandingkan \file{disk-backup.img}? Mengapa kompresi bisa sangat
+        efektif pada image disk yang sebagian besar berisi blok kosong?
+    \item Sebutkan satu kasus penggunaan di mana \cmd{dd} adalah satu-satunya
+        pilihan yang tepat dibandingkan \cmd{tar} atau \cmd{rsync}.
+\end{enumerate}
+\end{exercisebox}
+
+%% ========================================================================
 \section{Implementasi Backup Terjadwal}
+\label{sec:scheduled-backup}
+%% ========================================================================
+
+\subsection{Penjadwalan dengan Cron}
+
+\cmd{cron} adalah daemon penjadwalan standar Linux yang menjalankan perintah atau skrip
+pada waktu yang ditentukan. Konfigurasinya menggunakan format lima field waktu yang
+disebut \emph{cron expression}.
+
+\subsubsection{Format Cron Expression}
+
+\begin{lstlisting}[language=bash, caption={Format cron expression dan contohnya}]
+# * * * * * perintah
+# | | | | |
+# | | | | +--- Hari dalam minggu (0-7, 0 dan 7 = Minggu)
+# | | | +----- Bulan (1-12)
+# | | +------- Hari dalam bulan (1-31)
+# | +--------- Jam (0-23)
+# +----------- Menit (0-59)
+
+0 2 * * * /usr/local/bin/backup-daily.sh
+0 2 * * 0 /usr/local/bin/backup-weekly.sh
+0 1 1 * * /usr/local/bin/backup-monthly.sh
+30 22 * * 1-5 /usr/local/bin/backup-weekday.sh
+*/4 * * * * /usr/local/bin/sync-critical.sh
+\end{lstlisting}
+
+Bintang (\texttt{*}) berarti ``setiap nilai yang mungkin''. Perintah pertama berjalan
+setiap hari pukul 02:00. Perintah kedua berjalan setiap Minggu pukul 02:00 (nilai 0
+pada field hari). Perintah ketiga berjalan setiap tanggal 1 pukul 01:00. Rentang
+\texttt{1-5} pada perintah keempat berarti hari Senin sampai Jumat. Sintaks
+\texttt{*/4} berarti ``setiap 4 unit'' sehingga \texttt{*/4} di field menit berarti
+setiap 4 menit.
+
+\subsubsection{Mengelola Crontab}
+
+\begin{lstlisting}[language=bash, caption={Mengelola crontab}]
+crontab -e
+crontab -l
+crontab -l -u alice
+sudo crontab -e
+cat /etc/cron.d/backup-jobs
+ls /etc/cron.daily/ /etc/cron.weekly/ /etc/cron.monthly/
+\end{lstlisting}
+
+Perintah \cmd{crontab -e} membuka crontab pengguna saat ini di editor default.
+Opsi \texttt{-l} menampilkan isi crontab tanpa mengedit. Crontab root diakses dengan
+\cmd{sudo crontab -e}. Direktori \dir{/etc/cron.d/} digunakan untuk meletakkan file
+cron sistem yang lebih mudah dikelola karena memiliki nama file tersendiri. Direktori
+\dir{/etc/cron.daily/}, \dir{/etc/cron.weekly/}, dan \dir{/etc/cron.monthly/} berisi
+skrip yang dijalankan otomatis pada frekuensi yang sesuai namanya oleh daemon
+\cmd{anacron} (yang menangani sistem yang tidak berjalan 24/7).
+
+\subsection{Skrip Backup Harian dengan tar}
+
+\subsubsection{Skrip Backup Sederhana}
+
+\begin{lstlisting}[language=bash, caption={Skrip backup dasar dengan tar}]
+#!/bin/bash
+
+BACKUP_DIR="/backup/daily"
+SOURCE_DIRS=("/home" "/etc" "/var/www")
+DATE=$(date +%Y-%m-%d)
+LOG_FILE="/var/log/backup.log"
+RETENTION_DAYS=30
+
+mkdir -p "$BACKUP_DIR"
+
+echo "[$(date)] Memulai backup harian" >> "$LOG_FILE"
+
+for DIR in "${SOURCE_DIRS[@]}"; do
+    BASENAME=$(echo "$DIR" | tr '/' '_' | sed 's/^_//')
+    ARCHIVE="$BACKUP_DIR/${BASENAME}-${DATE}.tar.gz"
+
+    if tar -czf "$ARCHIVE" "$DIR" 2>> "$LOG_FILE"; then
+        SIZE=$(du -sh "$ARCHIVE" | cut -f1)
+        echo "[$(date)] OK: $ARCHIVE ($SIZE)" >> "$LOG_FILE"
+    else
+        echo "[$(date)] GAGAL: backup $DIR" >> "$LOG_FILE"
+    fi
+done
+
+find "$BACKUP_DIR" -name "*.tar.gz" -mtime +$RETENTION_DAYS -delete
+echo "[$(date)] Backup selesai" >> "$LOG_FILE"
+\end{lstlisting}
+
+Skrip ini melakukan backup tiga direktori (\dir{/home}, \dir{/etc}, \dir{/var/www})
+ke direktori backup terpisah. Variabel \texttt{BACKUP\_DIR} dan \texttt{SOURCE\_DIRS}
+mudah dikustomisasi di bagian atas skrip. Loop \texttt{for} mengiterasi setiap
+direktori sumber dan mengubah karakter \texttt{/} menjadi \texttt{\_} untuk
+membentuk nama file yang valid. Konstruksi \texttt{if tar ...} memeriksa status
+keluar \cmd{tar}: jika sukses (exit code 0) ukuran arsip dicatat ke log, jika gagal
+pesan error dicatat. Perintah \cmd{find} di akhir menerapkan retensi otomatis dengan
+menghapus arsip yang lebih lama dari 30 hari (\texttt{-mtime +30}).
+
+\subsubsection{Mendaftarkan Skrip ke Cron}
+
+\begin{lstlisting}[language=bash, caption={Mendaftarkan skrip backup ke cron}]
+sudo chmod 750 /usr/local/bin/backup-daily.sh
+sudo chown root:root /usr/local/bin/backup-daily.sh
+sudo crontab -e
+
+# Tambahkan baris berikut di crontab:
+# 0 2 * * * /usr/local/bin/backup-daily.sh
+
+sudo crontab -l
+sudo grep CRON /var/log/syslog | tail -20
+\end{lstlisting}
+
+Permission \texttt{750} memastikan skrip hanya dapat dieksekusi oleh root dan grup
+root, mencegah pengguna biasa melihat atau memodifikasi skrip backup. Setelah
+mendaftarkan ke crontab root, verifikasi dengan \cmd{crontab -l}. Log cron dapat
+dipantau melalui \file{/var/log/syslog} dengan filter \texttt{CRON}.
+
+\subsection{Skrip Backup dengan rsync dan Rotasi}
+
+\subsubsection{Backup Snapshot Harian}
+
+\begin{lstlisting}[language=bash, caption={Skrip backup snapshot berbasis rsync}]
+#!/bin/bash
+
+BACKUP_BASE="/backup/snapshots"
+SOURCE="/home/"
+DATE=$(date +%Y-%m-%d)
+YESTERDAY=$(date -d "yesterday" +%Y-%m-%d)
+LOG="/var/log/rsync-backup.log"
+
+mkdir -p "$BACKUP_BASE/$DATE"
+
+echo "[$(date)] Mulai rsync snapshot $DATE" >> "$LOG"
+
+rsync -av --delete \
+    --link-dest="$BACKUP_BASE/$YESTERDAY" \
+    --exclude="*.tmp" \
+    --exclude=".cache/" \
+    --exclude="node_modules/" \
+    --log-file="$LOG" \
+    "$SOURCE" \
+    "$BACKUP_BASE/$DATE/"
+
+if [ $? -eq 0 ]; then
+    echo "[$(date)] Snapshot $DATE berhasil" >> "$LOG"
+    ln -sfn "$BACKUP_BASE/$DATE" "$BACKUP_BASE/latest"
+else
+    echo "[$(date)] GAGAL: snapshot $DATE" >> "$LOG"
+    rmdir "$BACKUP_BASE/$DATE" 2>/dev/null
+fi
+\end{lstlisting}
+
+Skrip ini mengimplementasikan backup snapshot harian dengan hard link menggunakan
+opsi \texttt{--link-dest}. Setiap hari menghasilkan direktori baru yang
+tampak seperti full backup lengkap, tetapi file yang tidak berubah hanya berupa
+hard link ke file di snapshot kemarin sehingga penggunaan disk sangat efisien.
+Tiga pola \texttt{--exclude} mencegah file sementara dan direktori dependensi yang
+bisa diinstall ulang masuk ke dalam backup. Symlink \texttt{latest} selalu menunjuk
+ke snapshot terbaru, memudahkan akses ke backup terkini. Jika rsync gagal, direktori
+kosong yang sudah dibuat dihapus untuk menjaga konsistensi.
+
+\subsubsection{Rotasi dan Retensi Backup}
+
+\begin{lstlisting}[language=bash, caption={Manajemen retensi backup}]
+find /backup/snapshots/ -maxdepth 1 -name "????-??-??" \
+    -mtime +7 -exec rm -rf {} \;
+
+ls /backup/snapshots/ | sort | head -n -7 | \
+    xargs -I{} rm -rf /backup/snapshots/{}
+
+du -sh /backup/snapshots/*/
+du -sh /backup/snapshots/
+\end{lstlisting}
+
+Perintah pertama menghapus snapshot yang lebih lama dari 7 hari menggunakan \cmd{find}.
+Opsi \texttt{-maxdepth 1} memastikan hanya direktori langsung di dalam
+\dir{/backup/snapshots/} yang diperiksa, bukan subdirektori di dalamnya. Pola
+\texttt{????-??-??} cocok hanya dengan nama direktori berformat tanggal.
+Pendekatan kedua menggunakan urutan: tampilkan semua direktori terurut, ambil semua
+kecuali 7 terbaru dengan \texttt{head -n -7}, lalu hapus. Dua perintah terakhir
+memantau penggunaan disk backup.
+
+%% --- Praktikum ---
+\subsection*{Praktikum 12.5 --- Otomasi Backup dengan Cron}
+\textbf{Tujuan:} menulis skrip backup, mendaftarkan ke crontab, dan memverifikasi
+exekusi otomatis melalui log sistem.
+
+\textbf{Langkah-langkah:}
+\begin{enumerate}
+    \item Siapkan direktori backup dan data sumber:
+\begin{lstlisting}[language=bash, caption={Menyiapkan lingkungan backup}]
+mkdir -p ~/lab-cron-backup
+mkdir -p ~/lab-cron-source
+echo "data $(date)" > ~/lab-cron-source/data.txt
+echo "config" > ~/lab-cron-source/app.conf
+\end{lstlisting}
+
+    \item Buat skrip backup:
+\begin{lstlisting}[language=bash, caption={Membuat skrip backup}]
+tee ~/lab-cron-backup/run-backup.sh << 'EOF'
+#!/bin/bash
+BACKUP_DIR="$HOME/lab-cron-backup/archives"
+SOURCE="$HOME/lab-cron-source"
+DATE=$(date +%Y-%m-%d-%H%M)
+LOG="$HOME/lab-cron-backup/backup.log"
+
+mkdir -p "$BACKUP_DIR"
+
+if tar -czf "$BACKUP_DIR/backup-$DATE.tar.gz" "$SOURCE" 2>>"$LOG"; then
+    SIZE=$(du -sh "$BACKUP_DIR/backup-$DATE.tar.gz" | cut -f1)
+    echo "[$(date)] OK: backup-$DATE.tar.gz ($SIZE)" >> "$LOG"
+else
+    echo "[$(date)] GAGAL" >> "$LOG"
+fi
+
+find "$BACKUP_DIR" -name "*.tar.gz" -mmin +30 -delete
+EOF
+chmod 750 ~/lab-cron-backup/run-backup.sh
+\end{lstlisting}
+
+    \item Uji skrip secara manual:
+\begin{lstlisting}[language=bash, caption={Uji eksekusi manual skrip backup}]
+~/lab-cron-backup/run-backup.sh
+ls -lh ~/lab-cron-backup/archives/
+cat ~/lab-cron-backup/backup.log
+\end{lstlisting}
+
+    \item Daftarkan skrip ke crontab untuk berjalan setiap 2 menit (untuk pengujian):
+\begin{lstlisting}[language=bash, caption={Mendaftarkan ke crontab}]
+crontab -l 2>/dev/null > /tmp/current-cron
+echo "*/2 * * * * $HOME/lab-cron-backup/run-backup.sh" >> /tmp/current-cron
+crontab /tmp/current-cron
+crontab -l
+\end{lstlisting}
+
+    \item Setelah beberapa menit, verifikasi cron telah menjalankan backup:
+\begin{lstlisting}[language=bash, caption={Memverifikasi eksekusi cron}]
+ls -lt ~/lab-cron-backup/archives/
+cat ~/lab-cron-backup/backup.log
+grep CRON /var/log/syslog | tail -5
+\end{lstlisting}
+
+    \item Bersihkan crontab dan direktori praktikum:
+\begin{lstlisting}[language=bash, caption={Membersihkan setelah praktikum}]
+crontab -l | grep -v "lab-cron-backup" | crontab -
+crontab -l
+rm -rf ~/lab-cron-backup ~/lab-cron-source
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[12.5]
+\begin{enumerate}
+    \item Ubah jadwal crontab agar backup berjalan setiap hari pukul 23:30.
+        Tuliskan cron expression yang benar.
+    \item Modifikasi skrip \file{run-backup.sh} agar menambahkan baris log
+        yang mencatat waktu mulai dan waktu selesai backup secara terpisah,
+        sehingga dapat menghitung durasi setiap run.
+    \item Apa yang terjadi jika dua instance skrip backup berjalan bersamaan
+        (misalnya skrip sebelumnya belum selesai saat cron memicu run berikutnya)?
+        Bagaimana cara mencegahnya? (Petunjuk: cari tentang \emph{lockfile}.)
+\end{enumerate}
+\end{exercisebox}
+
+%% ========================================================================
 \section{Pemulihan Sistem dari Backup}
+\label{sec:backup-recovery}
+%% ========================================================================
+
+Backup hanya berguna jika proses restore berfungsi. Bagian ini membahas prosedur
+pemulihan dari berbagai skenario dengan berbagai alat backup.
+
+\subsection{Pemulihan File Individual}
+
+\subsubsection{Restore dari Arsip tar}
+
+\begin{lstlisting}[language=bash, caption={Restore file individual dari arsip tar}]
+tar -tzf /backup/home-2024-01-15.tar.gz | grep "alice"
+tar -xzf /backup/home-2024-01-15.tar.gz \
+    -C /tmp/restore/ \
+    home/alice/Documents/laporan.pdf
+tar -xzf /backup/home-2024-01-15.tar.gz \
+    -C /tmp/restore/ \
+    home/alice/.bashrc home/alice/.vimrc
+ls -la /tmp/restore/home/alice/
+cp /tmp/restore/home/alice/Documents/laporan.pdf /home/alice/Documents/
+\end{lstlisting}
+
+Alur restore yang aman selalu mengekstrak ke direktori sementara terlebih dahulu,
+bukan langsung ke lokasi asli. Langkah pertama mencari file yang relevan dalam arsip
+menggunakan \cmd{grep}. Ekstraksi ke \dir{/tmp/restore/} dengan opsi \texttt{-C}
+menghasilkan struktur direktori seperti di arsip. Setelah memverifikasi file yang
+diekstrak sudah benar, barulah salin ke lokasi tujuan akhir.
+
+\subsubsection{Restore dari Snapshot rsync}
+
+\begin{lstlisting}[language=bash, caption={Restore file dari snapshot rsync}]
+ls /backup/snapshots/
+ls /backup/snapshots/2024-01-15/home/alice/Documents/
+cp /backup/snapshots/2024-01-15/home/alice/Documents/laporan.pdf \
+   /home/alice/Documents/laporan-restored.pdf
+rsync -av /backup/snapshots/2024-01-15/home/alice/.config/ \
+    /home/alice/.config/
+diff /backup/snapshots/2024-01-14/home/alice/file.txt \
+     /backup/snapshots/2024-01-15/home/alice/file.txt
+\end{lstlisting}
+
+Keunggulan snapshot berbasis rsync adalah kemudahan browsing --- setiap snapshot
+adalah direktori biasa yang bisa dinavigasi dengan \cmd{ls} dan \cmd{cd}. File
+dapat disalin langsung tanpa proses ekstraksi. Baris terakhir menunjukkan cara
+membandingkan versi file antara dua snapshot berbeda, berguna untuk memahami apa
+yang berubah sebelum melakukan restore.
+
+\subsection{Pemulihan Direktori dan Data Besar}
+
+\begin{lstlisting}[language=bash, caption={Restore direktori penuh}]
+sudo tar -xzf /backup/www-2024-01-15.tar.gz -C /
+sudo rsync -av \
+    /backup/snapshots/latest/var/www/ \
+    /var/www/
+sudo rsync -av --dry-run \
+    /backup/snapshots/2024-01-14/var/www/ \
+    /var/www/
+sudo systemctl stop apache2
+sudo rsync -av --delete \
+    /backup/snapshots/2024-01-14/var/www/ \
+    /var/www/
+sudo systemctl start apache2
+\end{lstlisting}
+
+Saat merestore direktori aktif seperti \dir{/var/www}, urutan yang benar adalah:
+hentikan layanan yang menggunakan direktori tersebut terlebih dahulu, jalankan
+restore, baru nyalakan kembali layanan. Ini mencegah kondisi inconsistent di mana
+file sebagian sudah direstore dan sebagian belum sementara server masih melayani
+request. Dry run sebelum restore sebenarnya membantu memverifikasi apa yang akan
+berubah.
+
+\subsection{Pemulihan Sistem Penuh dari Image dd}
+
+\begin{lstlisting}[language=bash, caption={Restore sistem penuh dari image dd}]
+sudo dd if=/backup/sda-2024-01-15.img of=/dev/sdb \
+    bs=4M status=progress
+
+gunzip -c /backup/sda-2024-01-15.img.gz | \
+    sudo dd of=/dev/sdb bs=4M status=progress
+
+sudo fdisk -l /dev/sdb
+sudo mount /dev/sdb1 /mnt
+ls /mnt
+
+sudo e2fsck -f /dev/sdb1
+sudo resize2fs /dev/sdb1
+\end{lstlisting}
+
+Restore image dd memerlukan sistem yang di-boot dari media lain (USB live, rescue
+disk) karena tidak mungkin merestore disk yang sedang digunakan untuk booting.
+Setelah restore selesai, \cmd{fdisk -l} memverifikasi struktur partisi sudah
+terbentuk dengan benar, dan mount manual memastikan filesystem dapat dibaca. Jika
+disk tujuan lebih besar dari disk sumber, perintah \cmd{e2fsck} dijalankan terlebih
+dahulu untuk memeriksa filesystem, kemudian \cmd{resize2fs} tanpa argumen ukuran
+akan memperluas filesystem untuk mengisi seluruh partisi yang tersedia.
+
+\begin{notebox}
+Restore dari image \cmd{dd} bersifat \emph{destructive} --- seluruh isi disk tujuan
+akan ditimpa sepenuhnya. Pastikan Anda menulis ke disk yang benar dengan memverifikasi
+nama device (\texttt{/dev/sda}, \texttt{/dev/sdb}, dll.) menggunakan \cmd{lsblk}
+atau \cmd{fdisk -l} sebelum menjalankan perintah restore.
+\end{notebox}
+
+\begin{notebox}
+Backup yang belum pernah diuji restore-nya adalah backup yang tidak bisa diandalkan.
+Jadwalkan pengujian restore secara berkala --- setidaknya sekali sebulan untuk sistem
+kritis.
+\end{notebox}
+
+\begin{lstlisting}[language=bash, caption={Verifikasi integritas arsip tar}]
+tar -tzf /backup/home-2024-01-15.tar.gz > /dev/null && \
+    echo "Arsip OK" || echo "Arsip RUSAK"
+
+md5sum /backup/home-2024-01-15.tar.gz > \
+    /backup/home-2024-01-15.tar.gz.md5
+
+md5sum -c /backup/home-2024-01-15.tar.gz.md5
+
+sha256sum /backup/sda-2024-01-15.img.gz > \
+    /backup/sda-2024-01-15.img.gz.sha256
+sha256sum -c /backup/sda-2024-01-15.img.gz.sha256
+\end{lstlisting}
+
+Perintah pertama mencoba membaca seluruh arsip; jika ada korupsi \cmd{tar} akan
+mengembalikan exit code non-zero. Membuat checksum file (\texttt{.md5} atau
+\texttt{.sha256}) segera setelah backup dibuat memungkinkan verifikasi integritas
+di kemudian hari. Simpan file checksum di lokasi berbeda dari backup itu sendiri.
+
+%% --- Praktikum ---
+\subsection*{Praktikum 12.6 --- Restore File dan Direktori dari Backup}
+\textbf{Tujuan:} mempraktikkan prosedur restore yang aman dari arsip tar dan
+snapshot rsync, termasuk verifikasi integritas sebelum restore.
+
+\textbf{Langkah-langkah:}
+\begin{enumerate}
+    \item Buat data uji dan backup-nya:
+\begin{lstlisting}[language=bash, caption={Menyiapkan data dan backup untuk restore}]
+mkdir -p ~/lab-restore/{source/config,backup,snapshot}
+echo "database_url=localhost:5432" > ~/lab-restore/source/config/db.conf
+echo "pengguna: alice" > ~/lab-restore/source/user-data.txt
+echo "sub data" > ~/lab-restore/source/config/sub.txt
+tar -czf ~/lab-restore/backup/source-backup.tar.gz \
+    -C ~/lab-restore source/
+rsync -av ~/lab-restore/source/ ~/lab-restore/snapshot/
+\end{lstlisting}
+
+    \item Verifikasi integritas arsip sebelum restore:
+\begin{lstlisting}[language=bash, caption={Verifikasi integritas arsip backup}]
+tar -tzf ~/lab-restore/backup/source-backup.tar.gz > /dev/null && \
+    echo "Arsip VALID" || echo "Arsip RUSAK"
+md5sum ~/lab-restore/backup/source-backup.tar.gz > \
+    ~/lab-restore/backup/source-backup.md5
+md5sum -c ~/lab-restore/backup/source-backup.md5
+\end{lstlisting}
+
+    \item Simulasikan kehilangan data:
+\begin{lstlisting}[language=bash, caption={Simulasi kehilangan file}]
+rm ~/lab-restore/source/config/db.conf
+rm ~/lab-restore/source/user-data.txt
+ls -la ~/lab-restore/source/
+ls -la ~/lab-restore/source/config/
+\end{lstlisting}
+
+    \item Restore file individual dari arsip tar ke direktori sementara, lalu
+        pindahkan ke lokasi asli:
+\begin{lstlisting}[language=bash, caption={Restore file individual dari tar}]
+mkdir -p /tmp/tar-restore
+tar -xzf ~/lab-restore/backup/source-backup.tar.gz \
+    -C /tmp/tar-restore \
+    source/config/db.conf
+ls -la /tmp/tar-restore/source/config/
+cp /tmp/tar-restore/source/config/db.conf \
+   ~/lab-restore/source/config/
+cat ~/lab-restore/source/config/db.conf
+\end{lstlisting}
+
+    \item Restore file dari snapshot rsync:
+\begin{lstlisting}[language=bash, caption={Restore file dari snapshot rsync}]
+ls ~/lab-restore/snapshot/
+cp ~/lab-restore/snapshot/user-data.txt \
+   ~/lab-restore/source/user-data.txt
+ls -la ~/lab-restore/source/
+\end{lstlisting}
+
+    \item Verifikasi semua file telah pulih:
+\begin{lstlisting}[language=bash, caption={Verifikasi restore selesai}]
+diff -r ~/lab-restore/source/ ~/lab-restore/snapshot/
+echo "Exit code diff: $? (0 = identik)"
+rm -rf ~/lab-restore /tmp/tar-restore
+\end{lstlisting}
+
+    Perintah \cmd{diff -r} membandingkan dua direktori secara rekursif. Exit
+    code 0 berarti isi direktori identik, membuktikan restore berhasil sempurna.
+\end{enumerate}
+
+\begin{exercisebox}[12.6]
+\begin{enumerate}
+    \item Mengapa selalu lebih aman merestore ke direktori sementara terlebih
+        dahulu, bukan langsung ke lokasi asli? Berikan satu skenario konkret
+        di mana restore langsung bisa menyebabkan masalah baru.
+    \item Apa keunggulan snapshot rsync dibandingkan arsip tar saat Anda perlu
+        merestore satu file spesifik dari backup 3 hari yang lalu?
+    \item Modifikasi perintah tar pada langkah 4 agar merestore seluruh direktori
+        \dir{source/config/} sekaligus, bukan hanya satu file.
+\end{enumerate}
+\end{exercisebox}
+
+%% ========================================================================
 \section{Disaster Recovery Planning}
+\label{sec:disaster-recovery}
+%% ========================================================================
+
+\subsection{Konsep Disaster Recovery}
+
+\textbf{Disaster Recovery (DR)} adalah sekumpulan prosedur dan infrastruktur yang
+memungkinkan organisasi memulihkan operasi normal setelah bencana yang mengganggu
+sistem IT. DR berbeda dengan backup biasa: backup adalah mekanisme penyimpanan data,
+sedangkan DR adalah rencana lengkap yang mencakup prosedur, peran, dan infrastruktur
+untuk memulihkan layanan.
+
+\begin{description}
+    \item[Backup] Salinan data di waktu tertentu. Menjawab: ``Bisakah kita mendapatkan
+        data ini kembali?''
+    \item[Disaster Recovery] Proses dan infrastruktur untuk memulihkan operasi bisnis.
+        Menjawab: ``Kapan kita bisa beroperasi normal kembali?''
+    \item[Business Continuity] Kemampuan untuk terus beroperasi meskipun terjadi
+        gangguan. Menjawab: ``Bagaimana kita tidak berhenti beroperasi sama sekali?''
+\end{description}
+
+\subsection{Membuat Disaster Recovery Plan}
+
+Sebuah DR Plan yang efektif harus mencakup komponen-komponen berikut:
+
+\subsubsection{Inventaris dan Dependensi Sistem}
+
+\begin{lstlisting}[language=bash, caption={Mendokumentasikan konfigurasi sistem}]
+dpkg --get-selections > /backup/docs/installed-packages.txt
+ip addr show > /backup/docs/network-config.txt
+ip route show >> /backup/docs/network-config.txt
+cat /etc/netplan/*.yaml >> /backup/docs/network-config.txt
+df -h > /backup/docs/disk-layout.txt
+lsblk -f >> /backup/docs/disk-layout.txt
+blkid >> /backup/docs/disk-layout.txt
+cat /etc/fstab >> /backup/docs/disk-layout.txt
+systemctl list-units --type=service --state=running > \
+    /backup/docs/running-services.txt
+crontab -l > /backup/docs/crontab-root.txt
+\end{lstlisting}
+
+Dokumentasi ini harus diperbarui setiap kali ada perubahan infrastruktur dan
+\emph{disimpan di lokasi yang terpisah dari sistem yang didokumentasikan}. Saat
+bencana terjadi, dokumen ini menjadi acuan utama untuk merekonstruksi sistem.
+Daftar paket yang terinstall memungkinkan instalasi ulang seluruh software dengan
+satu perintah. Konfigurasi jaringan dan layout disk adalah informasi kritis yang
+tidak tersimpan dalam backup data biasa.
+
+\subsubsection{Runbook Pemulihan}
+
+Setiap sistem kritis harus memiliki \emph{runbook} --- dokumen langkah demi langkah
+yang menjelaskan cara memulihkan sistem dari nol. Runbook yang baik harus:
+\begin{itemize}
+    \item Ditulis dengan asumsi pembaca tidak familiar dengan sistem (\emph{ditulis
+        saat keadaan tenang, dibaca saat keadaan panik})
+    \item Mencantumkan perintah eksak yang perlu dijalankan, bukan hanya deskripsi umum
+    \item Menyertakan verifikasi di setiap langkah untuk mengkonfirmasi langkah
+        berhasil sebelum melanjutkan
+    \item Diperbarui setiap kali ada perubahan infrastruktur
+    \item Diuji secara berkala dengan simulasi pemulihan
+\end{itemize}
+
+\subsubsection{Skrip Dokumentasi Otomatis}
+
+\begin{lstlisting}[language=bash, caption={Skrip dokumentasi sistem otomatis}]
+#!/bin/bash
+
+DOC_DIR="/backup/system-docs"
+DATE=$(date +%Y-%m-%d)
+OUTPUT="$DOC_DIR/system-state-$DATE.txt"
+
+mkdir -p "$DOC_DIR"
+
+{
+    echo "=== DOKUMENTASI SISTEM: $(hostname) ==="
+    echo "Tanggal: $(date)"
+    echo ""
+    echo "=== OS DAN KERNEL ==="
+    uname -a
+    lsb_release -a 2>/dev/null
+    echo ""
+    echo "=== DISK DAN MOUNT ==="
+    df -h
+    lsblk -f
+    echo ""
+    echo "=== JARINGAN ==="
+    ip addr show
+    ip route show
+    echo ""
+    echo "=== LAYANAN AKTIF ==="
+    systemctl list-units --type=service --state=running
+    echo ""
+    echo "=== PAKET TERINSTALL ==="
+    dpkg --get-selections
+} > "$OUTPUT"
+
+gzip "$OUTPUT"
+echo "Dokumentasi disimpan: $OUTPUT.gz"
+\end{lstlisting}
+
+Skrip ini mengumpulkan informasi sistem kritis ke dalam satu file terkompresi.
+Blok \texttt{\{ ... \} > "\$OUTPUT"} adalah redirection group: semua output dari
+perintah di dalam blok diarahkan ke satu file output. Ini lebih efisien daripada
+menggunakan \texttt{>>} setelah setiap perintah. Skrip ini dapat dijadwalkan via
+cron untuk berjalan mingguan sehingga dokumentasi selalu mutakhir.
+
+\subsection{Pengujian Backup dan Recovery}
+
+Backup yang belum pernah diuji tidak dapat diandalkan. Pengujian harus dilakukan
+secara berkala dan terdokumentasi.
+
+\subsubsection{Jenis Pengujian}
+
+\begin{description}
+    \item[Pengujian Integritas] Verifikasi bahwa file backup tidak korup tanpa
+        melakukan restore penuh. Gunakan \cmd{tar -t}, \cmd{md5sum -c}, atau
+        \cmd{sha256sum -c}.
+    \item[Pengujian Restore Parsial] Restore beberapa file sampel ke direktori
+        sementara dan verifikasi isinya. Lakukan setiap minggu untuk backup harian.
+    \item[Pengujian Restore Penuh] Restore seluruh sistem ke lingkungan terpisah
+        (VM, server test) dan verifikasi semua layanan dapat berjalan. Lakukan
+        setidaknya setiap kuartal untuk sistem kritis.
+    \item[Simulasi Bencana (\textit{DR Drill})} Simulasikan skenario bencana lengkap:
+        matikan sistem produksi, restore ke infrastruktur backup, ukur RTO aktual
+        dibandingkan target. Lakukan setidaknya sekali setahun.
+\end{description}
+
+\subsubsection{Checklist Pengujian Backup}
+
+\begin{lstlisting}[language=bash, caption={Skrip pengujian backup otomatis}]
+#!/bin/bash
+
+BACKUP_FILE="/backup/daily/home-$(date +%Y-%m-%d).tar.gz"
+TEST_DIR="/tmp/backup-test-$$"
+LOG="/var/log/backup-test.log"
+ERRORS=0
+
+echo "[$(date)] Mulai pengujian backup: $BACKUP_FILE" >> "$LOG"
+
+if [ ! -f "$BACKUP_FILE" ]; then
+    echo "GAGAL: File backup tidak ditemukan" >> "$LOG"
+    exit 1
+fi
+
+tar -tzf "$BACKUP_FILE" > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "GAGAL: Arsip korup" >> "$LOG"
+    ERRORS=$((ERRORS + 1))
+fi
+
+mkdir -p "$TEST_DIR"
+SAMPLE_FILE=$(tar -tzf "$BACKUP_FILE" | grep "\.bashrc$" | head -1)
+if [ -n "$SAMPLE_FILE" ]; then
+    tar -xzf "$BACKUP_FILE" -C "$TEST_DIR" "$SAMPLE_FILE" 2>/dev/null
+    if [ -f "$TEST_DIR/$SAMPLE_FILE" ]; then
+        echo "OK: Restore sample berhasil ($SAMPLE_FILE)" >> "$LOG"
+    else
+        echo "GAGAL: Restore sample gagal" >> "$LOG"
+        ERRORS=$((ERRORS + 1))
+    fi
+fi
+
+rm -rf "$TEST_DIR"
+
+if [ $ERRORS -eq 0 ]; then
+    echo "[$(date)] Pengujian LULUS" >> "$LOG"
+else
+    echo "[$(date)] Pengujian GAGAL ($ERRORS error)" >> "$LOG"
+fi
+\end{lstlisting}
+
+Skrip pengujian ini melakukan tiga langkah: cek keberadaan file backup, verifikasi
+integritas arsip dengan \cmd{tar -t}, dan restore satu file sampel ke direktori
+sementara. Variabel \texttt{\$\$} adalah PID proses saat ini, digunakan untuk membuat
+nama direktori sementara yang unik agar tidak konflik jika beberapa instance berjalan
+bersamaan. Skrip ini dapat dijadwalkan cron agar berjalan beberapa jam setelah backup
+selesai, memberikan peringatan otomatis jika backup bermasalah.
+
+%% --- Praktikum ---
+\subsection*{Praktikum 12.7 --- Membuat Disaster Recovery Plan Sederhana}
+\textbf{Tujuan:} mendokumentasikan konfigurasi sistem secara otomatis, menyusun
+runbook pemulihan, dan mengukur RTO aktual dari simulasi restore kecil.
+
+\textbf{Langkah-langkah:}
+\begin{enumerate}
+    \item Buat skrip dokumentasi sistem dan jalankan:
+\begin{lstlisting}[language=bash, caption={Mendokumentasikan konfigurasi sistem}]
+mkdir -p ~/lab-dr/docs
+{
+    echo "=== DOKUMENTASI SISTEM: $(hostname) ==="
+    echo "Tanggal: $(date)"
+    echo ""
+    echo "=== OS DAN KERNEL ==="
+    uname -a
+    lsb_release -a 2>/dev/null
+    echo ""
+    echo "=== DISK DAN MOUNT ==="
+    df -h
+    lsblk -f
+    echo ""
+    echo "=== JARINGAN ==="
+    ip addr show
+    echo ""
+    echo "=== LAYANAN AKTIF ==="
+    systemctl list-units --type=service --state=running --no-pager
+} > ~/lab-dr/docs/system-state-$(date +%F).txt
+wc -l ~/lab-dr/docs/system-state-$(date +%F).txt
+head -20 ~/lab-dr/docs/system-state-$(date +%F).txt
+\end{lstlisting}
+
+    \item Simpan daftar paket terinstall dan konfigurasi cron:
+\begin{lstlisting}[language=bash, caption={Mendokumentasikan paket dan jadwal}]
+dpkg --get-selections > ~/lab-dr/docs/installed-packages.txt
+wc -l ~/lab-dr/docs/installed-packages.txt
+crontab -l > ~/lab-dr/docs/crontab.txt 2>/dev/null || \
+    echo "(tidak ada crontab)" > ~/lab-dr/docs/crontab.txt
+ls -lh ~/lab-dr/docs/
+\end{lstlisting}
+
+    \item Buat runbook pemulihan sederhana:
+\begin{lstlisting}[language=bash, caption={Membuat runbook pemulihan}]
+cat > ~/lab-dr/docs/runbook-recovery.md << 'EOF'
+# Runbook: Pemulihan Sistem
+
+## Prasyarat
+- USB bootable Ubuntu Server 22.04
+- Akses ke direktori backup di /backup/
+
+## Langkah Pemulihan
+
+### 1. Boot dari media rescue
+   Boot ke USB live Ubuntu, pilih "Try Ubuntu"
+
+### 2. Identifikasi disk tujuan
+   lsblk
+   (catat nama device, contoh: /dev/sdb)
+
+### 3. Restore dari backup
+   mkdir /mnt/restore
+   tar -xzf /backup/system-backup.tar.gz -C /mnt/restore
+
+### 4. Verifikasi restore
+   ls /mnt/restore/etc /mnt/restore/home
+
+## Estimasi Waktu (RTO)
+   Identifikasi masalah  : 15 menit
+   Restore data          : 30-60 menit
+   Verifikasi layanan    : 15 menit
+   Total estimasi RTO    : 60-90 menit
+EOF
+cat ~/lab-dr/docs/runbook-recovery.md
+\end{lstlisting}
+
+    \item Ukur RTO aktual dengan simulasi restore kecil menggunakan \cmd{time}:
+\begin{lstlisting}[language=bash, caption={Mengukur waktu restore}]
+tar -czf ~/lab-dr/test-backup.tar.gz ~/lab-dr/docs/
+ls -lh ~/lab-dr/test-backup.tar.gz
+time tar -xzf ~/lab-dr/test-backup.tar.gz -C /tmp/
+ls /tmp/lab-dr/ 2>/dev/null || ls /tmp/root/ 2>/dev/null
+\end{lstlisting}
+
+    \item Arsipkan seluruh dokumentasi DR dan bersihkan:
+\begin{lstlisting}[language=bash, caption={Mengarsipkan dokumentasi DR}]
+ls -lh ~/lab-dr/docs/
+echo "Total file dokumentasi: $(ls ~/lab-dr/docs/ | wc -l)"
+rm -rf ~/lab-dr /tmp/lab-dr
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[12.7]
+\begin{enumerate}
+    \item Dari runbook yang Anda buat, identifikasi satu langkah yang paling
+        rentan terhadap kesalahan manusia. Bagaimana cara membuatnya lebih aman
+        atau lebih mudah diikuti?
+    \item Berapa waktu yang dicatat oleh \cmd{time} untuk restore data dokumentasi
+        Anda? Jika data yang harus direstore sebesar 100~GB dan kecepatan disk
+        adalah 100~MB/s, berapa estimasi durasi restore?
+    \item Modifikasi skrip pada langkah 1 agar menyimpan hasilnya ke file
+        \file{.txt.gz} yang terkompresi langsung, tanpa membuat file \file{.txt}
+        terlebih dahulu. Tuliskan perintahnya.
+\end{enumerate}
+\end{exercisebox}
+
+%% ========================================================================
 \section{Rangkuman}
+\label{sec:backup-summary}
+%% ========================================================================
+
+Bab ini telah membahas lima topik utama backup dan pemulihan sistem di Linux:
+
+\begin{description}
+    \item[Strategi Backup] Jenis backup (full, incremental, differential) memiliki
+        trade-off antara ukuran, kecepatan, dan kompleksitas restore. Strategi 3-2-1
+        (3 salinan, 2 media berbeda, 1 offsite) adalah standar industri. RPO dan RTO
+        harus ditentukan sebelum merancang sistem backup.
+
+    \item[tar] Alat pengarsipan klasik yang menghasilkan file arsip portabel.
+        Mendukung kompresi gzip/bzip2/xz dan backup incremental dengan opsi
+        \texttt{--listed-incremental}. Cocok untuk backup periodik dan transfer arsip.
+
+    \item[rsync] Alat sinkronisasi yang efisien dengan algoritma delta-transfer.
+        Opsi \texttt{--link-dest} memungkinkan snapshot backup berbasis hard link
+        yang hemat ruang. Cocok untuk backup berulang ke server remote melalui SSH.
+
+    \item[dd] Alat backup level blok yang menyalin byte per byte. Menghasilkan image
+        disk yang identik, berguna untuk kloning sistem dan backup bare-metal.
+        Harus dijalankan pada disk yang tidak aktif untuk hasil yang konsisten.
+
+    \item[Pemulihan dan DR] Backup selalu harus diuji restore-nya secara berkala.
+        Disaster Recovery Plan harus mencakup dokumentasi sistem, runbook pemulihan
+        langkah demi langkah, dan jadwal pengujian rutin. RTO aktual hanya dapat
+        diketahui melalui simulasi pemulihan nyata.
+\end{description}
+
+%% ========================================================================
 \section{Latihan}
+\label{sec:backup-exercises}
+%% ========================================================================
+
+\begin{exercisebox}[Latihan 12.A --- Implementasi Backup Lengkap]
+Rancang dan implementasikan sistem backup untuk server dengan kondisi berikut:
+\begin{itemize}
+    \item Data penting: \dir{/home}, \dir{/etc}, \dir{/var/www}
+    \item Backup harian dengan retensi 7 hari
+    \item Backup mingguan dengan retensi 4 minggu
+    \item Log backup harus mencatat waktu mulai, waktu selesai, dan ukuran setiap arsip
+\end{itemize}
+\begin{enumerate}
+    \item Tulis dua skrip bash: \file{backup-daily.sh} (menggunakan \cmd{tar}) dan
+        \file{backup-weekly.sh} (menggunakan \cmd{rsync} dengan \texttt{--link-dest}).
+    \item Daftarkan keduanya ke crontab dengan jadwal yang sesuai.
+    \item Jalankan kedua skrip secara manual dan verifikasi output dan log yang dihasilkan.
+    \item Ujikan proses restore dengan memulihkan satu file dari masing-masing backup.
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[Latihan 12.B --- Analisis Trade-off Backup]
+Sebuah server web memiliki:
+\begin{itemize}
+    \item \dir{/var/www/html}: 50~GB file statis (gambar, CSS, JS) --- jarang berubah
+    \item \dir{/var/www/uploads}: 200~GB upload pengguna --- berubah setiap hari
+    \item \dir{/etc}: 5~MB konfigurasi sistem --- berubah setiap pekan
+    \item Database MySQL di \dir{/var/lib/mysql}: 10~GB --- berubah setiap jam
+\end{itemize}
+\begin{enumerate}
+    \item Tentukan strategi backup yang tepat untuk setiap direktori (jenis backup,
+        frekuensi, alat yang digunakan).
+    \item Hitung perkiraan ruang penyimpanan yang dibutuhkan untuk retensi 30 hari.
+    \item Jelaskan bagaimana Anda akan menangani backup database MySQL yang konsisten
+        (hint: cari tentang \cmd{mysqldump} dan \cmd{--single-transaction}).
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[Latihan 12.C --- Disaster Recovery Drill]
+Lakukan simulasi disaster recovery menggunakan VM atau container:
+\begin{enumerate}
+    \item Buat VM atau container ``produksi'' dengan beberapa file dan konfigurasi.
+    \item Buat backup lengkap menggunakan \cmd{tar} dan \cmd{rsync}.
+    \item ``Hancurkan'' VM produksi (hapus semua file atau buat VM baru yang kosong).
+    \item Catat waktu mulai restore.
+    \item Lakukan restore penuh dari backup.
+    \item Verifikasi semua file dan konfigurasi telah pulih dengan benar.
+    \item Catat waktu selesai dan hitung RTO aktual.
+    \item Bandingkan RTO aktual dengan target RTO yang Anda tentukan sebelumnya.
+\end{enumerate}
+\end{exercisebox}
+
+%% ========================================================================
 \section{Referensi Tambahan}
+\label{sec:backup-references}
+%% ========================================================================
+
+\begin{itemize}
+    \item \textbf{Halaman manual}: \cmd{man tar}, \cmd{man rsync}, \cmd{man dd},
+        \cmd{man crontab}, \cmd{man cron}
+    \item \textbf{rsync documentation}: \url{https://rsync.samba.org/documentation.html}
+    \item \textbf{Ubuntu Server Guide --- Backups}:
+        \url{https://ubuntu.com/server/docs/backups-introduction}
+    \item \textbf{The Tao of Backup} --- panduan strategi backup yang komprehensif:
+        \url{http://www.taobackup.com/}
+    \item \textbf{GNU tar manual}: \url{https://www.gnu.org/software/tar/manual/}
+    \item \textbf{How Rsync Works} --- penjelasan algoritma delta-transfer:
+        \url{https://rsync.samba.org/how-rsync-works.html}
+    \item \textbf{The Linux Command Line} oleh William Shotts, Bab 17 (Searching for
+        Files) dan Bab 18 (Archiving and Backup) --- tersedia gratis di
+        \url{https://linuxcommand.org/tlcl.php}
+\end{itemize}
