@@ -28,6 +28,13 @@
 %% Ensure Indonesian is selected
 \selectlanguage{indonesian}
 
+%% Force contentsname to Indonesian - must be AFTER selectlanguage
+\babel@toc{indonesian}{}%
+\AtBeginDocument{%
+    \babel@toc{indonesian}{}%
+    \def\contentsname{Daftar Isi}%
+}
+
 %% ========================================================================
 %% Informasi Buku
 %% ========================================================================
