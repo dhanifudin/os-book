@@ -1,21 +1,1354 @@
 %% ========================================================================
-%% Chapter 12: Manajemen Layanan (Services)
+%% Chapter 10: Manajemen Layanan (Services)
 %% ========================================================================
 
 \chapter{Manajemen Layanan (Services)}
 \label{ch:service-management}
 
-Bab ini membahas sistem init di Linux, systemd, mengelola layanan,
-membuat unit file, dan troubleshooting layanan.
+Bab ini membahas pengelolaan layanan sistem di Linux secara menyeluruh menggunakan
+\textbf{systemd} --- sistem init modern yang menjadi standar di hampir semua
+distribusi Linux, termasuk Ubuntu Server 22.04. Dimulai dari sejarah sistem init,
+cara mengelola layanan dengan \cmd{systemctl}, membuat unit file kustom, memantau
+log dengan \cmd{journalctl}, hingga strategi troubleshooting layanan. Setiap topik
+disajikan mulai dari konsep kemudian dilanjutkan dengan praktikum langsung.
 
-\section{Pengenalan Sistem Init}
+%% ========================================================================
+\section{Sistem Init dan systemd}
+\label{sec:init-systemd}
+%% ========================================================================
+
+Sistem init adalah proses pertama yang dijalankan kernel Linux setelah boot (PID 1).
+Tugasnya adalah menginisialisasi seluruh user space: menjalankan layanan, me-mount
+filesystem, dan mengatur lingkungan sistem. Selama bertahun-tahun terdapat beberapa
+generasi sistem init di Linux.
+
+\subsection{Evolusi Sistem Init}
+
+\begin{description}
+    \item[SysV Init] Sistem tradisional berbasis skrip shell di \dir{/etc/init.d/}.
+        Layanan distart secara berurutan (\emph{serial}) sesuai nomor urut di
+        \emph{runlevel} (0--6). Sederhana tetapi lambat karena tidak ada
+        paralelisme, dan tidak ada dependensi otomatis antar layanan.
+    \item[Upstart] Dikembangkan Canonical untuk Ubuntu, menggunakan model berbasis
+        \emph{event} yang memungkinkan paralelisme terbatas. Digunakan di Ubuntu
+        9.10--14.04 sebelum digantikan systemd.
+    \item[systemd] Sistem init modern yang digunakan Ubuntu sejak versi 15.04.
+        Mengelola layanan secara paralel dengan resolusi dependensi otomatis,
+        melacak proses dengan \emph{cgroups}, menyediakan logging terpusat
+        (journald), dan mengelola timer, socket activation, dan banyak lagi.
+\end{description}
+
+Perintah \cmd{ps -p 1 -o comm=} menampilkan nama proses PID 1; pada sistem berbasis
+systemd hasilnya adalah \texttt{systemd}. Perintah \cmd{systemctl --version}
+menampilkan versi systemd yang terinstall. Pada Ubuntu modern, \file{/sbin/init}
+adalah symlink ke \file{/lib/systemd/systemd}.
+
+\begin{lstlisting}[language=bash, caption={Memeriksa sistem init yang aktif}]
+ps -p 1 -o comm=
+systemctl --version
+ls -la /sbin/init
+cat /etc/os-release | grep PRETTY_NAME
+\end{lstlisting}
+
+\subsection{Arsitektur systemd}
+
+systemd menggunakan konsep \textbf{unit} sebagai abstraksi dari setiap entitas yang
+dikelolanya. Setiap unit dideskripsikan oleh sebuah \emph{unit file} dengan format
+INI yang tersimpan di beberapa lokasi dengan prioritas berbeda.
+
+\begin{description}
+    \item[\texttt{.service}] Unit yang paling umum. Mendefinisikan sebuah layanan
+        (daemon): cara menjalankan, menghentikan, dan kondisi restartnya.
+    \item[\texttt{.socket}] Unit socket. systemd membuka socket terlebih dahulu;
+        layanan terkait baru distart saat ada koneksi masuk (\emph{socket
+        activation}), menghemat resource saat idle.
+    \item[\texttt{.timer}] Unit timer sebagai pengganti modern cron. Dapat
+        menjalankan service secara berkala atau pada waktu tertentu.
+    \item[\texttt{.target}] Unit pengelompokan. Setara dengan \emph{runlevel} di
+        SysV; \texttt{multi-user.target} setara runlevel 3, \texttt{graphical.target}
+        setara runlevel 5.
+    \item[\texttt{.mount}] Unit mount point filesystem.
+    \item[\texttt{.path}] Unit yang memantau path filesystem; memicu service saat
+        file/direktori tertentu berubah.
+\end{description}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        unitbox/.style={draw, rounded corners=4pt, minimum width=3.2cm,
+                        minimum height=1.0cm, align=center, font=\small},
+        svcbox/.style={unitbox, fill=blue!20},
+        tgtbox/.style={unitbox, fill=green!20},
+        sockbox/.style={unitbox, fill=orange!15},
+        timerbox/.style={unitbox, fill=purple!15},
+        kernelbox/.style={draw, rounded corners=4pt, minimum width=10cm,
+                          minimum height=1.0cm, align=center, font=\small,
+                          fill=gray!30},
+        arr/.style={->, thick, >=stealth},
+    ]
+        %% Kernel di bawah
+        \node[kernelbox] (kernel) at (0, 0)
+            {\textbf{Linux Kernel} (PID 0)};
+
+        %% systemd (PID 1)
+        \node[draw, rounded corners=4pt, minimum width=4.5cm, minimum height=1.0cm,
+              align=center, font=\small\bfseries, fill=red!15] (sysd) at (0, 1.8)
+            {systemd (PID 1)};
+
+        \draw[arr] (kernel.north) -- (sysd.south)
+            node[midway, right=5pt, font=\scriptsize] {fork};
+
+        %% Target
+        \node[tgtbox] (tgt) at (0, 3.6)
+            {\textbf{multi-user.target}\\(sesi pengguna)};
+        \draw[arr] (sysd.north) -- (tgt.south);
+
+        %% Units yang di-start oleh target
+        %% Lebar box 3.2cm (jari-jari 1.6cm), jarak antar pusat 3.5cm → celah 0.3cm
+        \node[svcbox] (ssh) at (-5.25, 6.2)
+            {\textbf{ssh.service}\\(daemon SSH)};
+        \node[svcbox] (nginx) at (-1.75, 6.2)
+            {\textbf{nginx.service}\\(web server)};
+        \node[sockbox] (sock) at (1.75, 6.2)
+            {\textbf{cups.socket}\\(socket activation)};
+        \node[timerbox] (timer) at (5.25, 6.2)
+            {\textbf{logrotate.timer}\\(timer)};
+
+        %% Bus dari target ke units
+        \draw (tgt.north) -- (0, 4.9);
+        \draw (-5.25, 4.9) -- (5.25, 4.9);
+        \draw[arr] (-5.25, 4.9) -- (ssh.south);
+        \draw[arr] (-1.75, 4.9) -- (nginx.south);
+        \draw[arr] ( 1.75, 4.9) -- (sock.south);
+        \draw[arr] ( 5.25, 4.9) -- (timer.south);
+
+        %% Label (digeser ke kanan agar tidak bertumpuk dengan garis vertikal)
+        \node[font=\scriptsize, gray] at (3.0, 5.08)
+            {wants / requires};
+    \end{tikzpicture}
+    \caption{Hierarki systemd: kernel memulai systemd sebagai PID 1; systemd
+        mengaktifkan target yang kemudian mengelola berbagai jenis unit (service,
+        socket, timer, dll.) secara paralel.}
+    \label{fig:systemd-arch}
+\end{figure}
+
+\cref{fig:systemd-arch} menunjukkan hierarki sistemd. Kernel memulai systemd
+sebagai proses pertama (PID 1). systemd kemudian mengaktifkan target yang
+menjadi tujuan boot (misalnya \texttt{multi-user.target}). Setiap target memiliki
+daftar unit yang perlu diaktifkan (\texttt{Wants} dan \texttt{Requires}), dan
+systemd mengaktifkan semua unit tersebut secara paralel selama dependensinya
+terpenuhi.
+
+\subsection{Lokasi Unit File}
+
+Unit file tersimpan di tiga lokasi utama dengan prioritas berbeda:
+\dir{/lib/systemd/system/} (atau \dir{/usr/lib/systemd/system/}) berisi unit file
+bawaan distribusi yang diinstall bersama paket --- jangan diedit langsung karena
+akan tertimpa saat upgrade. \dir{/etc/systemd/system/} berisi unit file buatan
+administrator dan override; file di sini mengalahkan file dengan nama yang sama
+di \dir{/lib/systemd/system/}. Perintah \cmd{systemctl cat} menampilkan isi unit
+file aktif termasuk informasi override.
+
+\begin{lstlisting}[language=bash, caption={Lokasi dan prioritas unit file}]
+ls /lib/systemd/system/ | head -20
+ls /etc/systemd/system/ | head -20
+systemctl show nginx.service | grep FragmentPath
+systemctl cat nginx.service
+\end{lstlisting}
+
+%% --- Praktikum ---
+\subsection*{Praktikum 10.1 --- Eksplorasi Arsitektur systemd}
+\textbf{Tujuan:} memahami struktur unit file, target, dan dependensi systemd.
+
+\textbf{Langkah-langkah:}
+\begin{enumerate}
+    \item Verifikasi bahwa sistem menggunakan systemd:
+\begin{lstlisting}[language=bash, caption={Verifikasi sistem init}]
+ps -p 1 -o pid,comm,args
+systemctl --version
+systemd-analyze
+systemd-analyze blame | head -15
+\end{lstlisting}
+
+    Perintah \cmd{systemd-analyze blame} menampilkan waktu start setiap unit
+    diurutkan dari yang terlama, berguna untuk mengoptimalkan waktu boot.
+
+    \item Periksa target yang aktif dan daftar unit yang berjalan:
+\begin{lstlisting}[language=bash, caption={Memeriksa target dan unit aktif}]
+systemctl get-default
+systemctl list-units --type=target
+systemctl list-units --type=service --state=running
+systemctl list-units --type=service --state=running | wc -l
+\end{lstlisting}
+
+    \item Telusuri dependensi sebuah service:
+\begin{lstlisting}[language=bash, caption={Menelusuri dependensi unit}]
+sudo apt install nginx -y
+systemctl list-dependencies nginx.service
+systemctl list-dependencies --reverse nginx.service
+systemctl show nginx.service | grep -E "Wants|Requires|After|Before"
+\end{lstlisting}
+
+    \item Bandingkan lokasi unit file:
+\begin{lstlisting}[language=bash, caption={Melihat lokasi dan isi unit file}]
+systemctl cat nginx.service
+ls -la /lib/systemd/system/nginx.service
+ls -la /etc/systemd/system/ | grep nginx
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[10.1]
+\begin{enumerate}
+    \item Jalankan \cmd{systemd-analyze critical-chain}. Apa artinya chain yang
+        ditampilkan, dan bagaimana informasi ini bisa digunakan untuk mempercepat
+        waktu boot?
+    \item Dari output \cmd{systemctl list-dependencies nginx.service}, identifikasi
+        tiga jenis dependensi berbeda: \texttt{Requires}, \texttt{Wants}, dan
+        \texttt{After}. Apa perbedaan semantik ketiganya?
+    \item Jelaskan mengapa unit file di \dir{/etc/systemd/system/} memiliki
+        prioritas lebih tinggi dari \dir{/lib/systemd/system/}. Apa keuntungan
+        desain ini bagi administrator sistem?
+\end{enumerate}
+\end{exercisebox}
+
+%% ========================================================================
 \section{Mengelola Layanan dengan systemctl}
-\section{Membuat File Unit Sistem}
-\section{Manajemen Dependensi Layanan}
-\section{Logging dan Monitoring}
+\label{sec:systemctl}
+%% ========================================================================
+
+\cmd{systemctl} adalah alat utama untuk berinteraksi dengan systemd. Ia menggantikan
+semua perintah \cmd{service} dan \cmd{chkconfig} dari era SysV, sekaligus
+menyediakan kemampuan yang jauh lebih kaya.
+
+\subsection{Operasi Dasar Layanan}
+
+\subsubsection{Status dan Informasi}
+
+\begin{lstlisting}[language=bash, caption={Memeriksa status layanan}]
+systemctl status nginx
+systemctl status nginx.service
+systemctl is-active nginx
+systemctl is-enabled nginx
+systemctl is-failed nginx
+systemctl show nginx
+systemctl show nginx --property=MainPID,ActiveState,SubState
+\end{lstlisting}
+
+Perintah \cmd{systemctl status} menampilkan informasi lengkap: status aktif/inaktif,
+apakah enabled saat boot, PID proses utama, penggunaan memori (via cgroups), dan
+beberapa baris log terakhir dari journald. Output \cmd{is-active} hanya mengembalikan
+\texttt{active} atau \texttt{inactive} (exit code 0 atau non-0), berguna untuk
+skrip. Perintah \cmd{systemctl show} menampilkan semua properti unit dalam format
+kunci=nilai; opsi \texttt{--property} memfilter properti tertentu saja.
+
+\subsubsection{Kontrol Layanan}
+
+\begin{lstlisting}[language=bash, caption={Menjalankan dan menghentikan layanan}]
+sudo systemctl start nginx
+sudo systemctl stop nginx
+sudo systemctl restart nginx
+sudo systemctl reload nginx
+sudo systemctl reload-or-restart nginx
+\end{lstlisting}
+
+Perbedaan \texttt{restart} dan \texttt{reload}: \texttt{restart} menghentikan lalu
+menjalankan ulang proses (ada downtime sebentar), sedangkan \texttt{reload} meminta
+proses membaca ulang konfigurasinya tanpa menghentikan koneksi yang sedang berjalan
+(tanpa downtime). Tidak semua service mendukung reload; perintah \cmd{reload-or-restart}
+otomatis memilih reload jika didukung, restart jika tidak.
+
+\subsubsection{Manajemen Autostart}
+
+\begin{lstlisting}[language=bash, caption={Mengatur autostart layanan}]
+sudo systemctl enable nginx
+sudo systemctl enable --now nginx
+sudo systemctl disable nginx
+sudo systemctl disable --now nginx
+sudo systemctl mask nginx
+sudo systemctl unmask nginx
+systemctl list-unit-files --type=service | grep enabled
+\end{lstlisting}
+
+Perintah \texttt{enable} membuat symlink di \dir{/etc/systemd/system/} yang
+menghubungkan service ke target yang tepat sehingga otomatis start saat boot.
+Opsi \texttt{--now} menggabungkan enable dan start dalam satu perintah. Perintah
+\texttt{mask} adalah tingkat disable yang lebih kuat: ia membuat symlink ke
+\file{/dev/null} sehingga service tidak bisa distart sama sekali bahkan oleh
+dependensi lain, berguna untuk menonaktifkan service secara permanen.
+Perintah \cmd{list-unit-files} mendaftar semua unit file yang dikenal beserta
+status enable/disable-nya.
+
+\begin{tipbox}
+Selalu gunakan \texttt{sudo systemctl enable --now service} saat menginstal
+layanan baru agar layanan langsung berjalan sekaligus dikonfigurasi untuk start
+otomatis. Ini menghindari lupa untuk mengaktifkannya terpisah.
+\end{tipbox}
+
+\subsection{Mengelola State Sistem}
+
+\begin{lstlisting}[language=bash, caption={Mengelola state sistem}]
+sudo systemctl poweroff
+sudo systemctl reboot
+sudo systemctl suspend
+sudo systemctl hibernate
+sudo systemctl isolate rescue.target
+sudo systemctl isolate multi-user.target
+sudo systemctl set-default graphical.target
+sudo systemctl set-default multi-user.target
+\end{lstlisting}
+
+systemd mengelola seluruh siklus hidup sistem. Perintah \texttt{poweroff},
+\texttt{reboot}, \texttt{suspend}, dan \texttt{hibernate} menggantikan perintah
+tradisional yang setara. Perintah \texttt{isolate} beralih ke target tertentu
+secara langsung, menonaktifkan semua unit yang tidak diperlukan target tersebut
+dan mengaktifkan yang belum aktif --- setara \cmd{telinit} di SysV.
+\texttt{rescue.target} adalah mode single-user untuk pemulihan darurat.
+Perintah \texttt{set-default} mengatur target yang diaktifkan saat boot.
+
+\subsection{Pemantauan Semua Layanan}
+
+\begin{lstlisting}[language=bash, caption={Melihat dan memfilter daftar unit}]
+systemctl list-units
+systemctl list-units --type=service
+systemctl list-units --type=service --state=failed
+systemctl list-units --type=service --state=inactive
+systemctl list-unit-files --type=service
+systemctl list-unit-files --state=enabled
+systemctl --failed
+\end{lstlisting}
+
+Perintah \cmd{systemctl list-units} secara default hanya menampilkan unit yang
+aktif/dimuat. Opsi \texttt{--state=failed} menampilkan unit yang gagal, sangat
+berguna saat troubleshooting setelah reboot. Perintah \cmd{systemctl --failed}
+adalah singkatan untuk menampilkan semua failed units.
+
+%% --- Praktikum ---
+\subsection*{Praktikum 10.2 --- Mengelola Layanan dengan systemctl}
+\textbf{Tujuan:} menguasai operasi start/stop/enable/disable, membaca status
+layanan, dan memahami perbedaan restart vs reload.
+
+\textbf{Langkah-langkah:}
+\begin{enumerate}
+    \item Pastikan nginx terinstall, lalu eksplorasi statusnya:
+\begin{lstlisting}[language=bash, caption={Eksplorasi status nginx}]
+sudo apt install nginx -y
+systemctl status nginx
+systemctl is-active nginx
+systemctl is-enabled nginx
+\end{lstlisting}
+
+    \item Lakukan siklus start-stop-restart dan amati perubahan PID:
+\begin{lstlisting}[language=bash, caption={Mengamati perubahan PID saat restart}]
+sudo systemctl start nginx
+systemctl show nginx --property=MainPID
+sudo systemctl stop nginx
+systemctl show nginx --property=MainPID
+sudo systemctl start nginx
+FIRST_PID=$(systemctl show nginx --property=MainPID | cut -d= -f2)
+echo "PID sebelum restart: $FIRST_PID"
+sudo systemctl restart nginx
+SECOND_PID=$(systemctl show nginx --property=MainPID | cut -d= -f2)
+echo "PID setelah restart: $SECOND_PID"
+\end{lstlisting}
+
+    \item Uji reload vs restart --- buat perubahan konfigurasi nginx:
+\begin{lstlisting}[language=bash, caption={Menguji reload tanpa downtime}]
+sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
+sudo nginx -t
+sudo systemctl reload nginx
+PID_AFTER_RELOAD=$(systemctl show nginx --property=MainPID | cut -d= -f2)
+echo "PID setelah reload: $PID_AFTER_RELOAD"
+echo "PID tidak berubah setelah reload: $([ $SECOND_PID = $PID_AFTER_RELOAD ] && echo YA || echo TIDAK)"
+\end{lstlisting}
+
+    \item Uji enable dan disable:
+\begin{lstlisting}[language=bash, caption={Menguji enable dan disable}]
+sudo systemctl disable nginx
+systemctl is-enabled nginx
+ls -la /etc/systemd/system/multi-user.target.wants/ | grep nginx
+sudo systemctl enable nginx
+ls -la /etc/systemd/system/multi-user.target.wants/ | grep nginx
+\end{lstlisting}
+
+    \item Lihat semua unit yang gagal (jika ada):
+\begin{lstlisting}[language=bash, caption={Memeriksa unit yang gagal}]
+systemctl --failed
+systemctl list-units --state=failed
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[10.2]
+\begin{enumerate}
+    \item Dari praktikum, konfirmasikan: apakah PID nginx berubah setelah
+        \cmd{reload}? Mengapa ini penting untuk layanan production yang sedang
+        melayani request?
+    \item Saat \cmd{systemctl enable nginx} dijalankan, sebuah symlink dibuat.
+        Di direktori mana symlink tersebut dibuat, dan symlink tersebut menunjuk
+        ke file mana? Mengapa mekanisme symlink ini dipilih untuk autostart?
+    \item Apa perbedaan antara \cmd{systemctl disable} dan \cmd{systemctl mask}?
+        Berikan contoh skenario di mana Anda memilih \texttt{mask} daripada
+        \texttt{disable}.
+\end{enumerate}
+\end{exercisebox}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Gejala Umum dan Langkah Diagnostik Layanan}
+    \label{tab:troubleshooting-guide}
+    \begin{tabular}{@{}lp{5.5cm}p{5.5cm}@{}}
+        \toprule
+        \textbf{Gejala} & \textbf{Penyebab Umum} & \textbf{Perintah Diagnostik} \\
+        \midrule
+        Service gagal start
+            & Konfigurasi salah, binary tidak ada, port sudah digunakan
+            & \cmd{journalctl -u svc -n 50},
+              \cmd{systemctl status svc} \\
+        \addlinespace
+        Service start lalu crash
+            & Error di konfigurasi, dependensi tidak ready, kurang memori
+            & \cmd{journalctl -u svc -p err},
+              \cmd{systemctl show svc} \\
+        \addlinespace
+        Port tidak bisa dibuka
+            & Port sudah dipakai proses lain, firewall memblokir
+            & \cmd{ss -tlnp}, \cmd{ufw status} \\
+        \addlinespace
+        Permission denied
+            & User/group salah, file permission keliru, SELinux/AppArmor
+            & \cmd{ls -la path}, \cmd{id user},
+              \cmd{aa-status} \\
+        \addlinespace
+        Service lambat start
+            & Resolusi DNS timeout, dependensi lambat
+            & \cmd{systemd-analyze critical-chain} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+%% ========================================================================
+\section{Membuat Unit File Kustom}
+\label{sec:unit-files}
+%% ========================================================================
+
+Kemampuan membuat unit file sendiri adalah keterampilan penting administrator
+sistem. Setiap aplikasi atau skrip dapat dijadikan layanan yang dikelola systemd
+dengan menulis unit file yang tepat.
+
+\subsection{Anatomi Unit File .service}
+
+Unit file berbentuk INI dengan tiga bagian utama:
+
+\subsubsection{Bagian [Unit]}
+
+\begin{lstlisting}[language=bash, caption={Bagian [Unit] --- metadata dan dependensi}]
+[Unit]
+Description=Web Application Server
+Documentation=https://contoh.com/docs
+After=network.target postgresql.service
+Wants=network.target
+Requires=postgresql.service
+\end{lstlisting}
+
+Bagian \texttt{[Unit]} berisi metadata dan deklarasi dependensi. Direktif
+\texttt{Description} adalah nama yang ditampilkan di \cmd{systemctl status}.
+Direktif \texttt{After} menyatakan urutan: unit ini hanya distart \emph{setelah}
+unit yang disebutkan sudah aktif. \texttt{Wants} adalah dependensi lunak: jika
+unit yang disebutkan gagal, unit ini tetap distart. \texttt{Requires} adalah
+dependensi keras: jika unit yang disebutkan gagal, unit ini tidak akan distart
+(dan ikut berhenti jika unit tersebut berhenti saat runtime).
+
+\subsubsection{Bagian [Service]}
+
+\begin{lstlisting}[language=bash, caption={Bagian [Service] --- konfigurasi eksekusi}]
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/myapp --config /etc/myapp/config.yaml
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/kill -TERM $MAINPID
+WorkingDirectory=/var/lib/myapp
+User=myapp
+Group=myapp
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+Environment=APP_ENV=production
+EnvironmentFile=/etc/myapp/env
+\end{lstlisting}
+
+Direktif \texttt{Type} menentukan bagaimana systemd mendeteksi bahwa service
+sudah siap:
+\begin{description}
+    \item[\texttt{simple}] (default) Proses yang dijalankan \texttt{ExecStart}
+        dianggap proses utama. systemd menganggap service aktif segera setelah
+        proses distart.
+    \item[\texttt{forking}] Service melakukan daemonize (fork dan exit). systemd
+        menunggu proses induk exit dan menganggap proses anak sebagai proses utama.
+        Butuh \texttt{PIDFile=} agar systemd bisa melacak PID.
+    \item[\texttt{oneshot}] Untuk tugas yang selesai dan exit; systemd menganggap
+        unit aktif setelah proses exit dengan sukses.
+    \item[\texttt{notify}] Service mengirimkan sinyal ke systemd (via
+        \texttt{sd\_notify()}) saat benar-benar siap. Lebih andal dari
+        \texttt{simple} untuk service yang butuh waktu inisialisasi.
+    \item[\texttt{dbus}] Service mengambil nama di D-Bus sebagai tanda siap.
+\end{description}
+
+Direktif \texttt{User} dan \texttt{Group} menjalankan service dengan identitas
+non-root untuk keamanan. Direktif \texttt{Restart=on-failure} mengatur restart
+otomatis jika proses crash; \texttt{RestartSec} mengatur jeda sebelum restart.
+Direktif \texttt{EnvironmentFile} memuat variabel lingkungan dari file eksternal.
+
+\subsubsection{Bagian [Install]}
+
+\begin{lstlisting}[language=bash, caption={Bagian [Install] --- konfigurasi enable}]
+[Install]
+WantedBy=multi-user.target
+Alias=myapp.service
+\end{lstlisting}
+
+Bagian \texttt{[Install]} hanya digunakan saat \cmd{systemctl enable/disable}.
+Direktif \texttt{WantedBy} menentukan target mana yang akan menambahkan unit ini
+ke dependensinya saat di-enable. Hampir semua service menggunakan
+\texttt{multi-user.target} (mode server tanpa GUI).
+
+\subsection{Contoh: Membuat Service untuk Aplikasi Python}
+
+\begin{lstlisting}[language=bash, caption={Membuat unit file untuk aplikasi web Python}]
+sudo useradd -r -s /bin/false webappuser
+
+cat > /tmp/webapp.service << 'EOF'
+[Unit]
+Description=Demo Web Application
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=webappuser
+Group=webappuser
+WorkingDirectory=/opt/webapp
+ExecStart=/usr/bin/python3 /opt/webapp/server.py
+Restart=on-failure
+RestartSec=3s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=webapp
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo cp /tmp/webapp.service /etc/systemd/system/webapp.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now webapp
+systemctl status webapp
+\end{lstlisting}
+
+Setelah menyalin unit file ke \dir{/etc/systemd/system/}, perintah \cmd{systemctl
+daemon-reload} \textbf{wajib} dijalankan agar systemd membaca ulang semua unit file.
+Melupakan langkah ini adalah kesalahan umum yang menyebabkan systemd menggunakan
+versi lama dari unit file.
+
+\subsection{Override Unit File dengan Drop-in}
+
+Alih-alih mengedit unit file bawaan distribusi, praktik terbaik adalah menggunakan
+\emph{drop-in files} untuk menambahkan atau menimpa konfigurasi tertentu:
+
+\begin{lstlisting}[language=bash, caption={Membuat drop-in override untuk unit}]
+sudo systemctl edit nginx.service
+
+sudo mkdir -p /etc/systemd/system/nginx.service.d/
+cat > /tmp/override.conf << 'EOF'
+[Service]
+LimitNOFILE=65536
+Restart=always
+RestartSec=3s
+EOF
+sudo cp /tmp/override.conf /etc/systemd/system/nginx.service.d/override.conf
+
+sudo systemctl daemon-reload
+systemctl cat nginx.service
+\end{lstlisting}
+
+Perintah \cmd{systemctl edit} membuka editor teks dan secara otomatis membuat file
+drop-in di \dir{/etc/systemd/system/namaunit.d/override.conf}. Setelah disimpan,
+\cmd{systemctl cat} menampilkan unit file efektif beserta semua override yang
+diterapkan (ditandai dengan komentar). Metode ini lebih aman karena tidak
+mengubah file paket asli.
+
+\begin{notebox}
+Gunakan \cmd{systemctl edit} untuk drop-in (modifikasi sebagian), atau \cmd{systemctl
+edit --full} untuk menyalin seluruh unit file ke \dir{/etc/systemd/system/} dan
+mengeditnya sepenuhnya. Jangan pernah mengedit file di \dir{/lib/systemd/system/}
+secara langsung karena akan tertimpa saat upgrade paket.
+\end{notebox}
+
+\subsection{Systemd Timer sebagai Pengganti Cron}
+
+Systemd timer lebih powerful dari cron: direktif \texttt{OnCalendar} mendukung
+format yang fleksibel (\texttt{daily}, \texttt{weekly}, \texttt{Mon *-*-* 09:00:00},
+dll.). Direktif \texttt{Persistent=true} memastikan timer yang ``terlewat'' (karena
+server mati) dijalankan segera saat sistem menyala kembali. Perintah \cmd{systemctl
+list-timers} menampilkan semua timer aktif beserta waktu jalan terakhir dan
+berikutnya.
+
+\begin{lstlisting}[language=bash, caption={Membuat systemd timer}]
+cat > /tmp/backup.service << 'EOF'
+[Unit]
+Description=Backup Harian Database
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/backup-db.sh
+User=backup
+StandardOutput=journal
+EOF
+
+cat > /tmp/backup.timer << 'EOF'
+[Unit]
+Description=Timer Backup Harian
+Requires=backup.service
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+sudo cp /tmp/backup.service /tmp/backup.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now backup.timer
+systemctl list-timers
+\end{lstlisting}
+
+%% --- Praktikum ---
+\subsection*{Praktikum 10.3 --- Membuat Unit File Kustom}
+\textbf{Tujuan:} membuat unit file service dari nol untuk sebuah skrip,
+mempraktikkan restart policy, dan membuat drop-in override.
+
+\textbf{Langkah-langkah:}
+\begin{enumerate}
+    \item Buat skrip sederhana yang akan dikelola sebagai service:
+\begin{lstlisting}[language=bash, caption={Membuat skrip untuk dijadikan service}]
+sudo mkdir -p /opt/lab-service
+
+sudo tee /opt/lab-service/counter.sh << 'EOF'
+#!/bin/bash
+COUNT=0
+while true; do
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Counter: $COUNT"
+    COUNT=$((COUNT + 1))
+    sleep 2
+done
+EOF
+
+sudo chmod +x /opt/lab-service/counter.sh
+/opt/lab-service/counter.sh &
+sleep 5
+kill %1
+\end{lstlisting}
+
+    \item Buat unit file service:
+\begin{lstlisting}[language=bash, caption={Membuat unit file counter.service}]
+sudo tee /etc/systemd/system/counter.service << 'EOF'
+[Unit]
+Description=Counter Service Demo
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/lab-service/counter.sh
+Restart=on-failure
+RestartSec=3s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=counter
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl start counter
+systemctl status counter
+\end{lstlisting}
+
+    \item Amati log dan uji restart otomatis:
+\begin{lstlisting}[language=bash, caption={Memantau service dan uji restart}]
+journalctl -u counter -f &
+JOURNAL_PID=$!
+
+sleep 5
+COUNTER_PID=$(systemctl show counter --property=MainPID | cut -d= -f2)
+echo "PID saat ini: $COUNTER_PID"
+sudo kill -9 $COUNTER_PID
+sleep 4
+NEW_PID=$(systemctl show counter --property=MainPID | cut -d= -f2)
+echo "PID setelah crash: $NEW_PID"
+echo "Service restart berhasil: $([ $COUNTER_PID != $NEW_PID ] && echo YA || echo TIDAK)"
+kill $JOURNAL_PID 2>/dev/null
+\end{lstlisting}
+
+    \item Tambahkan drop-in override untuk mengubah interval restart:
+\begin{lstlisting}[language=bash, caption={Membuat drop-in override}]
+sudo systemctl edit counter.service
+\end{lstlisting}
+
+    Di editor yang terbuka, ketik konten berikut, simpan, lalu tutup:
+\begin{lstlisting}[language=bash, caption={Konten drop-in override}]
+[Service]
+RestartSec=10s
+\end{lstlisting}
+
+\begin{lstlisting}[language=bash, caption={Memverifikasi drop-in}]
+sudo systemctl daemon-reload
+systemctl cat counter.service
+systemctl show counter --property=RestartUSec
+\end{lstlisting}
+
+    \item Bersihkan setelah praktikum:
+\begin{lstlisting}[language=bash, caption={Membersihkan setelah praktikum}]
+sudo systemctl stop counter
+sudo systemctl disable counter
+sudo rm /etc/systemd/system/counter.service
+sudo rm -rf /etc/systemd/system/counter.service.d/
+sudo rm -rf /opt/lab-service/
+sudo systemctl daemon-reload
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[10.3]
+\begin{enumerate}
+    \item Dari pengujian restart otomatis, berapa lama jeda sebelum service
+        direstart setelah crash? Mengapa systemd memberikan jeda (bukan langsung
+        restart) dan apa risikonya jika \texttt{RestartSec} diset terlalu pendek?
+    \item Apa perbedaan antara \texttt{Type=simple} dan \texttt{Type=forking}?
+        Jika Anda harus mengelola program lama yang melakukan daemonize sendiri
+        (fork ke background), jenis \texttt{Type} mana yang tepat?
+    \item Jelaskan mengapa \texttt{StandardOutput=journal} lebih disukai daripada
+        mengarahkan output ke file teks langsung di \texttt{ExecStart}. Apa
+        keuntungan yang diberikan journald?
+\end{enumerate}
+\end{exercisebox}
+
+%% ========================================================================
+\section{Logging dengan journald}
+\label{sec:journald}
+%% ========================================================================
+
+systemd menyertakan \textbf{journald}, daemon logging terpusat yang mengumpulkan
+log dari semua unit systemd, kernel, dan program yang menggunakan \texttt{syslog}.
+Log disimpan dalam format binary terstruktur yang memungkinkan pemfilteran
+dan pencarian yang sangat efisien.
+
+\subsection{Perintah journalctl Dasar}
+
+\subsubsection{Membaca Log}
+
+\begin{lstlisting}[language=bash, caption={Perintah journalctl dasar}]
+journalctl
+journalctl -n 50
+journalctl -f
+journalctl -e
+journalctl --since "2024-01-01 00:00:00"
+journalctl --since "1 hour ago"
+journalctl --since "yesterday" --until "today"
+journalctl --since today
+\end{lstlisting}
+
+Perintah \cmd{journalctl} tanpa argumen menampilkan seluruh journal dari yang
+terlama. Opsi \texttt{-n N} membatasi ke N baris terakhir. Opsi \texttt{-f}
+(follow) memantau log secara real-time, setara \cmd{tail -f} untuk syslog.
+Opsi \texttt{-e} melompat ke akhir log. Opsi \texttt{--since} dan \texttt{--until}
+memfilter berdasarkan waktu dengan format yang fleksibel.
+
+\subsubsection{Memfilter Log}
+
+\begin{lstlisting}[language=bash, caption={Memfilter log journalctl}]
+journalctl -u nginx
+journalctl -u nginx -u ssh
+journalctl -u nginx -f
+journalctl -u nginx --since "1 hour ago"
+journalctl -p err
+journalctl -p warning..emerg
+journalctl -k
+journalctl _PID=1234
+journalctl _UID=1000
+journalctl -b
+journalctl -b -1
+\end{lstlisting}
+
+Opsi \texttt{-u unit} memfilter log berdasarkan nama unit --- ini adalah cara paling
+sering digunakan untuk melihat log layanan tertentu. Opsi \texttt{-p priority}
+memfilter berdasarkan tingkat keparahan log (emerg, alert, crit, err, warning,
+notice, info, debug). Notasi \texttt{-p warning..emerg} berarti dari warning hingga
+emerg. Opsi \texttt{-k} menampilkan log kernel saja. Opsi \texttt{-b} menampilkan
+log boot saat ini; \texttt{-b -1} menampilkan log dari boot sebelumnya, sangat
+berguna untuk mendiagnosis masalah yang menyebabkan reboot.
+
+\subsubsection{Format Output}
+
+\begin{lstlisting}[language=bash, caption={Format output journalctl}]
+journalctl -u nginx -o json
+journalctl -u nginx -o json-pretty
+journalctl -u nginx -o cat
+journalctl -u nginx -o verbose
+journalctl -u nginx --no-pager
+journalctl -u nginx > /tmp/nginx-log.txt
+\end{lstlisting}
+
+Opsi \texttt{-o format} mengubah format output. Format \texttt{json} berguna untuk
+pipeline pemrosesan otomatis. Format \texttt{cat} menampilkan hanya pesan log tanpa
+timestamp dan metadata, berguna untuk membandingkan dengan log file tradisional.
+Opsi \texttt{--no-pager} menonaktifkan pager (\texttt{less}), diperlukan saat
+output akan di-pipe ke perintah lain.
+
+\subsection{Manajemen Penyimpanan Journal}
+
+\begin{lstlisting}[language=bash, caption={Manajemen ukuran dan retensi journal}]
+journalctl --disk-usage
+journalctl --verify
+sudo journalctl --vacuum-size=500M
+sudo journalctl --vacuum-time=30d
+sudo journalctl --rotate
+\end{lstlisting}
+
+Perintah \cmd{--disk-usage} menampilkan total ukuran journal yang tersimpan.
+Perintah \cmd{--verify} memeriksa integritas file journal (journal menggunakan
+hash untuk deteksi tamper). Perintah \cmd{--vacuum-size} menghapus file journal
+lama hingga total ukuran di bawah batas yang ditentukan. Perintah
+\cmd{--vacuum-time} menghapus journal yang lebih lama dari periode yang ditentukan.
+Ini berguna untuk server dengan disk terbatas yang menyimpan banyak log.
+
+\subsection{Konfigurasi journald}
+
+Konfigurasi journald disimpan di \file{/etc/systemd/journald.conf} atau file
+drop-in di \dir{/etc/systemd/journald.conf.d/}. Direktif \texttt{Storage=persistent}
+memastikan log disimpan ke disk di \dir{/var/log/journal/} (bukan hanya di
+memory \dir{/run/log/journal/} yang hilang saat reboot). Direktif \texttt{SystemMaxUse}
+membatasi ukuran maksimal journal. \texttt{RateLimitBurst} membatasi jumlah pesan
+yang diterima dari satu proses dalam periode \texttt{RateLimitIntervalSec}, mencegah
+satu proses yang mengirim log berlebihan menghabiskan disk.
+
+\begin{lstlisting}[language=bash, caption={Mengonfigurasi journald}]
+cat /etc/systemd/journald.conf
+
+sudo tee /etc/systemd/journald.conf.d/limit.conf << 'EOF'
+[Journal]
+Storage=persistent
+Compress=yes
+SystemMaxUse=500M
+SystemKeepFree=100M
+MaxRetentionSec=30day
+RateLimitIntervalSec=30s
+RateLimitBurst=1000
+EOF
+
+sudo systemctl restart systemd-journald
+\end{lstlisting}
+
+%% --- Praktikum ---
+\subsection*{Praktikum 10.4 --- Logging dengan journald}
+\textbf{Tujuan:} menguasai \cmd{journalctl} untuk membaca, memfilter, dan
+menganalisis log sistem dan layanan.
+
+\textbf{Langkah-langkah:}
+\begin{enumerate}
+    \item Eksplorasi statistik dan ukuran journal:
+\begin{lstlisting}[language=bash, caption={Eksplorasi journal}]
+journalctl --disk-usage
+journalctl -b --no-pager | wc -l
+journalctl -b -p err --no-pager | head -20
+journalctl -b -p warning..emerg --no-pager | wc -l
+\end{lstlisting}
+
+    \item Baca log untuk berbagai layanan dan filter berdasarkan waktu:
+\begin{lstlisting}[language=bash, caption={Memfilter log layanan}]
+sudo systemctl start nginx
+sleep 2
+curl -s http://localhost > /dev/null
+journalctl -u nginx --since "2 minutes ago" --no-pager
+journalctl -u nginx -n 20 --no-pager
+journalctl -u nginx -o cat --no-pager | head -10
+\end{lstlisting}
+
+    \item Buat entri log dari skrip dan amati di journal:
+\begin{lstlisting}[language=bash, caption={Menulis ke journal dengan systemd-cat}]
+echo "Pesan test dari praktikum" | systemd-cat -t lab-test -p info
+echo "Pesan error dari praktikum" | systemd-cat -t lab-test -p err
+systemd-cat -t lab-test echo "Pesan via systemd-cat"
+journalctl -t lab-test --no-pager
+journalctl -t lab-test -o json-pretty --no-pager | head -30
+\end{lstlisting}
+
+    \item Eksplorasi log kernel dan boot:
+\begin{lstlisting}[language=bash, caption={Log kernel dan boot}]
+journalctl -k -n 20 --no-pager
+journalctl -b --no-pager | head -30
+journalctl --list-boots
+\end{lstlisting}
+
+    \item Periksa ukuran journal dan lakukan vacuum:
+\begin{lstlisting}[language=bash, caption={Manajemen ukuran journal}]
+journalctl --disk-usage
+sudo journalctl --vacuum-time=7d
+journalctl --disk-usage
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[10.4]
+\begin{enumerate}
+    \item Jelaskan perbedaan antara \cmd{journalctl -u nginx} dan
+        \cmd{journalctl -u nginx -b}. Dalam skenario troubleshooting apa
+        opsi \texttt{-b} menjadi penting?
+    \item Perintah \cmd{systemd-cat} digunakan di praktikum untuk menulis ke
+        journal. Sebutkan dua kasus penggunaan nyata di mana Anda akan menggunakan
+        \cmd{systemd-cat} dalam skrip sistem.
+    \item Apa perbedaan antara \texttt{Storage=volatile} dan
+        \texttt{Storage=persistent} di konfigurasi journald? Mengapa server
+        produksi harus menggunakan \texttt{persistent}?
+\end{enumerate}
+\end{exercisebox}
+
+%% ========================================================================
 \section{Konfigurasi Layanan Jaringan}
-\section{Automatisasi Layanan}
-\section{Troubleshooting}
+\label{sec:network-services}
+%% ========================================================================
+
+Server Linux biasanya menjalankan beberapa layanan jaringan. Bagian ini membahas
+konfigurasi dan pengelolaan tiga layanan jaringan yang paling umum: SSH, nginx
+web server, dan firewall dengan \cmd{ufw}.
+
+\subsection{Layanan SSH}
+
+SSH (\textit{Secure Shell}) adalah protokol utama untuk administrasi server jarak
+jauh. Di Ubuntu, daemon SSH disediakan oleh paket \texttt{openssh-server}.
+
+\begin{lstlisting}[language=bash, caption={Instalasi dan konfigurasi dasar SSH}]
+sudo apt install openssh-server -y
+sudo systemctl enable --now ssh
+systemctl status ssh
+
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+sudo nano /etc/ssh/sshd_config
+
+sudo sshd -t
+sudo systemctl reload ssh
+\end{lstlisting}
+
+Perintah \cmd{sshd -t} (test mode) memvalidasi konfigurasi tanpa menerapkannya ---
+selalu jalankan ini sebelum reload agar tidak terkunci akibat konfigurasi yang
+salah. Setelah \texttt{sshd -t} sukses, \cmd{systemctl reload ssh} menerapkan
+konfigurasi baru tanpa memutus koneksi yang sedang aktif.
+
+\begin{lstlisting}[language=bash, caption={Parameter penting sshd\_config}]
+Port 22
+ListenAddress 0.0.0.0
+PermitRootLogin no
+PasswordAuthentication yes
+PubkeyAuthentication yes
+AuthorizedKeysFile     .ssh/authorized_keys
+PermitEmptyPasswords no
+MaxAuthTries 6
+ClientAliveInterval 300
+ClientAliveCountMax 2
+AllowUsers admin deploy
+\end{lstlisting}
+
+Pengaturan keamanan kunci: \texttt{PermitRootLogin no} mencegah login langsung
+sebagai root. \texttt{MaxAuthTries 6} membatasi percobaan login gagal sebelum
+koneksi diputus. \texttt{ClientAliveInterval} dan \texttt{ClientAliveCountMax}
+mengatur timeout koneksi idle, mencegah koneksi zombie. Direktif \texttt{AllowUsers}
+membatasi hanya user tertentu yang boleh login via SSH.
+
+\begin{warningbox}
+Sebelum mengubah konfigurasi SSH (terutama nomor port atau \texttt{PasswordAuthentication}),
+selalu buka satu koneksi SSH cadangan di terminal terpisah. Jika terjadi kesalahan
+konfigurasi, koneksi cadangan masih bisa digunakan untuk memperbaiki masalah.
+Kehilangan akses SSH ke server remote sangat berbahaya.
+\end{warningbox}
+
+\subsection{Web Server nginx}
+
+\begin{lstlisting}[language=bash, caption={Konfigurasi virtual host nginx}]
+sudo apt install nginx -y
+sudo systemctl enable --now nginx
+
+sudo tee /etc/nginx/sites-available/myapp.conf << 'EOF'
+server {
+    listen 80;
+    server_name myapp.example.com;
+    root /var/www/myapp;
+    index index.html;
+
+    access_log /var/log/nginx/myapp-access.log;
+    error_log /var/log/nginx/myapp-error.log;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+EOF
+
+sudo mkdir -p /var/www/myapp
+echo "<h1>Hello dari myapp</h1>" | sudo tee /var/www/myapp/index.html
+
+sudo nginx -t
+sudo ln -s /etc/nginx/sites-available/myapp.conf /etc/nginx/sites-enabled/
+sudo systemctl reload nginx
+\end{lstlisting}
+
+nginx menggunakan pola \dir{sites-available}/\dir{sites-enabled}: konfigurasi
+virtual host disimpan di \dir{sites-available/}, lalu diaktifkan dengan membuat
+symlink ke \dir{sites-enabled/}. Perintah \cmd{nginx -t} memvalidasi semua
+konfigurasi sebelum diterapkan. Direktif \texttt{proxy\_pass} meneruskan request
+ke backend aplikasi yang berjalan di port 3000, memungkinkan nginx berfungsi
+sebagai reverse proxy.
+
+\subsection{Firewall dengan ufw}
+
+\cmd{ufw} (\textit{Uncomplicated Firewall}) adalah frontend untuk \texttt{iptables}
+yang menyederhanakan manajemen firewall di Ubuntu.
+
+\begin{lstlisting}[language=bash, caption={Konfigurasi dasar ufw}]
+sudo ufw status
+sudo ufw enable
+sudo ufw status verbose
+
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+
+sudo ufw allow ssh
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow from 192.168.1.0/24 to any port 3306
+sudo ufw deny 23/tcp
+
+sudo ufw status numbered
+sudo ufw delete 3
+sudo ufw reload
+\end{lstlisting}
+
+Pola konfigurasi firewall yang aman: mulai dengan \texttt{default deny incoming}
+(blokir semua koneksi masuk), lalu \texttt{allow} hanya port/service yang
+diperlukan. Selalu izinkan SSH sebelum mengaktifkan firewall. Perintah \cmd{ufw allow
+ssh} sama dengan \cmd{ufw allow 22/tcp} tetapi lebih mudah dibaca. Perintah \cmd{ufw
+allow from IP/subnet} membatasi akses hanya dari alamat IP tertentu, berguna untuk
+mengamankan layanan seperti database (MySQL/PostgreSQL) yang tidak perlu diakses
+dari internet.
+
+%% --- Praktikum ---
+\subsection*{Praktikum 10.5 --- Konfigurasi dan Monitoring Layanan Jaringan}
+\textbf{Tujuan:} mengonfigurasi nginx sebagai web server dengan virtual host,
+memantau log aksesnya, dan mengamankan dengan firewall ufw.
+
+\textbf{Langkah-langkah:}
+\begin{enumerate}
+    \item Siapkan nginx dan verifikasi layanan berjalan:
+\begin{lstlisting}[language=bash, caption={Menyiapkan nginx}]
+sudo apt install nginx -y
+sudo systemctl enable --now nginx
+systemctl status nginx
+curl -I http://localhost
+\end{lstlisting}
+
+    \item Buat virtual host baru untuk situs statis:
+\begin{lstlisting}[language=bash, caption={Membuat virtual host nginx}]
+sudo mkdir -p /var/www/lab-site
+sudo tee /var/www/lab-site/index.html << 'EOF'
+<html>
+<head><title>Lab Site</title></head>
+<body>
+<h1>Selamat Datang di Lab Site</h1>
+<p>Virtual host nginx berhasil dikonfigurasi</p>
+</body>
+</html>
+EOF
+
+sudo tee /etc/nginx/sites-available/lab-site << 'EOF'
+server {
+    listen 8080;
+    server_name localhost;
+    root /var/www/lab-site;
+    index index.html;
+    access_log /var/log/nginx/lab-site-access.log;
+    error_log /var/log/nginx/lab-site-error.log;
+}
+EOF
+
+sudo ln -s /etc/nginx/sites-available/lab-site /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+curl http://localhost:8080
+\end{lstlisting}
+
+    \item Pantau log akses nginx secara real-time:
+\begin{lstlisting}[language=bash, caption={Memantau log nginx}]
+sudo tail -f /var/log/nginx/lab-site-access.log &
+TAIL_PID=$!
+
+for i in 1 2 3 4 5; do
+    curl -s http://localhost:8080 > /dev/null
+    sleep 1
+done
+kill $TAIL_PID 2>/dev/null
+
+journalctl -u nginx --since "2 minutes ago" --no-pager
+\end{lstlisting}
+
+    \item Uji konfigurasi firewall ufw:
+\begin{lstlisting}[language=bash, caption={Mengonfigurasi firewall ufw}]
+sudo ufw status
+sudo ufw allow ssh
+sudo ufw allow 80/tcp
+sudo ufw allow 8080/tcp
+sudo ufw --force enable
+sudo ufw status verbose
+curl -s http://localhost:8080 > /dev/null && echo "Port 8080 dapat diakses"
+\end{lstlisting}
+
+    \item Bersihkan setelah praktikum:
+\begin{lstlisting}[language=bash, caption={Membersihkan setelah praktikum}]
+sudo ufw --force disable
+sudo rm /etc/nginx/sites-enabled/lab-site
+sudo rm /etc/nginx/sites-available/lab-site
+sudo rm -rf /var/www/lab-site
+sudo systemctl reload nginx
+\end{lstlisting}
+\end{enumerate}
+
+\begin{exercisebox}[10.5]
+\begin{enumerate}
+    \item Mengapa pola \dir{sites-available}/\dir{sites-enabled} dengan symlink
+        lebih baik dibandingkan langsung meletakkan konfigurasi di
+        \dir{sites-enabled}? Apa keuntungannya dalam pengelolaan konfigurasi
+        sehari-hari?
+    \item Dari perintah \cmd{ufw allow from 192.168.1.0/24 to any port 3306},
+        jelaskan arti setiap bagian. Mengapa aturan semacam ini penting untuk
+        database server?
+    \item Jika Anda menjalankan \cmd{sudo ufw default deny incoming} sebelum
+        menambahkan aturan \texttt{allow ssh}, apa yang akan terjadi pada koneksi
+        SSH Anda saat ini dan koneksi baru setelahnya?
+\end{enumerate}
+\end{exercisebox}
+
+%% ========================================================================
+\section{Troubleshooting Layanan}
+\label{sec:service-troubleshooting}
+%% ========================================================================
+
+Mendiagnosis dan memperbaiki layanan yang bermasalah adalah keterampilan inti
+administrator sistem. Pendekatan yang sistematis jauh lebih efektif dari
+coba-coba acak.
+
+\subsection{Metodologi Troubleshooting Layanan}
+
+Saat sebuah layanan bermasalah, ikuti urutan diagnostik berikut:
+
+\begin{enumerate}
+    \item \textbf{Periksa status} dengan \cmd{systemctl status}
+    \item \textbf{Baca log} dengan \cmd{journalctl -u namaservice -n 50}
+    \item \textbf{Validasi konfigurasi} menggunakan perintah test aplikasi
+    \item \textbf{Periksa dependensi} (jaringan, file, database)
+    \item \textbf{Uji manual} dengan menjalankan \texttt{ExecStart} langsung
+    \item \textbf{Periksa izin} file, direktori, dan user
+\end{enumerate}
+
+\subsection{Perintah Diagnostik}
+
+\begin{lstlisting}[language=bash, caption={Perintah diagnostik layanan}]
+systemctl status nginx.service
+journalctl -u nginx.service -n 50 --no-pager
+journalctl -u nginx.service -p err --no-pager
+journalctl -xe --no-pager | head -50
+systemctl --failed
+journalctl -k | grep -i error | tail -20
+\end{lstlisting}
+
+Perintah \cmd{journalctl -xe} menampilkan akhir journal dengan konteks penjelasan
+(\texttt{-x} menambahkan teks penjelasan untuk pesan tertentu, \texttt{-e} melompat
+ke akhir). Ini adalah perintah pertama yang harus dijalankan setelah layanan gagal
+start.
+
+\subsubsection{Troubleshooting Unit File}
+
+\begin{lstlisting}[language=bash, caption={Troubleshooting unit file dan eksekusi}]
+systemctl cat nginx.service
+systemd-analyze verify nginx.service
+systemctl show nginx.service | grep -E "ExecStart|User|Group|WorkingDir"
+sudo -u www-data /usr/sbin/nginx -t
+sudo nginx -t 2>&1
+\end{lstlisting}
+
+Perintah \cmd{systemd-analyze verify} memvalidasi unit file secara menyeluruh, sering
+menemukan kesalahan seperti direktif yang salah atau path yang tidak ada. Menjalankan
+\texttt{ExecStart} secara manual dengan user yang sama (\cmd{sudo -u user perintah})
+sering kali langsung menampilkan error yang lebih jelas daripada membaca dari journal.
+
+\subsubsection{Troubleshooting Dependensi dan Jaringan}
+
+\begin{lstlisting}[language=bash, caption={Memeriksa dependensi dan koneksi}]
+systemctl list-dependencies nginx.service
+systemctl is-active postgresql.service
+ss -tlnp | grep :80
+ss -tlnp | grep :443
+lsof -i :80
+ls -la /etc/nginx/nginx.conf
+ls -la /var/log/nginx/
+sudo nginx -T 2>&1 | head -30
+\end{lstlisting}
+
+Perintah \cmd{ss -tlnp} sangat cepat untuk memeriksa port mana yang sudah digunakan
+(penyebab umum \texttt{Address already in use}). Perintah \cmd{nginx -T} menampilkan
+konfigurasi aktif beserta validasinya, memperlihatkan konfigurasi yang benar-benar
+dibaca oleh nginx.
+
+\subsubsection{Troubleshooting Startup Lambat}
+
+\begin{lstlisting}[language=bash, caption={Menganalisis waktu boot dan start layanan}]
+systemd-analyze
+systemd-analyze blame | head -20
+systemd-analyze critical-chain
+systemd-analyze plot > /tmp/boot-plot.svg
+systemctl show nginx --property=ActiveEnterTimestamp,InactiveEnterTimestamp
+\end{lstlisting}
+
+Perintah \cmd{systemd-analyze plot} menghasilkan grafik SVG yang memvisualisasikan
+waktu start setiap unit, sangat berguna untuk memahami bottleneck saat boot.
+Perintah \cmd{systemd-analyze critical-chain} menampilkan rantai kritis: urutan
+unit yang paling lama dan menjadi hambatan waktu boot.
+
+%% ========================================================================
 \section{Rangkuman}
+\label{sec:service-summary}
+%% ========================================================================
+
+Bab ini telah membahas lima topik utama manajemen layanan di Linux dengan systemd:
+
+\begin{description}
+    \item[Sistem Init dan systemd] Evolusi dari SysV init ke systemd. Arsitektur
+        berbasis unit (service, socket, timer, target, mount, path). Lokasi unit file
+        di \dir{/lib/systemd/system/} (distribusi) dan \dir{/etc/systemd/system/}
+        (administrator).
+
+    \item[Mengelola Layanan dengan systemctl] Perintah kunci: \cmd{start}/\cmd{stop}/
+        \cmd{restart}/\cmd{reload}, \cmd{enable}/\cmd{disable}/\cmd{mask},
+        \cmd{status}/\cmd{show}. Perbedaan \texttt{restart} (ada downtime) vs
+        \texttt{reload} (tanpa downtime). Perintah \cmd{systemctl --failed} untuk
+        melihat unit yang bermasalah.
+
+    \item[Membuat Unit File Kustom] Anatomi tiga bagian: \texttt{[Unit]} (metadata
+        dan dependensi), \texttt{[Service]} (eksekusi dan restart policy), dan
+        \texttt{[Install]} (konfigurasi enable). Penggunaan drop-in override
+        (\cmd{systemctl edit}) untuk modifikasi unit tanpa mengubah file paket.
+        Systemd timer sebagai alternatif cron yang lebih powerful.
+
+    \item[Logging dengan journald] Perintah \cmd{journalctl} dengan filter
+        \texttt{-u} (unit), \texttt{-p} (prioritas), \texttt{--since/--until}
+        (waktu), \texttt{-b} (boot), dan \texttt{-k} (kernel). Format output
+        \texttt{json} untuk otomasi. Manajemen ukuran journal dengan
+        \texttt{--vacuum-size} dan \texttt{--vacuum-time}.
+
+    \item[Layanan Jaringan dan Troubleshooting] Konfigurasi SSH aman dengan
+        \file{sshd\_config}, nginx dengan virtual host, dan firewall ufw.
+        Metodologi troubleshooting: status → log → validasi konfigurasi →
+        dependensi → uji manual. Penggunaan \cmd{systemd-analyze} untuk
+        menganalisis performa boot.
+\end{description}
+
+%% ========================================================================
 \section{Latihan}
+\label{sec:service-exercises}
+%% ========================================================================
+
+\begin{exercisebox}[10.A]
+\textbf{Automatisasi Backup dengan Systemd Timer}
+
+Buat sistem backup otomatis menggunakan systemd timer yang menjalankan skrip
+backup setiap hari.
+
+\begin{enumerate}
+    \item Buat skrip \file{/usr/local/bin/daily-backup.sh} yang melakukan backup
+        direktori \dir{/etc} ke \dir{/backup/etc-\$(date +\%Y\%m\%d).tar.gz} dan
+        menghapus backup yang lebih lama dari 7 hari.
+    \item Buat unit file \file{daily-backup.service} dengan
+        \texttt{Type=oneshot}, jalankan sebagai user \texttt{root}, dan arahkan
+        output ke journal.
+    \item Buat unit file \file{daily-backup.timer} yang menjalankan service
+        setiap hari pukul 03:00, dengan \texttt{Persistent=true}.
+    \item Aktifkan timer, verifikasi dengan \cmd{systemctl list-timers}, dan
+        uji dengan \cmd{systemctl start daily-backup.service} secara manual.
+    \item Gunakan \cmd{journalctl -u daily-backup.service} untuk memverifikasi
+        log backup berjalan dengan benar.
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[10.B]
+\textbf{Konfigurasi SSH Hardening}
+
+Perkuat keamanan konfigurasi SSH server mengikuti praktik terbaik keamanan.
+
+\begin{enumerate}
+    \item Buat backup konfigurasi SSH: \cmd{sudo cp /etc/ssh/sshd\_config
+        /etc/ssh/sshd\_config.orig}.
+    \item Terapkan konfigurasi hardening: nonaktifkan login root
+        (\texttt{PermitRootLogin no}), set \texttt{MaxAuthTries 3},
+        \texttt{LoginGraceTime 30}, dan \texttt{ClientAliveInterval 300}.
+    \item Buat user baru dengan \cmd{useradd -m -s /bin/bash labuser} dan
+        tambahkan ke sudoers. Pastikan user ini bisa login via SSH sebelum
+        menonaktifkan root login.
+    \item Validasi konfigurasi dengan \cmd{sudo sshd -t} dan reload SSH.
+    \item Buat drop-in override untuk ssh.service yang menambahkan
+        \texttt{Restart=on-failure} dan \texttt{RestartSec=5s} menggunakan
+        \cmd{systemctl edit ssh.service}.
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[10.C]
+\textbf{Monitoring dan Pemulihan Layanan}
+
+Bangun sistem monitoring sederhana yang mendeteksi layanan gagal dan mencatatnya.
+
+\begin{enumerate}
+    \item Buat skrip \file{/usr/local/bin/check-services.sh} yang memeriksa
+        status beberapa service (ssh, nginx, cron) dan mencatat hasilnya ke
+        journal menggunakan \cmd{systemd-cat}.
+    \item Buat unit file \file{service-monitor.service} dan
+        \file{service-monitor.timer} yang menjalankan skrip monitoring setiap
+        5 menit.
+    \item Hentikan nginx dengan \cmd{sudo systemctl stop nginx}, tunggu satu
+        siklus timer, lalu periksa log monitoring dengan \cmd{journalctl -t
+        service-monitor}.
+    \item Gunakan \cmd{systemctl --failed} untuk melihat semua unit yang
+        bermasalah dan \cmd{journalctl -xe} untuk membaca penjelasan errornya.
+    \item Catat: berapa banyak unit yang gagal di sistem Anda? Untuk setiap
+        unit yang gagal, identifikasi penyebab dan solusinya.
+\end{enumerate}
+\end{exercisebox}
+
+%% ========================================================================
 \section{Referensi Tambahan}
+\label{sec:service-references}
+%% ========================================================================
+
+\begin{itemize}
+    \item \textbf{systemd dokumentasi resmi}: \url{https://systemd.io/}
+    \item \textbf{systemd.service manual}: \cmd{man systemd.service} atau
+        \url{https://www.freedesktop.org/software/systemd/man/systemd.service.html}
+    \item \textbf{Arch Linux Wiki --- systemd}: referensi komprehensif tentang
+        systemd, berlaku untuk semua distribusi. \\
+        \url{https://wiki.archlinux.org/title/Systemd}
+    \item \textbf{DigitalOcean --- How To Use Systemctl to Manage Systemd
+        Services and Units}: \\
+        \url{https://www.digitalocean.com/community/tutorials/how-to-use-systemctl-to-manage-systemd-services-and-units}
+    \item \textbf{Ubuntu Server Guide --- OpenSSH}: \\
+        \url{https://ubuntu.com/server/docs/service-openssh}
+    \item \textbf{nginx dokumentasi}: \url{https://nginx.org/en/docs/}
+\end{itemize}
