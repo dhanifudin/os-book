@@ -7,7 +7,7 @@
 
 Bab ini membahas dasar-dasar pemrograman Bash: membuat script, mengelola
 variabel, menulis struktur kontrol, mendefinisikan fungsi, memproses argumen,
-dan melakukan debugging. Konsep dibandingkan dengan Java agar mahasiswa yang
+dan melakukan debugging. Konsep dibandingkan dengan Java agar pembaca yang
 sudah mengenal pemrograman dapat membangun pemahaman lebih cepat.
 
 \begin{examplebox}[Bash sebagai bahasa pemrograman]
@@ -355,7 +355,7 @@ nano ~/praktikum-os/week09/scripts/grading-batch.sh
 \begin{lstlisting}[language=bash, caption={Isi grading-batch.sh}]
 #!/bin/bash
 # Script: grading-batch.sh
-# Proses daftar nilai mahasiswa
+# Proses daftar nilai Pembaca
 
 MAHASISWA=("Andi:92" "Budi:73" "Citra:55" "Deni:80" "Eka:45")
 
@@ -426,7 +426,7 @@ chmod +x ~/praktikum-os/week09/scripts/menu-sistem.sh
 
 \begin{exercisebox}[Latihan 9.3]
 Tambahkan ke script \texttt{grading-batch.sh} sebuah ringkasan di bagian
-bawah yang menampilkan: jumlah mahasiswa per grade (A, B, C, D, E)
+bawah yang menampilkan: jumlah peserta per grade (A, B, C, D, E)
 menggunakan perulangan \texttt{for} kedua yang mengiterasi array
 \texttt{MAHASISWA}.
 \end{exercisebox}
@@ -863,13 +863,13 @@ Kerjakan tugas di \texttt{\$HOME/praktikum-os/week09/}. Script di
 
 \subsection*{Tugas 1 Script Absensi Kelas}
 
-\textbf{Konteks:} instruktur mencatat kehadiran mahasiswa dari command line.
+\textbf{Konteks:} instruktur mencatat kehadiran peserta dari command line.
 
 \textbf{Instruksi:}
 \begin{enumerate}
   \item Buat script \texttt{absensi.sh} yang:
   \begin{itemize}
-    \item Menerima argumen nama mahasiswa dan status
+    \item Menerima argumen nama peserta dan status
       (\texttt{hadir}/\texttt{izin}/\texttt{alpha})
     \item Menyimpan entri ke \texttt{absensi-YYYY-MM-DD.txt}
       dengan format \texttt{[HH:MM] NAMA - STATUS}
