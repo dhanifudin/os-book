@@ -153,18 +153,22 @@ diinstal. Opsi \texttt{-c} menampilkan daftar file yang akan diinstal oleh paket
     \centering
     \caption{Padanan Perintah Package Manager Antar Distribusi}
     \label{tab:package-managers}
-    \begin{tabular}{@{}llll@{}}
-        \toprule
-        \textbf{Operasi} & \textbf{apt (Debian/Ubuntu)} & \textbf{dnf (RHEL/Fedora)} & \textbf{zypper (openSUSE)} \\
-        \midrule
-        Update index     & \texttt{apt update}        & \texttt{dnf check-update}   & \texttt{zypper refresh}   \\
-        Upgrade sistem   & \texttt{apt upgrade}       & \texttt{dnf upgrade}        & \texttt{zypper update}    \\
-        Install paket    & \texttt{apt install pkg}   & \texttt{dnf install pkg}    & \texttt{zypper install pkg} \\
-        Hapus paket      & \texttt{apt remove pkg}    & \texttt{dnf remove pkg}     & \texttt{zypper remove pkg} \\
-        Cari paket       & \texttt{apt search pkg}    & \texttt{dnf search pkg}     & \texttt{zypper search pkg} \\
-        Info paket       & \texttt{apt show pkg}      & \texttt{dnf info pkg}       & \texttt{zypper info pkg}  \\
-        \bottomrule
-    \end{tabular}
+    \begin{tblr}{
+        colspec = {lX[l]X[l]X[l]},
+        width = \linewidth,
+        hlines,
+        vlines,
+        row{1} = {font=\bfseries},
+        cells = {font=\small}
+    }
+    \textbf{Operasi} & \textbf{apt (Debian/Ubuntu)} & \textbf{dnf (RHEL/Fedora)} & \textbf{zypper (openSUSE)} \\
+    Update index     & apt update        & dnf check-update   & zypper refresh   \\
+    Upgrade sistem   & apt upgrade       & dnf upgrade        & zypper update    \\
+    Install paket    & apt install pkg   & dnf install pkg    & zypper install pkg \\
+    Hapus paket      & apt remove pkg    & dnf remove pkg     & zypper remove pkg \\
+    Cari paket       & apt search pkg    & dnf search pkg     & zypper search pkg \\
+    Info paket       & apt show pkg      & dnf info pkg       & zypper info pkg  \\
+    \end{tblr}
 \end{table}
 
 Meski sintaksnya berbeda, konsep di balik semua package manager ini sama: indeks
@@ -903,8 +907,7 @@ dua kata) dan sudah termasuk dalam instalasi Docker Engine modern. Versi lama
 
 \subsubsection{Struktur File docker-compose.yml}
 
-\begin{lstlisting}[language=bash, caption={Contoh docker-compose.yml stack web + database}]
-cat > docker-compose.yml << 'EOF'
+\begin{lstlisting}[caption={Contoh docker-compose.yml stack web + database}]
 version: "3.9"
 
 services:
@@ -940,7 +943,6 @@ services:
 
 volumes:
   db-data:
-EOF
 \end{lstlisting}
 
 File \file{docker-compose.yml} mendefinisikan beberapa bagian utama. Bagian
@@ -994,39 +996,37 @@ sedang berjalan, setara dengan \cmd{docker exec} untuk satu container.
     \centering
     \caption{Perbandingan Dockerfile dan Docker Compose}
     \label{tab:dockerfile-vs-compose}
-    \begin{tabular}{@{}lp{5cm}p{5.5cm}@{}}
-        \toprule
-        \textbf{Aspek} & \textbf{Dockerfile} & \textbf{docker-compose.yml} \\
-        \midrule
-        Tujuan utama
-            & Mendefinisikan \emph{bagaimana} sebuah image dibangun
-            & Mendefinisikan \emph{bagaimana} beberapa container dijalankan bersama \\
-        \addlinespace
-        Scope
-            & Satu image / satu container
-            & Satu stack (banyak service/container) \\
-        \addlinespace
-        Isi file
-            & Instruksi build: \texttt{FROM}, \texttt{RUN}, \texttt{COPY}, \texttt{CMD}, dll.
-            & Konfigurasi runtime: port, volume, env var, dependensi antar service \\
-        \addlinespace
-        Jaringan
-            & Tidak diatur (diserahkan ke \cmd{docker run})
-            & Membuat jaringan internal otomatis; antar service saling bisa dicapai via nama service \\
-        \addlinespace
-        Perintah utama
-            & \cmd{docker build}
-            & \cmd{docker compose up / down} \\
-        \addlinespace
-        Hubungan
-            & Bisa dirujuk dari Compose via kunci \texttt{build:}
-            & Bisa menggunakan image hasil Dockerfile \\
-        \addlinespace
-        Kasus penggunaan
-            & Membangun image kustom untuk aplikasi
-            & Menjalankan lingkungan development, staging, atau produksi lengkap \\
-        \bottomrule
-    \end{tabular}
+    \begin{tblr}{
+        colspec = {lX[l]X[l]},
+        width = \linewidth,
+        hlines,
+        vlines,
+        row{1} = {font=\bfseries},
+        cells = {font=\small}
+    }
+    \textbf{Aspek} & \textbf{Dockerfile} & \textbf{docker-compose.yml} \\
+    Tujuan utama
+        & Mendefinisikan \emph{bagaimana} sebuah image dibangun
+        & Mendefinisikan \emph{bagaimana} beberapa container dijalankan bersama \\
+    Scope
+        & Satu image / satu container
+        & Satu stack (banyak service/container) \\
+    Isi file
+        & Instruksi build: FROM, RUN, COPY, CMD, dll.
+        & Konfigurasi runtime: port, volume, env var, dependensi antar service \\
+    Jaringan
+        & Tidak diatur (diserahkan ke docker run)
+        & Membuat jaringan internal otomatis; antar service saling bisa dicapai via nama service \\
+    Perintah utama
+        & docker build
+        & docker compose up / down \\
+    Hubungan
+        & Bisa dirujuk dari Compose via kunci build:
+        & Bisa menggunakan image hasil Dockerfile \\
+    Kasus penggunaan
+        & Membangun image kustom untuk aplikasi
+        & Menjalankan lingkungan development, staging, atau produksi lengkap \\
+    \end{tblr}
 \end{table}
 
 \begin{notebox}
@@ -1368,9 +1368,10 @@ Bab ini telah membahas lima topik utama manajemen aplikasi di Linux:
         mengelola dependensi otomatis. Perintah kunci: \cmd{apt update}, \cmd{apt
         install}, \cmd{apt purge}, \cmd{dpkg -L}, \cmd{dpkg -S}.
 
-    \item[Manajemen Repositori] Konfigurasi sumber paket melalui \dir{/etc/apt/sources.list}
-        dan \dir{/etc/apt/sources.list.d/}. Penambahan repositori pihak ketiga yang
-        aman menggunakan metode \texttt{signed-by} dengan GPG key tersendiri.
+    \item[Manajemen Repositori] Konfigurasi sumber paket melalui \\
+        \file{/etc/apt/sources.list} dan \dir{/etc/apt/sources.list.d}. \\
+        Penambahan repositori pihak ketiga yang aman menggunakan metode \\
+        \texttt{signed-by} dengan GPG key tersendiri.
 
     \item[Kompilasi dari Source] Pola tiga langkah autotools: \cmd{./configure},
         \cmd{make}, \cmd{make install}. Penggunaan \cmd{checkinstall} untuk membungkus

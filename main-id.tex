@@ -28,13 +28,6 @@
 %% Ensure Indonesian is selected
 \selectlanguage{indonesian}
 
-%% Force contentsname to Indonesian - must be AFTER selectlanguage
-\babel@toc{indonesian}{}%
-\AtBeginDocument{%
-    \babel@toc{indonesian}{}%
-    \def\contentsname{Daftar Isi}%
-}
-
 %% ========================================================================
 %% Informasi Buku
 %% ========================================================================
@@ -64,13 +57,16 @@
 \input{frontmatter/id/preface}
 
 % Daftar Isi
+\renewcommand{\contentsname}{Daftar Isi}
 \tableofcontents
 
 % Daftar Gambar (opsional)
-\listoffigures
+% \renewcommand{\listfigurename}{Daftar Gambar}
+% \listoffigures
 
 % Daftar Tabel (opsional)
-\listoftables
+% \renewcommand{\listtablename}{Daftar Tabel}
+% \listoftables
 
 %% ------------------------------------------------------------------------
 %% Main Matter (Isi Utama Buku)
@@ -134,10 +130,10 @@
 \input{appendices/id/command-reference}
 
 % Lampiran B: Solusi Latihan
-\input{appendices/id/exercise-solutions}
+% \input{appendices/id/exercise-solutions}
 
 % Lampiran C: Glossary
-\input{appendices/id/glossary}
+% \input{appendices/id/glossary}
 
 %% ------------------------------------------------------------------------
 %% Back Matter (Halaman Belakang)
