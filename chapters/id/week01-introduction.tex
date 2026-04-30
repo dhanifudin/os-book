@@ -131,17 +131,21 @@ Tabel~\ref{tab:os-comparison} menunjukkan perbandingan sistem operasi modern yan
     \centering
     \caption{Perbandingan Sistem Operasi Modern}
     \label{tab:os-comparison}
-    \begin{tabular}{@{}lllll@{}}
-        \toprule
+    \begin{tblr}{
+        colspec = {lX[l]X[l]X[l]X[l]},
+        width = \linewidth,
+        hlines,
+        vlines,
+        row{1} = {font=\bfseries},
+        cells = {font=\small}
+    }
         \textbf{OS} & \textbf{Kernel Type} & \textbf{Primary Use} & \textbf{License} & \textbf{Market Share} \\
-        \midrule
         Windows & Hybrid & Desktop/Business & Proprietary & Desktop: 75\% \\
         macOS & Hybrid (XNU) & Creative/Dev & Proprietary & Desktop: 15\% \\
         Linux & Monolithic & Server/Dev & Open Source & Server: 60\% \\
         Android & Linux-based & Mobile & Open Source & Mobile: 70\% \\
         iOS & Hybrid (XNU) & Mobile & Proprietary & Mobile: 28\% \\
-        \bottomrule
-    \end{tabular}
+    \end{tblr}
 \end{table}
 
 \begin{tipbox}
@@ -398,7 +402,7 @@ Perkembangan sistem operasi telah melalui beberapa era penting:
 
     \item[1980s: Era PC] MS-DOS (1981) untuk IBM PC. Apple Macintosh (1984) dengan GUI. Windows 1.0 (1985) sebagai shell di atas DOS.
 
-    \item[1991: Linux] Linus Torvalds, mahasiswa dari Finland, merilis Linux kernel 0.01. Free, open source, Unix-compatible.
+    \item[1991: Linux] Linus Torvalds, dari Finland, merilis Linux kernel 0.01. Free, open source, Unix-compatible.
 
     \item[1993: Windows NT] Microsoft merilis Windows NT dengan arsitektur hybrid kernel untuk pasar enterprise.
 
@@ -1316,4 +1320,3 @@ Tulis refleksi Anda dalam 300-500 kata disertai dengan dokumentasi.
     \item Microsoft Docs: \url{https://docs.microsoft.com}
     \item Apple Developer: \url{https://developer.apple.com/documentation}
 \end{itemize}
-

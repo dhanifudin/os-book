@@ -1571,19 +1571,24 @@ yang berbeda.
     \centering
     \caption{Perbandingan \cmd{su} dan \cmd{sudo}}
     \label{tab:su-vs-sudo}
-    \begin{tabular}{@{}lll@{}}
-        \toprule
-        \textbf{Aspek} & \textbf{su} & \textbf{sudo} \\
-        \midrule
-        Autentikasi      & Password \emph{target} user  & Password \emph{pengguna sendiri} \\
-        Scope            & Beralih penuh ke sesi user lain & Jalankan satu perintah saja \\
-        Konfigurasi      & Tidak ada (akses semua atau tidak) & \file{/etc/sudoers} per-perintah \\
-        Logging          & Tidak ada (default)          & Ya, di \file{/var/log/auth.log} \\
-        Granularitas     & Semua atau tidak sama sekali & Per-perintah, per-host, per-user \\
-        Berbagi password & Root password harus diketahui banyak orang & Tidak perlu berbagi password \\
-        Rekomendasi      & Kurang disarankan untuk produksi & Direkomendasikan \\
-        \bottomrule
-    \end{tabular}
+    \begin{tblr}{
+        colspec = {lX[l]X[l]X[l]},
+        width = \linewidth,
+        hlines,
+        vlines,
+        row{1} = {font=\bfseries},
+        cells = {font=\small},
+        cell{1}{1} = {font=\bfseries}
+    }
+    \textbf{Aspek} & \textbf{su} & \textbf{sudo} \\
+    Autentikasi      & Password \emph{target} user  & Password \emph{pengguna sendiri} \\
+    Scope            & Beralih penuh ke sesi user lain & Jalankan satu perintah saja \\
+    Konfigurasi      & Tidak ada (akses semua atau tidak) & \file{/etc/sudoers} per-perintah \\
+    Logging          & Tidak ada (default)          & Ya, di \file{/var/log/auth.log} \\
+    Granularitas     & Semua atau tidak sama sekali & Per-perintah, per-host, per-user \\
+    Berbagi password & Root password harus diketahui banyak orang & Tidak perlu berbagi password \\
+    Rekomendasi      & Kurang disarankan untuk produksi & Direkomendasikan \\
+    \end{tblr}
 \end{table}
 
 \begin{notebox}
@@ -1981,15 +1986,19 @@ Panduan penetapan nilai inode quota:
     \centering
     \caption{Jenis Limit dalam Disk Quota}
     \label{tab:quota-limits}
-    \begin{tabular}{@{}llp{8cm}@{}}
-        \toprule
-        \textbf{Jenis} & \textbf{Berlaku pada} & \textbf{Deskripsi} \\
-        \midrule
-        Soft limit   & Blok dan Inode & Batas yang bisa dilampaui sementara (dalam grace period). Pengguna mendapat peringatan. \\
-        Hard limit   & Blok dan Inode & Batas absolut yang tidak bisa dilampaui sama sekali. Operasi tulis akan gagal dengan error. \\
-        Grace period & Soft limit     & Waktu maksimum boleh melampaui soft limit (default 7 hari). Setelah lewat, soft limit diperlakukan seperti hard limit. \\
-        \bottomrule
-    \end{tabular}
+    \begin{tblr}{
+        colspec = {lQ[2cm,l]X[l]},
+        width = \linewidth,
+        hlines,
+        vlines,
+        row{1} = {font=\bfseries},
+        cells = {font=\small}
+    }
+    \textbf{Jenis} & \textbf{Berlaku pada} & \textbf{Deskripsi} \\
+    Soft limit   & Blok dan Inode & Batas yang bisa dilampaui sementara (dalam grace period). Pengguna mendapat peringatan. \\
+    Hard limit   & Blok dan Inode & Batas absolut yang tidak bisa dilampaui sama sekali. Operasi tulis akan gagal dengan error. \\
+    Grace period & Soft limit     & Waktu maksimum boleh melampaui soft limit (default 7 hari). Setelah lewat, soft limit diperlakukan seperti hard limit. \\
+    \end{tblr}
 \end{table}
 
 \begin{examplebox}[Skenario Soft vs Hard Limit]
@@ -2108,11 +2117,10 @@ lingkungan \var{EDITOR}) yang berisi data quota pengguna dalam format yang dapat
 
 \begin{lstlisting}[language=bash, caption={Menetapkan quota pengguna dengan edquota}]
 sudo edquota -u alice
-# ============================================================
 # Disk quotas for user alice (uid 1001):
 # Filesystem    blocks  soft     hard    inodes  soft   hard
 # /dev/sda1     2048    0        0       25      0      0
-# ============================================================
+
 # Contoh setelah diedit:
 # /dev/sda1     2048    1048576  1572864  25     10000  15000
 sudo edquota -g developers
@@ -2197,7 +2205,7 @@ sudo repquota -s /home
 # Block grace time: 7days; Inode grace time: 7days
 #                         Block limits               File limits
 # User            used    soft    hard  grace    used  soft  hard  grace
-# ----------------------------------------------------------------------
+
 # root      --    32M      0       0           1234     0     0
 # alice     --   950M     1G    1.5G           8500  10000 15000
 # bob       +-  1100M     1G    1.5G  6days    9800  10000 15000
@@ -2414,16 +2422,20 @@ Buat skrip shell \file{setup-user.sh} yang ketika dijalankan akan:
 %% ========================================================================
 
 \begin{itemize}
-    \item \textbf{Halaman manual}: \cmd{man chmod}, \cmd{man chown}, \cmd{man setfacl},
+    \item \textbf{Halaman manual}:
+        \cmd{man chmod}, \cmd{man chown}, \cmd{man setfacl},
         \cmd{man useradd}, \cmd{man sudoers}, \cmd{man edquota}
-    \item \textbf{Linux File System Hierarchy Standard}: \url{https://refspecs.linuxfoundation.org/fhs.shtml}
+    \item \textbf{Linux File System Hierarchy Standard}: \\
+        \url{https://refspecs.linuxfoundation.org/fhs.shtml}
     \item \textbf{Ubuntu Server Guide --- User Management}:
         \url{https://ubuntu.com/server/docs/security-users}
-    \item \textbf{Ubuntu Server Guide --- AppArmor} (lanjutan kontrol akses):
+    \item \textbf{Ubuntu Server Guide --- AppArmor}:
         \url{https://ubuntu.com/server/docs/security-apparmor}
     \item \textbf{POSIX Access Control Lists on Linux}:
-        \url{https://www.usenix.org/legacy/publications/library/proceedings/usenix03/tech/freenix03/full_papers/gruenbacher/gruenbacher.pdf}
-    \item \textbf{sudoers(5) manual}: \url{https://www.sudo.ws/docs/man/sudoers.man/}
+        \url{https://www.usenix.org/legacy/publications/library/}
+        \url{proceedings/usenix03/tech/freenix03/full_papers/gruenbacher/gruenbacher.pdf}
+    \item \textbf{sudoers(5) manual}:
+        \url{https://www.sudo.ws/docs/man/sudoers.man/}
     \item \textbf{The Linux Command Line} oleh William Shotts, Bab 9 (Permissions) ---
         tersedia gratis di \url{https://linuxcommand.org/tlcl.php}
 \end{itemize}

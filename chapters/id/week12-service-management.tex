@@ -5,17 +5,746 @@
 \chapter{Manajemen Layanan (Services)}
 \label{ch:service-management}
 
-Bab ini membahas sistem init di Linux, systemd, mengelola layanan,
-membuat unit file, dan troubleshooting layanan.
+Bab ini membahas bagaimana Linux mengelola layanan sistem dan layanan aplikasi,
+mulai dari konsep \textit{init system}, penggunaan \cmd{systemctl}, pembuatan
+\textit{unit file}, pengaturan dependensi, pemantauan log, hingga troubleshooting
+layanan yang gagal start. Fokus utama bab ini adalah \textbf{systemd} karena ia
+menjadi \textit{init system} standar pada Ubuntu Server 22.04 dan mayoritas
+distribusi Linux modern.
 
+\textbf{Tujuan Praktikum}
+
+Setelah menyelesaikan bab ini, pembaca diharapkan mampu:
+
+\begin{enumerate}
+    \item menjelaskan peran sistem init di Linux dan evolusinya;
+    \item mengelola layanan dengan \cmd{systemctl};
+    \item membaca, membuat, dan menyesuaikan \textit{unit file} systemd;
+    \item memahami dependensi dan urutan start layanan;
+    \item memantau status layanan dan log dengan \cmd{journalctl};
+    \item mengonfigurasi layanan jaringan umum seperti SSH, Apache, dan MySQL;
+    \item mengotomatisasi start-up dan shutdown layanan; dan
+    \item melakukan troubleshooting saat layanan gagal berjalan.
+\end{enumerate}
+
+\begin{notebox}
+Seluruh contoh di bab ini diasumsikan berjalan di Ubuntu Server 22.04. Sebagian
+besar perintah yang memodifikasi layanan membutuhkan \cmd{sudo}. Gunakan direktori
+kerja terpisah untuk eksperimen file unit kustom:
+\begin{lstlisting}[language=bash, caption={Menyiapkan direktori kerja praktikum layanan}]
+mkdir -p ~/praktikum-os/week12-services
+cd ~/praktikum-os/week12-services
+\end{lstlisting}
+\end{notebox}
+
+%% ========================================================================
 \section{Pengenalan Sistem Init}
+\label{sec:init-system}
+%% ========================================================================
+
+Sistem init adalah proses pertama di ruang pengguna yang dijalankan kernel setelah
+boot selesai memuat sistem dasar. Proses ini biasanya memiliki PID 1, dan bertugas
+melanjutkan proses boot, memulai layanan latar belakang, menjaga layanan tetap
+berjalan, serta menangani shutdown atau reboot sistem.
+
+Tanpa sistem init, kernel memang dapat berjalan, tetapi sistem tidak akan otomatis
+menjalankan layanan penting seperti SSH, logging, network manager, atau database.
+Karena itu, init system adalah penghubung utama antara kernel dan layanan pengguna.
+
+\subsection{Evolusi Init di Linux}
+
+Secara historis Linux mengenal beberapa pendekatan init system:
+
+\begin{description}
+    \item[SysV init] Model klasik berbasis skrip shell di direktori seperti
+        \dir{/etc/init.d/}. Ia sederhana dan mudah dipahami, tetapi urutan start
+        bersifat relatif linear dan manajemen dependensinya terbatas.
+    \item[Upstart] Pendekatan berbasis event yang pernah digunakan Ubuntu sebelum
+        migrasi ke systemd. Upstart memperbaiki sebagian keterbatasan SysV init,
+        tetapi adopsinya tidak menjadi standar lintas distribusi.
+    \item[systemd] Init system modern yang berbasis \textit{unit}. Ia menyediakan
+        start paralel, manajemen dependensi yang eksplisit, socket activation,
+        logging terintegrasi, dan alat administrasi yang seragam.
+\end{description}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Perbandingan pendekatan init system di Linux}
+    \label{tab:init-systems}
+    \begin{tblr}{
+        colspec = {lX[l]X[l]X[l]},
+        width = \linewidth,
+        hlines,
+        vlines,
+        row{1} = {font=\bfseries},
+        cells = {font=\small}
+    }
+    \textbf{Aspek} & \textbf{SysV init} & \textbf{Upstart} & \textbf{systemd} \\
+    Model utama & Skrip shell berurutan & Event-based jobs & Unit-based service manager \\
+    Dependensi & Terbatas, implisit & Lebih baik dari SysV & Eksplisit dan kaya \\
+    Kecepatan boot & Cenderung serial & Lebih fleksibel & Start paralel, lebih cepat \\
+    Logging & Terpisah & Terpisah & Terintegrasi dengan journal \\
+    Status saat ini & Legacy / kompatibilitas & Hampir tidak dipakai & Standar modern \\
+    \end{tblr}
+\end{table}
+
+Di Ubuntu Server 22.04, perintah utama administrasi layanan terpusat pada
+\cmd{systemctl} untuk kontrol layanan dan \cmd{journalctl} untuk log.
+
+\begin{lstlisting}[language=bash, caption={Memeriksa init system yang digunakan}]
+ps -p 1 -o pid,comm,args=
+systemctl --version
+\end{lstlisting}
+
+Jika PID 1 menunjukkan \texttt{systemd}, berarti seluruh manajemen layanan modern
+pada sistem tersebut dikendalikan oleh systemd.
+
+%% ========================================================================
 \section{Mengelola Layanan dengan systemctl}
-\section{Membuat File Unit Sistem}
+\label{sec:systemctl-services}
+%% ========================================================================
+
+\cmd{systemctl} adalah antarmuka utama untuk mengelola unit systemd. Walau systemd
+tidak hanya mengelola \textit{service}, dalam praktik administrasi sehari-hari
+unit yang paling sering disentuh memang unit layanan.
+
+\subsection{Perintah Dasar systemctl}
+
+\begin{lstlisting}[language=bash, caption={Perintah dasar mengelola layanan}]
+sudo systemctl start ssh
+sudo systemctl stop ssh
+sudo systemctl restart ssh
+sudo systemctl reload ssh
+sudo systemctl status ssh
+sudo systemctl is-active ssh
+sudo systemctl is-enabled ssh
+\end{lstlisting}
+
+Makna perintah-perintah di atas:
+
+\begin{itemize}
+    \item \cmd{start}: menjalankan layanan jika sedang mati.
+    \item \cmd{stop}: menghentikan layanan.
+    \item \cmd{restart}: menghentikan lalu menjalankan ulang layanan.
+    \item \cmd{reload}: memuat ulang konfigurasi tanpa memutus proses utama, jika
+        layanan mendukungnya.
+    \item \cmd{status}: menampilkan ringkasan status, PID utama, dan log terakhir.
+    \item \cmd{is-active}: mengembalikan status singkat seperti \texttt{active}
+        atau \texttt{inactive}.
+    \item \cmd{is-enabled}: memeriksa apakah layanan otomatis start saat boot.
+\end{itemize}
+
+\begin{warningbox}
+Jangan langsung mengasumsikan \cmd{restart} aman pada semua layanan. Untuk database,
+web server produksi, atau aplikasi stateful, restart dapat memutus koneksi aktif.
+Jika cukup, gunakan \cmd{reload} agar konfigurasi baru dimuat tanpa mematikan proses.
+\end{warningbox}
+
+\subsection{Enable, Disable, Mask, dan Unmask}
+
+Selain status runtime, systemd juga mengelola apakah layanan akan berjalan otomatis
+saat boot.
+
+\begin{lstlisting}[language=bash, caption={Mengatur layanan saat boot}]
+sudo systemctl enable ssh
+sudo systemctl disable ssh
+sudo systemctl enable --now apache2
+sudo systemctl disable --now apache2
+sudo systemctl mask cups
+sudo systemctl unmask cups
+\end{lstlisting}
+
+Perbedaan istilah penting:
+
+\begin{description}
+    \item[enable] Membuat symlink agar unit dipanggil oleh target boot yang relevan.
+    \item[disable] Menghapus symlink auto-start, tetapi layanan masih bisa dijalankan manual.
+    \item[mask] Memblokir layanan sepenuhnya dengan mengarahkannya ke \file{/dev/null},
+        sehingga bahkan dependensi lain tidak bisa men-start-nya tanpa \cmd{unmask}.
+\end{description}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Perbedaan status pengelolaan layanan di systemd}
+    \label{tab:service-states}
+    \begin{tblr}{
+        colspec = {lQ[5cm,l]X[l]},
+        width = \linewidth,
+        hlines,
+        vlines,
+        row{1} = {font=\bfseries},
+        cells = {font=\small}
+    }
+    \textbf{Status} & \textbf{Makna} & \textbf{Dapat start manual?} \\
+    active & Layanan sedang berjalan & Ya \\
+    inactive & Layanan tidak berjalan & Ya \\
+    enabled & Akan start otomatis saat boot & Ya \\
+    disabled & Tidak start otomatis saat boot & Ya \\
+    masked & Diblokir total oleh systemd & Tidak \\
+    failed & Start gagal atau crash & Bergantung penyebab \\
+    \end{tblr}
+\end{table}
+
+\subsection{Melihat Daftar Unit}
+
+\begin{lstlisting}[language=bash, caption={Melihat unit systemd}]
+systemctl list-units --type=service
+systemctl list-units --type=service --state=running
+systemctl list-unit-files --type=service
+systemctl list-dependencies multi-user.target
+\end{lstlisting}
+
+Perintah-perintah ini berguna untuk audit layanan yang aktif, layanan yang tersedia,
+dan hubungan dependensi pada target boot tertentu.
+
+%% ========================================================================
+\section{Membuat dan Menyesuaikan File Unit Sistem}
+\label{sec:unit-files}
+%% ========================================================================
+
+Systemd mengelola berbagai jenis unit seperti \texttt{service}, \texttt{socket},
+\texttt{timer}, \texttt{mount}, dan \texttt{target}. Untuk layanan aplikasi,
+unit yang paling umum adalah \texttt{.service}.
+
+\subsection{Struktur Unit File}
+
+File unit biasanya berada di salah satu lokasi berikut:
+
+\begin{itemize}
+    \item \file{/lib/systemd/system/} atau \file{/usr/lib/systemd/system/}: unit bawaan paket.
+    \item \file{/etc/systemd/system/}: override dan unit kustom lokal.
+    \item \file{~/.config/systemd/user/}: unit level user.
+\end{itemize}
+
+Sebuah unit \texttt{service} sederhana memiliki tiga blok utama:
+
+\begin{lstlisting}[language=bash, caption={Contoh unit file systemd sederhana}]
+[Unit]
+Description=Simple HTTP Demo Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 -m http.server 9000
+WorkingDirectory=/home/user/demo
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+\end{lstlisting}
+
+Penjelasan blok-bloknya:
+
+\begin{description}
+    \item[[Unit]] Metadata umum dan dependensi dasar.
+    \item[[Service]] Cara proses dijalankan, dihentikan, dan dipantau.
+    \item[[Install]] Menentukan bagaimana unit dihubungkan ke target saat di-enable.
+\end{description}
+
+\subsection{Field Penting pada [Service]}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Field penting dalam unit \texttt{service}}
+    \label{tab:service-unit-fields}
+    \begin{tblr}{
+        colspec = {lX[l]X[l]},
+        width = \linewidth,
+        hlines,
+        vlines,
+        row{1} = {font=\bfseries},
+        cells = {font=\small}
+    }
+    \textbf{Field} & \textbf{Contoh} & \textbf{Fungsi} \\
+    Type & \texttt{simple} & Menentukan model proses utama layanan \\
+    ExecStart & \texttt{/usr/bin/app} & Perintah utama untuk start layanan \\
+    ExecStop & \texttt{pkill app} & Perintah saat layanan dihentikan \\
+    WorkingDirectory & \texttt{/opt/app} & Direktori kerja proses \\
+    User & \texttt{User=www-data} & Menjalankan layanan sebagai user tertentu \\
+    Group & \texttt{Group=www-data} & Menjalankan layanan sebagai group tertentu \\
+    Restart & \texttt{Restart=on-failure} & Kebijakan restart otomatis \\
+    Environment & \texttt{Environment=PORT=8080} & Variabel lingkungan untuk proses \\
+    \end{tblr}
+\end{table}
+
+\subsection{Membuat Unit Kustom}
+
+Contoh berikut membuat layanan sederhana yang menjalankan server HTTP bawaan Python.
+
+\begin{lstlisting}[language=bash, caption={Membuat unit file kustom}]
+mkdir -p ~/praktikum-os/week12-services/demo-site
+echo "Halo dari layanan systemd" > ~/praktikum-os/week12-services/demo-site/index.html
+
+sudo tee /etc/systemd/system/demo-http.service > /dev/null <<'EOF'
+[Unit]
+Description=Demo HTTP Service
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=/home/$USER/praktikum-os/week12-services/demo-site
+ExecStart=/usr/bin/python3 -m http.server 9000
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+\end{lstlisting}
+
+Setelah membuat atau mengubah unit file, systemd harus diminta membaca ulang definisinya:
+
+\begin{lstlisting}[language=bash, caption={Memuat ulang unit systemd dan menjalankan layanan}]
+sudo systemctl daemon-reload
+sudo systemctl start demo-http
+sudo systemctl status demo-http
+curl http://localhost:9000
+\end{lstlisting}
+
+\begin{notebox}
+Perintah \cmd{daemon-reload} tidak me-restart semua layanan. Ia hanya meminta systemd
+membaca ulang definisi unit file dari disk.
+\end{notebox}
+
+\subsection{Override Tanpa Mengubah File Paket}
+
+Untuk layanan bawaan paket, hindari mengedit unit bawaan paket secara langsung.
+Gunakan mekanisme override:
+
+\begin{lstlisting}[language=bash, caption={Membuat override unit file}]
+sudo systemctl edit ssh
+\end{lstlisting}
+
+Perintah ini membuat file override di bawah
+\file{/etc/systemd/system/} lalu menyimpan override sebagai
+\file{ssh.service.d/override.conf}.
+Dengan pendekatan ini, perubahan tidak hilang saat paket di-upgrade.
+
+%% ========================================================================
 \section{Manajemen Dependensi Layanan}
+\label{sec:service-dependencies}
+%% ========================================================================
+
+Layanan di Linux jarang berdiri sendiri. Web application mungkin membutuhkan jaringan,
+database, dan filesystem tertentu sebelum bisa start. Systemd menangani relasi ini
+melalui dependensi dan aturan urutan eksekusi.
+
+\subsection{After, Before, Wants, Requires}
+
+Empat direktif yang paling penting adalah:
+
+\begin{description}
+    \item[After=] Menyatakan urutan start. Unit ini start setelah unit lain.
+    \item[Before=] Kebalikan dari \texttt{After=}.
+    \item[Wants=] Relasi lemah. Jika unit ini start, systemd juga mencoba start unit lain.
+    \item[Requires=] Relasi kuat. Jika dependensi gagal, unit ini ikut gagal.
+\end{description}
+
+Contoh:
+
+\begin{lstlisting}[language=bash, caption={Contoh dependensi pada unit file}]
+[Unit]
+Description=Aplikasi Web Internal
+After=network.target mysql.service
+Wants=network.target
+Requires=mysql.service
+\end{lstlisting}
+
+Maknanya:
+
+\begin{itemize}
+    \item layanan baru harus menunggu jaringan dan MySQL start lebih dahulu;
+    \item systemd akan mencoba memastikan network target aktif;
+    \item jika MySQL gagal start, aplikasi ini juga dianggap gagal dijalankan.
+\end{itemize}
+
+\subsection{Target dan Runlevel Modern}
+
+Systemd menggantikan konsep runlevel tradisional dengan \textit{target}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Padanan runlevel lama dengan target systemd}
+    \label{tab:runlevel-targets}
+    \begin{tblr}{
+        colspec = {lX[l]X[l]},
+        width = \linewidth,
+        hlines,
+        vlines,
+        row{1} = {font=\bfseries},
+        cells = {font=\small}
+    }
+    \textbf{Runlevel lama} & \textbf{Target systemd} & \textbf{Makna} \\
+    0 & \texttt{poweroff.target} & Shutdown sistem \\
+    1 & \texttt{rescue.target} & Mode pemulihan / single-user \\
+    3 & \texttt{multi-user.target} & Sistem multi-user non-grafis \\
+    5 & \texttt{graphical.target} & Sistem grafis penuh \\
+    6 & \texttt{reboot.target} & Reboot sistem \\
+    \end{tblr}
+\end{table}
+
+Periksa target default sistem:
+
+\begin{lstlisting}[language=bash, caption={Melihat dan mengubah target default}]
+systemctl get-default
+sudo systemctl set-default multi-user.target
+sudo systemctl set-default graphical.target
+\end{lstlisting}
+
+%% ========================================================================
 \section{Logging dan Monitoring}
+\label{sec:service-logging}
+%% ========================================================================
+
+Systemd terintegrasi erat dengan journald. Alih-alih hanya bergantung pada file log
+tradisional di \dir{/var/log/}, administrator dapat melihat log layanan langsung
+melalui \cmd{journalctl}.
+
+\subsection{Memantau Status Layanan}
+
+\begin{lstlisting}[language=bash, caption={Memantau status layanan}]
+systemctl status ssh
+systemctl status apache2
+systemctl --failed
+systemctl show ssh --property=MainPID,SubState,ActiveEnterTimestamp
+\end{lstlisting}
+
+\cmd{systemctl --failed} sangat berguna saat audit cepat karena langsung menampilkan
+semua unit yang gagal.
+
+\subsection{Membaca Log dengan journalctl}
+
+\begin{lstlisting}[language=bash, caption={Membaca log layanan dengan journalctl}]
+journalctl -u ssh
+journalctl -u ssh -n 50
+journalctl -u ssh -f
+journalctl -u apache2 --since "today"
+journalctl -p err -b
+\end{lstlisting}
+
+Perintah-perintah penting:
+
+\begin{itemize}
+    \item \cmd{-u nama-unit}: hanya log untuk unit tertentu.
+    \item \cmd{-n 50}: tampilkan 50 entri terakhir.
+    \item \cmd{-f}: mode follow, seperti \cmd{tail -f}.
+    \item \cmd{--since}: filter berdasarkan waktu.
+    \item \cmd{-p err}: hanya log dengan prioritas error.
+    \item \cmd{-b}: log sejak boot saat ini.
+\end{itemize}
+
+\begin{tipbox}
+Saat layanan gagal start, kombinasi tercepat biasanya adalah: \cmd{systemctl status nama}
+lalu \cmd{journalctl -u nama -n 50}. Dua perintah ini hampir selalu menjadi titik awal
+troubleshooting.
+\end{tipbox}
+
+%% ========================================================================
 \section{Konfigurasi Layanan Jaringan}
+\label{sec:network-services}
+%% ========================================================================
+
+Bagian ini menggunakan tiga layanan umum sebagai contoh: SSH, Apache, dan MySQL.
+
+\subsection{SSH}
+
+SSH adalah layanan administrasi jarak jauh yang hampir selalu aktif di server Linux.
+
+\begin{lstlisting}[language=bash, caption={Mengelola layanan SSH}]
+sudo systemctl status ssh
+sudo systemctl restart ssh
+sudo systemctl enable ssh
+sudo ss -tlnp | grep :22
+\end{lstlisting}
+
+Konfigurasi utamanya berada di \file{/etc/ssh/sshd\_config}. Setelah mengubah file ini,
+gunakan \cmd{sshd -t} untuk memverifikasi sintaks sebelum restart:
+
+\begin{lstlisting}[language=bash, caption={Validasi konfigurasi SSH}]
+sudo sshd -t
+sudo systemctl reload ssh
+\end{lstlisting}
+
+\subsection{Apache}
+
+\begin{lstlisting}[language=bash, caption={Mengelola layanan Apache}]
+sudo apt install apache2
+sudo systemctl status apache2
+sudo systemctl enable --now apache2
+sudo apache2ctl configtest
+sudo systemctl reload apache2
+\end{lstlisting}
+
+Port HTTP standar dapat diverifikasi dengan:
+
+\begin{lstlisting}[language=bash, caption={Memeriksa port Apache}]
+sudo ss -tlnp | grep :80
+curl http://localhost
+\end{lstlisting}
+
+\subsection{MySQL}
+
+\begin{lstlisting}[language=bash, caption={Mengelola layanan MySQL}]
+sudo apt install mysql-server
+sudo systemctl status mysql
+sudo systemctl enable --now mysql
+sudo mysqladmin ping
+sudo ss -tlnp | grep :3306
+\end{lstlisting}
+
+Untuk database, verifikasi tidak cukup hanya melihat \cmd{active (running)}; selalu
+cek juga apakah layanan benar-benar merespons koneksi aplikasi.
+
+%% ========================================================================
 \section{Automatisasi Layanan}
+\label{sec:service-automation}
+%% ========================================================================
+
+Automatisasi layanan mencakup dua aspek: memastikan layanan start atau stop pada
+waktu yang tepat, dan menjalankan tugas administratif berkala tanpa intervensi manual.
+
+\subsection{Start-up dan Shutdown Otomatis}
+
+Cara paling dasar adalah menggunakan \cmd{enable} dan \cmd{disable} seperti yang
+sudah dibahas. Namun systemd juga mendukung hook start dan stop di unit file:
+
+\begin{lstlisting}[language=bash, caption={Hook start/stop dalam unit file}]
+[Service]
+ExecStartPre=/usr/bin/test -f /etc/myapp/config.yml
+ExecStart=/usr/local/bin/myapp
+ExecStop=/usr/bin/pkill -f myapp
+ExecStopPost=/usr/bin/logger "myapp berhenti"
+\end{lstlisting}
+
+\subsection{Timer sebagai Pengganti Cron untuk Tugas Tertentu}
+
+Walau outline minggu ini berfokus pada layanan, penting mengenal \texttt{.timer}
+karena ia adalah pasangan modern bagi layanan satu kali atau periodik.
+
+\begin{lstlisting}[language=bash, caption={Contoh service dan timer sederhana}]
+# /etc/systemd/system/cleanup-temp.service
+[Unit]
+Description=Bersihkan file sementara
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/find /tmp/myapp -type f -mtime +7 -delete
+
+# /etc/systemd/system/cleanup-temp.timer
+[Unit]
+Description=Jalankan cleanup-temp setiap hari
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+\end{lstlisting}
+
+Aktivasi timer:
+
+\begin{lstlisting}[language=bash, caption={Mengaktifkan timer systemd}]
+sudo systemctl daemon-reload
+sudo systemctl enable --now cleanup-temp.timer
+systemctl list-timers
+\end{lstlisting}
+
+\begin{notebox}
+\texttt{Persistent=true} membuat timer yang terlewat saat sistem mati dijalankan
+setelah sistem hidup kembali, perilaku yang sering diinginkan untuk maintenance.
+\end{notebox}
+
+%% ========================================================================
 \section{Troubleshooting}
+\label{sec:service-troubleshooting}
+%% ========================================================================
+
+Troubleshooting layanan hampir selalu melibatkan empat langkah: periksa status,
+baca log, verifikasi konfigurasi, lalu uji dependensi eksternal seperti port,
+permission, atau file path.
+
+\subsection{Pola Diagnostik Dasar}
+
+\begin{lstlisting}[language=bash, caption={Pola troubleshooting layanan}]
+systemctl status nama-layanan
+journalctl -u nama-layanan -n 50
+sudo ss -tlnp
+ps aux | grep nama-layanan
+\end{lstlisting}
+
+Penyebab umum layanan gagal start:
+
+\begin{itemize}
+    \item file konfigurasi salah sintaks;
+    \item binary atau path pada \texttt{ExecStart=} tidak ada;
+    \item port yang dibutuhkan sudah dipakai proses lain;
+    \item permission file atau direktori tidak memadai;
+    \item dependensi seperti jaringan, database, atau mount point belum siap.
+\end{itemize}
+
+\subsection{Contoh Kasus Troubleshooting}
+
+Misalnya sebuah layanan web gagal start karena port 8080 sudah digunakan:
+
+\begin{lstlisting}[language=bash, caption={Mendeteksi konflik port}]
+sudo systemctl start demo-http
+sudo systemctl status demo-http
+sudo journalctl -u demo-http -n 20
+sudo ss -tlnp | grep :8080
+\end{lstlisting}
+
+Jika hasil \cmd{ss} menunjukkan proses lain memakai port yang sama, ada dua opsi:
+ubah konfigurasi port layanan atau hentikan proses yang bentrok.
+
+\begin{warningbox}
+Jangan terburu-buru menjalankan \cmd{kill -9} pada proses yang tampak mengganggu.
+Pastikan Anda memahami proses tersebut milik layanan apa, dan apakah penghentiannya
+aman bagi sistem produksi.
+\end{warningbox}
+
+%% --- Praktikum ---
+\subsection*{Praktikum 10.1 --- Mengelola Layanan dengan systemctl}
+
+\textbf{Tujuan:} memahami start, stop, restart, enable, disable, dan inspeksi log.
+
+\textbf{Langkah-langkah:}
+\begin{enumerate}
+    \item Periksa status beberapa layanan umum:
+\begin{lstlisting}[language=bash, caption={Memeriksa status layanan umum}]
+systemctl status ssh
+systemctl status cron
+systemctl --failed
+\end{lstlisting}
+
+    \item Aktifkan satu layanan yang tersedia pada sistem Anda:
+\begin{lstlisting}[language=bash, caption={Enable layanan saat boot}]
+sudo systemctl enable ssh
+sudo systemctl is-enabled ssh
+\end{lstlisting}
+
+    \item Lakukan restart dan baca log terbarunya:
+\begin{lstlisting}[language=bash, caption={Restart dan inspeksi log layanan}]
+sudo systemctl restart ssh
+systemctl status ssh
+journalctl -u ssh -n 20
+\end{lstlisting}
+\end{enumerate}
+
+%% --- Praktikum ---
+\subsection*{Praktikum 10.2 --- Membuat Unit File Kustom}
+
+\textbf{Tujuan:} membuat layanan sederhana dan menjalankannya di bawah systemd.
+
+\textbf{Langkah-langkah:}
+\begin{enumerate}
+    \item Buat direktori dan halaman sederhana:
+\begin{lstlisting}[language=bash, caption={Menyiapkan konten layanan kustom}]
+mkdir -p ~/praktikum-os/week12-services/site
+echo "<h1>Service Demo</h1>" > ~/praktikum-os/week12-services/site/index.html
+\end{lstlisting}
+
+    \item Buat unit file kustom:
+\begin{lstlisting}[language=bash, caption={Membuat demo-http.service}]
+sudo tee /etc/systemd/system/demo-http.service > /dev/null <<'EOF'
+[Unit]
+Description=Demo HTTP Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 -m http.server 9000 --directory /home/$USER/praktikum-os/week12-services/site
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+\end{lstlisting}
+
+    \item Muat ulang daemon dan jalankan layanannya:
+\begin{lstlisting}[language=bash, caption={Menjalankan layanan kustom}]
+sudo systemctl daemon-reload
+sudo systemctl start demo-http
+sudo systemctl status demo-http
+curl http://localhost:9000
+\end{lstlisting}
+
+    \item Aktifkan auto-start lalu bersihkan setelah selesai:
+\begin{lstlisting}[language=bash, caption={Enable dan pembersihan layanan kustom}]
+sudo systemctl enable demo-http
+sudo systemctl disable --now demo-http
+sudo rm /etc/systemd/system/demo-http.service
+sudo systemctl daemon-reload
+\end{lstlisting}
+\end{enumerate}
+
+%% ========================================================================
 \section{Rangkuman}
+\label{sec:service-summary}
+%% ========================================================================
+
+Bab ini membahas pokok-pokok penting berikut:
+
+\begin{description}
+    \item[Sistem Init] Linux modern menggunakan systemd sebagai init system utama,
+        pengganti pendekatan lama seperti SysV init dan Upstart.
+    \item[systemctl] Perintah inti untuk start, stop, restart, reload, enable,
+        disable, dan inspeksi layanan.
+    \item[Unit File] Konfigurasi layanan dideklarasikan di file unit dengan blok
+        \texttt{[Unit]}, \texttt{[Service]}, dan \texttt{[Install]}.
+    \item[Dependensi] Relasi seperti \texttt{After=}, \texttt{Wants=}, dan
+        \texttt{Requires=} mengatur urutan dan keterkaitan layanan.
+    \item[Logging] \cmd{journalctl} dan \cmd{systemctl status} adalah alat utama
+        untuk observasi dan diagnosis layanan.
+    \item[Layanan Jaringan] SSH, Apache, dan MySQL adalah contoh penting layanan
+        yang perlu dikelola, divalidasi, dan dimonitor.
+    \item[Automatisasi] systemd mendukung startup otomatis, hook layanan, dan
+        timer untuk maintenance terjadwal.
+    \item[Troubleshooting] Diagnosis layanan biasanya dimulai dari status, log,
+        port, path binary, permission, dan dependensi eksternal.
+\end{description}
+
+%% ========================================================================
 \section{Latihan}
+\label{sec:service-exercises}
+%% ========================================================================
+
+\begin{exercisebox}[12.1]
+\begin{enumerate}
+    \item Apa perbedaan praktis antara \cmd{restart} dan \cmd{reload} pada layanan?
+        Berikan contoh layanan yang lebih aman di-\cmd{reload} daripada di-restart.
+    \item Mengapa \cmd{mask} lebih kuat daripada \cmd{disable}? Dalam skenario apa
+        Anda memilih \cmd{mask}?
+    \item Jelaskan perbedaan fungsi \texttt{After=} dan \texttt{Requires=} dalam
+        unit file systemd.
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[12.2]
+\begin{enumerate}
+    \item Buat rancangan unit file untuk aplikasi Python sederhana yang harus:
+        berjalan sebagai user \texttt{www-data}, start setelah jaringan aktif,
+        dan otomatis restart saat gagal.
+    \item Sebuah layanan gagal start dengan pesan bahwa port 3306 sudah digunakan.
+        Tuliskan langkah diagnostik lengkap yang akan Anda lakukan.
+    \item Bandingkan kapan Anda lebih tepat memakai cron, dan kapan lebih tepat
+        memakai systemd timer.
+\end{enumerate}
+\end{exercisebox}
+
+%% ========================================================================
 \section{Referensi Tambahan}
+\label{sec:service-references}
+%% ========================================================================
+
+\begin{itemize}
+    \item \textbf{Halaman manual}:
+        \cmd{man systemctl}, \cmd{man systemd}, \cmd{man systemd.service},
+        \cmd{man journalctl}, \cmd{man systemd.timer}
+    \item \textbf{Freedesktop systemd documentation}:
+        \href{https://www.freedesktop.org/software/systemd/man/latest/}{freedesktop.org/software/systemd/man/latest/}
+    \item \textbf{Ubuntu Server Guide --- Service Management}:
+        \href{https://documentation.ubuntu.com/server/}{documentation.ubuntu.com/server/}
+    \item \textbf{DigitalOcean tutorial systemd}:
+        \href{https://www.digitalocean.com/community/tutorials/systemd-essentials-working-with-services-units-and-the-journal}{digitalocean.com/community/tutorials/systemd-essentials-working-with-services-units-and-the-journal}
+\end{itemize}

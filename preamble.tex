@@ -7,7 +7,11 @@
 %% ------------------------------------------------------------------------
 \usepackage[utf8]{inputenc}      % Input encoding UTF-8
 \usepackage[T1]{fontenc}         % Font encoding
-\usepackage{lmodern}             % Latin Modern font (lebih baik untuk PDF)
+%% ------------------------------------------------------------------------
+%% Font Utama - Times New Roman 11pt
+%% ------------------------------------------------------------------------
+\usepackage{times}                  % Times New Roman font
+\usepackage{amsfonts}               % Additional math fonts
 
 %% Monospace font configuration for better readability
 \usepackage[scaled=1.05]{inconsolata}  % Better monospace font, slightly enlarged
@@ -16,7 +20,8 @@
 %% ------------------------------------------------------------------------
 %% Bahasa
 %% ------------------------------------------------------------------------
-\usepackage[indonesian,english]{babel}  % Dukungan bahasa Indonesia
+\usepackage[english]{babel}  % Dukungan bahasa
+\babelprovide[import]{indonesian}
 
 %% Language flags - MUST be set by main-id.tex or main-en.tex before loading preamble
 %% \newif\ifIndonesian
@@ -26,6 +31,7 @@
 %% The flags control all language-specific elements below
 
 %% Konfigurasi istilah bahasa - conditional based on language
+\providecommand{\abstractname}{Abstract}
 \ifIndonesian
     \addto\captionsindonesian{%
         \renewcommand{\figurename}{Gambar}%
@@ -48,16 +54,14 @@
 \fi
 
 %% ------------------------------------------------------------------------
-%% Geometri Halaman (A4)
+%% Ukuran Kertas dan Margin
 %% ------------------------------------------------------------------------
 \usepackage{geometry}
 \geometry{
-    a4paper,
-    top=2.5cm,
-    bottom=2.5cm,
-    left=3cm,
-    right=2.5cm,
-    bindingoffset=0.5cm,
+    top=2cm,
+    bottom=2cm,
+    left=2cm,
+    right=2cm,
     headheight=15pt
 }
 
@@ -97,6 +101,7 @@
 \usepackage{tabularx}            % Tabel dengan lebar kolom fleksibel
 \usepackage{multirow}            % Sel tabel multi-baris
 \usepackage{array}               % Enhanced array and tabular
+\usepackage{tabularray}           % Tabels dengan tblr environment
 
 %% ------------------------------------------------------------------------
 %% Warna
@@ -190,9 +195,11 @@
 %% ------------------------------------------------------------------------
 \usepackage{scrlayer-scrpage}    % KOMA-Script header/footer
 \clearpairofpagestyles
+\setkomafont{pagefoot}{\fontsize{10}{12}\selectfont}
+\setkomafont{pagehead}{\fontsize{10}{12}\selectfont}
 \ohead{\rightmark}               % Section in outer header
 \ifoot{\leftmark}                % Chapter in inner footer
-\ofoot[\pagemark]{\pagemark}     % Page number in outer footer (right on odd, left on even)
+\ofoot[\pagemark]{\pagemark}    % Page number in outer footer (right on odd, left on even)
 \pagestyle{scrheadings}
 
 %% ------------------------------------------------------------------------
@@ -385,17 +392,22 @@
 %% Spacing dan Format
 %% ------------------------------------------------------------------------
 \usepackage{setspace}
-\onehalfspacing                  % 1.5 line spacing
+\setstretch{1.15}
 
-\setlength{\parindent}{1.5em}    % Indentasi paragraf
-\setlength{\parskip}{0.5em}      % Jarak antar paragraf
+\setlength{\parindent}{0cm}
+\setlength{\parskip}{3cm}
+\addtolength{\parskip}{-3cm}
 
 %% ------------------------------------------------------------------------
 %% Chapter dan Section Formatting
 %% ------------------------------------------------------------------------
-\addtokomafont{chapter}{\Huge}
-\addtokomafont{section}{\LARGE}
-\addtokomafont{subsection}{\Large}
+\setkomafont{part}{\fontsize{14}{16}\selectfont\bfseries}
+\setkomafont{chapter}{\fontsize{14}{16}\selectfont\bfseries}
+\setkomafont{section}{\fontsize{12}{14}\selectfont\bfseries}
+\setkomafont{subsection}{\fontsize{11}{13}\selectfont\bfseries}
+\setkomafont{subsubsection}{\fontsize{11}{13}\selectfont}
+\addtokomafont{paragraph}{\fontsize{11}{13}\selectfont}
+\addtokomafont{subparagraph}{\fontsize{11}{13}\selectfont}
 
 %% ------------------------------------------------------------------------
 %% Miscellaneous
