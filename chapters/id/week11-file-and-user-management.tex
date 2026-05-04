@@ -186,7 +186,8 @@ memberikan hak tulis dan eksekusi ke semua pengguna.
 
 Selain sembilan bit \texttt{rwx}, Linux memiliki tiga bit khusus:
 
-\begin{description   \item[SUID] program berjalan dengan UID pemilik file. Contoh klasik:
+\begin{description}
+    \item[SUID] program berjalan dengan UID pemilik file. Contoh klasik:
         \cmd{/usr/bin/passwd} perlu menulis ke \file{/etc/shadow}.
     \item[SGID] pada file executable proses berjalan dengan GID file; pada direktori,
         file baru mewarisi group direktori.
