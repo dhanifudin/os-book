@@ -215,7 +215,7 @@ Kombinasi SGID + sticky bit sering dipakai untuk direktori kolaborasi: SGID menj
 group tetap konsisten, sticky bit mencegah saling hapus file.
 \end{tipbox}
 
-\subsection{umask --- Nilai Default Izin Baru}
+\subsection{umask: Nilai Default Izin Baru}
 
 \textbf{umask} adalah masker yang \emph{mengurangi} permission default file baru.
 Secara praktis, file reguler berangkat dari \texttt{666}, direktori dari \texttt{777},
@@ -253,7 +253,7 @@ umask tidak pernah menambahkan execute pada file reguler. Jika file harus execut
 gunakan \cmd{chmod} secara eksplisit.
 \end{notebox}
 
-\subsection*{Praktikum 9.1 --- Permissions}
+\subsection*{Praktikum 9.1: Permissions}
 
 \textbf{Tujuan}: membaca permission, mengubahnya dengan aman, dan memahami efek
 \cmd{chmod}, \cmd{chown}, serta \cmd{umask} pada file nyata.
@@ -512,7 +512,7 @@ File baru tidak mewarisi execute dari default ACL bila ia file reguler; subdirek
 tetap mempertahankan execute karena \texttt{x} pada direktori berarti izin masuk.
 \end{notebox}
 
-\subsection*{Praktikum 9.2 --- ACL}
+\subsection*{Praktikum 9.2: ACL}
 
 \textbf{Tujuan}: memahami ACL dari nol: melihat kondisi awal, menambah akses untuk satu
 user, lalu membuat direktori yang mewariskan ACL otomatis.
@@ -641,7 +641,7 @@ Gunakan \cmd{usermod -aG}, bukan \cmd{usermod -G}. Tanpa \texttt{-a}, semua
 supplementary group lama akan diganti.
 \end{warningbox}
 
-\subsection*{Praktikum 9.3A --- Membuat dan Mengelola User}
+\subsection*{Praktikum 9.3A: Membuat dan Mengelola User}
 
 \textbf{Tujuan}: membuat user baru, memodifikasi propertinya, dan memahami perbedaan
 opsi \cmd{useradd} dan \cmd{usermod}.
@@ -690,7 +690,7 @@ Perubahan group baru terasa penuh setelah user logout-login atau membuka subshel
 dengan \cmd{newgrp nama-group}.
 \end{notebox}
 
-\subsection*{Praktikum 9.3B --- Group Management}
+\subsection*{Praktikum 9.3B: Group Management}
 
 \textbf{Tujuan}: membuat group, menambahkan user ke group, dan memverifikasi keanggotaan.
 
@@ -760,7 +760,7 @@ sudo passwd -e alice
     \end{tblr}
 \end{table}
 
-\subsection*{Praktikum 9.3C --- Password Aging Policy}
+\subsection*{Praktikum 9.3C: Password Aging Policy}
 
 \textbf{Tujuan}: menerapkan kebijakan umur password dan mengamati efeknya.
 
@@ -911,7 +911,7 @@ sudo visudo -c
 sudo grep sudo /var/log/auth.log | tail -20
 \end{lstlisting}
 
-\subsection*{Praktikum 9.4 --- Konfigurasi sudo}
+\subsection*{Praktikum 9.4: Konfigurasi sudo}
 
 \textbf{Tujuan}: membuat aturan sudo terbatas, memverifikasi hak akses, dan membaca log.
 
@@ -1084,7 +1084,7 @@ sudo warnquota
 sudo quotaoff -v /home
 \end{lstlisting}
 
-\subsection*{Praktikum 9.5 --- Disk Quota}
+\subsection*{Praktikum 9.5: Disk Quota}
 
 \textbf{Tujuan}: memahami alur quota secara aman pada loopback filesystem tanpa
 mengubah filesystem utama.
@@ -1171,7 +1171,7 @@ Bab ini membahas lima kelompok konsep inti:
 \label{sec:file-user-exercises}
 %% ========================================================================
 
-\begin{exercisebox}[Latihan 9.A --- Audit dan Kolaborasi]
+\begin{exercisebox}[Latihan 9.A: Audit dan Kolaborasi]
 \begin{enumerate}
     \item Temukan file SUID aktif dengan \cmd{find / -perm -4000 -type f 2>/dev/null},
         lalu jelaskan tiga file yang Anda kenali beserta alasannya.
@@ -1183,7 +1183,7 @@ Bab ini membahas lima kelompok konsep inti:
 \end{enumerate}
 \end{exercisebox}
 
-\begin{exercisebox}[Latihan 9.B --- Kebijakan Akun dan Quota]
+\begin{exercisebox}[Latihan 9.B: Kebijakan Akun dan Quota]
 Tuliskan langkah untuk membuat user \texttt{intern}, menambahkannya ke group
 \texttt{labgroup}, memaksa pergantian password tiap 45 hari (warning 7 hari),
 memberi izin sudo hanya untuk \cmd{systemctl status}, dan menetapkan quota ruang

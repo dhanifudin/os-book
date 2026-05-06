@@ -22,9 +22,9 @@ Sistem operasi adalah perangkat lunak sistem yang mengelola sumber daya perangka
 Sistem operasi memiliki dua peran utama:
 
 \begin{enumerate}
-    \item \textbf{Resource Manager} --- Mengelola dan mengalokasikan sumber daya sistem (CPU, memory, disk, I/O devices) secara efisien dan adil antar berbagai program yang berjalan.
+    \item \textbf{Resource Manager}: Mengelola dan mengalokasikan sumber daya sistem (CPU, memory, disk, I/O devices) secara efisien dan adil antar berbagai program yang berjalan.
 
-    \item \textbf{Extended Machine} --- Menyediakan abstraksi dari hardware yang kompleks, memberikan interface yang lebih mudah digunakan untuk programmer dan pengguna.
+    \item \textbf{Extended Machine}: Menyediakan abstraksi dari hardware yang kompleks, memberikan interface yang lebih mudah digunakan untuk programmer dan pengguna.
 \end{enumerate}
 
 \begin{notebox}
@@ -39,10 +39,10 @@ Sistem operasi modern memiliki lima fungsi utama:
 
 Sistem operasi bertanggung jawab untuk:
 \begin{itemize}
-    \item \textbf{Process scheduling} --- Menentukan proses mana yang mendapat CPU time
-    \item \textbf{Process creation dan termination} --- Membuat dan mengakhiri proses
-    \item \textbf{Process synchronization} --- Mengkoordinasikan multiple processes
-    \item \textbf{Inter-process communication (IPC)} --- Memfasilitasi komunikasi antar proses
+    \item \textbf{Process scheduling}: Menentukan proses mana yang mendapat CPU time
+    \item \textbf{Process creation dan termination}: Membuat dan mengakhiri proses
+    \item \textbf{Process synchronization}: Mengkoordinasikan multiple processes
+    \item \textbf{Inter-process communication (IPC)}: Memfasilitasi komunikasi antar proses
 \end{itemize}
 
 Contoh implementasi:
@@ -56,10 +56,10 @@ Contoh implementasi:
 
 Fungsi memory management meliputi:
 \begin{itemize}
-    \item \textbf{Memory allocation} --- Memberikan memori ke proses yang membutuhkan
-    \item \textbf{Virtual memory} --- Menggunakan disk sebagai extension dari RAM
-    \item \textbf{Memory protection} --- Mencegah satu proses mengakses memori proses lain
-    \item \textbf{Paging dan swapping} --- Teknik untuk optimasi penggunaan memori
+    \item \textbf{Memory allocation}: Memberikan memori ke proses yang membutuhkan
+    \item \textbf{Virtual memory}: Menggunakan disk sebagai extension dari RAM
+    \item \textbf{Memory protection}: Mencegah satu proses mengakses memori proses lain
+    \item \textbf{Paging dan swapping}: Teknik untuk optimasi penggunaan memori
 \end{itemize}
 
 \begin{examplebox}[Virtual Memory]
@@ -70,10 +70,10 @@ Ketika RAM penuh, sistem operasi memindahkan sebagian data ke disk (swap space d
 
 Sistem operasi menyediakan:
 \begin{itemize}
-    \item \textbf{Organisasi file system} --- Struktur hirarkis (direktori, subdirektori)
-    \item \textbf{Operasi file} --- Membuat, membaca, menulis, menghapus file
-    \item \textbf{Kontrol akses} --- Izin (permissions) untuk keamanan
-    \item \textbf{Mounting file system} --- Mengintegrasikan perangkat penyimpanan ke sistem
+    \item \textbf{Organisasi file system}: Struktur hirarkis (direktori, subdirektori)
+    \item \textbf{Operasi file}: Membuat, membaca, menulis, menghapus file
+    \item \textbf{Kontrol akses}: Izin (permissions) untuk keamanan
+    \item \textbf{Mounting file system}: Mengintegrasikan perangkat penyimpanan ke sistem
 \end{itemize}
 
 Contoh file systems:
@@ -87,20 +87,20 @@ Contoh file systems:
 
 Manajemen Input/Output mencakup:
 \begin{itemize}
-    \item \textbf{Device drivers} --- Perangkat lunak untuk berkomunikasi dengan perangkat keras
-    \item \textbf{Buffering} --- Penyimpanan sementara untuk kelancaran operasi I/O
-    \item \textbf{Interrupt handling} --- Merespon sinyal dari perangkat keras
-    \item \textbf{Spooling} --- Antrean untuk perangkat seperti printer
+    \item \textbf{Device drivers}: Perangkat lunak untuk berkomunikasi dengan perangkat keras
+    \item \textbf{Buffering}: Penyimpanan sementara untuk kelancaran operasi I/O
+    \item \textbf{Interrupt handling}: Merespon sinyal dari perangkat keras
+    \item \textbf{Spooling}: Antrean untuk perangkat seperti printer
 \end{itemize}
 
 \subsubsection{Security dan Protection}
 
 Aspek keamanan meliputi:
 \begin{itemize}
-    \item \textbf{Authentication} --- Verifikasi identitas pengguna (password, biometrik)
-    \item \textbf{Authorization} --- Kontrol akses ke sumber daya berdasarkan izin (permissions)
-    \item \textbf{Encryption} --- Proteksi data (BitLocker di Windows, FileVault di macOS)
-    \item \textbf{Auditing} --- Pencatatan aktivitas sistem untuk pemantauan keamanan
+    \item \textbf{Authentication}: Verifikasi identitas pengguna (password, biometrik)
+    \item \textbf{Authorization}: Kontrol akses ke sumber daya berdasarkan izin (permissions)
+    \item \textbf{Encryption}: Proteksi data (BitLocker di Windows, FileVault di macOS)
+    \item \textbf{Auditing}: Pencatatan aktivitas sistem untuk pemantauan keamanan
 \end{itemize}
 
 %% ------------------------------------------------------------------------
@@ -236,16 +236,16 @@ Sistem operasi modern memisahkan memori menjadi dua area:
 
 \textbf{Keuntungan:}
 \begin{itemize}
-    \item \textbf{Kinerja tinggi} --- Tidak ada overhead untuk context switching
-    \item \textbf{Komunikasi efisien} --- Pemanggilan fungsi lebih cepat dari IPC
-    \item \textbf{Desain lebih sederhana} --- Semua dalam satu address space
+    \item \textbf{Kinerja tinggi}: Tidak ada overhead untuk context switching
+    \item \textbf{Komunikasi efisien}: Pemanggilan fungsi lebih cepat dari IPC
+    \item \textbf{Desain lebih sederhana}: Semua dalam satu address space
 \end{itemize}
 
 \textbf{Kerugian:}
 \begin{itemize}
-    \item \textbf{Keandalan} --- Bug di satu driver dapat menyebabkan crash seluruh sistem
-    \item \textbf{Keamanan} --- Permukaan serangan lebih luas
-    \item \textbf{Pemeliharaan} --- Sulit untuk mengisolasi dan debug
+    \item \textbf{Keandalan}: Bug di satu driver dapat menyebabkan crash seluruh sistem
+    \item \textbf{Keamanan}: Permukaan serangan lebih luas
+    \item \textbf{Pemeliharaan}: Sulit untuk mengisolasi dan debug
 \end{itemize}
 
 \textbf{Contoh:} Linux, traditional Unix, BSD
@@ -261,16 +261,16 @@ Sistem operasi modern memisahkan memori menjadi dua area:
 
 \textbf{Keuntungan:}
 \begin{itemize}
-    \item \textbf{Keandalan} --- Crash layanan tidak mempengaruhi kernel
-    \item \textbf{Keamanan} --- Permukaan serangan lebih kecil, isolasi lebih baik
-    \item \textbf{Modular} --- Mudah menambah/menghapus layanan
-    \item \textbf{Cocok untuk real-time} --- Perilaku yang dapat diprediksi
+    \item \textbf{Keandalan}: Crash layanan tidak mempengaruhi kernel
+    \item \textbf{Keamanan}: Permukaan serangan lebih kecil, isolasi lebih baik
+    \item \textbf{Modular}: Mudah menambah/menghapus layanan
+    \item \textbf{Cocok untuk real-time}: Perilaku yang dapat diprediksi
 \end{itemize}
 
 \textbf{Kerugian:}
 \begin{itemize}
-    \item \textbf{Overhead kinerja} --- Context switches dan IPC lebih lambat
-    \item \textbf{Kompleksitas} --- Message passing menambah kompleksitas
+    \item \textbf{Overhead kinerja}: Context switches dan IPC lebih lambat
+    \item \textbf{Kompleksitas}: Message passing menambah kompleksitas
 \end{itemize}
 
 \textbf{Contoh:} MINIX 3, QNX, seL4, L4 family
@@ -287,8 +287,8 @@ Sistem operasi modern memisahkan memori menjadi dua area:
 
 \textbf{Contoh:}
 \begin{itemize}
-    \item \textbf{Windows NT kernel} --- Digunakan di Windows, Xbox
-    \item \textbf{macOS XNU (X is Not Unix)} --- Mach microkernel + BSD components
+    \item \textbf{Windows NT kernel}: Digunakan di Windows, Xbox
+    \item \textbf{macOS XNU (X is Not Unix)}: Mach microkernel + BSD components
 \end{itemize}
 
 \begin{figure}[htbp]

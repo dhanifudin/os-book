@@ -63,7 +63,7 @@ Maka banyak troubleshooting berakhir pada \texttt{cat}, \texttt{less}, \texttt{g
     \item \texttt{/mnt}, \texttt{/media} : mount point sementara/removable.
 \end{itemize}
 
-\subsection*{Praktikum 4.1 --- Tur FHS: Kenali Isi Sistem (Mudah)}
+\subsection*{Praktikum 4.1: Tur FHS: Kenali Isi Sistem (Mudah)}
 \textbf{Tujuan:} mengenali folder penting dan membedakan mana konfigurasi, log, dan data user.
 
 \begin{enumerate}
@@ -92,7 +92,7 @@ Jangan menjalankan \texttt{tree /} tanpa batas kedalaman pada server nyata—out
 Gunakan \texttt{-L} untuk membatasi kedalaman.
 \end{warningbox}
 
-\subsection*{Praktikum 4.2 --- Audit Lokasi Konfigurasi dan Log Layanan (Kondisi Riil)}
+\subsection*{Praktikum 4.2: Audit Lokasi Konfigurasi dan Log Layanan (Kondisi Riil)}
 \textbf{Skenario:} admin diminta mengecek konfigurasi SSH dan melihat indikasi akses pada log.
 
 \textbf{Tujuan:} membiasakan mencari file konfigurasi standar dan membaca log secara aman.
@@ -148,7 +148,7 @@ Di Linux, ``file'' bukan cuma dokumen. Dari output \texttt{ls -l}, karakter pert
     \item \texttt{file <file>}: menebak tipe konten (ASCII text, image, ELF binary, dll).
 \end{itemize}
 
-\subsection*{Praktikum 4.3 --- Membaca Jenis File dari Output ls -l (Mudah)}
+\subsection*{Praktikum 4.3: Membaca Jenis File dari Output ls -l (Mudah)}
 \textbf{Tujuan:} membedakan file reguler, direktori, symlink, dan device.
 
 \begin{enumerate}
@@ -180,7 +180,7 @@ file data/hello.txt
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 4.4 --- Membaca File Perangkat dan Virtual FS (Kondisi Riil)}
+\subsection*{Praktikum 4.4: Membaca File Perangkat dan Virtual FS (Kondisi Riil)}
 \textbf{Skenario:} admin perlu membedakan device node (block vs char) dan file virtual dari kernel.
 
 \textbf{Tujuan:} mengenali \texttt{/dev} (device node), \texttt{/proc} dan \texttt{/sys} (virtual filesystem).
@@ -225,7 +225,7 @@ Skill navigasi (menemukan lokasi file, berpindah folder, dan membaca struktur) a
     \item \texttt{pushd}/\texttt{popd}: navigasi stack direktori (nyaman untuk bolak-balik).
 \end{itemize}
 
-\subsection*{Praktikum 4.5 --- Navigasi Aman dan Efisien (Mudah)}
+\subsection*{Praktikum 4.5: Navigasi Aman dan Efisien (Mudah)}
 \textbf{Tujuan:} membiasakan absolute path, relative path, dan \texttt{pushd/popd}.
 
 \begin{enumerate}
@@ -261,7 +261,7 @@ Perintah \texttt{rm -rf} dapat menghapus direktori beserta isinya tanpa konfirma
 Untuk praktikum, biasakan memakai \texttt{rm -ri} atau pastikan path benar.
 \end{warningbox}
 
-\subsection*{Praktikum 4.6 --- Menemukan File Konfigurasi dari Output Service (Kondisi Riil)}
+\subsection*{Praktikum 4.6: Menemukan File Konfigurasi dari Output Service (Kondisi Riil)}
 \textbf{Skenario:} Anda diminta mencari lokasi unit service dan file konfigurasi terkait.
 
 \textbf{Tujuan:} menggunakan navigasi + pembacaan path sistem yang umum pada server.
@@ -411,7 +411,7 @@ Masalah akses pada server sering bukan karena file ``hilang'', tetapi karena own
 Biasakan verifikasi dengan \texttt{ls -l} dan \texttt{stat}.
 \end{tipbox}
 
-\subsection*{Praktikum 4.7 --- Permission Dasar dengan File dan Direktori (Mudah)}
+\subsection*{Praktikum 4.7: Permission Dasar dengan File dan Direktori (Mudah)}
 \textbf{Tujuan:} melihat perbedaan makna \texttt{x} pada file vs direktori, serta latihan konversi oktal.
 
 \begin{enumerate}
@@ -448,7 +448,7 @@ cd permtest/dirA 2>/dev/null \
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 4.8 --- Shared Folder Proyek + Sticky Bit (Kondisi Riil)}
+\subsection*{Praktikum 4.8: Shared Folder Proyek + Sticky Bit (Kondisi Riil)}
 \textbf{Skenario:} folder proyek bersama: anggota group bisa kolaborasi, file baru mewarisi group,
 dan tidak saling menghapus file sembarangan.
 
@@ -511,7 +511,7 @@ Link adalah cara membuat ``nama lain'' untuk sebuah file.
     \item \texttt{stat}: verifikasi inode dan metadata.
 \end{itemize}
 
-\subsection*{Praktikum 4.9 --- Uji Hard Link vs Symlink (Mudah)}
+\subsection*{Praktikum 4.9: Uji Hard Link vs Symlink (Mudah)}
 \textbf{Tujuan:} melihat perbedaan inode dan efek penghapusan.
 
 \begin{enumerate}
@@ -543,7 +543,7 @@ Hard link umumnya tidak dipakai untuk direktori (dibatasi untuk mencegah loop st
 Untuk kebutuhan ``shortcut'' direktori, gunakan symlink.
 \end{warningbox}
 
-\subsection*{Praktikum 4.10 --- Symlink untuk Deploy Versi Aplikasi (Kondisi Riil)}
+\subsection*{Praktikum 4.10: Symlink untuk Deploy Versi Aplikasi (Kondisi Riil)}
 \textbf{Skenario:} pola deployment umum: folder versi aplikasi terpisah, lalu \texttt{current} adalah symlink ke versi aktif.
 
 \textbf{Tujuan:} memahami kenapa symlink sangat berguna untuk rollback cepat.
@@ -594,7 +594,7 @@ Pada server, Anda sering perlu mencari:
     \item \texttt{locate}: pencarian berbasis database (cepat, perlu update database).
 \end{itemize}
 
-\subsection*{Praktikum 4.11 --- find Dasar: Nama, Tipe, Ukuran (Mudah)}
+\subsection*{Praktikum 4.11: find Dasar: Nama, Tipe, Ukuran (Mudah)}
 \textbf{Tujuan:} mencari file berdasarkan nama, tipe, dan ukuran.
 
 \begin{enumerate}
@@ -610,7 +610,7 @@ find ~ -type f -size +1M 2>/dev/null | head
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 4.12 --- find Kondisi Riil: Scan Konfigurasi Sistem (Sulit/Riil)}
+\subsection*{Praktikum 4.12: find Kondisi Riil: Scan Konfigurasi Sistem (Sulit/Riil)}
 \textbf{Skenario:} cari file konfigurasi \texttt{*.conf} pada seluruh sistem,
 tetapi buang error permission agar output bersih.
 
@@ -626,7 +626,7 @@ Pola \texttt{2>/dev/null} sangat sering dipakai saat scanning seluruh sistem,
 karena banyak direktori memang tidak bisa dibaca user biasa.
 \end{tipbox}
 
-\subsection*{Praktikum 4.13 --- locate + updatedb (Mudah)}
+\subsection*{Praktikum 4.13: locate + updatedb (Mudah)}
 \textbf{Tujuan:} menggunakan index database untuk pencarian cepat.
 
 \begin{enumerate}
@@ -649,7 +649,7 @@ locate sshd_config | head
 hasil bisa kosong sampai \texttt{updatedb} dijalankan.
 \end{warningbox}
 
-\subsection*{Praktikum 4.14 --- Audit Permission Bermasalah dengan find (Kondisi Riil)}
+\subsection*{Praktikum 4.14: Audit Permission Bermasalah dengan find (Kondisi Riil)}
 \textbf{Skenario:} admin ingin menemukan file/folder yang ``terlalu terbuka'' (world-writable),
 atau file setuid/setgid untuk audit keamanan ringan.
 
@@ -728,7 +728,7 @@ Catatan: \texttt{gzip} bekerja pada \textbf{file tunggal}. Untuk folder, biasany
     \item \texttt{unzip -d <dir>} : ekstrak ke direktori tertentu
 \end{itemize}
 
-\subsection*{Praktikum 4.15 --- Arsip Workspace: tar + gzip (Mudah)}
+\subsection*{Praktikum 4.15: Arsip Workspace: tar + gzip (Mudah)}
 \textbf{Tujuan:} membuat \texttt{.tar.gz}, mengecek isi, lalu mengekstraknya.
 
 \begin{enumerate}
@@ -753,7 +753,7 @@ ls -lah ~/praktikum-os/restore-test/week04 | head
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 4.16 --- Backup Konfigurasi Sistem (Subset) + Validasi (Kondisi Riil)}
+\subsection*{Praktikum 4.16: Backup Konfigurasi Sistem (Subset) + Validasi (Kondisi Riil)}
 \textbf{Skenario:} sebelum perubahan konfigurasi server, admin membuat backup subset \texttt{/etc} dan menaruhnya di folder backup.
 
 \textbf{Tujuan:} membuat arsip yang rapi, bisa diverifikasi, dan tidak membanjiri error permission.
@@ -791,7 +791,7 @@ ls -lah ~/backup/restore-sandbox/etc | head -n 20
 Pola ``backup subset penting'' lebih aman daripada \texttt{tar /etc} seluruhnya, dan lebih realistis untuk admin.
 \end{tipbox}
 
-\subsection*{Praktikum 4.17 --- gzip untuk File Tunggal (Mudah)}
+\subsection*{Praktikum 4.17: gzip untuk File Tunggal (Mudah)}
 \textbf{Tujuan:} memahami gzip sebagai kompresor file tunggal, serta efek \texttt{-k} dan level kompresi.
 
 \begin{enumerate}
@@ -815,7 +815,7 @@ ls -lah biglog.txt biglog.txt.gz
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 4.18 --- zip untuk Distribusi ke Lintas OS (Kondisi Riil)}
+\subsection*{Praktikum 4.18: zip untuk Distribusi ke Lintas OS (Kondisi Riil)}
 \textbf{Skenario:} Anda perlu mengirim folder backup/restore ke user Windows/macOS.
 
 \begin{enumerate}
@@ -890,7 +890,7 @@ Tampilkan output 20 baris pertama.
 \end{exercisebox}
 
 \subsection*{C. Latihan Praktikum (Kondisi Riil)}
-\begin{exercisebox}[4.F --- Kasus Admin 1]
+\begin{exercisebox}[4.F: Kasus Admin 1]
 Anda diminta membuat folder \texttt{/srv/data-share} untuk tim (group \texttt{project}) dengan aturan:
 \begin{itemize}
 \item semua anggota group bisa membuat dan mengedit file
@@ -901,7 +901,7 @@ Anda diminta membuat folder \texttt{/srv/data-share} untuk tim (group \texttt{pr
 Tuliskan perintah dan bukti \texttt{ls -ld}.
 \end{exercisebox}
 
-\begin{exercisebox}[4.G --- Kasus Admin 2]
+\begin{exercisebox}[4.G: Kasus Admin 2]
 Anda diminta mengumpulkan bukti troubleshooting:
 \begin{itemize}
 \item salin 100 baris terakhir \texttt{/var/log/auth.log} ke file di home Anda

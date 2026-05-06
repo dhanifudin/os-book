@@ -55,7 +55,7 @@ kekurangan dari sisi ruang penyimpanan dan waktu pemulihan:
 
     \item[Differential Backup] Menyalin file yang berubah \emph{sejak full backup
         terakhir}. Ukurannya lebih besar dari incremental tetapi pemulihan lebih
-        sederhana --- hanya butuh backup full dan differential terbaru.
+        sederhana: hanya butuh backup full dan differential terbaru.
 \end{description}
 
 \begin{table}[htbp]
@@ -133,8 +133,8 @@ sedangkan RTO yang ketat membutuhkan prosedur restore yang teruji dan mungkin
 infrastruktur standby. Semakin kecil nilai RPO dan RTO, semakin mahal infrastruktur
 yang dibutuhkan.
 
-%% --- Praktikum ---
-\subsection*{Praktikum 12.1 --- Perencanaan Strategi Backup}
+%%: Praktikum ---
+\subsection*{Praktikum 12.1: Perencanaan Strategi Backup}
 \textbf{Tujuan:} memahami jenis-jenis backup dan menentukan strategi yang tepat
 berdasarkan kebutuhan sistem nyata.
 
@@ -212,7 +212,7 @@ Linux menyediakan beberapa alat backup yang masing-masing cocok untuk kasus peng
 yang berbeda. Memahami kelebihan dan keterbatasan setiap alat adalah kunci memilih
 strategi yang tepat.
 
-\subsection{tar --- Pengarsipan dan Kompresi}
+\subsection{tar: Pengarsipan dan Kompresi}
 
 \cmd{tar} (\textit{tape archiver}) adalah alat pengarsipan paling klasik di Unix/Linux.
 Meskipun namanya berasal dari era tape, \cmd{tar} sangat umum digunakan untuk membuat
@@ -285,12 +285,12 @@ Opsi \texttt{--listed-incremental} membuat \cmd{tar} menggunakan file snapshot
 (\file{.snar}) untuk melacak perubahan. Perintah pertama yang menggunakan file snapshot
 yang belum ada akan otomatis membuat full backup sekaligus menginisialisasi file snapshot.
 Perintah berikutnya menggunakan file snapshot yang sama akan menghasilkan incremental
-backup --- hanya file yang berubah sejak run terakhir yang disertakan. Menggunakan
+backup: hanya file yang berubah sejak run terakhir yang disertakan. Menggunakan
 \texttt{/dev/null} sebagai snapshot file memaksa full backup meskipun file snapshot
 sudah ada.
 
-%% --- Praktikum ---
-\subsection*{Praktikum 12.2 --- Backup dan Restore dengan tar}
+%%: Praktikum ---
+\subsection*{Praktikum 12.2: Backup dan Restore dengan tar}
 \textbf{Tujuan:} membuat arsip backup dengan berbagai opsi kompresi, memeriksa isi
 arsip, dan melakukan restore file individual dari arsip.
 
@@ -362,7 +362,7 @@ rm -rf ~/lab-tar /tmp/tar-restore
 \end{enumerate}
 \end{exercisebox}
 
-\subsection{rsync --- Sinkronisasi File Efisien}
+\subsection{rsync: Sinkronisasi File Efisien}
 
 \cmd{rsync} (\textit{remote sync}) adalah alat sinkronisasi yang sangat efisien karena
 menggunakan algoritma delta-transfer: hanya bagian file yang berubah yang dikirimkan,
@@ -384,18 +384,18 @@ Opsi \texttt{-a} (archive) adalah kombinasi dari \texttt{-r} (rekursif), \texttt
 (simpan symlink), \texttt{-p} (simpan permission), \texttt{-t} (simpan timestamp),
 \texttt{-g} (simpan group), dan \texttt{-o} (simpan owner). Hampir selalu digunakan
 bersama \texttt{-v} (verbose) untuk melihat kemajuan. Opsi \texttt{--delete}
-menghapus file di tujuan yang sudah tidak ada di sumber --- membuat tujuan menjadi
+menghapus file di tujuan yang sudah tidak ada di sumber: membuat tujuan menjadi
 cerminan tepat sumber. Opsi \texttt{-z} mengaktifkan kompresi data selama transfer,
 berguna untuk koneksi lambat. Opsi \texttt{-e} menentukan program shell remote beserta
 parameternya. Opsi \texttt{-n} (dry run) mensimulasikan proses tanpa benar-benar
-mengubah apa pun --- selalu jalankan dry run sebelum rsync dengan \texttt{--delete}.
+mengubah apa pun: selalu jalankan dry run sebelum rsync dengan \texttt{--delete}.
 
 \begin{warningbox}
 Perhatikan perbedaan trailing slash pada path sumber:
 \begin{itemize}
-    \item \cmd{rsync -av /home/alice/ /backup/} --- menyalin \emph{isi} direktori
+    \item \cmd{rsync -av /home/alice/ /backup/}: menyalin \emph{isi} direktori
         \dir{alice} ke \dir{/backup/}
-    \item \cmd{rsync -av /home/alice /backup/} --- menyalin direktori \dir{alice}
+    \item \cmd{rsync -av /home/alice /backup/}: menyalin direktori \dir{alice}
         itu sendiri, menghasilkan \dir{/backup/alice/}
 \end{itemize}
 Kesalahan trailing slash adalah sumber kebingungan yang sangat umum dengan \cmd{rsync}.
@@ -415,7 +415,7 @@ rsync -av --delete \
 \end{lstlisting}
 
 Opsi \texttt{--link-dest} adalah fitur canggih rsync yang memungkinkan backup
-incremental berbasis hard link. File yang tidak berubah tidak disalin ulang --- sebagai
+incremental berbasis hard link. File yang tidak berubah tidak disalin ulang: sebagai
 gantinya, rsync membuat hard link ke file yang sudah ada di direktori referensi
 (\texttt{\$YESTERDAY}). Hasilnya: setiap direktori backup terlihat seperti full backup
 yang lengkap (karena semua file terlihat di sana), tetapi ruang disk yang digunakan
@@ -441,8 +441,8 @@ default rsync mendeteksi perubahan berdasarkan waktu modifikasi dan ukuran file;
 lebih lambat. Opsi \texttt{--progress} menampilkan kemajuan transfer per file.
 Opsi \texttt{--log-file} mencatat semua aktivitas ke file log untuk audit.
 
-%% --- Praktikum ---
-\subsection*{Praktikum 12.3 --- Sinkronisasi Backup dengan rsync}
+%%: Praktikum ---
+\subsection*{Praktikum 12.3: Sinkronisasi Backup dengan rsync}
 \textbf{Tujuan:} menggunakan rsync untuk sinkronisasi lokal, memahami efek
 \texttt{--delete} dan perbedaan trailing slash, serta memverifikasi mekanisme
 hard link pada backup snapshot.
@@ -474,7 +474,7 @@ ls ~/lab-rsync/backup/
 \end{lstlisting}
 
     Perhatikan bahwa \file{fileA.txt} terhapus dari backup dan \file{fileC.txt}
-    ditambahkan --- backup menjadi cerminan tepat dari sumber.
+    ditambahkan: backup menjadi cerminan tepat dari sumber.
 
     \item Buat dua snapshot berbasis hard link:
 \begin{lstlisting}[language=bash, caption={Membuat snapshot dengan --link-dest}]
@@ -511,7 +511,7 @@ rm -rf ~/lab-rsync
 \end{enumerate}
 \end{exercisebox}
 
-\subsection{dd --- Backup Level Blok}
+\subsection{dd: Backup Level Blok}
 
 \cmd{dd} (\textit{data duplicator}) bekerja di level blok mentah (\emph{raw block}),
 menyalin data byte per byte tanpa mempedulikan struktur filesystem. Ini membuatnya
@@ -542,7 +542,7 @@ backup melalui SSH tanpa menyimpan sementara di disk lokal.
 nilai \texttt{if} dan \texttt{of} dengan teliti sebelum menjalankan perintah.
 Menukar \texttt{if} dan \texttt{of} secara tidak sengaja akan menghancurkan disk
 sumber dengan image kosong. Selain itu, \cmd{dd} pada disk yang sedang aktif digunakan
-(\emph{live disk}) dapat menghasilkan image yang tidak konsisten --- idealnya
+(\emph{live disk}) dapat menghasilkan image yang tidak konsisten: idealnya
 disk harus di-unmount terlebih dahulu.
 \end{warningbox}
 
@@ -569,8 +569,8 @@ yang sama jika image dibuat saat disk tidak aktif. Dua perintah terakhir memveri
 bahwa ukuran disk tujuan setidaknya sama besar dengan sumber, karena merestore ke disk
 yang lebih kecil akan memotong data.
 
-%% --- Praktikum ---
-\subsection*{Praktikum 12.4 --- Backup Level Blok dengan dd}
+%%: Praktikum ---
+\subsection*{Praktikum 12.4: Backup Level Blok dengan dd}
 \textbf{Tujuan:} membuat image disk menggunakan loopback device, membuat checksum
 untuk verifikasi integritas, dan mempraktikkan restore image.
 
@@ -818,8 +818,8 @@ Pendekatan kedua menggunakan urutan: tampilkan semua direktori terurut, ambil se
 kecuali 7 terbaru dengan \texttt{head -n -7}, lalu hapus. Dua perintah terakhir
 memantau penggunaan disk backup.
 
-%% --- Praktikum ---
-\subsection*{Praktikum 12.5 --- Otomasi Backup dengan Cron}
+%%: Praktikum ---
+\subsection*{Praktikum 12.5: Otomasi Backup dengan Cron}
 \textbf{Tujuan:} menulis skrip backup, mendaftarkan ke crontab, dan memverifikasi
 exekusi otomatis melalui log sistem.
 
@@ -942,7 +942,7 @@ diff /backup/snapshots/2024-01-14/home/alice/file.txt \
      /backup/snapshots/2024-01-15/home/alice/file.txt
 \end{lstlisting}
 
-Keunggulan snapshot berbasis rsync adalah kemudahan browsing --- setiap snapshot
+Keunggulan snapshot berbasis rsync adalah kemudahan browsing: setiap snapshot
 adalah direktori biasa yang bisa dinavigasi dengan \cmd{ls} dan \cmd{cd}. File
 dapat disalin langsung tanpa proses ekstraksi. Baris terakhir menunjukkan cara
 membandingkan versi file antara dua snapshot berbeda, berguna untuk memahami apa
@@ -998,7 +998,7 @@ dahulu untuk memeriksa filesystem, kemudian \cmd{resize2fs} tanpa argumen ukuran
 akan memperluas filesystem untuk mengisi seluruh partisi yang tersedia.
 
 \begin{notebox}
-Restore dari image \cmd{dd} bersifat \emph{destructive} --- seluruh isi disk tujuan
+Restore dari image \cmd{dd} bersifat \emph{destructive}: seluruh isi disk tujuan
 akan ditimpa sepenuhnya. Pastikan Anda menulis ke disk yang benar dengan memverifikasi
 nama device (\texttt{/dev/sda}, \texttt{/dev/sdb}, dll.) menggunakan \cmd{lsblk}
 atau \cmd{fdisk -l} sebelum menjalankan perintah restore.
@@ -1006,7 +1006,7 @@ atau \cmd{fdisk -l} sebelum menjalankan perintah restore.
 
 \begin{notebox}
 Backup yang belum pernah diuji restore-nya adalah backup yang tidak bisa diandalkan.
-Jadwalkan pengujian restore secara berkala --- setidaknya sekali sebulan untuk sistem
+Jadwalkan pengujian restore secara berkala: setidaknya sekali sebulan untuk sistem
 kritis.
 \end{notebox}
 
@@ -1029,8 +1029,8 @@ mengembalikan exit code non-zero. Membuat checksum file (\texttt{.md5} atau
 \texttt{.sha256}) segera setelah backup dibuat memungkinkan verifikasi integritas
 di kemudian hari. Simpan file checksum di lokasi berbeda dari backup itu sendiri.
 
-%% --- Praktikum ---
-\subsection*{Praktikum 12.6 --- Restore File dan Direktori dari Backup}
+%%: Praktikum ---
+\subsection*{Praktikum 12.6: Restore File dan Direktori dari Backup}
 \textbf{Tujuan:} mempraktikkan prosedur restore yang aman dari arsip tar dan
 snapshot rsync, termasuk verifikasi integritas sebelum restore.
 
@@ -1159,7 +1159,7 @@ tidak tersimpan dalam backup data biasa.
 
 \subsubsection{Runbook Pemulihan}
 
-Setiap sistem kritis harus memiliki \emph{runbook} --- dokumen langkah demi langkah
+Setiap sistem kritis harus memiliki \emph{runbook}: dokumen langkah demi langkah
 yang menjelaskan cara memulihkan sistem dari nol. Runbook yang baik harus:
 \begin{itemize}
     \item Ditulis dengan asumsi pembaca tidak familiar dengan sistem (\emph{ditulis
@@ -1287,8 +1287,8 @@ nama direktori sementara yang unik agar tidak konflik jika beberapa instance ber
 bersamaan. Skrip ini dapat dijadwalkan cron agar berjalan beberapa jam setelah backup
 selesai, memberikan peringatan otomatis jika backup bermasalah.
 
-%% --- Praktikum ---
-\subsection*{Praktikum 12.7 --- Membuat Disaster Recovery Plan Sederhana}
+%%: Praktikum ---
+\subsection*{Praktikum 12.7: Membuat Disaster Recovery Plan Sederhana}
 \textbf{Tujuan:} mendokumentasikan konfigurasi sistem secara otomatis, menyusun
 runbook pemulihan, dan mengukur RTO aktual dari simulasi restore kecil.
 
@@ -1428,7 +1428,7 @@ Bab ini telah membahas lima topik utama backup dan pemulihan sistem di Linux:
 \label{sec:backup-exercises}
 %% ========================================================================
 
-\begin{exercisebox}[Latihan 12.A --- Implementasi Backup Lengkap]
+\begin{exercisebox}[Latihan 12.A: Implementasi Backup Lengkap]
 Rancang dan implementasikan sistem backup untuk server dengan kondisi berikut:
 \begin{itemize}
     \item Data penting: \dir{/home}, \dir{/etc}, \dir{/var/www}
@@ -1445,13 +1445,13 @@ Rancang dan implementasikan sistem backup untuk server dengan kondisi berikut:
 \end{enumerate}
 \end{exercisebox}
 
-\begin{exercisebox}[Latihan 12.B --- Analisis Trade-off Backup]
+\begin{exercisebox}[Latihan 12.B: Analisis Trade-off Backup]
 Sebuah server web memiliki:
 \begin{itemize}
-    \item \dir{/var/www/html}: 50~GB file statis (gambar, CSS, JS) --- jarang berubah
-    \item \dir{/var/www/uploads}: 200~GB upload pengguna --- berubah setiap hari
-    \item \dir{/etc}: 5~MB konfigurasi sistem --- berubah setiap pekan
-    \item Database MySQL di \dir{/var/lib/mysql}: 10~GB --- berubah setiap jam
+    \item \dir{/var/www/html}: 50~GB file statis (gambar, CSS, JS): jarang berubah
+    \item \dir{/var/www/uploads}: 200~GB upload pengguna: berubah setiap hari
+    \item \dir{/etc}: 5~MB konfigurasi sistem: berubah setiap pekan
+    \item Database MySQL di \dir{/var/lib/mysql}: 10~GB: berubah setiap jam
 \end{itemize}
 \begin{enumerate}
     \item Tentukan strategi backup yang tepat untuk setiap direktori (jenis backup,
@@ -1462,7 +1462,7 @@ Sebuah server web memiliki:
 \end{enumerate}
 \end{exercisebox}
 
-\begin{exercisebox}[Latihan 12.C --- Disaster Recovery Drill]
+\begin{exercisebox}[Latihan 12.C: Disaster Recovery Drill]
 Lakukan simulasi disaster recovery menggunakan VM atau container:
 \begin{enumerate}
     \item Buat VM atau container ``produksi'' dengan beberapa file dan konfigurasi.
@@ -1485,14 +1485,14 @@ Lakukan simulasi disaster recovery menggunakan VM atau container:
     \item \textbf{Halaman manual}: \cmd{man tar}, \cmd{man rsync}, \cmd{man dd},
         \cmd{man crontab}, \cmd{man cron}
     \item \textbf{rsync documentation}: \url{https://rsync.samba.org/documentation.html}
-    \item \textbf{Ubuntu Server Guide --- Backups}:
+    \item \textbf{Ubuntu Server Guide: Backups}:
         \url{https://ubuntu.com/server/docs/backups-introduction}
-    \item \textbf{The Tao of Backup} --- panduan strategi backup yang komprehensif:
+    \item \textbf{The Tao of Backup}: panduan strategi backup yang komprehensif:
         \url{http://www.taobackup.com/}
     \item \textbf{GNU tar manual}: \url{https://www.gnu.org/software/tar/manual/}
-    \item \textbf{How Rsync Works} --- penjelasan algoritma delta-transfer:
+    \item \textbf{How Rsync Works}: penjelasan algoritma delta-transfer:
         \url{https://rsync.samba.org/how-rsync-works.html}
     \item \textbf{The Linux Command Line} oleh William Shotts, Bab 17 (Searching for
-        Files) dan Bab 18 (Archiving and Backup) --- tersedia gratis di
+        Files) dan Bab 18 (Archiving and Backup): tersedia gratis di
         \url{https://linuxcommand.org/tlcl.php}
 \end{itemize}

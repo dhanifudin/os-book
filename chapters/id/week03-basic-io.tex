@@ -13,7 +13,7 @@ Bab ini membahas mekanisme fundamental input/output di sistem Linux, termasuk ko
 
 \subsection{Apa Itu Filosofi Unix I/O?}
 
-Salah satu prinsip fundamental dalam desain Unix (dan turunannya seperti Linux) adalah konsep \textbf{``everything is a file''}. Filosofi ini berarti bahwa hampir semua sumber daya sistem---file reguler, direktori, perangkat keras, socket jaringan, pipe, bahkan proses---diperlakukan sebagai file yang dapat dibaca atau ditulis.
+Salah satu prinsip fundamental dalam desain Unix (dan turunannya seperti Linux) adalah konsep \textbf{``everything is a file''}. Filosofi ini berarti bahwa hampir semua sumber daya sistem, file reguler, direktori, perangkat keras, socket jaringan, pipe, bahkan proses, diperlakukan sebagai file yang dapat dibaca atau ditulis.
 
 \begin{definition}[Everything is a File]
 	Paradigma desain sistem operasi di mana berbagai jenis sumber daya sistem (hardware, software, komunikasi) diakses melalui antarmuka file yang seragam, menggunakan operasi standar seperti \texttt{open()}, \texttt{read()}, \texttt{write()}, dan \texttt{close()}.
@@ -172,7 +172,7 @@ Misalnya, daripada mengetik data secara manual ke perintah \cmd{sort}, Anda bisa
 
 \subsection{Standard Input (stdin)}
 
-Standard input (stdin) adalah sumber data untuk program. Secara default, stdin dibaca dari keyboard---artinya program menunggu Anda mengetik sesuatu. Namun, kita bisa mengalihkan stdin agar membaca dari file, sehingga program mendapat data dari file tersebut bukan dari keyboard.
+Standard input (stdin) adalah sumber data untuk program. Secara default, stdin dibaca dari keyboard, artinya program menunggu Anda mengetik sesuatu. Namun, kita bisa mengalihkan stdin agar membaca dari file, sehingga program mendapat data dari file tersebut bukan dari keyboard.
 
 \subsubsection{Apa Itu Pengalihan stdin?}
 
@@ -245,7 +245,7 @@ Gunakan here document ketika:
 
 Meskipun Anda bisa menggunakan multiple perintah \cmd{echo}, here document lebih baik karena:
 \begin{itemize}
-	\item Lebih mudah dibaca---konten terlihat seperti teks asli, bukan kode
+	\item Lebih mudah dibaca, konten terlihat seperti teks asli, bukan kode
 	\item Mempertahankan formatting (line breaks, indentasi)
 	\item Tidak perlu escape karakter spesial di setiap baris
 	\item Satu blok teks lebih mudah dimaintain
@@ -617,7 +617,7 @@ Ketika Anda ingin menambahkan ke file yang sudah ada (tidak menghapus isi lama):
 	\item Sama seperti Metode 2, tapi menggunakan \texttt{>>} untuk append
 	\item \texttt{>> file}: Append stdout ke file (tidak menghapus isi lama)
 	\item \texttt{2>\&1}: Stderr juga ikut append ke tempat yang sama
-	\item File akan terus bertambah besar---perlu log rotation untuk production
+	\item File akan terus bertambah besar, perlu log rotation untuk production
 \end{itemize}
 
 \paragraph{Perbandingan Praktis: Kapan Pakai Yang Mana?}
@@ -997,7 +997,7 @@ Anda mungkin bertanya: mengapa redirect ke \file{/dev/null} daripada memperbaiki
 \begin{itemize}
 	\item Beberapa error adalah \textbf{diharapkan dan tidak berbahaya} (seperti permission denied saat searching system-wide)
 	\item Anda tidak mengontrol program yang menghasilkan error tersebut
-	\item Error tersebut sebenarnya bukan error---hanya perilaku normal program
+	\item Error tersebut sebenarnya bukan error, hanya perilaku normal program
 	\item Anda ingin program berjalan sampai selesai tanpa berhenti pada masalah kecil
 \end{itemize}
 

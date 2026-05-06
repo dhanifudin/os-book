@@ -48,7 +48,7 @@ sudo apt install -y pciutils usbutils lshw dmidecode
 \end{lstlisting}
 \end{tipbox}
 
-\subsection*{Praktikum 2.1 --- Identifikasi CPU dan Memori}
+\subsection*{Praktikum 2.1: Identifikasi CPU dan Memori}
 \textbf{Tujuan:} memahami spesifikasi CPU dan kondisi memori pada server/VM.
 
 \textbf{Langkah-langkah:}
@@ -73,7 +73,7 @@ sudo dmidecode -t system
 Catat: (1) jumlah CPU(s), core/thread, (2) total RAM, (3) total swap. Jelaskan perbedaan RAM vs swap dalam 2--3 kalimat.
 \end{exercisebox}
 
-\subsection*{Praktikum 2.2 --- Identifikasi Perangkat PCI/USB dan Driver}
+\subsection*{Praktikum 2.2: Identifikasi Perangkat PCI/USB dan Driver}
 \textbf{Tujuan:} mengenali perangkat PCI/USB dan melihat driver/modul yang dipakai.
 
 \begin{notebox}
@@ -112,7 +112,7 @@ lsusb -t
 Temukan 1 perangkat PCI (misal NIC) dan tuliskan: \textit{Vendor:Device ID} (angka heksadesimal), nama driver/modul kernel, dan deskripsi singkat fungsinya.
 \end{exercisebox}
 
-\subsection*{Praktikum 2.3 --- Identifikasi Storage dan Filesystem}
+\subsection*{Praktikum 2.3: Identifikasi Storage dan Filesystem}
 \textbf{Tujuan:} memahami disk/partisi dan filesystem yang terpasang.
 
 \textbf{Langkah-langkah:}
@@ -166,7 +166,7 @@ Jangan mencoba melepas modul yang terkait storage, filesystem, atau network yang
 karena bisa membuat sistem hang atau koneksi SSH terputus.
 \end{warningbox}
 
-\subsection*{Praktikum 2.4 --- Melihat Modul Aktif dan Informasinya}
+\subsection*{Praktikum 2.4: Melihat Modul Aktif dan Informasinya}
 \textbf{Tujuan:} mengenal modul aktif dan keterkaitannya dengan perangkat.
 
 \textbf{Langkah-langkah:}
@@ -198,7 +198,7 @@ dmesg -T | tail -n 20
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 2.5 --- Konfigurasi Auto-load dan Blacklist}
+\subsection*{Praktikum 2.5: Konfigurasi Auto-load dan Blacklist}
 \textbf{Tujuan:} memahami cara membuat modul otomatis dimuat atau diblokir.
 
 \textbf{Fungsi konfigurasi:}
@@ -249,7 +249,7 @@ Ada dua kategori utama,
     \item \texttt{udevadm monitor}: memonitor event saat perangkat muncul/hilang.
 \end{itemize}
 
-\subsection*{Praktikum 2.6 --- Mengenali Block vs Character Device}
+\subsection*{Praktikum 2.6: Mengenali Block vs Character Device}
 \textbf{Tujuan:} membedakan perangkat disk vs terminal.
 
 \textbf{Langkah-langkah:}
@@ -274,7 +274,7 @@ lsblk
 Dari output \texttt{ls -l}, jelaskan perbedaan penanda file untuk block device dan character device. (Hint: karakter pertama pada permission string)
 \end{exercisebox}
 
-\subsection*{Praktikum 2.7 --- Melihat Informasi udev}
+\subsection*{Praktikum 2.7: Melihat Informasi udev}
 \textbf{Tujuan:} melihat metadata yang dipakai udev untuk membuat device node.
 
 \textbf{Langkah-langkah:}
@@ -312,7 +312,7 @@ Perintah \texttt{rm -rf} dapat menghapus direktori beserta isinya tanpa konfirma
 atau pastikan path yang Anda hapus benar.
 \end{warningbox}
 
-\subsection*{Praktikum 2.8 --- Membuat Workspace Praktikum}
+\subsection*{Praktikum 2.8: Membuat Workspace Praktikum}
 \textbf{Tujuan:} membuat area kerja aman untuk semua latihan bab ini.
 
 \textbf{Langkah-langkah:}
@@ -357,7 +357,7 @@ adalah tools untuk menyaring, mengubah, dan meringkas teks secara cepat.
 \texttt{grep} digunakan untuk mencari baris yang cocok dengan pola (pattern) di file atau stream.
 Sangat berguna untuk mencari error pada log atau mencari konfigurasi tertentu.
 
-\subsubsection*{Praktikum 2.9 --- Pencarian Pola dengan grep}
+\subsubsection*{Praktikum 2.9: Pencarian Pola dengan grep}
 \textbf{Langkah-langkah:}
 \begin{enumerate}
     \item Cari baris yang mengandung \texttt{ERROR} pada \texttt{data.log}:
@@ -391,7 +391,7 @@ Gunakan \texttt{grep} untuk menampilkan hanya baris yang mengandung \texttt{INFO
 \texttt{sed} adalah stream editor untuk melakukan transformasi teks, terutama substitusi (cari-ganti).
 Umum dipakai untuk memperbarui konfigurasi atau melakukan normalisasi output.
 
-\subsubsection*{Praktikum 2.10 --- Substitusi dengan sed (Aman di File Latihan)}
+\subsubsection*{Praktikum 2.10: Substitusi dengan sed (Aman di File Latihan)}
 \textbf{Langkah-langkah:}
 \begin{enumerate}
     \item Siapkan file konfigurasi latihan:
@@ -432,7 +432,7 @@ Gunakan \texttt{sed -i} dengan hati-hati jika mengedit file sistem. Untuk admini
 \texttt{awk} digunakan untuk memproses teks berbasis kolom/field. Sangat efektif untuk meringkas output perintah seperti \texttt{df}, \texttt{ps},
 atau file berformat kolom.
 
-\subsubsection*{Praktikum 2.11 --- Ekstraksi Kolom dengan awk}
+\subsubsection*{Praktikum 2.11: Ekstraksi Kolom dengan awk}
 \textbf{Langkah-langkah:}
 \begin{enumerate}
     \item Lihat output \texttt{df -h}:
@@ -468,7 +468,7 @@ Linux menggunakan \textbf{sinyal} untuk mengontrol proses, misalnya:
 \subsubsection*{Fungsi ps}
 \texttt{ps} menampilkan snapshot proses pada saat perintah dijalankan. Berguna untuk mencari PID, melihat pemakaian CPU/MEM, dan memfilter proses tertentu.
 
-\subsubsection*{Praktikum 2.12 --- Melihat Proses dengan ps}
+\subsubsection*{Praktikum 2.12: Melihat Proses dengan ps}
 \textbf{Langkah-langkah:}
 \begin{enumerate}
     \item Tampilkan semua proses (format BSD):
@@ -487,7 +487,7 @@ ps aux | grep -i sshd
 \texttt{top} menampilkan pemakaian resource secara real-time: CPU, memori, serta proses paling berat.
 Ini alat cepat untuk diagnosis ``server terasa lambat''.
 
-\subsubsection*{Praktikum 2.13 --- Monitoring Real-time dengan top}
+\subsubsection*{Praktikum 2.13: Monitoring Real-time dengan top}
 \textbf{Langkah-langkah:}
 \begin{enumerate}
     \item Jalankan \texttt{top}:
@@ -510,7 +510,7 @@ sudo apt install -y htop btop
 \texttt{kill} mengirim sinyal ke proses berdasarkan PID. Sinyal yang dikirimkan merupakan sinyal untuk menghentikan proses.
 Sinyal default adalah \texttt{SIGTERM}.
 
-\subsubsection*{Praktikum 2.14 --- Menghentikan Proses dengan kill}
+\subsubsection*{Praktikum 2.14: Menghentikan Proses dengan kill}
 \textbf{Langkah-langkah:}
 \begin{enumerate}
     \item Jalankan proses dummy di background:
@@ -561,7 +561,7 @@ Pemantauan sistem berfokus pada tiga pertanyaan praktis:
 \end{itemize}
 
 
-\subsection*{Praktikum 2.15 --- Cek Disk, Load, dan Service}
+\subsection*{Praktikum 2.15: Cek Disk, Load, dan Service}
 \textbf{Langkah-langkah:}
 \begin{enumerate}
     \item Cek penggunaan disk:
@@ -590,7 +590,7 @@ journalctl -xe | tail -n 50
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 2.16 --- Monitoring Port dan Koneksi (Network Basics)}
+\subsection*{Praktikum 2.16: Monitoring Port dan Koneksi (Network Basics)}
 \textbf{Tujuan:} melihat interface, routing, dan port yang sedang listen (berguna untuk troubleshooting service).
 
 \textbf{Langkah-langkah:}

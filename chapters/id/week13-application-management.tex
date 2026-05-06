@@ -40,7 +40,7 @@ Dalam praktik sehari-hari, administrator hampir selalu menggunakan \cmd{apt} unt
 tugas rutin. \cmd{dpkg} digunakan saat menginstal file \file{.deb} yang diunduh
 manual, atau untuk inspeksi paket yang sudah terinstall.
 
-\subsection{apt --- Manajemen Paket Tingkat Tinggi}
+\subsection{apt: Manajemen Paket Tingkat Tinggi}
 
 \subsubsection{Memperbarui Daftar Paket dan Sistem}
 
@@ -108,7 +108,7 @@ versi, ukuran, dependensi, deskripsi, dan homepage. Perintah \texttt{apt list
 menampilkan daftar dependensi paket, sedangkan \texttt{apt rdepends} (reverse
 depends) menampilkan paket-paket yang bergantung pada paket tersebut.
 
-\subsection{dpkg --- Manajemen Paket Tingkat Rendah}
+\subsection{dpkg: Manajemen Paket Tingkat Rendah}
 
 \subsubsection{Inspeksi Paket Terinstall}
 
@@ -175,8 +175,8 @@ Meski sintaksnya berbeda, konsep di balik semua package manager ini sama: indeks
 repositori, dependensi otomatis, dan manajemen siklus hidup paket. Memahami satu
 tool memudahkan pembelajaran tool lainnya.
 
-%% --- Praktikum ---
-\subsection*{Praktikum 11.1 --- Eksplorasi Manajemen Paket}
+%%: Praktikum ---
+\subsection*{Praktikum 11.1: Eksplorasi Manajemen Paket}
 \textbf{Tujuan:} memahami alur kerja apt dan dpkg untuk instalasi, inspeksi, dan
 penghapusan paket secara tepat.
 
@@ -327,8 +327,8 @@ tersebut. Untuk repositori yang ditambahkan secara manual, hapus file
 \cmd{apt-cache policy} tanpa argumen menampilkan semua sumber paket yang aktif
 beserta prioritasnya.
 
-%% --- Praktikum ---
-\subsection*{Praktikum 11.2 --- Manajemen Repositori}
+%%: Praktikum ---
+\subsection*{Praktikum 11.2: Manajemen Repositori}
 \textbf{Tujuan:} memeriksa konfigurasi repositori aktif, menambahkan repositori
 pihak ketiga dengan metode GPG key modern, dan memverifikasi paket dari repositori
 baru tersedia.
@@ -494,14 +494,14 @@ sudo make install
 \end{lstlisting}
 
 CMake menggunakan direktori build terpisah (\emph{out-of-source build}) yang menjaga
-direktori source tetap bersih --- semua file hasil kompilasi berada di
+direktori source tetap bersih: semua file hasil kompilasi berada di
 \dir{build/}. Perintah \cmd{cmake ..} memproses \file{CMakeLists.txt} dari
 direktori induk. Opsi \texttt{-D} mengatur variabel CMake; \texttt{CMAKE\_BUILD\_TYPE=Release}
 mengaktifkan optimasi kompiler sementara \texttt{Debug} menyertakan informasi
 debugging.
 
-%% --- Praktikum ---
-\subsection*{Praktikum 11.3 --- Kompilasi dari Source Code}
+%%: Praktikum ---
+\subsection*{Praktikum 11.3: Kompilasi dari Source Code}
 \textbf{Tujuan:} mengompilasi program sederhana dari source code menggunakan
 pola autotools, memahami setiap tahap, dan mengelola hasilnya dengan checkinstall.
 
@@ -630,7 +630,7 @@ dengan host OS sehingga jauh lebih ringan.
 \cref{fig:docker-vs-vm} mengilustrasikan perbedaan arsitektur mendasar antara
 Docker Container dan Virtual Machine. Pada sisi kiri, Docker Engine berjalan
 langsung di atas kernel host. Ketiga container (A, B, C) berbagi kernel yang
-sama dan hanya membawa library serta aplikasi masing-masing---itulah mengapa
+sama dan hanya membawa library serta aplikasi masing-masing, itulah mengapa
 ukuran image Docker jauh lebih kecil dibanding VM. Panah dari Docker Engine
 membentuk \emph{T-junction bus}, menunjukkan bahwa engine mengorkestrasi semua
 container secara terpusat.
@@ -639,7 +639,7 @@ Pada sisi kanan, Hypervisor (misalnya VMware, KVM, atau VirtualBox) berjalan
 di atas kernel host dan menyediakan lapisan virtualisasi. Setiap VM harus
 membawa \emph{Guest OS Kernel}-nya sendiri, sehingga konsumsi RAM dan disk
 jauh lebih besar. Namun isolasi VM lebih kuat karena setiap VM beroperasi
-seolah-olah pada hardware tersendiri---celah keamanan di satu VM tidak
+seolah-olah pada hardware tersendiri, celah keamanan di satu VM tidak
 langsung memengaruhi VM lain.
 
 \begin{figure}[htbp]
@@ -1037,8 +1037,8 @@ image tersebut dijalankan bersama dengan service lain (database, cache, message
 broker, dll.).
 \end{notebox}
 
-%% --- Praktikum ---
-\subsection*{Praktikum 11.4 --- Pengenalan Docker dan Docker Compose}
+%%: Praktikum ---
+\subsection*{Praktikum 11.4: Pengenalan Docker dan Docker Compose}
 \textbf{Tujuan:} menjalankan container dari image yang ada, membuat image kustom
 dengan Dockerfile, dan mengelola stack multi-container menggunakan Docker Compose.
 
@@ -1202,7 +1202,7 @@ dengan tampilan berwarna, scroll horizontal, dan tree view proses.
 
 \subsection{Pemantauan File dan Port}
 
-\subsubsection{lsof --- Melihat File yang Terbuka}
+\subsubsection{lsof: Melihat File yang Terbuka}
 
 \begin{lstlisting}[language=bash, caption={Menggunakan lsof}]
 sudo lsof -p 1234
@@ -1224,7 +1224,7 @@ digunakan). Opsi \texttt{-i :port} menampilkan proses yang menggunakan port tert
 Opsi \texttt{-nP} menonaktifkan resolusi nama host dan nama port untuk output lebih
 cepat; filter \texttt{LISTEN} menampilkan hanya port yang sedang mendengarkan.
 
-\subsubsection{ss --- Status Socket Jaringan}
+\subsubsection{ss: Status Socket Jaringan}
 
 \begin{lstlisting}[language=bash, caption={Memeriksa koneksi jaringan dengan ss}]
 ss -tlnp
@@ -1252,7 +1252,7 @@ apt-cache rdepends --installed libssl3
 \end{lstlisting}
 
 Perintah \cmd{ldd} menampilkan semua shared library yang dibutuhkan sebuah binary.
-Output \texttt{not found} menunjukkan library yang hilang --- ini adalah penyebab
+Output \texttt{not found} menunjukkan library yang hilang: ini adalah penyebab
 umum program gagal dijalankan meski sudah terinstal. Perintah \cmd{ldconfig -p}
 mendaftar semua library yang dikenal sistem dari cache \cmd{ldconfig}. Perintah
 \cmd{ldconfig} (tanpa argumen, dengan sudo) memperbarui cache library setelah
@@ -1284,8 +1284,8 @@ melayani traffic tinggi. Gunakan dengan \texttt{-e trace=} untuk memfilter hanya
 system call yang relevan.
 \end{warningbox}
 
-%% --- Praktikum ---
-\subsection*{Praktikum 11.5 --- Pemantauan Aplikasi}
+%%: Praktikum ---
+\subsection*{Praktikum 11.5: Pemantauan Aplikasi}
 \textbf{Tujuan:} menggunakan berbagai alat pemantauan untuk mengidentifikasi
 penggunaan sumber daya, file yang terbuka, port yang digunakan, dan dependensi
 library dari aplikasi yang berjalan.
@@ -1397,7 +1397,7 @@ Bab ini telah membahas lima topik utama manajemen aplikasi di Linux:
 \label{sec:appmanagement-exercises}
 %% ========================================================================
 
-\begin{exercisebox}[Latihan 11.A --- Audit Software Server]
+\begin{exercisebox}[Latihan 11.A: Audit Software Server]
 Lakukan audit lengkap software yang terinstall di sistem Ubuntu Server:
 \begin{enumerate}
     \item Tampilkan jumlah total paket yang terinstall dan buat daftar 20 paket
@@ -1412,7 +1412,7 @@ Lakukan audit lengkap software yang terinstall di sistem Ubuntu Server:
 \end{enumerate}
 \end{exercisebox}
 
-\begin{exercisebox}[Latihan 11.B --- Containerisasi Aplikasi Web]
+\begin{exercisebox}[Latihan 11.B: Containerisasi Aplikasi Web]
 Buat setup container untuk melayani aplikasi web statis:
 \begin{enumerate}
     \item Buat Dockerfile yang menggunakan \texttt{nginx:alpine} sebagai base image
@@ -1425,7 +1425,7 @@ Buat setup container untuk melayani aplikasi web statis:
 \end{enumerate}
 \end{exercisebox}
 
-\begin{exercisebox}[Latihan 11.C --- Pemecahan Masalah Aplikasi]
+\begin{exercisebox}[Latihan 11.C: Pemecahan Masalah Aplikasi]
 Seorang administrator melaporkan bahwa web server tidak bisa distart karena
 ``port sudah digunakan''. Selesaikan skenario berikut:
 \begin{enumerate}
@@ -1449,15 +1449,15 @@ Seorang administrator melaporkan bahwa web server tidak bisa distart karena
 \begin{itemize}
     \item \textbf{Halaman manual}: \cmd{man apt}, \cmd{man dpkg}, \cmd{man lsof},
         \cmd{man strace}, \cmd{man ss}, \cmd{man docker}
-    \item \textbf{Ubuntu Server Guide --- Package Management}:
+    \item \textbf{Ubuntu Server Guide: Package Management}:
         \url{https://ubuntu.com/server/docs/package-management}
-    \item \textbf{Debian Policy Manual} --- spesifikasi lengkap sistem paket Debian:
+    \item \textbf{Debian Policy Manual}: spesifikasi lengkap sistem paket Debian:
         \url{https://www.debian.org/doc/debian-policy/}
     \item \textbf{Docker Documentation}:
         \url{https://docs.docker.com/engine/install/ubuntu/}
     \item \textbf{Dockerfile best practices}:
         \url{https://docs.docker.com/develop/develop-images/dockerfile_best-practices/}
-    \item \textbf{Ubuntu Manpage --- apt}: \url{https://manpages.ubuntu.com/manpages/jammy/man8/apt.8.html}
+    \item \textbf{Ubuntu Manpage: apt}: \url{https://manpages.ubuntu.com/manpages/jammy/man8/apt.8.html}
     \item \textbf{The Linux Command Line} oleh William Shotts, Bab 14 (Package
-        Management) --- tersedia gratis di \url{https://linuxcommand.org/tlcl.php}
+        Management): tersedia gratis di \url{https://linuxcommand.org/tlcl.php}
 \end{itemize}

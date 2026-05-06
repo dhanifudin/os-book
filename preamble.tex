@@ -168,8 +168,8 @@
 %% ------------------------------------------------------------------------
 %% Add penalties to discourage page breaks inside listings
 \lstset{
-    aboveskip=\bigskipamount,
-    belowskip=\bigskipamount
+    aboveskip=\medskipamount,
+    belowskip=\medskipamount
 }
 
 %% For very long code that MUST be allowed to break, use this environment
@@ -270,7 +270,8 @@
     colback=blue!5!white,
     colframe=blue!75!black,
     title=\noteboxTitle,
-    fonttitle=\bfseries
+    fonttitle=\bfseries,
+    top=3pt, bottom=3pt, toptitle=2pt, bottomtitle=2pt
 }
 
 % Box untuk peringatan / warning
@@ -278,7 +279,8 @@
     colback=red!5!white,
     colframe=red!75!black,
     title=\warningboxTitle,
-    fonttitle=\bfseries
+    fonttitle=\bfseries,
+    top=3pt, bottom=3pt, toptitle=2pt, bottomtitle=2pt
 }
 
 % Box untuk tip
@@ -286,7 +288,8 @@
     colback=green!5!white,
     colframe=green!75!black,
     title=\tipboxTitle,
-    fonttitle=\bfseries
+    fonttitle=\bfseries,
+    top=3pt, bottom=3pt, toptitle=2pt, bottomtitle=2pt
 }
 
 % Box untuk contoh / example
@@ -294,7 +297,8 @@
     colback=yellow!10!white,
     colframe=orange!75!black,
     title=\exampleboxPrefix#1,
-    fonttitle=\bfseries
+    fonttitle=\bfseries,
+    top=3pt, bottom=3pt, toptitle=2pt, bottomtitle=2pt
 }
 
 % Box untuk latihan / exercise
@@ -302,7 +306,8 @@
     colback=purple!5!white,
     colframe=purple!75!black,
     title=\exerciseboxPrefix#1,
-    fonttitle=\bfseries
+    fonttitle=\bfseries,
+    top=3pt, bottom=3pt, toptitle=2pt, bottomtitle=2pt
 }
 
 %% Unbreakable code listing using tcolorbox (prevents page breaks)
@@ -392,7 +397,7 @@
 %% Spacing dan Format
 %% ------------------------------------------------------------------------
 \usepackage{setspace}
-\setstretch{1.15}
+\setstretch{1.1}
 
 \setlength{\parindent}{0cm}
 \setlength{\parskip}{3cm}
@@ -409,11 +414,27 @@
 \addtokomafont{paragraph}{\fontsize{11}{13}\selectfont}
 \addtokomafont{subparagraph}{\fontsize{11}{13}\selectfont}
 
+%% Compact heading spacing
+\RedeclareSectionCommand[beforeskip=1.2cm, afterskip=0.4cm]{chapter}
+\RedeclareSectionCommand[
+    beforeskip=-1.8ex plus -1ex minus -.2ex,
+    afterskip=0.5ex plus .2ex
+]{section}
+\RedeclareSectionCommand[
+    beforeskip=-1.4ex plus -1ex minus -.2ex,
+    afterskip=0.3ex plus .2ex
+]{subsection}
+\RedeclareSectionCommand[
+    beforeskip=-1ex plus -1ex minus -.2ex,
+    afterskip=0.1ex plus .1ex
+]{subsubsection}
+
 %% ------------------------------------------------------------------------
 %% Miscellaneous
 %% ------------------------------------------------------------------------
 \usepackage{lipsum}              % Dummy text (hapus untuk versi final)
 \usepackage{enumitem}            % Enhanced list environments
+\setlist{topsep=3pt, parsep=0pt, itemsep=2pt, partopsep=2pt}
 \usepackage{csquotes}            % Context sensitive quotation
 
 %% Suppress overfull hbox warnings di batas tertentu

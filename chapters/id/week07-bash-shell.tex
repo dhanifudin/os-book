@@ -60,7 +60,7 @@ sedangkan shell yang sedang aktif pada terminal saat ini bisa saja berbeda.
 Karena itu, biasakan membedakan \texttt{\$SHELL} dan \texttt{\$0}.
 \end{tipbox}
 
-\subsection*{Praktikum 6.1 --- Mengenali Bash dan Menyiapkan Workspace }
+\subsection*{Praktikum 6.1: Mengenali Bash dan Menyiapkan Workspace }
 
 Tujuan: mengenali shell aktif dan menyiapkan area kerja yang aman untuk seluruh praktikum bab ini.
 
@@ -98,7 +98,7 @@ ls -R
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 6.2 --- Membuat Ringkasan Sesi Terminal }
+\subsection*{Praktikum 6.2: Membuat Ringkasan Sesi Terminal }
 
 Tujuan: membiasakan administrator memverifikasi konteks kerja sebelum melakukan maintenance.
 
@@ -164,7 +164,7 @@ di server produksi tanpa backup. Untuk praktikum, biasakan menambahkan blok
 konfigurasi sendiri dan menandainya dengan komentar yang jelas.
 \end{notebox}
 
-\subsection*{Praktikum 6.3 --- Menambahkan Konfigurasi Aman pada \texttt{.bashrc} }
+\subsection*{Praktikum 6.3: Menambahkan Konfigurasi Aman pada \texttt{.bashrc} }
 
 Tujuan: memahami peran \texttt{.bashrc} dan menerapkan perubahan secara aman.
 
@@ -183,10 +183,10 @@ cp ~/.bashrc ~/.bashrc.bak-praktikum
 \begin{lstlisting}[language=bash, caption={Menambahkan konfigurasi ke .bashrc}]
 cat <<'EOF' >> ~/.bashrc
 
-# --- Praktikum Bash Shell ---
+#: Praktikum Bash Shell ---
 export PRAKTIKUM_BASH_DIR="$HOME/praktikum-os/week04-bash"
 export EDITOR=nano
-# --- End Praktikum Bash Shell ---
+#: End Praktikum Bash Shell ---
 
 EOF
 \end{lstlisting}
@@ -199,7 +199,7 @@ echo "$EDITOR"
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 6.4 --- Menyiapkan \texttt{.bash\_profile} untuk Shell Login }
+\subsection*{Praktikum 6.4: Menyiapkan \texttt{.bash\_profile} untuk Shell Login }
 
 Tujuan: memahami hubungan \texttt{.bash\_profile} dan \texttt{.bashrc} pada skenario login shell.
 
@@ -213,13 +213,13 @@ Tujuan: memahami hubungan \texttt{.bash\_profile} dan \texttt{.bashrc} pada sken
 \begin{lstlisting}[language=bash, caption={Menambahkan konfigurasi ke .bash\_profile}]
 cat <<'EOF' >> ~/.bash_profile
 
-# --- Praktikum Bash Login Shell ---
+#: Praktikum Bash Login Shell ---
 if [ -f ~/.bashrc ]; then
   . ~/.bashrc
 fi
 
 echo "Login Bash pada $(date '+%F %T')" >> "$HOME/praktikum-os/week07-bash/login-audit.log"
-# --- End Praktikum Bash Login Shell ---
+#: End Praktikum Bash Login Shell ---
 
 EOF
 \end{lstlisting}
@@ -267,7 +267,7 @@ Ingat perbedaannya:
 \end{itemize}
 \end{tipbox}
 
-\subsection*{Praktikum 6.5 --- Membedakan Variabel Shell dan Environment Variable }
+\subsection*{Praktikum 6.5: Membedakan Variabel Shell dan Environment Variable }
 
 Tujuan: memahami perbedaan variabel lokal dan variabel lingkungan.
 
@@ -301,7 +301,7 @@ type ls
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 6.6 --- Menambahkan Direktori Script Pribadi ke \texttt{PATH} }
+\subsection*{Praktikum 6.6: Menambahkan Direktori Script Pribadi ke \texttt{PATH} }
 
 Tujuan: membuat perintah administrasi sederhana yang bisa dipanggil dari mana saja.
 
@@ -315,9 +315,9 @@ mkdir -p ~/praktikum-os/week07-bash/bin
 \begin{lstlisting}[language=bash, caption={Menambahkan direktori bin ke PATH}]
 cat <<'EOF' >> ~/.bashrc
 
-# --- Praktikum PATH ---
+#: Praktikum PATH ---
 export PATH="$HOME/praktikum-os/week07-bash/bin:$PATH"
-# --- End Praktikum PATH ---
+#: End Praktikum PATH ---
 
 EOF
 
@@ -376,7 +376,7 @@ fungsi shell lebih tepat digunakan daripada alias.
   \item \texttt{source ~/.bashrc}: memuat ulang alias dan fungsi.
 \end{itemize}
 
-\subsection*{Praktikum 6.7 --- Membuat Alias Produktivitas Dasar }
+\subsection*{Praktikum 6.7: Membuat Alias Produktivitas Dasar }
 
 Tujuan: membuat shortcut perintah yang sering dipakai.
 
@@ -385,11 +385,11 @@ Tujuan: membuat shortcut perintah yang sering dipakai.
 \begin{lstlisting}[language=bash, caption={Menambahkan alias ke .bashrc}]
 cat <<'EOF' >> ~/.bashrc
 
-# --- Praktikum Alias ---
+#: Praktikum Alias ---
 alias ll='ls -lah --color=auto'
 alias hist10='history | tail -n 10'
 alias cdbashlab='cd $HOME/praktikum-os/week04-bash'
-# --- End Praktikum Alias ---
+#: End Praktikum Alias ---
 
 EOF
 
@@ -406,7 +406,7 @@ type ll
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 6.8 --- Membuat Fungsi Backup Konfigurasi }
+\subsection*{Praktikum 6.8: Membuat Fungsi Backup Konfigurasi }
 
 Tujuan: membuat fungsi shell yang dapat dipakai berulang untuk backup file konfigurasi.
 
@@ -421,7 +421,7 @@ cat ~/praktikum-os/week07-bash/sample-app.conf
 \begin{lstlisting}[language=bash, caption={Menambahkan fungsi backup\_conf ke .bashrc}]
 cat <<'EOF' >> ~/.bashrc
 
-# --- Praktikum Fungsi Shell ---
+#: Praktikum Fungsi Shell ---
 backup_conf() {
   if [ $# -ne 1 ]; then
     echo "Usage: backup_conf <file>"
@@ -440,7 +440,7 @@ backup_conf() {
   cp -- "$src" "$dst/$(basename "$src").$(date +%F-%H%M%S).bak"
   echo "Backup selesai di $dst"
 }
-# --- End Praktikum Fungsi Shell ---
+#: End Praktikum Fungsi Shell ---
 
 EOF
 
@@ -488,7 +488,7 @@ Menjalankan ulang perintah dengan \texttt{!!} atau \texttt{!\textless nomor\text
 dapat berisiko jika perintah sebelumnya bersifat destruktif.
 \end{notebox}
 
-\subsection*{Praktikum 6.9 --- Menggunakan Completion Dasar dan Melihat History }
+\subsection*{Praktikum 6.9: Menggunakan Completion Dasar dan Melihat History }
 
 Tujuan: menggunakan fitur \texttt{Tab} dan history untuk mempercepat kerja.
 
@@ -517,7 +517,7 @@ history | tail -n 10
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 6.10 --- Menelusuri Perintah Diagnostik dengan History }
+\subsection*{Praktikum 6.10: Menelusuri Perintah Diagnostik dengan History }
 
 Tujuan: menggunakan history untuk mengulang langkah diagnosis sistem secara cepat.
 
@@ -584,7 +584,7 @@ menggunakan \texttt{echo}. Jangan langsung memakai \texttt{rm *.log} atau
 \texttt{mv *.conf ...} tanpa melihat apa saja yang akan cocok dengan pola tersebut.
 \end{notebox}
 
-\subsection*{Praktikum 6.11 --- Mencoba Wildcard Dasar }
+\subsection*{Praktikum 6.11: Mencoba Wildcard Dasar }
 
 Tujuan: memahami pola wildcard dan ekspansi nama file.
 
@@ -610,7 +610,7 @@ echo ~/praktikum-os/week04-bash
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 6.12 --- Mengarsipkan Banyak Log Sekaligus }
+\subsection*{Praktikum 6.12: Mengarsipkan Banyak Log Sekaligus }
 
 Tujuan: menggunakan wildcard secara aman untuk pekerjaan rutin administrator.
 
@@ -680,7 +680,7 @@ Aturan praktis yang sangat berguna: \textbf{selalu beri tanda kutip ganda pada v
 yang merepresentasikan path atau nama file}, misalnya \texttt{"\$file"}.
 \end{tipbox}
 
-\subsection*{Praktikum 6.13 --- Membedakan Single Quote, Double Quote, dan Escape }
+\subsection*{Praktikum 6.13: Membedakan Single Quote, Double Quote, dan Escape }
 
 Tujuan: memahami efek tanda kutip terhadap ekspansi Bash.
 
@@ -703,7 +703,7 @@ cat "laporan server april.txt"
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 6.14 --- Menangani File dengan Nama Sulit Secara Aman }
+\subsection*{Praktikum 6.14: Menangani File dengan Nama Sulit Secara Aman }
 
 Tujuan: memproses file yang mengandung spasi dan karakter khusus tanpa error.
 
@@ -754,7 +754,7 @@ meminta membaca file sistem seperti \texttt{/etc} atau \texttt{/proc}. Hindari
 mengubah file sistem penting secara langsung tanpa backup.
 \end{warningbox}
 
-\subsection*{Tugas Praktikum 1 --- Toolkit Bash Administrator Pribadi}
+\subsection*{Tugas Praktikum 1: Toolkit Bash Administrator Pribadi}
 \textbf{Konteks riil:} seorang administrator sering mengulang perintah yang sama
 setiap hari. Agar pekerjaan lebih efisien dan konsisten, ia perlu memiliki
 \textit{toolkit} Bash pribadi yang otomatis aktif setiap login.
@@ -783,7 +783,7 @@ setiap hari. Agar pekerjaan lebih efisien dan konsisten, ia perlu memiliki
     \item file laporan \texttt{toolkit-bash-report.txt}.
 \end{itemize}
 
-\subsection*{Tugas Praktikum 2 --- Audit File Konfigurasi dan Logging Aman}
+\subsection*{Tugas Praktikum 2: Audit File Konfigurasi dan Logging Aman}
 \textbf{Konteks riil:} saat troubleshooting, administrator sering perlu
 menginventarisasi file konfigurasi dan memisahkan output normal dari pesan error.
 
@@ -818,7 +818,7 @@ menginventarisasi file konfigurasi dan memisahkan output normal dari pesan error
     \item analisis singkat hasil audit.
 \end{itemize}
 
-\subsection*{Tugas Praktikum 3 --- Mini Health Check Harian Server}
+\subsection*{Tugas Praktikum 3: Mini Health Check Harian Server}
 \textbf{Konteks riil:} administrator perlu membuat pemeriksaan cepat
 (\textit{health check}) untuk mengetahui kondisi dasar server sebelum dan sesudah
 maintenance.
@@ -862,7 +862,7 @@ maintenance.
     \item penjelasan singkat fungsi tiap bagian script.
 \end{itemize}
 
-\subsection*{Tugas Praktikum 4 --- Penanganan File dengan Nama Kompleks dan Arsip Aman}
+\subsection*{Tugas Praktikum 4: Penanganan File dengan Nama Kompleks dan Arsip Aman}
 \textbf{Konteks riil:} file hasil backup, ekspor, atau laporan sering memiliki nama
 yang mengandung spasi atau karakter khusus. Administrator harus tetap dapat
 memproses file-file tersebut tanpa salah target.

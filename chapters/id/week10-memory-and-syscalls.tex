@@ -4,15 +4,15 @@
 \chapter{Manajemen Memori \& System Call}
 \label{ch:memory-and-syscalls}
 
-Bayangkan meja kerja Anda. Di atas meja tersimpan dokumen yang sedang aktif digunakan
---- inilah yang diibaratkan sebagai \textbf{RAM}. Saat meja mulai penuh, beberapa
-dokumen dipindahkan ke laci agar ada ruang baru --- inilah yang diibaratkan sebagai
+Bayangkan meja kerja Anda. Di atas meja tersimpan dokumen yang sedang aktif digunakan,
+inilah yang diibaratkan sebagai \textbf{RAM}. Saat meja mulai penuh, beberapa
+dokumen dipindahkan ke laci agar ada ruang baru: inilah yang diibaratkan sebagai
 \textbf{swap}. Jika semua dokumen tersimpan di laci dan Anda terus bolak-balik
 mengambilnya, pekerjaan menjadi lambat. Itulah gambaran sederhana bagaimana sistem
 operasi Linux mengelola memori.
 
 Pada bab ini kita akan memahami konsep tersebut lebih dalam, sekaligus mempelajari
-\textbf{system call} --- mekanisme yang digunakan program untuk meminta layanan dari
+\textbf{system call}: mekanisme yang digunakan program untuk meminta layanan dari
 kernel. Kita juga akan memanfaatkan kemampuan Bash dari Bab~9 untuk membangun script
 monitoring yang nyata dan berguna.
 
@@ -88,7 +88,7 @@ virtual sendiri yang diisolasi dari proses lain.}
 
 \begin{notebox}
 Isolasi antar proses menjamin stabilitas sistem. Jika satu program crash, kerusakan
-hanya berdampak pada proses tersebut --- proses lain tetap berjalan normal karena
+hanya berdampak pada proses tersebut: proses lain tetap berjalan normal karena
 tidak dapat saling mengakses memori satu sama lain.
 \end{notebox}
 
@@ -142,8 +142,8 @@ cat /proc/meminfo | head -n 20
 
 \begin{tipbox}
 Jangan khawatir jika nilai \texttt{used} tampak besar. Linux sengaja menggunakan RAM
-yang kosong sebagai cache untuk mempercepat akses file. Fokus pada \texttt{available}
---- inilah memori yang sesungguhnya tersedia.
+yang kosong sebagai cache untuk mempercepat akses file. Fokus pada \texttt{available};
+inilah memori yang sesungguhnya tersedia.
 \end{tipbox}
 
 \subsection*{Studi Kasus 10.1 Server Lambat karena Memori}
@@ -254,7 +254,7 @@ Pada output, temukan kolom \texttt{swap} yang berisi dua sub-kolom:
     \item Jika nilai \texttt{si} atau \texttt{so} sesekali muncul lebih dari 0, artinya
     pernah ada aktivitas swap. Ini masih wajar jika tidak terus-menerus.
     \item Jika \texttt{si} dan \texttt{so} terus-menerus lebih dari 0, sistem dalam
-    kondisi \textit{memory pressure} serius --- performa turun drastis karena akses
+    kondisi \textit{memory pressure} serius: performa turun drastis karena akses
     disk jauh lebih lambat dari RAM.
     \item Perhatikan juga kolom \texttt{free} (RAM kosong) dan \texttt{buff} (buffer)
     untuk memahami kondisi keseluruhan RAM saat itu.
@@ -304,7 +304,7 @@ menggunakan swap:
 sudo fallocate -l 512M /swapfile-week10
 \end{lstlisting}
 
-\textbf{Langkah 2}: Atur permission file menjadi \texttt{600} --- hanya root yang
+\textbf{Langkah 2}: Atur permission file menjadi \texttt{600}: hanya root yang
 boleh membaca dan menulis.
 
 \begin{lstlisting}[caption={Mengamankan permission swap file}]
@@ -497,13 +497,13 @@ bash monitor-memori.sh
 \textbf{Penjelasan Konsep}
 
 Bayangkan sebuah restoran. Anda (program) tidak bisa langsung masuk ke dapur (kernel)
-untuk memasak sendiri --- Anda harus memesan melalui pramusaji (system call). Pramusaji
+untuk memasak sendiri: Anda harus memesan melalui pramusaji (system call). Pramusaji
 meneruskan pesanan ke dapur, memastikan pesanan valid, dan membawa hasilnya kembali ke
 meja Anda.
 
 Itulah cara kerja system call: mekanisme bagi program di \textit{user space} untuk
 meminta layanan dari kernel. Program tidak dapat langsung mengakses hardware, filesystem,
-atau sumber daya kernel --- semua permintaan harus melalui system call. Alur lengkapnya
+atau sumber daya kernel: semua permintaan harus melalui system call. Alur lengkapnya
 ditunjukkan pada \cref{fig:syscall-flow}.
 
 \begin{figure}[H]
@@ -550,15 +550,15 @@ System call dikelompokkan berdasarkan fungsinya:
 
 \begin{itemize}
     \item \textbf{Manajemen Proses}: \texttt{fork}, \texttt{exec}, \texttt{wait},
-    \texttt{exit} --- membuat, menjalankan, menunggu, dan mengakhiri proses.
+    \texttt{exit}: membuat, menjalankan, menunggu, dan mengakhiri proses.
     \item \textbf{Manajemen File}: \texttt{open}, \texttt{read}, \texttt{write},
-    \texttt{close} --- membuka, membaca, menulis, dan menutup file.
-    \item \textbf{Manajemen Memori}: \texttt{mmap}, \texttt{brk} --- memetakan file
+    \texttt{close}: membuka, membaca, menulis, dan menutup file.
+    \item \textbf{Manajemen Memori}: \texttt{mmap}, \texttt{brk}: memetakan file
     ke memori dan mengatur batas heap.
     \item \textbf{Komunikasi}: \texttt{pipe}, \texttt{socket}, \texttt{send},
-    \texttt{recv} --- komunikasi antar proses dan jaringan.
+    \texttt{recv}: komunikasi antar proses dan jaringan.
     \item \textbf{Informasi Sistem}: \texttt{getpid}, \texttt{uname}, \texttt{time}
-    --- mengambil informasi proses dan sistem.
+   : mengambil informasi proses dan sistem.
 \end{itemize}
 
 \begin{notebox}
@@ -591,7 +591,7 @@ cat app.conf
 \end{lstlisting}
 
 Output akan menampilkan: \texttt{cat: app.conf: Permission denied}. Ini terjadi karena
-system call \texttt{openat()} gagal --- kernel menolak permintaan membuka file karena
+system call \texttt{openat()} gagal: kernel menolak permintaan membuka file karena
 tidak ada bit izin baca (\texttt{r}).
 
 \textbf{Langkah 3}: Kembalikan permission dan verifikasi.
