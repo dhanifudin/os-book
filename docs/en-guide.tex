@@ -1,0 +1,733 @@
+%% ============================================================
+%% GitHub Classroom Guide - English Version
+%% Submitting Assignments with Autograding via GitHub Actions
+%% ============================================================
+\documentclass[
+    a4paper,
+    11pt,
+    parskip=half
+]{scrartcl}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage[scaled=1.05]{inconsolata}
+\usepackage{microtype}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=3cm}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!70!black}
+\usepackage{scrlayer-scrpage}
+\usepackage{fontawesome5}
+
+%% Colors
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+
+%% Listing style
+\lstdefinestyle{bashstyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta}\bfseries,
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    captionpos=b,
+    numbers=none,
+    frame=single,
+    rulecolor=\color{black!25},
+    xleftmargin=1em,
+    framexleftmargin=0.5em,
+    aboveskip=6pt,
+    belowskip=6pt
+}
+\lstset{style=bashstyle}
+
+%% Box environments
+\tcbuselibrary{skins,breakable}
+
+\newtcolorbox{notebox}{
+    colback=blue!5!white, colframe=blue!60!black,
+    title={\faInfoCircle\quad Note}, fonttitle=\bfseries\small,
+    top=4pt, bottom=4pt, toptitle=3pt, bottomtitle=3pt
+}
+\newtcolorbox{warningbox}{
+    colback=red!5!white, colframe=red!60!black,
+    title={\faExclamationTriangle\quad Warning}, fonttitle=\bfseries\small,
+    top=4pt, bottom=4pt, toptitle=3pt, bottomtitle=3pt
+}
+\newtcolorbox{tipbox}{
+    colback=green!5!white, colframe=green!60!black,
+    title={\faLightbulb\quad Tip}, fonttitle=\bfseries\small,
+    top=4pt, bottom=4pt, toptitle=3pt, bottomtitle=3pt
+}
+\newtcolorbox{stepbox}[1]{
+    colback=orange!5!white, colframe=orange!60!black,
+    title={\faCheckSquare\quad #1}, fonttitle=\bfseries\small,
+    top=4pt, bottom=4pt, toptitle=3pt, bottomtitle=3pt
+}
+
+%% List spacing
+\setlist{topsep=3pt, parsep=0pt, itemsep=3pt}
+
+%% Header/footer
+\clearpairofpagestyles
+\ohead{\small GitHub Classroom Guide}
+\ofoot[\pagemark]{\pagemark}
+\pagestyle{scrheadings}
+
+%% ============================================================
+\begin{document}
+
+\begin{center}
+    {\LARGE\bfseries Assignment Submission Guide}\\[0.4em]
+    {\large GitHub Classroom with Autograding}\\[0.3em]
+    {\normalsize Department of Information Technology --- Polinema}\\[0.2em]
+    {\small\color{gray} Beginner's Guide}
+\end{center}
+
+\vspace{0.5em}
+\hrule
+\vspace{1em}
+
+\tableofcontents
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+%% ============================================================
+\section{Introduction}
+
+This guide walks you through the steps needed to submit assignments using \textbf{GitHub Classroom}. The system uses \textbf{GitHub Actions} to automatically check your answers (autograding), so you can immediately see whether your solution is correct.
+
+\begin{notebox}
+If you have never used GitHub before, don't worry. This guide is designed specifically for beginners and will walk you through everything from start to finish.
+\end{notebox}
+
+\subsection{What You Will Learn}
+
+\begin{itemize}
+    \item Creating a GitHub account
+    \item Setting up an SSH Key so your computer can connect to GitHub securely
+    \item Accepting and cloning an assignment from GitHub Classroom
+    \item Working on and submitting your assignment with \texttt{git push}
+    \item Viewing autograding results
+\end{itemize}
+
+\subsection{Prerequisites}
+
+\begin{itemize}
+    \item A computer with internet access
+    \item A terminal / Command Prompt (available on all operating systems)
+    \item Git installed (if not yet installed, see Section~\ref{sec:install-git})
+\end{itemize}
+
+%% ============================================================
+\section{Creating a GitHub Account}
+\label{sec:github-account}
+
+If you already have a GitHub account, skip this section and go to Section~\ref{sec:install-git}.
+
+\begin{stepbox}{Step: Sign Up for GitHub}
+\begin{enumerate}
+    \item Open a browser and go to \url{https://github.com}
+    \item Click the \textbf{Sign up} button in the top-right corner
+    \item Enter your \textbf{email address} (use an active email you check regularly)
+    \item Create a \textbf{strong password} (at least 8 characters, mix of letters and numbers)
+    \item Choose a unique \textbf{username}. This will be your identity on GitHub.
+          Example: \texttt{john-doe} or \texttt{alice2024}
+    \item Complete the CAPTCHA verification
+    \item Open your email inbox and click the verification link sent by GitHub
+\end{enumerate}
+\end{stepbox}
+
+\begin{tipbox}
+Use your campus email for registration. Students are eligible for the \textbf{GitHub Education Pack}, which gives free access to premium features including private repositories and GitHub Copilot.
+\end{tipbox}
+
+%% ============================================================
+\section{Installing Git}
+\label{sec:install-git}
+
+Git is the version control software used to manage your code. GitHub Classroom uses Git to receive your submissions.
+
+\subsection*{Check if Git is already installed}
+
+Open a terminal and type:
+
+\begin{lstlisting}[language=bash]
+git --version
+\end{lstlisting}
+
+If you see something like \texttt{git version 2.x.x}, Git is already installed. Skip ahead to Section~\ref{sec:ssh-key}.
+
+\subsection*{Installing Git on Ubuntu/Debian Linux}
+
+\begin{lstlisting}[language=bash]
+sudo apt update
+sudo apt install git -y
+\end{lstlisting}
+
+\subsection*{Installing Git on Windows}
+
+Download the installer from \url{https://git-scm.com/download/win} and run it. Use the default settings (keep clicking Next until finished).
+
+\subsection*{Configure your Git identity}
+
+After installing Git, set your name and email. These are recorded with every change you make. This only needs to be done once:
+
+\begin{lstlisting}[language=bash]
+git config --global user.name "Your Full Name"
+git config --global user.email "your-email@example.com"
+\end{lstlisting}
+
+\begin{notebox}
+Replace \texttt{"Your Full Name"} with your actual name, and use the same email address you registered with on GitHub.
+\end{notebox}
+
+%% ============================================================
+\section{Setting Up an SSH Key}
+\label{sec:ssh-key}
+
+\subsection{What is an SSH Key?}
+
+An SSH key is a pair of digital keys used to automatically verify your identity when connecting to GitHub. Think of it like a keycard: you keep one key on your computer (the private key) and register the matching key with GitHub (the public key). Every time you send data to GitHub, the system automatically matches both keys without requiring you to type a password each time.
+
+\begin{warningbox}
+\textbf{Never share your private key} (\texttt{id\_ed25519}) with anyone. Only the public key (\texttt{id\_ed25519.pub}) may be shared.
+\end{warningbox}
+
+\subsection{Generating an SSH Key}
+\label{sec:generate-key}
+
+\begin{stepbox}{Step: Create a New SSH Key}
+\begin{enumerate}
+    \item Open a terminal
+    \item Run the following command. Replace \texttt{your-email@example.com} with your GitHub email:
+
+\begin{lstlisting}[language=bash]
+ssh-keygen -t ed25519 -C "your-email@example.com"
+\end{lstlisting}
+
+    \item You will be asked where to save the key. Press \textbf{Enter} to accept the default location:
+\begin{lstlisting}
+Enter file in which to save the key (/home/user/.ssh/id_ed25519):
+\end{lstlisting}
+
+    \item You will be asked to create a \textit{passphrase} (an optional extra password). You can leave it empty by pressing Enter, or type a passphrase for added security:
+\begin{lstlisting}
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+\end{lstlisting}
+
+    \item If successful, you will see output like this:
+\begin{lstlisting}
+Your identification has been saved in /home/user/.ssh/id_ed25519
+Your public key has been saved in /home/user/.ssh/id_ed25519.pub
+The key fingerprint is:
+SHA256:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx your-email@example.com
+\end{lstlisting}
+\end{enumerate}
+\end{stepbox}
+
+\begin{notebox}
+If your system is very old and does not support Ed25519, use the RSA alternative:
+\begin{lstlisting}[language=bash]
+ssh-keygen -t rsa -b 4096 -C "your-email@example.com"
+\end{lstlisting}
+In this case, your key files will be named \texttt{id\_rsa} and \texttt{id\_rsa.pub}.
+\end{notebox}
+
+\subsection{Adding Your SSH Key to the ssh-agent}
+\label{sec:ssh-agent}
+
+The \textit{ssh-agent} is a background program that holds your SSH key in memory, so you don't have to enter your passphrase repeatedly. The commands are the same for both Ubuntu VM and WSL.
+
+\begin{stepbox}{Step: Start the ssh-agent (Ubuntu VM)}
+\begin{enumerate}
+    \item Start the agent:
+\begin{lstlisting}[language=bash]
+eval "$(ssh-agent -s)"
+\end{lstlisting}
+    Expected output: \texttt{Agent pid 12345} (the number will differ)
+
+    \item Add your private key to the agent:
+\begin{lstlisting}[language=bash]
+ssh-add ~/.ssh/id_ed25519
+\end{lstlisting}
+    Expected output: \texttt{Identity added: /home/user/.ssh/id\_ed25519}
+\end{enumerate}
+\end{stepbox}
+
+\begin{stepbox}{Step: Start the ssh-agent (WSL)}
+The commands are identical to Ubuntu VM, but must be re-run \textbf{every time} you open a new WSL terminal.
+\begin{enumerate}
+    \item Open WSL: press \textbf{Windows + S}, type \texttt{Ubuntu} or \texttt{wsl}, then press Enter
+    \item Start the agent:
+\begin{lstlisting}[language=bash]
+eval "$(ssh-agent -s)"
+\end{lstlisting}
+    \item Add your private key:
+\begin{lstlisting}[language=bash]
+ssh-add ~/.ssh/id_ed25519
+\end{lstlisting}
+\end{enumerate}
+\end{stepbox}
+
+\begin{tipbox}
+To make ssh-agent start automatically every time you open a WSL terminal, run this once to add the setup to \texttt{\textasciitilde/.bashrc}:
+\begin{lstlisting}[language=bash]
+echo 'eval "$(ssh-agent -s)" > /dev/null' >> ~/.bashrc
+echo 'ssh-add ~/.ssh/id_ed25519 > /dev/null 2>&1' >> ~/.bashrc
+source ~/.bashrc
+\end{lstlisting}
+\end{tipbox}
+
+\subsection{Copying the Public Key to GitHub}
+\label{sec:add-to-github}
+
+Your SSH key lives inside Ubuntu (either the VM or WSL), so you need to transfer the public key content to GitHub. Choose the method that matches your setup.
+
+\begin{notebox}
+\textbf{If you are using WSL}: go straight to \textbf{Method D} --- it takes just one command.\\
+\textbf{If you are using Ubuntu VM}: use \textbf{Method A} (open a browser inside the VM) or Method B/C if the VM has no browser.
+\end{notebox}
+
+\subsubsection*{Method A: Open GitHub Directly in the Ubuntu VM Browser (Recommended)}
+
+The simplest approach is to open GitHub from a browser \textbf{inside the Ubuntu VM} (such as Firefox). This way you can copy and paste without any cross-system clipboard tricks.
+
+\begin{stepbox}{Step: Copy the Key and Register via Ubuntu Browser}
+\begin{enumerate}
+    \item In the Ubuntu terminal, display the public key:
+\begin{lstlisting}[language=bash]
+cat ~/.ssh/id_ed25519.pub
+\end{lstlisting}
+    A single long line will appear, like:
+\begin{lstlisting}
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... your-email@example.com
+\end{lstlisting}
+
+    \item Select the entire line with your mouse, then press \textbf{Ctrl+Shift+C} to copy it (this is the copy shortcut in most Linux terminal emulators)
+
+    \item Open \textbf{Firefox} (or another browser) inside the Ubuntu VM. If it is not installed yet:
+\begin{lstlisting}[language=bash]
+sudo apt install firefox -y
+\end{lstlisting}
+
+    \item In Firefox, go to \url{https://github.com} and sign in to your account
+
+    \item Click your profile picture in the top-right corner and select \textbf{Settings}
+
+    \item In the left sidebar click \textbf{SSH and GPG keys}, then click \textbf{New SSH key}
+
+    \item Fill in the form:
+        \begin{itemize}
+            \item \textbf{Title}: for example \texttt{Ubuntu VM Lab}
+            \item \textbf{Key}: click inside the Key field, then press \textbf{Ctrl+Shift+V} to paste
+        \end{itemize}
+
+    \item Click \textbf{Add SSH key}
+\end{enumerate}
+\end{stepbox}
+
+\subsubsection*{Method B: Enable VirtualBox Shared Clipboard (For Windows Browser Users)}
+
+If you prefer to use your Windows (host) browser to register the key, enable VirtualBox's \textit{shared clipboard} so that Ubuntu and Windows can share the same clipboard.
+
+\begin{stepbox}{Step 1: Install VirtualBox Guest Additions in Ubuntu VM}
+\begin{enumerate}
+    \item In the VirtualBox menu, click \textbf{Devices}, then select \textbf{Insert Guest Additions CD image\ldots}
+
+    \item In the Ubuntu terminal, run:
+\begin{lstlisting}[language=bash]
+sudo apt install build-essential dkms -y
+sudo mount /dev/cdrom /mnt
+sudo /mnt/VBoxLinuxAdditions.run
+\end{lstlisting}
+
+    \item After it finishes, \textbf{restart} the Ubuntu VM:
+\begin{lstlisting}[language=bash]
+sudo reboot
+\end{lstlisting}
+\end{enumerate}
+\end{stepbox}
+
+\begin{stepbox}{Step 2: Enable Shared Clipboard}
+\begin{enumerate}
+    \item Shut down the Ubuntu VM first (\textbf{Machine} $\to$ \textbf{ACPI Shutdown})
+    \item In the VirtualBox Manager window, select your VM and click \textbf{Settings}
+    \item Go to the \textbf{General} $\to$ \textbf{Advanced} tab
+    \item Set \textbf{Shared Clipboard} to \textbf{Bidirectional}
+    \item Click \textbf{OK}, then start the Ubuntu VM again
+\end{enumerate}
+\end{stepbox}
+
+\begin{stepbox}{Step 3: Copy the Key from Ubuntu to Windows}
+\begin{enumerate}
+    \item In the Ubuntu terminal, display the public key:
+\begin{lstlisting}[language=bash]
+cat ~/.ssh/id_ed25519.pub
+\end{lstlisting}
+
+    \item Select the entire output line with your mouse, then press \textbf{Ctrl+Shift+C}
+
+    \item Switch to Windows, open your browser, and go to \url{https://github.com}
+
+    \item Navigate to Settings $\to$ SSH and GPG keys $\to$ New SSH key, then press \textbf{Ctrl+V} in the Key field to paste
+
+    \item Click \textbf{Add SSH key}
+\end{enumerate}
+\end{stepbox}
+
+\subsubsection*{Method C: xclip (Alternative Without Guest Additions)}
+
+If Method B does not work, use \texttt{xclip} to copy the key to the Ubuntu clipboard, then paste it in a browser inside the Ubuntu VM.
+
+\begin{stepbox}{Step: Copy the Key with xclip}
+\begin{enumerate}
+    \item Install xclip:
+\begin{lstlisting}[language=bash]
+sudo apt install xclip -y
+\end{lstlisting}
+
+    \item Copy the public key directly to the clipboard:
+\begin{lstlisting}[language=bash]
+xclip -selection clipboard < ~/.ssh/id_ed25519.pub
+\end{lstlisting}
+    This command produces no output, but the key is now in the clipboard.
+
+    \item Open Firefox inside the Ubuntu VM and go to \url{https://github.com}
+
+    \item Navigate to Settings $\to$ SSH and GPG keys $\to$ New SSH key
+
+    \item Click inside the \textbf{Key} field and press \textbf{Ctrl+V} to paste
+
+    \item Click \textbf{Add SSH key}
+\end{enumerate}
+\end{stepbox}
+
+\begin{warningbox}
+\texttt{xclip} only works when Ubuntu is running in \textbf{Desktop (GUI) mode}. If your Ubuntu VM has no graphical interface, use Method A or B instead.
+\end{warningbox}
+
+\subsubsection*{Method D: WSL (Windows Subsystem for Linux)}
+
+If you are using \textbf{WSL}, this is by far the easiest approach. WSL has direct access to the Windows clipboard through \texttt{clip.exe} --- no Guest Additions, no xclip, no need to open a browser inside Linux.
+
+\begin{stepbox}{Step: Copy the Key from WSL to GitHub via Windows}
+\begin{enumerate}
+    \item In the WSL terminal, run this single command to copy the public key directly to the Windows clipboard:
+\begin{lstlisting}[language=bash]
+cat ~/.ssh/id_ed25519.pub | clip.exe
+\end{lstlisting}
+    The command produces no output. The key is now in your Windows clipboard.
+
+    \item Open a browser \textbf{on Windows} (Chrome, Edge, Firefox --- a normal Windows browser, not inside WSL)
+
+    \item Sign in to \url{https://github.com}, click your profile picture, select \textbf{Settings}
+
+    \item In the left sidebar click \textbf{SSH and GPG keys}, then click \textbf{New SSH key}
+
+    \item Fill in the form:
+        \begin{itemize}
+            \item \textbf{Title}: for example \texttt{WSL Ubuntu}
+            \item \textbf{Key}: click inside the Key field, then press \textbf{Ctrl+V} to paste
+        \end{itemize}
+
+    \item Click \textbf{Add SSH key}
+\end{enumerate}
+\end{stepbox}
+
+\begin{tipbox}
+Before pasting into GitHub, verify the clipboard contents: open Notepad on Windows and press \textbf{Ctrl+V}. You should see a single line starting with \texttt{ssh-ed25519} and ending with your email address.
+\end{tipbox}
+
+\subsection{Testing the SSH Connection}
+
+Verify that your SSH key is registered correctly:
+
+\begin{lstlisting}[language=bash]
+ssh -T git@github.com
+\end{lstlisting}
+
+The first time you connect, you will see a message like this:
+\begin{lstlisting}
+The authenticity of host 'github.com (140.82.121.4)' can't be established.
+...
+Are you sure you want to continue connecting (yes/no/[fingerprint])?
+\end{lstlisting}
+
+Type \texttt{yes} and press Enter. If everything is set up correctly, you will see:
+\begin{lstlisting}
+Hi username! You've successfully authenticated, but GitHub does not
+provide shell access.
+\end{lstlisting}
+
+\begin{tipbox}
+If you see an error like \texttt{Permission denied (publickey)}, your key may not have been registered correctly. Repeat the steps in Section~\ref{sec:add-to-github} and make sure you pasted the entire public key without any missing characters.
+\end{tipbox}
+
+%% ============================================================
+\section{Accepting an Assignment on GitHub Classroom}
+\label{sec:accept-assignment}
+
+Your instructor will share an \textbf{invitation link} for each assignment. This link is usually shared through the course LMS or class group.
+
+\begin{stepbox}{Step: Accept the Assignment}
+\begin{enumerate}
+    \item Click the invitation link shared by your instructor
+    \item If you are not signed in to GitHub, sign in first
+    \item The GitHub Classroom page will appear. Click \textbf{Accept this assignment}
+    \item Wait a few seconds. GitHub will create a \textit{repository} (a storage space for your code) specifically for you
+    \item Once ready, a link to your repository will appear. Click it to open your repository
+\end{enumerate}
+\end{stepbox}
+
+\begin{notebox}
+Your repository is typically named something like \texttt{assignment-name-your-username}. It is \textbf{private} by default, meaning only you and your instructor can see it.
+\end{notebox}
+
+%% ============================================================
+\section{Cloning the Repository to Your Computer}
+\label{sec:clone}
+
+After accepting the assignment, you need to download (\textit{clone}) the repository to your computer.
+
+\begin{stepbox}{Step: Get the SSH URL of Your Repository}
+\begin{enumerate}
+    \item Open your assignment repository page on GitHub
+    \item Click the green \textbf{Code} button
+    \item Make sure the \textbf{SSH} tab is selected (not HTTPS)
+    \item Copy the URL that starts with \texttt{git@github.com:...}
+\end{enumerate}
+\end{stepbox}
+
+\begin{warningbox}
+Make sure you select the \textbf{SSH} tab, not HTTPS. Using HTTPS will ask for your password every time you push changes.
+\end{warningbox}
+
+\begin{stepbox}{Step: Clone the Repository}
+\begin{enumerate}
+    \item Open a terminal and navigate to the folder where you want to store your assignments, for example:
+\begin{lstlisting}[language=bash]
+cd ~/Documents/courses/os
+\end{lstlisting}
+    \item Run the clone command using the URL you copied:
+\begin{lstlisting}[language=bash]
+git clone git@github.com:org-name/assignment-name-username.git
+\end{lstlisting}
+    \item Move into the newly created folder:
+\begin{lstlisting}[language=bash]
+cd assignment-name-username
+\end{lstlisting}
+    \item List the files inside:
+\begin{lstlisting}[language=bash]
+ls -la
+\end{lstlisting}
+\end{enumerate}
+\end{stepbox}
+
+%% ============================================================
+\section{Working on and Submitting Your Assignment}
+\label{sec:submit}
+
+\subsection{Understanding the Assignment Structure}
+
+Each assignment typically contains:
+\begin{itemize}
+    \item \texttt{README.md}: Instructions and description of the assignment
+    \item Template or starter files that you need to complete
+    \item A \texttt{.github/workflows/} folder containing the autograding configuration (do not modify this folder)
+\end{itemize}
+
+Read the \texttt{README.md} file first before starting work:
+\begin{lstlisting}[language=bash]
+cat README.md
+\end{lstlisting}
+
+\subsection{The Submit Workflow}
+
+After completing your work, use these three Git commands to submit:
+
+\begin{stepbox}{Step: Submit Your Assignment (git add, commit, push)}
+\begin{enumerate}
+    \item \textbf{Stage the files you want to submit} (\texttt{git add}):
+\begin{lstlisting}[language=bash]
+git add filename.sh
+\end{lstlisting}
+    Or to stage all changes at once:
+\begin{lstlisting}[language=bash]
+git add .
+\end{lstlisting}
+
+    \item \textbf{Record the changes} (\texttt{git commit}):
+\begin{lstlisting}[language=bash]
+git commit -m "Completed assignment 1"
+\end{lstlisting}
+    Replace the message in quotes with a short description of what you did.
+
+    \item \textbf{Send to GitHub} (\texttt{git push}):
+\begin{lstlisting}[language=bash]
+git push
+\end{lstlisting}
+
+    \item If successful, you will see output similar to this:
+\begin{lstlisting}
+Enumerating objects: 5, done.
+Counting objects: 100% (5/5), done.
+Writing objects: 100% (3/3), 312 bytes | 312.00 KiB/s, done.
+To git@github.com:org-name/assignment-name-username.git
+   a1b2c3d..e4f5g6h  main -> main
+\end{lstlisting}
+\end{enumerate}
+\end{stepbox}
+
+\begin{tipbox}
+You can submit multiple times. Every time you \texttt{push}, the autograder will run again automatically. Use this to fix mistakes and improve your score before the deadline.
+\end{tipbox}
+
+\subsection{Verifying Your Submission}
+
+After \texttt{git push}, open your repository page on GitHub. You will see a colored icon next to your latest commit:
+
+\begin{itemize}
+    \item \textcolor{orange}{\textbf{Yellow circle}}: Autograding is running, wait a few minutes
+    \item \textcolor{green!50!black}{\textbf{Green checkmark}}: All tests passed, great job!
+    \item \textcolor{red}{\textbf{Red X}}: Some tests failed, check the details
+\end{itemize}
+
+%% ============================================================
+\section{Viewing Autograding Results}
+\label{sec:autograding}
+
+\subsection{What is Autograding?}
+
+Autograding is an automated grading system powered by \textbf{GitHub Actions}. Every time you \texttt{git push}, GitHub automatically runs a set of tests to check whether your answers are correct.
+
+\subsection{How to View the Results}
+
+\begin{stepbox}{Step: Open the Autograding Results}
+\begin{enumerate}
+    \item Open your assignment repository on GitHub
+    \item Click the \textbf{Actions} tab at the top of the page
+    \item You will see a list of workflow runs. Click the most recent run (at the top)
+    \item Click the job name (usually \textbf{Autograding} or \textbf{run-autograding-tests})
+    \item You can see the details of each test step
+    \item Scroll down to the \textbf{Run education/autograding} section to see your score and test details
+\end{enumerate}
+\end{stepbox}
+
+\subsection{Understanding the Test Results}
+
+Each test shows:
+\begin{itemize}
+    \item \textbf{Test name}: What is being tested
+    \item \textbf{Status}: \textcolor{green!50!black}{passed} or \textcolor{red}{failed}
+    \item \textbf{Output}: A message explaining why a test failed
+    \item \textbf{Points}: The score earned for that test
+\end{itemize}
+
+\begin{tipbox}
+If a test fails, read the output message carefully. It usually explains what was expected versus what you provided. Fix your code, then run \texttt{git add}, \texttt{git commit}, \texttt{git push} again.
+\end{tipbox}
+
+%% ============================================================
+\section{Common Git Commands Reference}
+\label{sec:git-reference}
+
+\begin{center}
+\begin{tabular}{ll}
+\hline
+\textbf{Command} & \textbf{Purpose} \\
+\hline
+\texttt{git status} & See which files have changed \\
+\texttt{git add .} & Stage all changes for submission \\
+\texttt{git add filename} & Stage a single file \\
+\texttt{git commit -m "message"} & Record the staged changes \\
+\texttt{git push} & Send changes to GitHub \\
+\texttt{git pull} & Download the latest changes from GitHub \\
+\texttt{git log --oneline} & View the commit history \\
+\hline
+\end{tabular}
+\end{center}
+
+%% ============================================================
+\section{Troubleshooting --- Common Problems}
+\label{sec:troubleshoot}
+
+\subsection*{Problem: \texttt{Permission denied (publickey)}}
+
+\textbf{Cause}: The SSH key is not registered on GitHub, or ssh-agent is not running.
+
+\textbf{Solution}:
+\begin{enumerate}
+    \item Restart the agent: \texttt{eval "\$(ssh-agent -s)"}
+    \item Add the key: \texttt{ssh-add \textasciitilde/.ssh/id\_ed25519}
+    \item Test the connection: \texttt{ssh -T git@github.com}
+    \item If it still fails, repeat the key registration steps in Section~\ref{sec:add-to-github}
+\end{enumerate}
+
+\subsection*{Problem: \texttt{git push} fails with \textit{rejected}}
+
+\textbf{Cause}: There are changes on GitHub that you do not have locally yet.
+
+\textbf{Solution}: Run \texttt{git pull} first, then \texttt{git push} again.
+
+\subsection*{Problem: Autograding does not run after pushing}
+
+\textbf{Cause}: GitHub Actions quota exhausted or a temporary network issue.
+
+\textbf{Solution}: Wait a few minutes, then refresh the Actions tab on GitHub. If it still does not appear, contact your instructor.
+
+\subsection*{Problem: Cannot find the \texttt{id\_ed25519} file}
+
+\textbf{Cause}: The SSH key has never been generated, or it was saved to a different location.
+
+\textbf{Solution}: Repeat the key generation process from Section~\ref{sec:generate-key}.
+
+%% ============================================================
+\section{Complete Workflow Summary}
+\label{sec:summary}
+
+Here is the full workflow from beginning to end:
+
+\begin{enumerate}
+    \item \textbf{One-time setup} (do this only once):
+    \begin{itemize}
+        \item Create a GitHub account
+        \item Install Git and configure your name/email
+        \item Generate an SSH key and register it on GitHub
+    \end{itemize}
+
+    \item \textbf{For each new assignment}:
+    \begin{itemize}
+        \item Click the invitation link from your instructor
+        \item Click "Accept this assignment"
+        \item Clone the repository: \texttt{git clone git@github.com:...}
+    \end{itemize}
+
+    \item \textbf{While working and submitting}:
+    \begin{itemize}
+        \item Complete your work inside the repository folder
+        \item \texttt{git add .}
+        \item \texttt{git commit -m "your message"}
+        \item \texttt{git push}
+        \item Check autograding results in the Actions tab
+    \end{itemize}
+\end{enumerate}
+
+\begin{notebox}
+If you encounter a problem not covered in this guide, contact your teaching assistant or instructor right away. Include the exact error message you see so the problem can be solved quickly.
+\end{notebox}
+
+\end{document}
