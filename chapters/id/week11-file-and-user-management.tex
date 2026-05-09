@@ -1,1207 +1,667 @@
 %% ========================================================================
-%% Chapter 11: Manajemen File & User/Group
+%% Chapter 9: Manajemen File, User, dan Group
 %% ========================================================================
 
-\chapter{Manajemen File \& User/Group}
+\chapter{Manajemen File, User, dan Group}
 \label{ch:file-and-user-management}
 
-\begingroup
-\small
-\setstretch{0.85}
-\setlength{\parskip}{0pt}
-\setlist{nosep}
+Bayangkan sebuah kantor dengan lemari arsip besar. Setiap dokumen punya label nama pemilik dan label divisi. Tidak semua karyawan boleh membuka semua laci: ada yang hanya bisa membaca, ada yang bisa menulis, dan hanya manajer yang bisa menghapus berkas. Di Linux, sistem yang mengatur siapa boleh membaca, menulis, atau menjalankan berkas disebut \textit{kontrol akses}. Setiap berkas dan direktori memiliki tiga identitas: pengguna pemilik (\textit{owner}), grup terkait, dan semua pengguna lain.
 
-Bab ini merangkum fondasi administrasi akses di Linux: permission Unix klasik,
-ACL untuk kasus yang lebih granular, manajemen user dan group, penggunaan
-\cmd{sudo} dan \cmd{su}, serta pembatasan ruang disk dengan quota. Fokus bab ini
-adalah memahami \emph{model kontrol akses} Linux secara utuh: siapa memiliki file,
-siapa boleh mengakses, bagaimana hak administratif didelegasikan, dan bagaimana
-penggunaan sumber daya dibatasi di sistem multi-pengguna.
+Bab ini menggabungkan pengelolaan izin berkas dan administrasi identitas pengguna. Pembahasannya dimulai dari model izin standar \texttt{rwx} beserta perintah \cmd{chmod}, \cmd{chown}, dan \cmd{chgrp}, lalu berlanjut ke izin khusus seperti \textit{setuid}, \textit{setgid}, dan \textit{sticky bit}, kemudian Access Control List (ACL), manajemen akun pengguna dan grup, pendelegasian hak administratif lewat \cmd{sudo}, serta pembatasan ruang disk dengan quota.
 
-\textbf{Tujuan Praktikum}
+Di sistem multi-pengguna seperti server kampus atau mesin produksi, kontrol akses yang tepat adalah fondasi keamanan. Konfigurasi yang salah bisa membuat data sensitif terbaca oleh semua orang, atau memberi seseorang kekuasaan lebih dari yang seharusnya.
 
-Setelah menyelesaikan bab ini, pembaca diharapkan mampu:
+\textbf{Yang Akan Kamu Pelajari}
+
+Setelah menyelesaikan bab ini, kamu akan mampu:
 
 \begin{enumerate}
-    \item membaca dan mengubah permission file/direktori;
-    \item membedakan peran owner, group, dan others;
-    \item menggunakan ACL saat permission standar tidak cukup;
-    \item membuat, memodifikasi, dan menghapus user serta group;
-    \item mengelola hak administratif dengan \cmd{sudo} secara aman; dan
-    \item mengaktifkan serta memeriksa disk quota untuk user atau group.
+    \item mengatur izin dan kepemilikan berkas menggunakan \cmd{chmod}, \cmd{chown}, dan \cmd{chgrp};
+    \item menerapkan izin khusus setuid, setgid, dan sticky bit pada berkas dan direktori;
+    \item mengonfigurasi Access Control List (ACL) untuk memberikan akses granular per pengguna atau grup;
+    \item membuat, memodifikasi, dan menghapus akun pengguna serta grup dengan perintah yang tepat;
+    \item mengelola keanggotaan grup dan memahami struktur berkas \file{/etc/passwd}, \file{/etc/shadow}, dan \file{/etc/group};
+    \item mengonfigurasi hak \cmd{sudo} terbatas melalui \file{/etc/sudoers.d/} secara aman; serta
+    \item mengaktifkan dan memeriksa disk quota untuk pengguna dan grup.
 \end{enumerate}
 
-%% ========================================================================
-\section{Sistem Kontrol Akses (Permissions)}
-\label{sec:permissions}
-%% ========================================================================
-
-\textbf{Penjelasan Konsep}
-
-Linux mewarisi model kontrol akses Unix yang sederhana namun kuat. Setiap file dan
-direktori selalu memiliki tiga identitas akses:
-
-\begin{description}
-    \item[Owner] pengguna yang memiliki file.
-    \item[Group] group yang terkait dengan file.
-    \item[Others] semua pengguna lain di luar dua entitas di atas.
-\end{description}
-
-Untuk masing-masing entitas itu tersedia tiga izin dasar: baca, tulis, dan eksekusi.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Makna izin dasar Linux}
-    \label{tab:permissions-type}
-    \begin{tblr}{
-        colspec = {lX[l]X[l]},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \textbf{Simbol} & \textbf{Pada file} & \textbf{Pada direktori} \\
-    \texttt{r} & Membaca isi file & Melihat isi direktori \\
-    \texttt{w} & Mengubah isi file & Membuat atau menghapus entri di direktori \\
-    \texttt{x} & Menjalankan file & Masuk ke direktori \\
-    \end{tblr}
-\end{table}
-
 \begin{notebox}
-Hak \texttt{w} pada file hanya mengubah isi file. Menghapus file ditentukan oleh
-izin pada direktori yang menampung file tersebut.
+Seluruh praktikum pada bab ini dijalankan pada direktori \dir{~/lab-os/week11-users/}.
+\begin{lstlisting}[language=bash]
+mkdir -p ~/lab-os/week11-users
+cd ~/lab-os/week11-users
+\end{lstlisting}
 \end{notebox}
 
-\textbf{Perintah yang Digunakan}
+%% ========================================================================
+\section{Izin Akses dan Kepemilikan Berkas}
+\label{sec:advanced-permissions}
+%% ========================================================================
+
+Setiap berkas di Linux memiliki tiga kelompok izin: \textit{owner}, \textit{group}, dan \textit{others}. Masing-masing kelompok memiliki kombinasi izin baca (\texttt{r}), tulis (\texttt{w}), dan eksekusi (\texttt{x}). Perintah \cmd{chmod} mengubah izin ini, sedangkan \cmd{chown} dan \cmd{chgrp} mengubah kepemilikan pengguna dan grup. Di atas sembilan bit izin standar tersebut, Linux juga memiliki tiga bit tambahan yang disebut \textit{special permission bits}: setuid, setgid, dan sticky bit.
+
+\textbf{Setuid (SUID)} membuat sebuah program berjalan dengan identitas pemilik berkas, bukan identitas pengguna yang menjalankannya. Contoh paling nyata adalah \cmd{/usr/bin/passwd}: perintah ini perlu menulis ke \file{/etc/shadow} yang hanya bisa ditulis oleh \texttt{root}, tetapi pengguna biasa harus bisa mengganti passwordnya sendiri. Solusinya adalah setuid pada \cmd{passwd}, sehingga siapapun yang menjalankan perintah itu, prosesnya berjalan sebagai \texttt{root}.
+
+\textbf{Setgid (SGID)} bekerja mirip setuid, tetapi untuk grup. Pada berkas yang dapat dieksekusi, proses berjalan dengan GID berkas. Pada direktori, setgid memiliki efek berbeda: setiap berkas baru yang dibuat di dalam direktori itu otomatis mewarisi grup direktori, bukan grup primer pembuat berkas. Ini sangat berguna untuk direktori kolaborasi tim.
+
+\textbf{Sticky bit} pada direktori berarti hanya pemilik berkas yang boleh menghapus berkasnya sendiri, meski direktori itu dapat ditulis oleh banyak pengguna. Direktori \dir{/tmp} menggunakan sticky bit karena semua pengguna perlu membuat berkas sementara di sana, tetapi tidak boleh menghapus berkas milik pengguna lain.
+
+Dalam notasi oktal, tiga bit khusus ini menempati digit keempat di depan:
 
 \begin{itemize}
-    \item \texttt{ls -l}: melihat tipe file, permission, owner, dan group.
-    \item \texttt{chmod}: mengubah permission file atau direktori.
-    \item \texttt{chown}: mengubah owner dan/atau group pemilik file.
-    \item \texttt{chgrp}: mengubah group pemilik file.
-    \item \texttt{umask}: melihat atau mengubah permission default file baru.
+    \item \texttt{4xxx} untuk setuid
+    \item \texttt{2xxx} untuk setgid
+    \item \texttt{1xxx} untuk sticky bit
+    \item ketiganya bisa dikombinasikan, misalnya \texttt{6xxx} berarti setuid dan setgid aktif bersamaan
 \end{itemize}
 
-\subsection{Membaca Output \texttt{ls -l}}
-
-Output \cmd{ls -l} merangkum tipe file, permission, owner, group, ukuran, dan waktu.
-
-\begin{lstlisting}[language=bash, caption={Membaca permission dengan ls -l}]
-$ ls -l /etc/passwd
--rw-r--r-- 1 root root 2847 Jan 15 10:30 /etc/passwd
-\end{lstlisting}
-
-Interpretasi string permission:
-
-\begin{itemize}
-    \item karakter pertama: tipe file (\texttt{-}, \texttt{d}, \texttt{l}, dll.)
-    \item tiga karakter berikutnya: permission owner
-    \item tiga berikutnya: permission group
-    \item tiga terakhir: permission others
-\end{itemize}
-
-Contoh \texttt{-rwxr-x---} berarti file biasa, owner punya hak penuh, group dapat
-baca dan eksekusi, others tidak punya akses.
-
-\subsection{Notasi Simbolik dan Oktal}
-
-Permission dapat ditulis dalam dua bentuk:
-
-\begin{itemize}
-    \item \textbf{simbolik}: relatif, misalnya \texttt{u+x}, \texttt{go-w}
-    \item \textbf{oktal}: absolut, misalnya \texttt{755}, \texttt{640}, \texttt{600}
-\end{itemize}
-
-\begin{table}[htbp]
-    \centering
-    \caption{Konversi permission ke notasi oktal}
-    \label{tab:octal-permissions}
-    \begin{tblr}{
-        colspec = {lccX[l]},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \textbf{Izin} & \textbf{Biner} & \textbf{Oktal} & \textbf{Makna} \\
-    \texttt{---} & 000 & 0 & Tidak ada izin \\
-    \texttt{r--} & 100 & 4 & Read saja \\
-    \texttt{rw-} & 110 & 6 & Read dan write \\
-    \texttt{rwx} & 111 & 7 & Read, write, execute \\
-    \end{tblr}
-\end{table}
-
-Pola yang paling umum:
-
-\begin{itemize}
-    \item \texttt{755}: direktori atau program publik
-    \item \texttt{644}: file biasa
-    \item \texttt{600}: file privat seperti kunci SSH
-    \item \texttt{700}: skrip atau direktori privat
-\end{itemize}
-
-\subsection{\cmd{chmod}, \cmd{chown}, dan \cmd{chgrp}}
-
-Tiga perintah inti pengelolaan permission adalah:
-
-\begin{itemize}
-    \item \cmd{chmod}: mengubah permission
-    \item \cmd{chown}: mengubah owner dan/atau group
-    \item \cmd{chgrp}: mengubah group saja
-\end{itemize}
-
-\begin{lstlisting}[language=bash, caption={Perintah dasar permission dan ownership}]
-# chmod simbolik
-chmod +x script.sh
-chmod u=rw,g=r,o= file.txt
-chmod go-w file.txt
-
-# chmod oktal
-chmod 644 /etc/app.conf
-chmod 755 /usr/local/bin/my-script.sh
-chmod 600 ~/.ssh/id_rsa
-
-# ownership
-sudo chown alice report.txt
-sudo chown alice:developers report.txt
-sudo chgrp developers report.txt
-\end{lstlisting}
-
-Prinsip pemakaian:
-
-\begin{itemize}
-    \item gunakan notasi simbolik untuk perubahan kecil dan bertahap;
-    \item gunakan notasi oktal saat ingin hasil akhir pasti, terutama di skrip;
-    \item selalu verifikasi perubahan rekursif dengan \cmd{ls -la} pada beberapa file.
-\end{itemize}
-
-\begin{warningbox}
-Hindari \texttt{chmod 777} kecuali benar-benar memahami risikonya. Permission ini
-memberikan hak tulis dan eksekusi ke semua pengguna.
-\end{warningbox}
-
-\subsection{Special Permission Bits}
-
-Selain sembilan bit \texttt{rwx}, Linux memiliki tiga bit khusus:
-
-\begin{description}
-    \item[SUID] program berjalan dengan UID pemilik file. Contoh klasik:
-        \cmd{/usr/bin/passwd} perlu menulis ke \file{/etc/shadow}.
-    \item[SGID] pada file executable proses berjalan dengan GID file; pada direktori,
-        file baru mewarisi group direktori.
-    \item[Sticky bit] pada direktori, pengguna hanya boleh menghapus file miliknya
-        sendiri walau direktori dapat ditulis banyak orang.
-\end{description}
-
-\begin{lstlisting}[language=bash, caption={Contoh special bits}]
-# SUID
+\begin{lstlisting}[language=bash, caption={Mengamati dan menetapkan special bits}]
+# amati SUID pada passwd
 ls -l /usr/bin/passwd
-sudo chmod 4755 /usr/local/bin/my-tool
+# output: -rwsr-xr-x 1 root root ... /usr/bin/passwd
+# huruf 's' menggantikan 'x' pada posisi execute pemilik
 
-# SGID pada direktori bersama
-sudo mkdir /srv/project
-sudo chown root:developers /srv/project
-sudo chmod 2775 /srv/project
-
-# Sticky bit
+# amati sticky bit pada /tmp
 ls -ld /tmp
-sudo chmod 1777 /shared/uploads
+# output: drwxrwxrwt 15 root root ... /tmp
+# huruf 't' menggantikan 'x' pada posisi execute others
+
+# buat direktori dengan SGID
+sudo mkdir /srv/projek-bersama
+sudo chown root:developers /srv/projek-bersama
+sudo chmod 2775 /srv/projek-bersama
+ls -ld /srv/projek-bersama
+# output: drwxrwsr-x ... group developers
+
+# tambahkan sticky bit ke direktori bersama
+sudo chmod 3775 /srv/projek-bersama
+ls -ld /srv/projek-bersama
+# output: drwxrwsr-t ... (SGID + sticky bit aktif)
 \end{lstlisting}
 
-\begin{tipbox}
-Kombinasi SGID + sticky bit sering dipakai untuk direktori kolaborasi: SGID menjaga
-group tetap konsisten, sticky bit mencegah saling hapus file.
-\end{tipbox}
+Selain bit permission, Linux juga mengenal \textit{extended file attributes} yang dikelola dengan \cmd{chattr} dan dibaca dengan \cmd{lsattr}. Atribut paling umum adalah \texttt{i} (\textit{immutable}): berkas dengan atribut ini tidak bisa dimodifikasi, dihapus, atau diganti nama bahkan oleh \texttt{root}, kecuali atributnya dicabut lebih dulu.
 
-\subsection{umask: Nilai Default Izin Baru}
+\begin{lstlisting}[language=bash, caption={Extended attributes dengan chattr dan lsattr}]
+# buat berkas konfigurasi penting
+sudo touch /etc/app-config-kritis.conf
 
-\textbf{umask} adalah masker yang \emph{mengurangi} permission default file baru.
-Secara praktis, file reguler berangkat dari \texttt{666}, direktori dari \texttt{777},
-lalu dikurangi oleh nilai umask.
+# pasang atribut immutable
+sudo chattr +i /etc/app-config-kritis.conf
 
-\begin{table}[htbp]
-    \centering
-    \caption{Pengaruh umask terhadap file dan direktori baru}
-    \label{tab:umask-effect}
-    \begin{tblr}{
-        colspec = {lcccc},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1,2} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \SetCell[r=2]{c} \textbf{umask} & \SetCell[c=2]{c} \textbf{File baru} & \SetCell[c=2]{c} \textbf{Direktori baru} \\
-    & Oktal & Simbolik & Oktal & Simbolik \\
-    \texttt{022} & \texttt{644} & \texttt{rw-r--r--} & \texttt{755} & \texttt{rwxr-xr-x} \\
-    \texttt{027} & \texttt{640} & \texttt{rw-r-----} & \texttt{750} & \texttt{rwxr-x---} \\
-    \texttt{077} & \texttt{600} & \texttt{rw-------} & \texttt{700} & \texttt{rwx------} \\
-    \end{tblr}
-\end{table}
+# coba hapus (akan gagal)
+sudo rm /etc/app-config-kritis.conf
+# rm: cannot remove ...: Operation not permitted
 
-\begin{lstlisting}[language=bash, caption={Melihat dan mengubah umask}]
-umask
-umask -S
-umask 027
-echo "umask 027" >> ~/.bashrc
+# lihat atribut
+lsattr /etc/app-config-kritis.conf
+# output: ----i------------ /etc/app-config-kritis.conf
+
+# cabut atribut immutable
+sudo chattr -i /etc/app-config-kritis.conf
 \end{lstlisting}
 
-\begin{notebox}
-umask tidak pernah menambahkan execute pada file reguler. Jika file harus executable,
-gunakan \cmd{chmod} secara eksplisit.
-\end{notebox}
+\subsection*{Praktikum 11.1: Setuid, Sticky Bit, dan Direktori Bersama}
 
-\subsection*{Praktikum 9.1: Permissions}
-
-\textbf{Tujuan}: membaca permission, mengubahnya dengan aman, dan memahami efek
-\cmd{chmod}, \cmd{chown}, serta \cmd{umask} pada file nyata.
-
-\textbf{Langkah 1}: Buat direktori kerja dan dua file uji.
-
-\begin{lstlisting}[language=bash, caption={Menyiapkan file uji permission}]
-mkdir ~/lab-permissions && cd ~/lab-permissions
-echo "data rahasia" > secret.txt
-echo '#!/bin/bash' > myscript.sh
-echo 'echo Hello' >> myscript.sh
-ls -la
-\end{lstlisting}
-
-Perhatikan permission awal kedua file. Biasanya file baru tidak memiliki bit execute.
-
-\textbf{Langkah 2}: Jadikan \file{secret.txt} privat hanya untuk owner.
-
-\begin{lstlisting}[language=bash, caption={Membuat file privat}]
-chmod 600 secret.txt
-ls -l secret.txt
-\end{lstlisting}
-
-Permission \texttt{600} berarti owner dapat membaca dan menulis, sedangkan group dan
-others tidak memiliki akses.
-
-\textbf{Langkah 3}: Jadikan \file{myscript.sh} dapat dijalankan.
-
-\begin{lstlisting}[language=bash, caption={Menjadikan skrip executable}]
-chmod 755 myscript.sh
-ls -l myscript.sh
-./myscript.sh
-\end{lstlisting}
-
-Permission \texttt{755} memberi hak penuh ke owner, dan hak baca+execute ke group serta
-others. Tanpa bit execute, file skrip tidak bisa dijalankan langsung.
-
-\textbf{Langkah 4}: Buat direktori bersama dan amati efek SGID sederhana.
-
-\begin{lstlisting}[language=bash, caption={Direktori bersama dengan SGID}]
-mkdir shared-dir
-chmod g+s shared-dir
-ls -ld shared-dir
-\end{lstlisting}
-
-Jika output menampilkan huruf \texttt{s} pada posisi group execute, berarti SGID aktif.
-
-\textbf{Langkah 5}: Uji efek \cmd{umask} pada file baru.
-
-\begin{lstlisting}[language=bash, caption={Mengamati efek umask}]
-umask
-umask 027
-touch testfile-027
-ls -l testfile-027
-\end{lstlisting}
-
-\textbf{Analisis}
+Amati bagaimana setuid bekerja pada berkas sistem, lalu buat direktori bersama dengan sticky bit yang melindungi berkas masing-masing pengguna.
 
 \begin{enumerate}
-    \item Mengapa \file{secret.txt} tidak dapat dibaca oleh group dan others setelah
-        \cmd{chmod 600}?
-    \item Apa perbedaan arti \texttt{600} dan \texttt{755} terhadap file yang diuji?
-    \item Setelah \cmd{umask 027}, permission apa yang dihasilkan untuk file baru, dan
-        mengapa bukan \texttt{777}?
+    \item Persiapkan direktori kerja dan amati setuid pada berkas sistem.
+\begin{lstlisting}[language=bash, caption={Amati setuid pada berkas sistem}]
+cd ~/lab-os/week11-users
+ls -l /usr/bin/passwd /usr/bin/sudo
+# catat: huruf 's' pada posisi execute pemilik
+\end{lstlisting}
+
+    \item Buat direktori bersama dengan sticky bit di dalam direktori lab.
+\begin{lstlisting}[language=bash, caption={Direktori bersama dengan sticky bit}]
+mkdir shared-tmp
+chmod 1777 shared-tmp
+ls -ld shared-tmp
+# output harus: drwxrwxrwt ... shared-tmp
+\end{lstlisting}
+
+    \textit{Amati:} Huruf \texttt{t} pada akhir string permission menunjukkan sticky bit aktif. Artinya, siapapun bisa membuat berkas di sana, tetapi hanya pemilik berkas yang bisa menghapusnya.
+
+    \item Buat direktori dengan SGID untuk simulasi kolaborasi tim.
+\begin{lstlisting}[language=bash, caption={Direktori tim dengan SGID}]
+mkdir tim-proyek
+# tetapkan kepemilikan ke grup yang ada (gunakan grup kamu sendiri)
+MYGRUP=$(id -gn)
+chown $USER:$MYGRUP tim-proyek
+chmod 2775 tim-proyek
+ls -ld tim-proyek
+# output harus: drwxrwsr-x ... tim-proyek
+\end{lstlisting}
+
+    \textit{Amati:} Huruf \texttt{s} pada posisi execute grup berarti SGID aktif. Setiap berkas yang dibuat di dalam direktori ini akan mewarisi grup direktori, bukan grup primer pembuat berkas.
+
+    \item Uji dengan membuat berkas di dalam direktori SGID.
+\begin{lstlisting}[language=bash, caption={Verifikasi pewarisan grup}]
+touch tim-proyek/berkas-baru.txt
+ls -l tim-proyek/berkas-baru.txt
+# grup berkas harus sama dengan grup direktori tim-proyek
+\end{lstlisting}
 \end{enumerate}
 
-\textbf{Tantangan}
-
-Ubah owner atau group salah satu file uji ke akun atau group lain yang tersedia di sistem,
-kemudian jelaskan perubahan output \cmd{ls -l} sebelum dan sesudahnya.
+\begin{challengebox}
+Buat skenario direktori bersama yang lengkap: direktori bernama \texttt{ruang-kerja} dengan SGID aktif agar semua berkas baru mewarisi grup direktori, sekaligus sticky bit agar setiap pengguna hanya bisa menghapus berkasnya sendiri. Gunakan \cmd{ls -ld} untuk membuktikan bahwa kedua bit aktif bersamaan. Tuliskan perintah lengkap dan jelaskan nilai oktal yang kamu gunakan.
+\end{challengebox}
 
 %% ========================================================================
-\section{Access Control Lists (ACLs)}
+\section{Access Control List (ACL)}
 \label{sec:acls}
 %% ========================================================================
 
-Permission Unix klasik sangat cocok untuk mayoritas kasus, tetapi ia hanya mengenal
-satu owner dan satu group. Masalah muncul saat akses perlu diberikan ke satu pengguna
-tertentu tanpa mengubah owner file dan tanpa memasukkan pengguna itu ke group utama.
+Izin Unix standar hanya mengenal tiga entitas: pemilik, grup, dan semua pengguna lain. Bayangkan situasi ini: berkas laporan keuangan dimiliki oleh \texttt{alice} dan grup \texttt{finance}. Direktur IT bernama \texttt{bob} perlu membaca berkas itu untuk audit, tetapi kamu tidak ingin menambahkan \texttt{bob} ke grup \texttt{finance} karena itu akan memberinya akses ke semua berkas grup tersebut. Dengan izin standar, tidak ada solusi bersih. Di sinilah ACL masuk.
 
-Contoh masalah yang umum:
+\textit{Access Control List} (ACL) adalah lapisan tambahan di atas izin standar Unix. ACL memungkinkan kamu menentukan izin untuk pengguna atau grup tertentu secara individual, tanpa mengubah pemilik berkas atau keanggotaan grup. Ada dua jenis ACL: \textit{access ACL} yang berlaku pada berkas atau direktori tertentu, dan \textit{default ACL} yang diwarisi oleh berkas baru di dalam sebuah direktori.
 
-\begin{examplebox}[Mengapa ACL diperlukan]
-File \file{laporan.txt} dimiliki \texttt{alice} dan group \texttt{finance}. User
-\texttt{bob} perlu membaca file itu, tetapi Anda tidak ingin semua anggota group lain
-ikut mendapat akses. ACL memungkinkan Anda memberi izin hanya ke \texttt{bob}.
-\end{examplebox}
+Pada Ubuntu, paket \texttt{acl} biasanya sudah tersedia. Dua perintah utamanya adalah \cmd{getfacl} untuk membaca ACL dan \cmd{setfacl} untuk mengubahnya.
 
-ACL menambahkan aturan akses \emph{tambahan} di atas permission standar. Ada dua jenis:
-
-\begin{description}
-    \item[Access ACL] berlaku langsung pada file atau direktori saat ini.
-    \item[Default ACL] hanya untuk direktori, dan diwariskan ke konten baru di dalamnya.
-\end{description}
-
-\begin{notebox}
-Di Ubuntu 22.04, filesystem modern seperti ext4, XFS, dan Btrfs umumnya sudah mendukung
-ACL. Jika utilitasnya belum tersedia, instal paket \texttt{acl}.
-\end{notebox}
-
-\textbf{Perintah yang Digunakan}
-
-\begin{itemize}
-    \item \texttt{getfacl file}: menampilkan ACL lengkap file atau direktori.
-    \item \texttt{setfacl -m ...}: menambah atau mengubah entri ACL.
-    \item \texttt{setfacl -x ...}: menghapus satu entri ACL.
-    \item \texttt{setfacl -b file}: menghapus semua ACL tambahan.
-    \item \texttt{setfacl -d -m ... dir}: menetapkan \textit{default ACL} pada direktori.
-\end{itemize}
-
-\subsection{Langkah 1: Membaca ACL yang Ada}
-
-Perintah pertama yang perlu dikenal adalah \cmd{getfacl}. Fungsinya mirip
-\cmd{ls -l}, tetapi lebih detail.
-
-\begin{lstlisting}[language=bash, caption={Membaca ACL dasar dengan getfacl}]
+\begin{lstlisting}[language=bash, caption={Instalasi dan pengecekan ACL dasar}]
+# pastikan paket acl tersedia
 sudo apt install -y acl
-getfacl file.txt
 
-# contoh output minimum
+# buat berkas uji
+echo "laporan keuangan Q4" > laporan.txt
+chmod 640 laporan.txt
+
+# baca ACL standar (belum ada entri tambahan)
+getfacl laporan.txt
+# output:
+# file: laporan.txt
+# owner: alice
+# group: finance
 # user::rw-
 # group::r--
-# other::r--
-\end{lstlisting}
-
-Jika file belum memiliki ACL tambahan, output \cmd{getfacl} hanya menampilkan tiga
-entri dasar yang sepadan dengan permission Unix biasa: owner, group, dan others.
-Begitu ACL tambahan diterapkan, Anda akan melihat entri user/group spesifik dan
-sering juga sebuah \texttt{mask}.
-
-Format entri yang paling penting adalah:
-
-\begin{table}[htbp]
-    \centering
-    \caption{Format entri ACL yang umum}
-    \label{tab:setfacl-entries}
-    \begin{tblr}{
-        colspec = {lX[l]X[l]},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \textbf{Entri} & \textbf{Contoh} & \textbf{Arti} \\
-    \texttt{u::izin} & \texttt{u::rw-} & Permission owner \\
-    \texttt{u:nama:izin} & \texttt{u:bob:r--} & ACL untuk user tertentu \\
-    \texttt{g::izin} & \texttt{g::r--} & Permission group standar \\
-    \texttt{g:nama:izin} & \texttt{g:audit:rw-} & ACL untuk group tertentu \\
-    \texttt{o::izin} & \texttt{o::---} & Permission others \\
-    \texttt{m::izin} & \texttt{m::rw-} & Mask ACL \\
-    \end{tblr}
-\end{table}
-
-Ketika ACL aktif, \cmd{ls -l} menampilkan tanda \texttt{+} di akhir string permission,
-misalnya \texttt{-rw-r-----+}.
-
-\subsection{Langkah 2: Menambahkan ACL untuk Satu User atau Group}
-
-Perintah utama untuk membuat atau mengubah ACL adalah \cmd{setfacl}. Mulailah dari
-kasus paling sederhana: memberi akses baca ke satu user.
-
-\begin{lstlisting}[language=bash, caption={Menambahkan ACL secara bertahap}]
-# beri bob hak baca
-setfacl -m u:bob:r file.txt
-
-# beri group audit hak baca-tulis
-setfacl -m g:audit:rw file.txt
-
-# lihat hasilnya
-getfacl file.txt
-\end{lstlisting}
-
-Cara membacanya:
-
-\begin{itemize}
-    \item \texttt{-m} berarti \emph{modify}: tambah atau ubah entri;
-    \item \texttt{u:bob:r} berarti user \texttt{bob} mendapat izin baca;
-    \item \texttt{g:audit:rw} berarti group \texttt{audit} mendapat izin baca dan tulis.
-\end{itemize}
-
-Jika ACL tidak lagi diperlukan, hapus salah satu entri atau semua entri tambahan:
-
-\begin{lstlisting}[language=bash, caption={Menghapus ACL}]
-setfacl -x u:bob file.txt
-setfacl -x g:audit file.txt
-setfacl -b file.txt
-\end{lstlisting}
-
-\texttt{-x} menghapus satu entri tertentu. Opsi \texttt{-b} menghapus seluruh ACL
-tambahan dan mengembalikan file ke model permission Unix standar.
-
-\subsection{Langkah 3: Memahami Mask dan Izin Efektif}
-
-Begitu ACL tambahan dipasang, Linux biasanya membuat \textbf{mask}. Untuk pemula,
-bayangkan mask sebagai \emph{batas atas} izin yang boleh benar-benar berlaku untuk
-entri ACL tertentu.
-
-\begin{lstlisting}[language=bash, caption={Mask ACL dan izin efektif}]
-getfacl ~/report.txt
-# user::rw-
-# user:charlie:rwx        #effective:rw-
-# group::r--              #effective:r--
-# group:audit:rw-         #effective:rw-
-# mask::rw-
 # other::---
-
-setfacl -m m::r-- ~/report.txt
-chmod g-w ~/report.txt
 \end{lstlisting}
 
-Pada contoh di atas, \texttt{user:charlie:rwx} tidak benar-benar mendapat \texttt{rwx}
-karena mask hanya mengizinkan \texttt{rw-}. Itulah sebabnya \cmd{getfacl} menampilkan
-komentar \texttt{\#effective:rw-}.
+Ketika sebuah berkas belum memiliki ACL tambahan, \cmd{getfacl} hanya menampilkan tiga entri yang setara dengan izin standar Unix. Format entri ACL mengikuti pola \texttt{tipe:nama:izin}. Misalnya \texttt{u:bob:r--} berarti pengguna \texttt{bob} mendapat izin baca, dan \texttt{g:audit:rw-} berarti grup \texttt{audit} mendapat izin baca dan tulis.
 
-Aturan praktis yang perlu diingat:
+\begin{lstlisting}[language=bash, caption={Menambah dan menghapus entri ACL}]
+# beri pengguna bob hak baca
+setfacl -m u:bob:r laporan.txt
 
-\begin{itemize}
-    \item owner dan others tidak difilter oleh mask;
-    \item named user, group standar, dan named group bisa dipersempit oleh mask;
-    \item \cmd{chmod} pada file ber-ACL sering memengaruhi mask;
-    \item jika hasilnya membingungkan, selalu cek lagi dengan \cmd{getfacl}.
-\end{itemize}
+# beri grup audit hak baca dan tulis
+setfacl -m g:audit:rw laporan.txt
 
-\subsection{Langkah 4: Default ACL untuk Direktori}
+# lihat hasilnya -- perhatikan entri baru dan mask
+getfacl laporan.txt
 
-Setelah paham ACL pada satu file, langkah berikutnya adalah ACL yang diwariskan otomatis.
-Inilah fungsi \textbf{default ACL}. Ia sangat berguna untuk direktori proyek bersama.
+# ls -l sekarang menampilkan tanda '+' di akhir permission
+ls -l laporan.txt
 
+# hapus ACL untuk bob saja
+setfacl -x u:bob laporan.txt
+
+# hapus semua ACL tambahan sekaligus
+setfacl -b laporan.txt
+\end{lstlisting}
+
+Saat ACL tambahan dipasang, Linux secara otomatis membuat entri \textbf{mask}. Mask berfungsi sebagai batas atas izin efektif untuk semua entri ACL kecuali pemilik dan others. Jika mask diset ke \texttt{r--}, maka entri \texttt{g:audit:rw-} hanya akan efektif sebagai \texttt{r--}. Komentar \texttt{\#effective:} pada output \cmd{getfacl} menunjukkan izin yang benar-benar berlaku.
+
+\textbf{Default ACL} sangat berguna untuk direktori proyek bersama. Setiap berkas atau subdirektori baru yang dibuat di dalam direktori dengan default ACL akan otomatis mewarisi aturan ACL tersebut.
+
+\begin{lstlisting}[language=bash, caption={Default ACL pada direktori proyek}]
+mkdir proyek-data
+
+# tetapkan default ACL agar berkas baru dapat diakses grup developers
+setfacl -d -m g:developers:rwx proyek-data
+setfacl -d -m u:deploy:r-x proyek-data
+
+# lihat default ACL pada direktori
+getfacl proyek-data
+
+# buat berkas baru dan periksa ACL-nya
+touch proyek-data/data-baru.csv
+getfacl proyek-data/data-baru.csv
+# berkas baru otomatis mewarisi ACL dari direktori induk
+
+# hapus default ACL pada direktori
+setfacl -k proyek-data
+\end{lstlisting}
+
+\subsection*{Praktikum 11.2: ACL Granular untuk Kolaborasi}
+
+Berikan akses baca ke pengguna tertentu tanpa mengubah grup berkas, lalu buat direktori yang mewariskan ACL ke semua berkas baru.
+
+\begin{enumerate}
+    \item Siapkan berkas dan verifikasi kondisi awal tanpa ACL tambahan.
+\begin{lstlisting}[language=bash, caption={Kondisi awal berkas tanpa ACL}]
+cd ~/lab-os/week11-users
+echo "data rahasia proyek" > rahasia.txt
+chmod 640 rahasia.txt
+ls -l rahasia.txt
+getfacl rahasia.txt
+\end{lstlisting}
+
+    \item Tambahkan ACL untuk satu pengguna tertentu.
+\begin{lstlisting}[language=bash, caption={Menambah ACL untuk satu pengguna}]
+# ganti 'namamu' dengan nama pengguna lain di sistem
+PENGGUNA_LAIN=$(getent passwd | awk -F: '$3>=1000 && $3!=65534{print $1}' | grep -v "^$(whoami)$" | head -1)
+echo "Pengguna lain: $PENGGUNA_LAIN"
+
+setfacl -m u:${PENGGUNA_LAIN}:r rahasia.txt
+ls -l rahasia.txt
+getfacl rahasia.txt
+\end{lstlisting}
+
+    \textit{Amati:} Output \cmd{ls -l} kini menampilkan tanda \texttt{+} di akhir string permission. Output \cmd{getfacl} menampilkan entri pengguna baru dan entri \texttt{mask}.
+
+    \item Buat direktori dengan default ACL.
 \begin{lstlisting}[language=bash, caption={Default ACL pada direktori kolaborasi}]
-mkdir ~/project
-setfacl -d -m g:developers:rwx ~/project
-setfacl -d -m u:deploy:r-x,g:auditors:r-- ~/project
+mkdir kolaborasi
+setfacl -d -m u:${PENGGUNA_LAIN}:rwx kolaborasi
+getfacl kolaborasi
 
-touch ~/project/newfile.txt
-getfacl ~/project/newfile.txt
-
-mkdir ~/project/subdir
-getfacl ~/project/subdir
-
-setfacl -x d:g:developers ~/project
-setfacl -k ~/project
+# buat berkas baru dan periksa warisan ACL
+touch kolaborasi/berkas-warisan.txt
+getfacl kolaborasi/berkas-warisan.txt
 \end{lstlisting}
 
-Alur kerjanya bertahap:
+    \textit{Amati:} Berkas baru di dalam direktori \texttt{kolaborasi} otomatis mendapat entri ACL yang sama dengan default ACL direktori induknya.
 
-\begin{enumerate}
-    \item tambahkan default ACL ke direktori dengan opsi \texttt{-d -m};
-    \item buat file atau subdirektori baru;
-    \item periksa ACL hasil warisan dengan \cmd{getfacl};
-    \item hapus default ACL bila tidak lagi dibutuhkan.
+    \item Hapus satu entri ACL dan verifikasi.
+\begin{lstlisting}[language=bash, caption={Menghapus entri ACL tertentu}]
+setfacl -x u:${PENGGUNA_LAIN} rahasia.txt
+getfacl rahasia.txt
+\end{lstlisting}
 \end{enumerate}
 
-\begin{notebox}
-File baru tidak mewarisi execute dari default ACL bila ia file reguler; subdirektori
-tetap mempertahankan execute karena \texttt{x} pada direktori berarti izin masuk.
-\end{notebox}
+\begin{challengebox}
+Buat direktori bernama \texttt{arsip-proyek} dengan default ACL berikut: grup \texttt{developers} mendapat akses baca, tulis, dan eksekusi; grup \texttt{auditor} hanya mendapat akses baca. Buat beberapa berkas dan subdirektori di dalamnya, lalu verifikasi dengan \cmd{getfacl} bahwa semua berkas baru mewarisi aturan tersebut. Sebagai referensi Bab~5: bandingkan pendekatan ACL ini dengan pendekatan \cmd{chmod} biasa dan jelaskan kelebihan ACL dalam skenario ini.
+\end{challengebox}
 
-\subsection*{Praktikum 9.2: ACL}
+%% ========================================================================
+\section{Manajemen Pengguna}
+\label{sec:user-management}
+%% ========================================================================
 
-\textbf{Tujuan}: memahami ACL dari nol: melihat kondisi awal, menambah akses untuk satu
-user, lalu membuat direktori yang mewariskan ACL otomatis.
+Linux menyimpan informasi pengguna di tiga berkas utama. \file{/etc/passwd} berisi data dasar seperti nama pengguna, UID, GID utama, direktori rumah, dan shell login. Berkas ini dapat dibaca oleh semua pengguna karena banyak program yang membutuhkan informasi ini. \file{/etc/shadow} menyimpan hash password dan kebijakan kedaluwarsa akun. Berkas ini hanya bisa dibaca oleh \texttt{root} karena memuat data kriptografi yang sensitif. \file{/etc/group} mendaftar semua grup beserta anggotanya.
 
-\textbf{Langkah 1}: Siapkan file dan lihat permission standar tanpa ACL tambahan.
+Format satu baris di \file{/etc/passwd} terlihat seperti ini:
 
-\begin{lstlisting}[language=bash, caption={Menyiapkan file uji ACL}]
-mkdir ~/lab-acl && cd ~/lab-acl
-echo "Data penting" > confidential.txt
-chmod 640 confidential.txt
-ls -l confidential.txt
-getfacl confidential.txt
+\begin{lstlisting}[language=bash, caption={Format berkas /etc/passwd}]
+# nama:x:UID:GID:komentar:direktori-rumah:shell
+alice:x:1001:1001:Alice Programmer:/home/alice:/bin/bash
 \end{lstlisting}
 
-Pada tahap ini, \cmd{getfacl} hanya menampilkan tiga entri dasar: owner, group, dan
-others. Belum ada named user atau named group.
+Kolom kedua selalu \texttt{x}, menandakan bahwa hash password disimpan di \file{/etc/shadow}. UID di bawah 1000 biasanya dipakai oleh akun sistem, sedangkan UID 1000 ke atas adalah akun pengguna manusia.
 
-\textbf{Langkah 2}: Beri akses baca ke satu user tertentu tanpa mengubah owner atau group.
+Perintah utama untuk manajemen pengguna adalah \cmd{useradd} untuk membuat akun baru, \cmd{usermod} untuk memodifikasi, dan \cmd{userdel} untuk menghapus. Perintah \cmd{passwd} digunakan untuk menetapkan atau mengubah password. Gunakan \cmd{id} dan \cmd{getent passwd} untuk membaca informasi pengguna.
 
-\begin{lstlisting}[language=bash, caption={Menambahkan ACL untuk satu user}]
-setfacl -m u:userA:r confidential.txt
-ls -l confidential.txt
-getfacl confidential.txt
+\begin{lstlisting}[language=bash, caption={Siklus hidup akun pengguna}]
+# buat pengguna baru dengan direktori rumah dan shell
+sudo useradd -m -s /bin/bash mahasiswa01
+sudo passwd mahasiswa01
+
+# verifikasi akun yang baru dibuat
+id mahasiswa01
+getent passwd mahasiswa01
+ls -ld /home/mahasiswa01
+
+# modifikasi: tambahkan ke grup tambahan
+sudo usermod -aG sudo mahasiswa01
+
+# modifikasi: ubah shell login
+sudo usermod -s /bin/sh mahasiswa01
+
+# kunci akun (cegah login)
+sudo usermod -L mahasiswa01
+sudo passwd -S mahasiswa01
+# output: mahasiswa01 L ... (L = locked)
+
+# buka kembali kunci akun
+sudo usermod -U mahasiswa01
+
+# hapus akun beserta direktori rumah dan mailbox
+sudo userdel -r mahasiswa01
 \end{lstlisting}
 
-Perhatikan dua perubahan:
-\begin{itemize}
-    \item output \cmd{ls -l} menampilkan tanda \texttt{+};
-    \item output \cmd{getfacl} kini memiliki entri \texttt{user:userA:r--}.
-\end{itemize}
+Perhatikan opsi \texttt{-aG} pada \cmd{usermod}. Opsi \texttt{-a} berarti \textit{append}: tambahkan grup baru tanpa menghapus keanggotaan grup yang sudah ada. Tanpa \texttt{-a}, opsi \texttt{-G} akan mengganti semua grup tambahan sekaligus, yang sering mengakibatkan pengguna kehilangan akses ke layanan yang sebelumnya tersedia.
 
-\textbf{Langkah 3}: Buat direktori bersama yang mewariskan ACL ke file baru.
+Perintah \cmd{who} dan \cmd{w} berguna untuk melihat siapa saja yang sedang login. \cmd{who} menampilkan daftar sesi aktif, sementara \cmd{w} memberikan informasi lebih lengkap termasuk perintah yang sedang dijalankan.
 
-\begin{lstlisting}[language=bash, caption={Default ACL pada direktori}]
-mkdir shared
-setfacl -d -m u:userA:rwx shared
-setfacl -d -m u:userB:r-x shared
-getfacl shared
-
-touch shared/inherited.txt
-getfacl shared/inherited.txt
+\begin{lstlisting}[language=bash, caption={Memeriksa sesi pengguna aktif}]
+who
+w
+last | head -20
+# last menampilkan riwayat login dan logout
 \end{lstlisting}
 
-\textbf{Analisis}
+\subsection*{Praktikum 11.3: Membuat dan Mengonfigurasi Akun Pengguna}
+
+Buat akun pengguna baru dengan konfigurasi lengkap dan verifikasi setiap perubahan.
 
 \begin{enumerate}
-    \item Mengapa \cmd{getfacl confidential.txt} awalnya tidak menampilkan user tertentu?
-    \item Setelah \cmd{setfacl -m u:userA:r confidential.txt}, apa perbedaan output
-        \cmd{ls -l} dan \cmd{getfacl}?
-    \item Mengapa file \texttt{inherited.txt} mewarisi ACL dari direktori \texttt{shared}?
-\end{enumerate}
-
-\textbf{Tantangan}
-
-Tambahkan satu ACL lagi agar group \texttt{readonly-group} hanya dapat membaca
-\file{confidential.txt}. Setelah itu, hapus ACL untuk \texttt{userA} dan verifikasi
-hasil akhirnya dengan \cmd{getfacl}.
-
-%% ========================================================================
-\section{Manajemen User dan Group}
-\label{sec:user-group-management}
-%% ========================================================================
-
-\textbf{Penjelasan Konsep}
-
-Linux menyimpan identitas pengguna di tiga file: \file{/etc/passwd} (data dasar user,
-dapat dibaca semua orang), \file{/etc/shadow} (hash password dan aging policy, hanya
-root), dan \file{/etc/group} (definisi group). Sistem ini memisahkan informasi publik
-dari rahasia keamanan.
-
-\textbf{Perintah Utama}
-
-\begin{itemize}
-    \item \texttt{useradd}, \texttt{usermod}, \texttt{userdel}: kelola akun user.
-    \item \texttt{groupadd}, \texttt{groupmod}, \texttt{groupdel}: kelola group.
-    \item \texttt{passwd}: ubah atau kunci password.
-    \item \texttt{chage}: atur kebijakan umur password.
-    \item \texttt{id}, \texttt{groups}: lihat informasi user dan group.
-\end{itemize}
-
-\subsection{Membaca Informasi User dan Group}
-
-\begin{lstlisting}[language=bash, caption={Perintah query user dan group}]
-id alice
-groups alice
-getent passwd alice
-getent group developers
-grep "^alice:" /etc/passwd
-sudo grep "^alice:" /etc/shadow
-\end{lstlisting}
-
-\begin{notebox}
-\cmd{id} lebih akurat daripada \cmd{grep /etc/group} karena menampilkan semua group
-user, termasuk primary group.
-\end{notebox}
-
-\subsection{Siklus Hidup User: Buat, Modifikasi, Hapus}
-
-\begin{lstlisting}[language=bash, caption={Pengelolaan akun user}]
-# buat user dengan home directory dan shell
-sudo useradd -m -s /bin/bash alice
-sudo passwd alice
-
-# modifikasi: tambah group, ubah shell, lock/unlock
-sudo usermod -aG developers,sudo alice
-sudo usermod -s /bin/zsh alice
-sudo usermod -L alice
-sudo usermod -U alice
-
-# hapus user (dengan atau tanpa home directory)
-sudo userdel alice
-sudo userdel -r alice
-\end{lstlisting}
-
-\textbf{Opsi penting}:
-\begin{itemize}
-    \item \texttt{-m}: buat home directory otomatis
-    \item \texttt{-s}: tentukan shell login
-    \item \texttt{-aG}: tambah group tanpa menghapus group lama
-    \item \texttt{-L}/\texttt{-U}: lock/unlock akun
-    \item \texttt{-r}: hapus home directory saat menghapus user
-\end{itemize}
-
-\begin{warningbox}
-Gunakan \cmd{usermod -aG}, bukan \cmd{usermod -G}. Tanpa \texttt{-a}, semua
-supplementary group lama akan diganti.
-\end{warningbox}
-
-\subsection*{Praktikum 9.3A: Membuat dan Mengelola User}
-
-\textbf{Tujuan}: membuat user baru, memodifikasi propertinya, dan memahami perbedaan
-opsi \cmd{useradd} dan \cmd{usermod}.
-
-\begin{lstlisting}[language=bash, caption={Latihan user management}]
-# buat dua user
-sudo useradd -m -s /bin/bash userA
-sudo useradd -m -s /bin/bash userB
-sudo passwd userA
-sudo passwd userB
+    \item Buat dua akun pengguna baru.
+\begin{lstlisting}[language=bash, caption={Membuat akun pengguna}]
+sudo useradd -m -s /bin/bash labuser01
+sudo useradd -m -s /bin/bash labuser02
+sudo passwd labuser01
+sudo passwd labuser02
 
 # verifikasi
-id userA
-getent passwd userA
-
-# modifikasi shell userA
-sudo usermod -s /bin/zsh userA
-getent passwd userA
-
-# lock dan unlock userB
-sudo usermod -L userB
-sudo passwd -S userB
-sudo usermod -U userB
-sudo passwd -S userB
+id labuser01
+getent passwd labuser01
+ls -la /home/labuser01
 \end{lstlisting}
 
-\textbf{Pertanyaan}:
-\begin{enumerate}
-    \item Apa perbedaan output \cmd{id userA} sebelum dan sesudah menambah group?
-    \item Bagaimana status \cmd{passwd -S userB} berubah saat akun di-lock?
+    \textit{Amati:} \cmd{useradd -m} membuat direktori rumah secara otomatis dengan menyalin templat dari \dir{/etc/skel}. Semua berkas tersembunyi seperti \file{.bashrc} dan \file{.profile} sudah ada di sana.
+
+    \item Modifikasi properti akun.
+\begin{lstlisting}[language=bash, caption={Modifikasi akun pengguna}]
+# ubah shell labuser01
+sudo usermod -s /bin/sh labuser01
+getent passwd labuser01
+
+# tambahkan komentar (nama lengkap)
+sudo usermod -c "Lab User Pertama" labuser01
+getent passwd labuser01
+
+# kunci labuser02 sementara
+sudo usermod -L labuser02
+sudo passwd -S labuser02
+\end{lstlisting}
+
+    \item Bersihkan akun uji setelah selesai.
+\begin{lstlisting}[language=bash, caption={Hapus akun uji}]
+sudo userdel -r labuser01
+sudo userdel -r labuser02
+# verifikasi direktori rumah sudah hilang
+ls /home/ | grep labuser
+\end{lstlisting}
 \end{enumerate}
 
-\subsection{Pengelolaan Group}
+\begin{challengebox}
+Buat skrip Bash (referensi Bab~9) bernama \texttt{buat-pengguna-massal.sh} yang membaca daftar nama dari berkas teks \texttt{daftar-pengguna.txt} (satu nama per baris) dan membuat akun pengguna untuk masing-masing. Setiap akun harus dibuat dengan direktori rumah, shell \texttt{/bin/bash}, dan ditambahkan ke grup \texttt{mahasiswa}. Buat grup tersebut lebih dulu jika belum ada. Skrip harus mencetak pesan sukses atau gagal untuk setiap nama.
+\end{challengebox}
 
-\begin{lstlisting}[language=bash, caption={Operasi group}]
-sudo groupadd developers
-sudo groupadd -g 2000 finance
-sudo groupmod -n devteam developers
+%% ========================================================================
+\section{Manajemen Grup}
+\label{sec:group-management}
+%% ========================================================================
+
+Grup di Linux berfungsi seperti divisi di sebuah kantor. Dengan membuat pengguna menjadi anggota grup yang tepat, satu aturan izin bisa berlaku ke banyak orang sekaligus. Daripada mengatur izin satu per satu untuk setiap pengguna, kamu bisa membuat grup \texttt{pengembang}, memasukkan semua pengembang ke sana, lalu mengatur izin direktori proyek untuk grup itu.
+
+Setiap pengguna memiliki satu \textit{grup primer} yang dicatat di \file{/etc/passwd} dan \file{/etc/group}. Pengguna juga bisa menjadi anggota banyak \textit{grup tambahan}. Informasi keanggotaan grup tambahan disimpan di \file{/etc/group}.
+
+Format satu baris di \file{/etc/group}:
+
+\begin{lstlisting}[language=bash, caption={Format berkas /etc/group}]
+# nama-grup:x:GID:anggota1,anggota2,...
+developers:x:1050:alice,bob,charlie
+\end{lstlisting}
+
+Perintah utama manajemen grup adalah \cmd{groupadd} untuk membuat grup baru, \cmd{groupmod} untuk mengubah properti grup, \cmd{groupdel} untuk menghapus, dan \cmd{gpasswd} untuk mengelola keanggotaan.
+
+\begin{lstlisting}[language=bash, caption={Operasi dasar manajemen grup}]
+# buat grup baru
+sudo groupadd pengembang
+sudo groupadd -g 2050 desainer
+# opsi -g menentukan GID secara eksplisit
+
+# ubah nama grup
+sudo groupmod -n devteam pengembang
+
+# tambahkan pengguna ke grup dengan gpasswd
 sudo gpasswd -a alice devteam
-sudo gpasswd -d alice devteam
-sudo groupdel devteam
+sudo gpasswd -a bob devteam
+
+# hapus pengguna dari grup
+sudo gpasswd -d bob devteam
+
+# lihat anggota grup
+getent group devteam
+
+# hapus grup (hanya jika bukan grup primer siapapun)
+sudo groupdel desainer
 \end{lstlisting}
 
-\begin{notebox}
-Perubahan group baru terasa penuh setelah user logout-login atau membuka subshell
-dengan \cmd{newgrp nama-group}.
-\end{notebox}
+Setelah ditambahkan ke grup baru, pengguna perlu logout dan login kembali agar perubahan grup berlaku pada sesi baru. Alternatif tanpa logout adalah menggunakan \cmd{newgrp} untuk membuka subshell dengan grup aktif yang berbeda.
 
-\subsection*{Praktikum 9.3B: Group Management}
+\begin{lstlisting}[language=bash, caption={Mengaktifkan grup baru tanpa logout}]
+# lihat grup aktif saat ini
+id
+groups
 
-\textbf{Tujuan}: membuat group, menambahkan user ke group, dan memverifikasi keanggotaan.
-
-\begin{lstlisting}[language=bash, caption={Latihan group management}]
-# buat dua group
-sudo groupadd labgroup
-sudo groupadd readonly-group
-
-# tambahkan userA ke kedua group
-sudo usermod -aG labgroup,readonly-group userA
-
-# tambahkan userB hanya ke readonly-group
-sudo usermod -aG readonly-group userB
-
-# verifikasi
-id userA
-id userB
-getent group labgroup
-getent group readonly-group
+# aktifkan grup baru di sesi saat ini
+newgrp devteam
+# verifikasi perubahan
+id
+# ketik 'exit' untuk kembali ke shell sebelumnya
 \end{lstlisting}
 
-\textbf{Pertanyaan}:
+\subsection*{Praktikum 11.4: Kelola Keanggotaan Grup dan Direktori Bersama}
+
+Buat grup baru, kelola keanggotaan, dan buat direktori bersama dengan kepemilikan grup.
+
 \begin{enumerate}
-    \item Apa yang ditampilkan \cmd{id userA} vs \cmd{groups userA}?
-    \item Mengapa \texttt{-a} pada \cmd{usermod -aG} penting?
+    \item Buat grup dan pengguna uji.
+\begin{lstlisting}[language=bash, caption={Membuat grup dan pengguna uji}]
+sudo groupadd tim-proyek
+sudo useradd -m -s /bin/bash anggota01
+sudo useradd -m -s /bin/bash anggota02
+sudo passwd anggota01
+sudo passwd anggota02
+\end{lstlisting}
+
+    \item Tambahkan pengguna ke grup.
+\begin{lstlisting}[language=bash, caption={Menambahkan anggota ke grup}]
+sudo gpasswd -a anggota01 tim-proyek
+sudo gpasswd -a anggota02 tim-proyek
+
+# verifikasi keanggotaan
+getent group tim-proyek
+id anggota01
+id anggota02
+\end{lstlisting}
+
+    \textit{Amati:} Perintah \cmd{id} menampilkan semua grup yang dimiliki pengguna, termasuk grup primer dan grup tambahan. Keanggotaan grup baru terlihat di output \cmd{id}, tetapi baru berlaku penuh pada sesi login berikutnya.
+
+    \item Buat direktori bersama dengan kepemilikan grup tim.
+\begin{lstlisting}[language=bash, caption={Direktori bersama untuk tim proyek}]
+sudo mkdir /srv/tim-proyek
+sudo chown :tim-proyek /srv/tim-proyek
+sudo chmod 2770 /srv/tim-proyek
+ls -ld /srv/tim-proyek
+# output: drwxrws--- ... tim-proyek /srv/tim-proyek
+\end{lstlisting}
+
+    \textit{Amati:} Izin \texttt{2770} berarti pemilik dan anggota grup dapat membaca, menulis, dan masuk direktori, sementara pengguna lain tidak punya akses sama sekali. Angka \texttt{2} di depan mengaktifkan SGID.
+
+    \item Hapus anggota dari grup dan verifikasi.
+\begin{lstlisting}[language=bash, caption={Hapus anggota dan verifikasi}]
+sudo gpasswd -d anggota02 tim-proyek
+getent group tim-proyek
+
+# bersihkan
+sudo userdel -r anggota01
+sudo userdel -r anggota02
+sudo groupdel tim-proyek
+sudo rm -rf /srv/tim-proyek
+\end{lstlisting}
 \end{enumerate}
 
-\subsection{Kebijakan Password dan Aging}
-
-\begin{lstlisting}[language=bash, caption={Password policy dengan chage}]
-# lihat status aging
-sudo chage -l alice
-
-# set kebijakan: password valid 90 hari, warning 14 hari sebelumnya
-sudo chage -M 90 -m 7 -W 14 alice
-
-# kunci akun 30 hari setelah password expired
-sudo chage -I 30 alice
-
-# set tanggal kedaluwarsa akun
-sudo chage -E 2025-12-31 alice
-
-# paksa ganti password segera
-sudo chage -d 0 alice
-sudo passwd -e alice
-\end{lstlisting}
-
-\begin{table}[htbp]
-    \centering
-    \caption{Opsi \cmd{chage} yang paling penting}
-    \label{tab:chage-options}
-    \begin{tblr}{
-        colspec = {lcX[l]},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \textbf{Opsi} & \textbf{Nama} & \textbf{Arti} \\
-    \texttt{-l} & list & Tampilkan status aging \\
-    \texttt{-M N} & maxdays & Password wajib diganti tiap N hari \\
-    \texttt{-m N} & mindays & Minimal N hari sebelum boleh ganti \\
-    \texttt{-W N} & warndays & Peringatan N hari sebelum expired \\
-    \texttt{-I N} & inactive & Kunci akun N hari setelah expired \\
-    \texttt{-E DATE} & expire & Kedaluwarsa akun \\
-    \end{tblr}
-\end{table}
-
-\subsection*{Praktikum 9.3C: Password Aging Policy}
-
-\textbf{Tujuan}: menerapkan kebijakan umur password dan mengamati efeknya.
-
-\begin{lstlisting}[language=bash, caption={Latihan password policy}]
-# set aging policy untuk userA
-sudo chage -M 60 -W 7 -m 1 userA
-sudo chage -l userA
-
-# paksa userA ganti password saat login pertama
-sudo chage -d 0 userA
-
-# kunci password userB
-sudo passwd -l userB
-sudo passwd -S userB
-
-# unlock kembali
-sudo passwd -u userB
-sudo passwd -S userB
-\end{lstlisting}
-
-\textbf{Pertanyaan}:
-\begin{enumerate}
-    \item Apa arti nilai yang ditampilkan \cmd{chage -l userA}?
-    \item Bagaimana cara membuktikan userB terkunci dari output \cmd{passwd -S}?
-    \item Kapan sebaiknya menggunakan \cmd{chage -d 0} vs \cmd{passwd -e}?
-\end{enumerate}
-
-\textbf{Tantangan}
-
-Buat user bernama \texttt{intern} yang:
-\begin{itemize}
-    \item memiliki shell \texttt{/bin/bash};
-    \item menjadi anggota \texttt{labgroup};
-    \item dipaksa ganti password pada login pertama;
-    \item password expired setelah 45 hari dengan warning 7 hari sebelumnya.
-\end{itemize}
+\begin{challengebox}
+Buat grup bernama \texttt{penulis} dan grup bernama \texttt{editor}. Tambahkan tiga pengguna fiktif: dua ke grup \texttt{penulis} dan satu ke kedua grup sekaligus. Buat direktori \dir{/srv/majalah} dengan kepemilikan grup \texttt{editor} dan SGID aktif. Tetapkan izin agar grup \texttt{editor} dapat membaca dan menulis, sementara grup \texttt{penulis} hanya dapat membaca. Gunakan ACL (dari seksi sebelumnya) untuk mencapai aturan akses tersebut karena izin standar tidak cukup untuk dua grup berbeda.
+\end{challengebox}
 
 %% ========================================================================
-\section{Konfigurasi sudo dan su}
-\label{sec:sudo-su}
+\section{Konfigurasi sudo}
+\label{sec:sudo-config}
 %% ========================================================================
 
-\textbf{Penjelasan Konsep}
+Di dunia nyata, administrator sistem jarang bekerja langsung sebagai \texttt{root}. Alih-alih, mereka menggunakan akun biasa dan menjalankan perintah tertentu dengan hak tinggi menggunakan \cmd{sudo}. Bayangkan \cmd{sudo} seperti resepsionis di kantor yang bisa meminta izin ke manajer atas nama kamu untuk masuk ke ruangan tertentu, tanpa harus memberikanmu kunci ruangan itu secara permanen.
 
-\subsection{Perbedaan \cmd{su} dan \cmd{sudo}}
+\cmd{su} (substitute user) berbeda dari \cmd{sudo}. Perintah \cmd{su -} membuka shell baru sepenuhnya sebagai pengguna lain, meminta password pengguna target. Sementara \cmd{sudo} menjalankan satu perintah dengan hak lebih tinggi, meminta password pengguna sendiri, dan mencatat aktivitas ke log sistem.
 
-\cmd{su} berpindah identitas pengguna, sedangkan \cmd{sudo} menjalankan perintah
-tertentu dengan privilege lebih tinggi berdasarkan aturan kebijakan.
+\begin{lstlisting}[language=bash, caption={Perbedaan penggunaan su dan sudo}]
+# su: berpindah ke shell root penuh
+su -
+# ketik password root, lalu 'exit' untuk kembali
 
-\begin{table}[htbp]
-    \centering
-    \caption{Perbandingan \cmd{su} dan \cmd{sudo}}
-    \label{tab:su-vs-sudo}
-    \begin{tblr}{
-        colspec = {lX[l]X[l]},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \textbf{Aspek} & \textbf{su} & \textbf{sudo} \\
-    Autentikasi & Password user target & Password pengguna sendiri \\
-    Scope & Beralih penuh ke sesi lain & Menjalankan perintah tertentu \\
-    Logging & Minimal / tidak default & Tercatat di log sistem \\
-    Granularitas & Kasar & Sangat granular \\
-    Praktik modern & Lebih terbatas & Direkomendasikan \\
-    \end{tblr}
-\end{table}
+# su: jalankan satu perintah sebagai pengguna lain
+su - alice -c "ls /home/alice"
 
-\begin{notebox}
-Di Ubuntu, akun root biasanya dinonaktifkan untuk login langsung; karena itu
-\cmd{sudo} menjadi mekanisme standar administrasi.
-\end{notebox}
-
-\textbf{Perintah yang Digunakan}
-
-\begin{itemize}
-    \item \texttt{su - user}: berpindah ke user lain dengan login environment penuh.
-    \item \texttt{sudo perintah}: jalankan satu perintah dengan privilege lebih tinggi.
-    \item \texttt{sudo -i}: buka shell root dengan login environment.
-    \item \texttt{sudo -l}: lihat hak sudo yang tersedia.
-    \item \texttt{visudo}: edit aturan sudoers dengan validasi sintaks.
-\end{itemize}
-
-\subsection{Pemakaian Dasar \cmd{su} dan \cmd{sudo}}
-
-\begin{lstlisting}[language=bash, caption={Perintah su dan sudo yang paling sering dipakai}]
-# su
-su - alice
-su - alice -c "ls -la /home/alice"
-
-# sudo
+# sudo: jalankan satu perintah sebagai root
 sudo apt update
-sudo -u alice cat /home/alice/report.txt
+
+# sudo: jalankan perintah sebagai pengguna tertentu
+sudo -u www-data ls /var/www
+
+# sudo: buka shell root dengan login environment
 sudo -i
-sudo -s
+
+# lihat hak sudo yang kamu miliki
 sudo -l
-sudo -k
-sudo -e /etc/hosts
 \end{lstlisting}
 
-Pedoman ringkas:
+Aturan \cmd{sudo} disimpan di \file{/etc/sudoers} dan berkas-berkas di direktori \dir{/etc/sudoers.d/}. Selalu gunakan perintah \cmd{visudo} untuk mengeditnya karena \cmd{visudo} memvalidasi sintaks sebelum menyimpan. Kesalahan sintaks pada berkas sudoers bisa mengunci akses administratif ke sistem.
 
-\begin{itemize}
-    \item gunakan \cmd{su - user}, bukan \cmd{su user}, jika memang harus berpindah sesi;
-    \item gunakan \cmd{sudo -i} untuk shell root dengan login environment penuh;
-    \item gunakan \cmd{sudo -e} atau \cmd{sudoedit} untuk mengedit file sistem lebih aman.
-\end{itemize}
+Praktik terbaik adalah menyimpan aturan tambahan di \dir{/etc/sudoers.d/} daripada mengedit \file{/etc/sudoers} langsung. Ini memudahkan pengelolaan dan audit.
 
-\subsection{Konfigurasi sudoers yang Aman}
-
-Konfigurasi utama sudo berada di \file{/etc/sudoers}, tetapi praktik terbaik adalah
-menyimpan aturan tambahan di \dir{/etc/sudoers.d/}.
-
-\begin{warningbox}
-Selalu edit aturan sudo dengan \cmd{visudo}. Kesalahan sintaks dapat mengunci akses
-administratif Anda ke sistem.
-\end{warningbox}
-
-Format aturan dasar:
-
-\begin{center}
-\texttt{WHO\ \\ WHERE=(AS\_WHO)\ \\ COMMAND}
-\end{center}
+Format aturan sudoers mengikuti pola: \texttt{SIAPA DI-MANA=(SEBAGAI-SIAPA) PERINTAH}
 
 \begin{lstlisting}[language=bash, caption={Contoh aturan sudoers yang representatif}]
-# akses penuh untuk user tertentu
+# akses penuh tanpa batasan
 alice ALL=(ALL:ALL) ALL
 
-# akses apt tanpa password
-bob ALL=(root) NOPASSWD: /usr/bin/apt
+# jalankan apt tanpa password
+bob ALL=(root) NOPASSWD: /usr/bin/apt update, /usr/bin/apt upgrade
 
-# group sudo bawaan Ubuntu
+# grup sudo bawaan Ubuntu/Debian
 %sudo ALL=(ALL:ALL) ALL
 
-# izin terbatas untuk service nginx
+# grup dengan akses terbatas ke nginx saja
 %webadmin ALL=(root) /bin/systemctl start nginx, \
                      /bin/systemctl stop nginx, \
-                     /bin/systemctl restart nginx, \
-                     /bin/systemctl status nginx
+                     /bin/systemctl restart nginx
+
+# pengguna hanya boleh melihat status layanan apapun
+charlie ALL=(root) /bin/systemctl status *
 \end{lstlisting}
 
-\begin{lstlisting}[language=bash, caption={Mengelola file sudoers}]
-sudo visudo
-sudo visudo -f /etc/sudoers.d/developers
-sudo visudo -c
-sudo grep sudo /var/log/auth.log | tail -20
+Semua penggunaan \cmd{sudo} dicatat ke \file{/var/log/auth.log} (pada Ubuntu). Ini penting untuk audit keamanan.
+
+\begin{lstlisting}[language=bash, caption={Membaca log sudo}]
+sudo grep "sudo" /var/log/auth.log | tail -20
+# setiap baris log berisi: waktu, host, pengguna, perintah yang dijalankan
 \end{lstlisting}
 
-\subsection*{Praktikum 9.4: Konfigurasi sudo}
+\subsection*{Praktikum 11.5: Konfigurasi Hak sudo Terbatas}
 
-\textbf{Tujuan}: membuat aturan sudo terbatas, memverifikasi hak akses, dan membaca log.
-
-\textbf{Langkah 1}: Buat file konfigurasi sudo khusus untuk \texttt{userA}.
-
-\begin{lstlisting}[language=bash, caption={Membuat file sudoers terpisah}]
-sudo visudo -f /etc/sudoers.d/lab-userA
-\end{lstlisting}
-
-Perintah ini membuka editor aman khusus untuk file sudoers baru. Jika sintaks salah,
-\cmd{visudo} akan memperingatkan sebelum file disimpan.
-
-Isi file dengan aturan berikut:
-
-\begin{lstlisting}[language=bash, caption={Isi konfigurasi sudo untuk userA}]
-userA ALL=(root) NOPASSWD: /usr/bin/apt update, /usr/bin/apt upgrade
-userA ALL=(root) /bin/systemctl status *
-\end{lstlisting}
-
-Baris pertama berarti \texttt{userA} boleh menjalankan dua perintah \cmd{apt} tanpa
-password. Baris kedua berarti \texttt{userA} boleh melihat status service apa pun,
-tetapi tetap mengikuti kebijakan autentikasi normal.
-
-\textbf{Langkah 2}: Verifikasi aturan yang aktif dan uji hasilnya.
-
-\begin{lstlisting}[language=bash, caption={Verifikasi hak sudo dan log}]
-sudo -l -U userA
-sudo grep "userA" /var/log/auth.log | tail -10
-\end{lstlisting}
-
-\cmd{sudo -l -U userA} dipakai untuk mengecek aturan yang aktif dari sudut pandang
-akun \texttt{userA}. Log di \file{/var/log/auth.log} membantu memverifikasi bahwa
-pemakaian sudo benar-benar tercatat.
-
-\textbf{Analisis}
+Buat konfigurasi sudo yang hanya mengizinkan pengguna tertentu menjalankan perintah spesifik.
 
 \begin{enumerate}
-    \item Mengapa aturan disimpan di \dir{/etc/sudoers.d/}, bukan langsung di
-        \file{/etc/sudoers}?
-    \item Mana perintah yang bisa dijalankan tanpa password, dan mana yang masih perlu
-        autentikasi?
-    \item Informasi apa saja yang dicatat di log sudo?
+    \item Buat pengguna uji dan berkas konfigurasi sudoers khusus.
+\begin{lstlisting}[language=bash, caption={Persiapan pengguna dan konfigurasi sudo}]
+sudo useradd -m -s /bin/bash operator01
+sudo passwd operator01
+
+# buat berkas sudoers khusus di /etc/sudoers.d/
+# PENTING: gunakan visudo dengan flag -f untuk validasi sintaks
+sudo visudo -f /etc/sudoers.d/operator01
+\end{lstlisting}
+
+    Editor akan terbuka. Masukkan aturan berikut, simpan, lalu tutup:
+
+\begin{lstlisting}[language=bash, caption={Isi konfigurasi sudo untuk operator01}]
+# Izinkan operator01 melihat status layanan apapun
+operator01 ALL=(root) /bin/systemctl status *
+
+# Izinkan menjalankan apt update tanpa password
+operator01 ALL=(root) NOPASSWD: /usr/bin/apt update
+\end{lstlisting}
+
+    \textit{Amati:} Jika sintaks salah, \cmd{visudo} akan memperingatkan dan menawarkan opsi untuk memperbaiki atau membatalkan. Berkas tidak akan disimpan sampai sintaksnya benar.
+
+    \item Verifikasi hak sudo yang terdaftar.
+\begin{lstlisting}[language=bash, caption={Verifikasi aturan sudo}]
+sudo -l -U operator01
+# output akan menampilkan semua perintah yang diizinkan
+\end{lstlisting}
+
+    \item Periksa log sudo setelah pengujian.
+\begin{lstlisting}[language=bash, caption={Memeriksa log aktivitas sudo}]
+sudo grep "operator01" /var/log/auth.log | tail -10
+\end{lstlisting}
+
+    \textit{Amati:} Setiap penggunaan \cmd{sudo} tercatat lengkap dengan waktu, nama pengguna, terminal, dan perintah yang dijalankan. Ini adalah jejak audit yang penting.
+
+    \item Bersihkan konfigurasi uji.
+\begin{lstlisting}[language=bash, caption={Hapus konfigurasi uji}]
+sudo rm /etc/sudoers.d/operator01
+sudo userdel -r operator01
+\end{lstlisting}
 \end{enumerate}
 
-\textbf{Tantangan}
-
-Tambahkan satu aturan baru agar \texttt{userA} boleh menjalankan
-\cmd{/bin/systemctl restart ssh} tetapi tidak boleh menjalankan \cmd{reboot}.
-
-%% ========================================================================
-\section{Disk Quota}
-\label{sec:disk-quota}
-%% ========================================================================
-
-\textbf{Penjelasan Konsep}
-
-Quota membatasi penggunaan ruang disk dan/atau jumlah file milik user atau group.
-Fungsinya sederhana: mencegah satu pengguna menghabiskan seluruh sumber daya storage.
-
-\subsection{Konsep Disk Quota}
-\label{sec:disk-quota-konsep}
-
-Ada dua dimensi quota:
-
-\begin{description}
-    \item[Block quota] membatasi total ruang disk yang dipakai. Di Linux, tools quota
-        umumnya memakai satuan kilobyte.
-    \item[Inode quota] membatasi jumlah file/direktori, terlepas dari ukurannya.
-\end{description}
-
-Selain itu, ada tiga istilah kebijakan yang wajib dipahami:
-
-\begin{table}[htbp]
-    \centering
-    \caption{Jenis limit pada disk quota}
-    \label{tab:quota-limits}
-    \begin{tblr}{
-        colspec = {lQ[2cm,l]X[l]},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \textbf{Jenis} & \textbf{Berlaku pada} & \textbf{Makna} \\
-    Soft limit & Blok dan inode & Boleh dilampaui sementara selama grace period \\
-    Hard limit & Blok dan inode & Tidak boleh dilampaui sama sekali \\
-    Grace period & Soft limit & Waktu toleransi sebelum soft limit diperlakukan seperti hard limit \\
-    \end{tblr}
-\end{table}
-
-\begin{notebox}
-Inode quota penting saat pengguna membuat sangat banyak file kecil. Ruang disk mungkin
-masih ada, tetapi inode filesystem bisa habis lebih dulu.
-\end{notebox}
-
-\textbf{Perintah yang Digunakan}
-
-\begin{itemize}
-    \item \texttt{quotacheck}: membuat atau memperbarui database quota.
-    \item \texttt{quotaon}/\texttt{quotaoff}: mengaktifkan atau menonaktifkan enforcement.
-    \item \texttt{edquota}: mengedit limit quota secara interaktif.
-    \item \texttt{setquota}: menetapkan limit quota dari command line.
-    \item \texttt{quota}, \texttt{repquota}: melihat penggunaan quota.
-\end{itemize}
-
-\subsection{Mengaktifkan Quota}
-
-Workflow aktivasi quota biasanya terdiri dari empat langkah:
-
-\begin{enumerate}
-    \item instal paket quota,
-    \item aktifkan opsi \texttt{usrquota} dan/atau \texttt{grpquota} di filesystem,
-    \item buat database quota dengan \cmd{quotacheck},
-    \item aktifkan enforcement dengan \cmd{quotaon}.
-\end{enumerate}
-
-\begin{lstlisting}[language=bash, caption={Workflow dasar aktivasi quota}]
-sudo apt install -y quota quotatool
-
-# /etc/fstab
-# UUID=abc123 /home ext4 defaults,usrquota,grpquota 0 2
-
-sudo mount -o remount /home
-sudo quotacheck -cugm /home
-sudo quotaon -v /home
-sudo repquota -s /home
-\end{lstlisting}
-
-\subsection{Menetapkan dan Melihat Quota}
-
-Perintah yang paling penting adalah:
-
-\begin{lstlisting}[language=bash, caption={Perintah inti pengelolaan quota}]
-# editor interaktif
-sudo edquota -u alice
-sudo edquota -g developers
-
-# tanpa editor
-sudo setquota -u alice 1048576 1572864 10000 15000 /home
-
-# lihat status
-quota -s
-sudo quota -u alice
-sudo repquota -s /home
-
-# grace period
-sudo edquota -t
-\end{lstlisting}
-
-Makna argumen pada \cmd{setquota -u alice 1048576 1572864 10000 15000 /home}:
-
-\begin{itemize}
-    \item soft block = 1~GB
-    \item hard block = 1,5~GB
-    \item soft inode = 10.000
-    \item hard inode = 15.000
-\end{itemize}
-
-\subsection{Operasi Lanjutan yang Perlu Dikenal}
-
-\begin{lstlisting}[language=bash, caption={Operasi quota lanjutan}]
-# salin quota dari satu user ke user lain
-sudo edquota -p alice bob charlie
-
-# kirim peringatan email
-sudo warnquota
-
-# matikan quota
-sudo quotaoff -v /home
-\end{lstlisting}
-
-\subsection*{Praktikum 9.5: Disk Quota}
-
-\textbf{Tujuan}: memahami alur quota secara aman pada loopback filesystem tanpa
-mengubah filesystem utama.
-
-\textbf{Langkah 1}: Buat image filesystem kecil dan mount dengan opsi quota.
-
-\begin{lstlisting}[language=bash, caption={Menyiapkan filesystem uji quota}]
-sudo dd if=/dev/zero of=/tmp/quota-test.img bs=1M count=100
-sudo mkfs.ext4 /tmp/quota-test.img
-sudo mkdir -p /mnt/quota-test
-sudo mount -o loop,usrquota,grpquota /tmp/quota-test.img /mnt/quota-test
-\end{lstlisting}
-
-Image file dipakai agar praktikum aman: Anda tidak perlu memodifikasi filesystem utama
-seperti \dir{/home}. Opsi \texttt{usrquota,grpquota} mengaktifkan dua jenis quota sekaligus.
-
-\textbf{Langkah 2}: Buat database quota dan aktifkan enforcement.
-
-\begin{lstlisting}[language=bash, caption={Inisialisasi dan aktivasi quota}]
-sudo quotacheck -cug /mnt/quota-test
-sudo quotaon -v /mnt/quota-test
-sudo repquota /mnt/quota-test
-\end{lstlisting}
-
-\cmd{quotacheck -cug} membuat database user dan group quota. Setelah itu,
-\cmd{quotaon} mengaktifkan enforcement, dan \cmd{repquota} menampilkan laporan awal.
-
-\textbf{Langkah 3}: Tetapkan quota untuk user uji dan amati hasilnya.
-
-\begin{lstlisting}[language=bash, caption={Menetapkan quota untuk userA}]
-sudo edquota -u userA
-# contoh: soft block 5120, hard block 10240
-sudo repquota /mnt/quota-test
-\end{lstlisting}
-
-Nilai di atas memakai satuan KB. Jadi \texttt{5120} berarti sekitar 5 MB, dan
-\texttt{10240} berarti sekitar 10 MB.
-
-\textbf{Langkah 4}: Bersihkan lingkungan uji setelah selesai.
-
-\begin{lstlisting}[language=bash, caption={Pembersihan quota test}]
-sudo quotaoff /mnt/quota-test
-sudo umount /mnt/quota-test
-sudo rm /tmp/quota-test.img
-\end{lstlisting}
-
-\textbf{Analisis}
-
-\begin{enumerate}
-    \item Apa perbedaan soft limit dan hard limit saat quota mulai terlampaui?
-    \item Mengapa praktikum ini memakai loopback filesystem, bukan langsung \dir{/home}?
-    \item Dari output \cmd{repquota}, informasi apa yang menunjukkan quota sudah aktif?
-\end{enumerate}
-
-\textbf{Tantangan}
-
-Coba atur quota baru untuk \texttt{userA} dengan batas inode yang sangat kecil,
-kemudian jelaskan kapan pembatasan inode lebih penting daripada pembatasan block.
+\begin{challengebox}
+Buat konfigurasi sudo yang memberikan pengguna \texttt{teknisi} hak untuk menjalankan \cmd{systemctl restart ssh} dan \cmd{systemctl reload nginx} tanpa password, tetapi tidak boleh menjalankan perintah lain apapun dengan sudo. Verifikasi konfigurasi dengan \cmd{sudo -l -U teknisi}. Kemudian tambahkan satu aturan lagi agar \texttt{teknisi} bisa menjalankan \cmd{journalctl -u ssh} sebagai pengguna lain. Referensi format aturan sudoers di atas untuk menentukan sintaks yang tepat.
+\end{challengebox}
 
 %% ========================================================================
 \section{Rangkuman}
 \label{sec:file-user-summary}
 %% ========================================================================
 
-Bab ini membahas lima kelompok konsep inti:
+Dalam bab ini, kamu telah mempelajari:
 
-\begin{description}
-    \item[Permissions] owner, group, others; izin \texttt{rwx}; \cmd{chmod},
-        \cmd{chown}, \cmd{chgrp}; special bits; dan umask.
-    \item[ACL] perluasan permission Unix untuk kebutuhan akses granular per-user atau
-        per-group, termasuk default ACL direktori dan mask.
-    \item[User/Group] identitas pengguna disimpan di \file{/etc/passwd},
-        \file{/etc/shadow}, dan \file{/etc/group}; dikelola dengan keluarga perintah
-        \cmd{useradd}, \cmd{usermod}, \cmd{userdel}, \cmd{groupadd}, dan \cmd{gpasswd}.
-    \item[sudo dan su] \cmd{sudo} adalah mekanisme delegasi hak administratif yang
-        lebih aman dan lebih dapat diaudit dibanding \cmd{su}.
-    \item[Disk Quota] pembatasan blok dan inode melalui soft limit, hard limit,
-        grace period, serta perintah seperti \cmd{edquota}, \cmd{setquota}, dan
-        \cmd{repquota}.
-\end{description}
+\begin{itemize}[noitemsep,topsep=2pt]
+    \item \textbf{Izin akses lanjutan}: setuid (4xxx) membuat program berjalan sebagai pemilik berkas; setgid (2xxx) pada direktori mewariskan grup ke berkas baru; sticky bit (1xxx) melindungi berkas pengguna dari penghapusan oleh orang lain di direktori bersama.
+    \item \textbf{Extended attributes}: \cmd{chattr +i} menjadikan berkas tidak bisa dimodifikasi bahkan oleh root; \cmd{lsattr} menampilkan atribut yang terpasang.
+    \item \textbf{ACL}: \cmd{getfacl} membaca ACL, \cmd{setfacl -m} menambah entri, \cmd{setfacl -x} menghapus satu entri, \cmd{setfacl -b} menghapus semua ACL tambahan; default ACL dengan opsi \texttt{-d} diwariskan ke berkas baru di dalam direktori.
+    \item \textbf{Manajemen pengguna}: \cmd{useradd -m -s} membuat akun dengan direktori rumah; \cmd{usermod -aG} menambah grup tanpa menghapus grup lama; \cmd{userdel -r} menghapus akun beserta direktori rumah; informasi tersimpan di \file{/etc/passwd} dan \file{/etc/shadow}.
+    \item \textbf{Manajemen grup}: \cmd{groupadd}, \cmd{gpasswd -a/-d} untuk menambah dan menghapus anggota; \cmd{newgrp} mengaktifkan grup baru tanpa logout; \file{/etc/group} menyimpan definisi semua grup.
+    \item \textbf{Konfigurasi sudo}: aturan disimpan di \dir{/etc/sudoers.d/} dan selalu diedit dengan \cmd{visudo}; \texttt{NOPASSWD} mengizinkan perintah tanpa password; semua aktivitas tercatat di \file{/var/log/auth.log}.
+\end{itemize}
 
 %% ========================================================================
-\section{Latihan}
+\section{Tugas Praktikum}
 \label{sec:file-user-exercises}
 %% ========================================================================
 
-\begin{exercisebox}[Latihan 9.A: Audit dan Kolaborasi]
+\textbf{Instruksi Umum}: Kerjakan seluruh tugas secara mandiri. Dokumentasikan setiap langkah dengan tangkapan layar dan kumpulkan dalam format PDF.
+
+\begin{exercisebox}[11.1 Audit Izin dan Direktori Kolaborasi]
+Kamu ditugaskan mengaudit dan mengonfigurasi izin untuk proyek bersama.
 \begin{enumerate}
-    \item Temukan file SUID aktif dengan \cmd{find / -perm -4000 -type f 2>/dev/null},
-        lalu jelaskan tiga file yang Anda kenali beserta alasannya.
-    \item Cari direktori \textit{world-writable} dan tentukan mana yang valid dan mana
-        yang berisiko.
-    \item Rancang konfigurasi permission standar dan ACL untuk direktori proyek
-        \dir{/srv/webapp} agar group \texttt{webapp-team} dapat menulis, user
-        \texttt{deploy} hanya membaca, dan file baru selalu mewarisi group proyek.
+    \item Temukan semua berkas SUID di sistem dengan perintah \cmd{find / -perm -4000 -type f 2>/dev/null}. Catat minimal tiga berkas yang kamu temukan dan jelaskan mengapa masing-masing membutuhkan SUID.
+    \item Buat direktori \dir{~/proyek-audit} dengan konfigurasi berikut: SGID aktif agar semua berkas baru mewarisi grup direktori, sticky bit aktif agar pengguna tidak bisa menghapus berkas milik orang lain. Verifikasi dengan \cmd{ls -ld}.
+    \item Buat minimal tiga berkas di dalam direktori tersebut dan verifikasi bahwa grup berkas sesuai grup direktori.
 \end{enumerate}
 \end{exercisebox}
 
-\begin{exercisebox}[Latihan 9.B: Kebijakan Akun dan Quota]
-Tuliskan langkah untuk membuat user \texttt{intern}, menambahkannya ke group
-\texttt{labgroup}, memaksa pergantian password tiap 45 hari (warning 7 hari),
-memberi izin sudo hanya untuk \cmd{systemctl status}, dan menetapkan quota ruang
-serta inode sederhana pada \dir{/home}.
+\begin{exercisebox}[11.2 Konfigurasi ACL untuk Tim Pengembang]
+Simulasikan skenario manajemen akses tim nyata.
+\begin{enumerate}
+    \item Buat tiga akun pengguna: \texttt{pemimpin}, \texttt{anggota-a}, dan \texttt{pengamat}. Buat grup \texttt{tim-dev}.
+    \item Buat direktori \dir{~/proyek-tim} dan tetapkan default ACL agar: \texttt{pemimpin} mendapat akses penuh (rwx), \texttt{tim-dev} mendapat akses baca dan tulis, \texttt{pengamat} hanya mendapat akses baca.
+    \item Buat tiga berkas baru di direktori tersebut dan verifikasi bahwa masing-masing mewarisi ACL yang tepat.
+    \item Hapus akses \texttt{pengamat} dari salah satu berkas menggunakan \cmd{setfacl -x} dan verifikasi hasilnya.
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}[11.3 Kebijakan Akun dan sudo Terbatas]
+Terapkan kebijakan akun yang aman dan delegasikan hak administratif terbatas.
+\begin{enumerate}
+    \item Buat akun \texttt{staf-it} dengan shell \texttt{/bin/bash} dan tambahkan ke grup \texttt{helpdesk} (buat grupnya lebih dulu).
+    \item Buat berkas \file{/etc/sudoers.d/staf-it} menggunakan \cmd{visudo -f} yang mengizinkan \texttt{staf-it} menjalankan: \cmd{systemctl status *} (tanpa password), \cmd{apt update} (tanpa password), dan \cmd{systemctl restart ssh} (dengan password).
+    \item Verifikasi konfigurasi dengan \cmd{sudo -l -U staf-it} dan pastikan hanya tiga perintah itu yang tercantum.
+    \item Dokumentasikan perbedaan baris aturan untuk yang menggunakan \texttt{NOPASSWD} dan yang tidak.
+\end{enumerate}
 \end{exercisebox}
 
 %% ========================================================================
-\section{Referensi Tambahan}
+\section{Referensi}
 \label{sec:file-user-references}
 %% ========================================================================
 
 \begin{itemize}
-    \item \textbf{Halaman manual}: \cmd{man chmod}, \cmd{man chown}, \cmd{man setfacl},
-        \cmd{man useradd}, \cmd{man sudoers}, \cmd{man edquota}
-    \item \textbf{FHS}: \href{https://refspecs.linuxfoundation.org/fhs.shtml}{refspecs.linuxfoundation.org/fhs.shtml}
-    \item \textbf{Ubuntu User Management}: \href{https://ubuntu.com/server/docs/security-users}{ubuntu.com/server/docs/security-users}
-    \item \textbf{POSIX ACL}: \href{https://www.usenix.org/legacy/publications/library/proceedings/usenix03/tech/freenix03/full_papers/gruenbacher/gruenbacher.pdf}{usenix.org/.../gruenbacher.pdf}
-    \item \textbf{sudoers(5)}: \href{https://www.sudo.ws/docs/man/sudoers.man/}{sudo.ws/docs/man/sudoers.man/}
+    \item The Linux Foundation. \textit{Linux System Administration Essentials}. Linux Foundation, 2023.
+    \item Nemeth, E., Snyder, G., Hein, T.R., Whaley, B. \textit{UNIX and Linux System Administration Handbook}, 5th ed. Addison-Wesley, 2017.
+    \item Ubuntu Community. \textit{Ubuntu Server Guide: Users and Groups}. \url{https://ubuntu.com/server/docs/security-users}
+    \item Gruenbacher, A. \textit{POSIX Access Control Lists on Linux}. USENIX, 2003.
+    \item Todd C. Miller. \textit{Sudo Manual}. \url{https://www.sudo.ws/docs/man/sudoers.man/}
 \end{itemize}
-
-\endgroup

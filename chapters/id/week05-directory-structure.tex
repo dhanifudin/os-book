@@ -1,921 +1,511 @@
 %% ========================================================================
-%% week04-filesystem-ops.tex
-%% Modul Praktikum: Struktur Direktori & Operasi File pada Linux
-%% Target: Ubuntu Server 22.04
-%% Gaya penulisan mengikuti pola week03-basic-io.tex:
-%%   - chapter + abstract
-%%   - penjelasan konsep singkat namun jelas
-%%   - daftar perintah (fungsi)
-%%   - praktikum minimal 2 per topik (mudah + kondisi riil/sulit)
-%%   - latihan di akhir modul
-%%
-%% Catatan:
-%% - Environment seperti tipbox, warningbox, notebox, examplebox, exercisebox
-%%   serta style lstlisting diasumsikan sudah tersedia dari preamble master,
-%%   sama seperti pada week03-basic-io.tex.
-%% - Jika environment box belum ada, Anda bisa ganti tipbox/warningbox/...
-%%   menjadi \subsubsection*{} biasa.
+%% week05-directory-structure.tex
+%% Struktur Direktori dan Operasi File
 %% ========================================================================
 
-\chapter{Struktur Direktori dan Operasi File pada Linux}
+\chapter{Struktur Direktori dan Operasi File}
 \label{ch:filesystem-ops}
 
-Bab ini membahas struktur direktori Linux berdasarkan praktik umum \textit{Filesystem Hierarchy Standard} (FHS),
-jenis-jenis file di Linux (reguler, direktori, symlink, dan file perangkat), navigasi sistem file melalui command line,
-operasi file lanjutan terkait izin dan kepemilikan (\texttt{chmod}, \texttt{chown}, \texttt{chgrp}),
-hard links dan symbolic links, pencarian file dengan \texttt{find} dan \texttt{locate},
-serta pengarsipan dan kompresi (\texttt{tar}, \texttt{gzip}, \texttt{zip}).
-Modul dirancang untuk praktikum Ubuntu Server 22.04 dengan pendekatan \textit{hands-on}: konsep, verifikasi output,
-skenario mudah, dan skenario kondisi riil yang sering ditemui administrator server.
+Bayangkan kamu baru pindah ke rumah kontrakan baru. Ada dapur untuk menyimpan bahan makanan,
+kamar tidur untuk barang pribadi, gudang untuk alat-alat, dan teras untuk barang sementara
+yang akan segera dipindah. Setiap ruangan punya fungsi khusus dan semua orang di rumah itu
+tahu ke mana harus pergi ketika butuh sesuatu. Linux bekerja dengan prinsip yang sama.
+
+Sistem file Linux bukan tumpukan berkas yang diletakkan sembarangan. Setiap direktori punya
+peran yang sudah ditetapkan. File konfigurasi aplikasi tinggal di \dir{/etc/}, catatan
+aktivitas sistem tersimpan di \dir{/var/log/}, dan program yang bisa dijalankan oleh semua
+pengguna ada di \dir{/bin/}. Ketika kamu tahu aturan ini, mencari file di Linux menjadi
+pekerjaan yang cepat dan sistematis, bukan tebak-tebakan.
+
+Selain tata letak direktori, Linux membedakan berkas berdasarkan jenisnya: berkas biasa,
+direktori, tautan simbolis, berkas perangkat, dan sebagainya. Perbedaan ini bukan sekadar
+label, melainkan menentukan bagaimana sistem memperlakukan setiap objek. Memahami perbedaan
+ini membuat kamu mampu mendiagnosis masalah akses, menyusun struktur folder proyek yang
+rapi, dan bekerja dengan sistem Linux secara lebih percaya diri.
+
+\textbf{Yang Akan Kamu Pelajari}
+
+Setelah menyelesaikan bab ini, kamu akan mampu:
+
+\begin{enumerate}
+    \item menjelaskan fungsi direktori-direktori utama dalam hierarki sistem file Linux (FHS);
+    \item membedakan jenis-jenis berkas di Linux berdasarkan karakter pertama output \cmd{ls -l};
+    \item menjelaskan perbedaan hard link dan symbolic link serta membuatnya dengan perintah yang tepat;
+    \item mencari berkas berdasarkan nama, tipe, ukuran, dan waktu modifikasi menggunakan \cmd{find} dan \cmd{locate};
+    \item membuat, memeriksa, dan mengekstrak arsip terkompresi dengan \cmd{tar} dan \cmd{gzip}.
+\end{enumerate}
+
+\begin{notebox}
+Seluruh praktikum pada bab ini dijalankan pada direktori \dir{~/lab-os/week05-files/}.
+Buat direktori ini sebelum memulai:
+\begin{lstlisting}[language=bash]
+mkdir -p ~/lab-os/week05-files
+cd ~/lab-os/week05-files
+\end{lstlisting}
+\end{notebox}
 
 % ------------------------------------------------------------------------
-\section{Standar Hierarki Sistem File (FHS) di Linux}
+\section{Standar Hierarki Sistem File (FHS)}
 \label{sec:fhs}
 
-\subsection*{Penjelasan Konsep}
-Linux menyusun file dan folder dalam struktur hirarkis yang berpusat pada root (\texttt{/}).
-Pada server, memahami \textit{“apa ada di mana”} adalah kemampuan dasar: konfigurasi ada di \texttt{/etc},
-log banyak berada di \texttt{/var/log}, home user ada di \texttt{/home}, dan perangkat direpresentasikan sebagai file di \texttt{/dev}.
-Prinsip Unix/Linux yang relevan adalah \textit{everything is a file}: bukan hanya file reguler,
-tetapi juga perangkat (\texttt{/dev}) dan informasi sistem/proses (\texttt{/proc}, \texttt{/sys}) diperlakukan seperti file.
+Linux mengatur semua berkas dalam satu pohon direktori tunggal yang dimulai dari akar,
+yaitu \dir{/}. Tidak ada konsep ``drive C'' atau ``drive D'' seperti di Windows. Semua
+perangkat penyimpanan, partisi, bahkan filesystem jaringan, dipasang (\textit{mount}) ke
+dalam satu pohon yang sama. Standar yang mengatur tata letak ini disebut
+\textit{Filesystem Hierarchy Standard} (FHS).
 
-\begin{tipbox}
-Cara berpikir yang membantu saat administrasi server:
-\textit{``konfigurasi itu file'', ``log itu file'', ``device itu file''}.
-Maka banyak troubleshooting berakhir pada \texttt{cat}, \texttt{less}, \texttt{grep}, dan \texttt{ls -l}.
-\end{tipbox}
+Prinsip utama Unix yang perlu kamu pegang adalah: \textit{everything is a file}. Bukan
+hanya dokumen teks yang diperlakukan sebagai berkas. Perangkat keras seperti hard disk
+direpresentasikan sebagai berkas di \dir{/dev/}. Informasi tentang proses yang sedang
+berjalan bisa dibaca seperti membaca berkas di \dir{/proc/}. Memahami prinsip ini membuka
+cara pandang baru tentang bagaimana Linux bekerja.
 
-\subsection*{Direktori penting (ringkas + fungsi)}
+Berikut direktori-direktori utama yang perlu kamu kenal. Setiap administrator Linux
+menghafalkan ini secara alami seiring penggunaan sehari-hari.
+
 \begin{itemize}
-    \item \texttt{/} : root dari seluruh filesystem.
-    \item \texttt{/bin} : program esensial untuk semua user (contoh: \texttt{ls}, \texttt{cp}, \texttt{mv}).
-    \item \texttt{/sbin} : program esensial administrasi (sering butuh \texttt{sudo}).
-    \item \texttt{/etc} : konfigurasi sistem (umumnya file teks).
-    \item \texttt{/var} : data yang sering berubah (log, cache, spool). Umum: \texttt{/var/log}.
-    \item \texttt{/home} : direktori home user.
-    \item \texttt{/root} : home untuk user \texttt{root}.
-    \item \texttt{/tmp} : file sementara (sering dibersihkan otomatis).
-    \item \texttt{/usr} : aplikasi dan library userland (sub: \texttt{/usr/bin}, \texttt{/usr/sbin}).
-    \item \texttt{/opt} : aplikasi pihak ketiga/opsional (sering dipakai untuk deploy aplikasi custom).
-    \item \texttt{/srv} : data untuk layanan server (mis. web/app).
-    \item \texttt{/dev} : \textit{device node} (disk, tty, dll).
-    \item \texttt{/proc}, \texttt{/sys} : \textit{virtual filesystem} dari kernel (status proses/sistem).
-    \item \texttt{/mnt}, \texttt{/media} : mount point sementara/removable.
+    \item \dir{/} : titik awal seluruh hierarki. Semua direktori lain berasal dari sini.
+    \item \dir{/bin/} : program esensial yang dibutuhkan semua pengguna, seperti \cmd{ls}, \cmd{cp}, \cmd{mv}, dan \cmd{bash}.
+    \item \dir{/sbin/} : program administrasi sistem, seperti \cmd{fdisk} dan \cmd{iptables}. Umumnya memerlukan \cmd{sudo}.
+    \item \dir{/etc/} : semua file konfigurasi sistem. Berformat teks sehingga bisa dibaca dengan editor biasa.
+    \item \dir{/home/} : direktori pribadi setiap pengguna. Pengguna \texttt{alice} memiliki \dir{/home/alice/}.
+    \item \dir{/root/} : direktori pribadi pengguna \texttt{root}. Dipisah dari \dir{/home/} untuk keamanan.
+    \item \dir{/var/} : data yang terus berubah selama sistem berjalan. Subdirektori paling penting adalah \dir{/var/log/} yang menyimpan log sistem.
+    \item \dir{/tmp/} : berkas sementara. Biasanya dikosongkan otomatis saat sistem dinyalakan ulang.
+    \item \dir{/usr/} : program dan library untuk pengguna. \dir{/usr/bin/} berisi sebagian besar aplikasi yang kamu instal.
+    \item \dir{/opt/} : aplikasi pihak ketiga yang dipasang secara mandiri di luar manajer paket.
+    \item \dir{/dev/} : berkas perangkat. \file{/dev/sda} adalah hard disk pertama, \file{/dev/tty} adalah terminal.
+    \item \dir{/proc/} : filesystem virtual dari kernel. Membacanya memberikan informasi tentang proses dan konfigurasi kernel saat ini.
+    \item \dir{/sys/} : filesystem virtual lain dari kernel, berisi informasi perangkat keras dan driver.
+    \item \dir{/mnt/} dan \dir{/media/} : titik pemasangan untuk perangkat eksternal seperti USB atau partisi tambahan.
 \end{itemize}
 
-\subsection*{Praktikum 4.1: Tur FHS: Kenali Isi Sistem (Mudah)}
-\textbf{Tujuan:} mengenali folder penting dan membedakan mana konfigurasi, log, dan data user.
+\subsection*{Praktikum 5.1 Jelajahi Direktori-Direktori Utama}
+
+Tujuan praktikum ini adalah membiasakan mata dengan isi direktori standar Linux dan
+menemukan file-file konfigurasi penting secara langsung.
 
 \begin{enumerate}
-    \item Cek posisi Anda dan tampilkan isi root:
-\begin{lstlisting}[language=bash, caption={Melihat root filesystem dan isinya}]
-pwd
+    \item Tampilkan isi direktori root dan perhatikan nama-nama yang sudah kamu kenal:
+\begin{lstlisting}[language=bash, caption={Melihat isi root filesystem}]
 ls -lah /
 \end{lstlisting}
+    \textit{Amati:} Perhatikan kolom pertama setiap baris. Karakter \texttt{d} menandakan direktori, sedangkan \texttt{l} menandakan tautan simbolis.
 
-    \item Lihat isi folder konfigurasi dan log (ringkas):
-\begin{lstlisting}[language=bash, caption={Menginspeksi /etc dan /var/log}]
-ls -lah /etc | head
-ls -lah /var/log | head
+    \item Lihat isi tiga direktori paling sering dikunjungi administrator:
+\begin{lstlisting}[language=bash, caption={Menginspeksi /etc, /var/log, dan /home}]
+ls /etc | head -20
+ls /var/log | head -20
+ls /home
 \end{lstlisting}
 
-    \item (Opsional) Pasang \texttt{tree} untuk visual hirarki:
-\begin{lstlisting}[language=bash, caption={Memasang tree dan menampilkan struktur folder}]
-sudo apt update
-sudo apt install -y tree
-tree -L 2 /
+    \item Baca informasi CPU langsung dari filesystem virtual kernel:
+\begin{lstlisting}[language=bash, caption={Membaca informasi sistem dari /proc}]
+cat /proc/cpuinfo | head -20
+cat /proc/meminfo | head -10
 \end{lstlisting}
-\end{enumerate}
+    \textit{Amati:} File di \dir{/proc/} terasa seperti berkas biasa, padahal isinya dibangkitkan oleh kernel secara langsung, bukan disimpan di disk.
 
-\begin{warningbox}
-Jangan menjalankan \texttt{tree /} tanpa batas kedalaman pada server nyata—output bisa sangat besar.
-Gunakan \texttt{-L} untuk membatasi kedalaman.
-\end{warningbox}
-
-\subsection*{Praktikum 4.2: Audit Lokasi Konfigurasi dan Log Layanan (Kondisi Riil)}
-\textbf{Skenario:} admin diminta mengecek konfigurasi SSH dan melihat indikasi akses pada log.
-
-\textbf{Tujuan:} membiasakan mencari file konfigurasi standar dan membaca log secara aman.
-
-\begin{enumerate}
-    \item Verifikasi file konfigurasi SSH:
-\begin{lstlisting}[language=bash, caption={Cek konfigurasi SSH}]
-ls -lah /etc/ssh/
-sudo test -f /etc/ssh/sshd_config \
-  && echo "sshd_config ada" \
-  || echo "sshd_config tidak ditemukan"
-\end{lstlisting}
-
-    \item Baca baris-baris awal konfigurasi (tanpa mengedit):
-\begin{lstlisting}[language=bash, caption={Membaca konfigurasi dengan aman}]
-sudo head -n 30 /etc/ssh/sshd_config
-\end{lstlisting}
-
-    \item Lihat aktivitas terakhir pada log autentikasi:
-\begin{lstlisting}[language=bash, caption={Melihat log autentikasi}]
-ls -lah /var/log/ | grep -E "auth|secure" || true
-sudo tail -n 50 /var/log/auth.log
-\end{lstlisting}
-
-    \item (Opsional) Filter event penting:
-\begin{lstlisting}[language=bash, caption={Filter event penting pada auth.log}]
-sudo grep \ 
- -E "Failed password|Accepted password|Invalid user" \
- /var/log/auth.log | tail -n 30
+    \item Identifikasi tiga berkas konfigurasi penting di \dir{/etc/}:
+\begin{lstlisting}[language=bash, caption={Mencari file konfigurasi penting dengan grep}]
+ls /etc | grep -E "^(hostname|hosts|passwd|group|fstab)$"
+cat /etc/hostname
 \end{lstlisting}
 \end{enumerate}
+
+\begin{challengebox}
+Gunakan kombinasi \cmd{ls} dan \cmd{grep} (yang sudah kamu pelajari di Bab~2) untuk menemukan
+tiga berkas konfigurasi di \dir{/etc/} yang namanya mengandung kata \texttt{ssh}. Setelah
+menemukannya, tampilkan 10 baris pertama dari masing-masing berkas menggunakan \cmd{head}.
+Dokumentasikan perintah yang kamu gunakan dan tuliskan fungsi singkat setiap berkas tersebut.
+\end{challengebox}
 
 % ------------------------------------------------------------------------
-\section{Jenis File di Linux (Reguler, Direktori, Symlink, Perangkat)}
+\section{Jenis Berkas di Linux}
 \label{sec:filetypes}
 
-\subsection*{Penjelasan Konsep}
-Di Linux, ``file'' bukan cuma dokumen. Dari output \texttt{ls -l}, karakter pertama menunjukkan jenis:
+Ketika kamu menjalankan \cmd{ls -l}, karakter pertama pada setiap baris bukan hiasan.
+Karakter itu memberitahu jenis berkas tersebut. Linux mengenal tujuh jenis berkas, dan
+penting untuk membedakannya karena perilaku sistem terhadap masing-masing jenis berbeda.
+
+Berikut karakter penanda jenis berkas yang akan sering kamu temui:
+
 \begin{itemize}
-    \item \texttt{-} : file reguler
-    \item \texttt{d} : direktori
-    \item \texttt{l} : symbolic link
-    \item \texttt{b} : block device (disk/partisi)
-    \item \texttt{c} : character device (tty/serial)
-    \item \texttt{p} : FIFO (named pipe)
-    \item \texttt{s} : socket
+    \item \texttt{-} : berkas reguler. Dokumen teks, gambar, binary program, semua masuk kategori ini.
+    \item \texttt{d} : direktori. Sebuah kontainer yang bisa berisi berkas dan direktori lain.
+    \item \texttt{l} : tautan simbolis (\textit{symbolic link}). Sebuah pintasan yang menunjuk ke berkas atau direktori lain.
+    \item \texttt{b} : berkas perangkat blok (\textit{block device}). Contohnya adalah partisi hard disk seperti \file{/dev/sda1}.
+    \item \texttt{c} : berkas perangkat karakter (\textit{character device}). Contohnya adalah terminal \file{/dev/tty}.
+    \item \texttt{p} : pipa bernama (\textit{named pipe}). Digunakan untuk komunikasi antarproses.
+    \item \texttt{s} : soket (\textit{socket}). Digunakan untuk komunikasi jaringan atau antarproses lokal.
 \end{itemize}
 
-\subsection*{Perintah yang dipakai}
-\begin{itemize}
-    \item \texttt{ls -l} / \texttt{ls -lah}: melihat jenis file dan permission.
-    \item \texttt{stat <file>}: detail metadata (inode, size, waktu, permission).
-    \item \texttt{file <file>}: menebak tipe konten (ASCII text, image, ELF binary, dll).
-\end{itemize}
+Selain \cmd{ls -l}, dua perintah lain sangat berguna untuk menginspeksi berkas. Perintah
+\cmd{stat} menampilkan metadata lengkap sebuah berkas: ukuran, jumlah hard link, inode,
+waktu akses terakhir, waktu modifikasi, dan permission dalam notasi oktal maupun simbolis.
+Perintah \cmd{file} menebak tipe konten sebuah berkas berdasarkan isinya, bukan ekstensinya.
+Ini berguna ketika kamu menemukan berkas tanpa ekstensi dan ingin tahu apakah itu teks,
+binary, atau sesuatu yang lain.
 
-\subsection*{Praktikum 4.3: Membaca Jenis File dari Output ls -l (Mudah)}
-\textbf{Tujuan:} membedakan file reguler, direktori, symlink, dan device.
+\subsection*{Praktikum 5.2 Identifikasi Berbagai Jenis Berkas}
+
+Tujuan praktikum ini adalah membedakan jenis berkas berdasarkan output \cmd{ls -l} dan
+memahami cara membaca metadata berkas secara menyeluruh.
 
 \begin{enumerate}
-    \item Buat workspace praktikum:
-\begin{lstlisting}[language=bash, caption={Membuat workspace bab ini}]
-mkdir -p ~/praktikum-os/week04
-cd ~/praktikum-os/week04
-pwd
+    \item Buat beberapa berkas dengan jenis berbeda di direktori kerja:
+\begin{lstlisting}[language=bash, caption={Membuat berkas reguler dan direktori}]
+cd ~/lab-os/week05-files
+mkdir -p latihan-jenis
+echo "isi berkas teks" > latihan-jenis/catatan.txt
+mkdir latihan-jenis/subfolder
+ln -s latihan-jenis/catatan.txt latihan-jenis/shortcut.txt
+ls -lah latihan-jenis/
+\end{lstlisting}
+    \textit{Amati:} Perhatikan karakter pertama pada setiap baris. \texttt{-} untuk \file{catatan.txt}, \texttt{d} untuk \file{subfolder}, dan \texttt{l} untuk \file{shortcut.txt}. Pada baris tautan simbolis, kamu juga bisa melihat ke mana ia menunjuk.
+
+    \item Gunakan \cmd{stat} untuk melihat metadata lengkap berkas reguler:
+\begin{lstlisting}[language=bash, caption={Melihat metadata lengkap dengan stat}]
+stat latihan-jenis/catatan.txt
 \end{lstlisting}
 
-    \item Buat contoh file dan direktori:
-\begin{lstlisting}[language=bash, caption={Membuat file reguler dan direktori contoh}]
-mkdir -p data
-echo "hello server" > data/hello.txt
-ls -lah
-ls -lah data
+    \item Gunakan \cmd{file} untuk mengidentifikasi tipe konten berdasarkan isi berkas:
+\begin{lstlisting}[language=bash, caption={Mendeteksi tipe berkas dengan file}]
+file latihan-jenis/catatan.txt
+file latihan-jenis/subfolder
+file latihan-jenis/shortcut.txt
+file /bin/ls
 \end{lstlisting}
+    \textit{Amati:} Perhatikan bagaimana \cmd{file} mendeskripsikan \file{/bin/ls} sebagai \textit{ELF executable}, bukan sekadar ``berkas''. Ini berguna ketika kamu menemukan berkas tanpa ekstensi.
 
-    \item Buat symlink sederhana:
-\begin{lstlisting}[language=bash, caption={Membuat symlink}]
-ln -s data/hello.txt hello-link.txt
-ls -lah
-\end{lstlisting}
-
-    \item Inspeksi metadata:
-\begin{lstlisting}[language=bash, caption={Menginspeksi metadata file}]
-stat data/hello.txt | head -n 20
-file data/hello.txt
+    \item Lihat berkas perangkat blok dan karakter di \dir{/dev/}:
+\begin{lstlisting}[language=bash, caption={Melihat berkas perangkat di /dev}]
+ls -lah /dev/tty /dev/null /dev/zero
+ls -lah /dev/sd* 2>/dev/null | head -5
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 4.4: Membaca File Perangkat dan Virtual FS (Kondisi Riil)}
-\textbf{Skenario:} admin perlu membedakan device node (block vs char) dan file virtual dari kernel.
-
-\textbf{Tujuan:} mengenali \texttt{/dev} (device node), \texttt{/proc} dan \texttt{/sys} (virtual filesystem).
-
-\begin{enumerate}
-    \item Identifikasi block device dan character device:
-\begin{lstlisting}[language=bash, caption={Block vs character device}]
-ls -l /dev/sd* 2>/dev/null | head -n 10
-ls -l /dev/tty
-\end{lstlisting}
-
-    \item Tunjukkan bahwa \texttt{/proc} berisi info proses (virtual):
-\begin{lstlisting}[language=bash, caption={Membaca informasi sistem dari /proc}]
-ls -lah /proc | head
-cat /proc/cpuinfo | head -n 20
-\end{lstlisting}
-
-    \item Gunakan \texttt{file} untuk membedakan konten:
-\begin{lstlisting}[language=bash, caption={Menguji tipe konten dengan file}]
-file /dev/tty
-file /proc/cpuinfo
-\end{lstlisting}
-\end{enumerate}
-
-\begin{warningbox}
-Jangan menulis sembarang ke \texttt{/dev/*} atau \texttt{/proc/*}. Banyak entry bersifat sensitif dan bisa memengaruhi sistem.
-\end{warningbox}
-
-% ------------------------------------------------------------------------
-\section{Navigasi Sistem File melalui Command Line}
-\label{sec:navigasi}
-
-\subsection*{Penjelasan Konsep}
-Pada Ubuntu Server, terminal adalah antarmuka utama administrasi.
-Skill navigasi (menemukan lokasi file, berpindah folder, dan membaca struktur) adalah fondasi semua tugas lanjutan.
-
-\subsection*{Perintah yang dipakai}
-\begin{itemize}
-    \item \texttt{pwd}: menampilkan direktori aktif.
-    \item \texttt{ls}: daftar isi direktori (opsi umum: \texttt{-l}, \texttt{-a}, \texttt{-h}).
-    \item \texttt{cd}: pindah direktori.
-    \item \texttt{pushd}/\texttt{popd}: navigasi stack direktori (nyaman untuk bolak-balik).
-\end{itemize}
-
-\subsection*{Praktikum 4.5: Navigasi Aman dan Efisien (Mudah)}
-\textbf{Tujuan:} membiasakan absolute path, relative path, dan \texttt{pushd/popd}.
-
-\begin{enumerate}
-    \item Pindah ke root, lalu kembali ke home:
-\begin{lstlisting}[language=bash, caption={Absolute path vs kembali ke home}]
-cd /
-pwd
-cd ~
-pwd
-\end{lstlisting}
-
-    \item Latihan relative path:
-\begin{lstlisting}[language=bash, caption={Relative path di workspace}]
-cd ~/praktikum-os/week04
-mkdir -p a/b/c
-cd a/b
-pwd
-cd ../..
-pwd
-\end{lstlisting}
-
-    \item Gunakan \texttt{pushd/popd} untuk berpindah bolak-balik direktori:
-\begin{lstlisting}[language=bash, caption={Navigasi stack direktori}]
-pushd /etc
-pwd
-popd
-pwd
-\end{lstlisting}
-\end{enumerate}
-
-\begin{warningbox}
-Perintah \texttt{rm -rf} dapat menghapus direktori beserta isinya tanpa konfirmasi.
-Untuk praktikum, biasakan memakai \texttt{rm -ri} atau pastikan path benar.
-\end{warningbox}
-
-\subsection*{Praktikum 4.6: Menemukan File Konfigurasi dari Output Service (Kondisi Riil)}
-\textbf{Skenario:} Anda diminta mencari lokasi unit service dan file konfigurasi terkait.
-
-\textbf{Tujuan:} menggunakan navigasi + pembacaan path sistem yang umum pada server.
-
-\begin{enumerate}
-    \item Lihat status SSH dan petunjuk lokasi:
-\begin{lstlisting}[language=bash, caption={Menelusuri info layanan via systemctl}]
-systemctl status ssh --no-pager | head -n 30
-\end{lstlisting}
-
-    \item Tampilkan unit file layanan:
-\begin{lstlisting}[language=bash, caption={Menemukan unit file layanan}]
-systemctl cat ssh --no-pager | head -n 80
-\end{lstlisting}
-
-    \item Navigasi cepat ke direktori konfigurasi:
-\begin{lstlisting}[language=bash, caption={Navigasi ke direktori konfigurasi SSH}]
-cd /etc/ssh
-pwd
-ls -lah | head
-\end{lstlisting}
-\end{enumerate}
-
-% ------------------------------------------------------------------------
-\section{Operasi File Lanjutan: chmod, chown, chgrp}
-\label{sec:perm-owner}
-
-\subsection*{Penjelasan Konsep}
-Kontrol akses di Linux dibangun dari tiga komponen:
-\begin{itemize}
-    \item \textbf{Permission} (izin) untuk \textit{owner}, \textit{group}, \textit{others}
-    \item \textbf{Ownership} (kepemilikan): \textit{user owner} dan \textit{group owner}
-    \item \textbf{Konsep eksekusi direktori}: pada direktori, \texttt{x} berarti ``boleh masuk/akses isi direktori'' (traverse).
-\end{itemize}
-
-\subsection*{Membaca permission: rwx untuk user/group/others}
-Output \texttt{ls -l} contoh:
-\begin{center}
-\texttt{-rwxr-x---}
-\end{center}
-Artinya:
-\begin{itemize}
-    \item Karakter 1: jenis file (\texttt{-}, \texttt{d}, \texttt{l}, dst)
-    \item 3 berikutnya: \textbf{owner} (user)
-    \item 3 berikutnya: \textbf{group}
-    \item 3 terakhir: \textbf{others}
-\end{itemize}
-
-\subsubsection*{Makna r/w/x pada file vs direktori}
-\begin{itemize}
-    \item \textbf{File reguler}:
-    \begin{itemize}
-        \item \texttt{r}: boleh membaca isi file
-        \item \texttt{w}: boleh mengubah isi file
-        \item \texttt{x}: boleh mengeksekusi file sebagai program/script
-    \end{itemize}
-    \item \textbf{Direktori}:
-    \begin{itemize}
-        \item \texttt{r}: boleh melihat daftar nama file (mis. \texttt{ls})
-        \item \texttt{w}: boleh membuat/menghapus/rename entry di direktori
-        \item \texttt{x}: boleh masuk (\texttt{cd}) dan mengakses file di dalamnya
-    \end{itemize}
-\end{itemize}
-
-\begin{warningbox}
-Direktori tanpa \texttt{x} bisa terlihat isinya (jika \texttt{r} ada), tetapi tidak bisa diakses/masuk.
-Sebaliknya, direktori dengan \texttt{x} tapi tanpa \texttt{r} bisa diakses jika Anda tahu nama file tepatnya.
-\end{warningbox}
-
-\subsection{chmod: Notasi Angka (Oktal)}
-\label{subsec:chmod-oktal}
-
-Setiap permission direpresentasikan sebagai angka oktal (0--7). Setiap triad
-(\textit{user/group/others}) dihitung dengan menjumlahkan nilai bit:
-
-\begin{center}
-\begin{tabular}{ccc}
-    \textbf{r} (read) & \textbf{w} (write) & \textbf{x} (execute) \\
-    4                 & 2                  & 1                    \\
-\end{tabular}
-\end{center}
-
-Jumlahkan nilai bit yang aktif untuk mendapatkan angka oktal tiap triad.
-Tiga angka oktal digabung membentuk permission lengkap, misalnya \texttt{755}
-berarti user=7, group=5, others=5.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Tabel konversi notasi oktal ke permission}
-    \begin{tabular}{cll}
-        \hline
-        \textbf{Angka} & \textbf{Izin} & \textbf{Deskripsi} \\
-        \hline
-        0 & \texttt{-{}-{}-} & Tidak ada akses sama sekali \\
-        1 & \texttt{-{}-x} & Hanya eksekusi (masuk direktori) \\
-        2 & \texttt{-w-} & Hanya tulis \\
-        3 & \texttt{-wx} & Tulis dan eksekusi \\
-        4 & \texttt{r-{}-} & Hanya baca \\
-        5 & \texttt{r-x} & Baca dan eksekusi \\
-        6 & \texttt{rw-} & Baca dan tulis \\
-        7 & \texttt{rwx} & Baca, tulis, dan eksekusi (akses penuh) \\
-        \hline
-    \end{tabular}
-\end{table}
-
-Contoh penggunaan:
-\begin{itemize}
-    \item \texttt{chmod 755 file} $\rightarrow$ owner \texttt{rwx} (7), group \texttt{r-x} (5), others \texttt{r-x} (5)
-    \item \texttt{chmod 640 file} $\rightarrow$ owner \texttt{rw-} (6), group \texttt{r--} (4), others \texttt{---} (0)
-    \item \texttt{chmod 600 file} $\rightarrow$ owner \texttt{rw-} (6), group \texttt{---} (0), others \texttt{---} (0)
-\end{itemize}
-
-\subsection*{chmod: notasi simbolik}
-\begin{itemize}
-    \item Target: \texttt{u} (user), \texttt{g} (group), \texttt{o} (others), \texttt{a} (all)
-    \item Operator: \texttt{+} (tambah), \texttt{-} (hapus), \texttt{=} (set persis)
-\end{itemize}
-
-Contoh:
-\begin{itemize}
-    \item \texttt{chmod u+x script.sh} (tambah execute untuk owner)
-    \item \texttt{chmod go-rw file} (hapus read+write untuk group dan others)
-\end{itemize}
-
-\subsection*{Special bits: setuid, setgid, sticky}
-Selain 3 triad utama, ada bit khusus:
-\begin{itemize}
-    \item \textbf{setuid (4xxx)}: program berjalan dengan hak owner file (umumnya root). Contoh: \texttt{/usr/bin/passwd}.
-    \item \textbf{setgid (2xxx)}:
-    \begin{itemize}
-        \item pada file: berjalan dengan group file
-        \item pada direktori: file baru mewarisi group direktori (\textit{penting untuk shared folder})
-    \end{itemize}
-    \item \textbf{sticky bit (1xxx)} pada direktori: hanya owner file (atau root) yang boleh menghapus file di direktori tersebut.
-          Contoh: \texttt{/tmp}.
-\end{itemize}
-
-\subsection*{Ownership: chown dan chgrp}
-\begin{itemize}
-    \item \texttt{chown user file} mengubah owner user
-    \item \texttt{chown user:group file} mengubah user dan group sekaligus
-    \item \texttt{chgrp group file} mengubah group
-\end{itemize}
-
-\begin{tipbox}
-Masalah akses pada server sering bukan karena file ``hilang'', tetapi karena ownership/permission tidak sesuai.
-Biasakan verifikasi dengan \texttt{ls -l} dan \texttt{stat}.
-\end{tipbox}
-
-\subsection*{Praktikum 4.7: Permission Dasar dengan File dan Direktori (Mudah)}
-\textbf{Tujuan:} melihat perbedaan makna \texttt{x} pada file vs direktori, serta latihan konversi oktal.
-
-\begin{enumerate}
-    \item Siapkan objek uji:
-\begin{lstlisting}[language=bash, caption={Setup objek uji permission}]
-cd ~/praktikum-os/week04
-mkdir -p permtest/dirA
-echo "hello" > permtest/fileA.txt
-ls -ld permtest permtest/dirA
-ls -l permtest/fileA.txt
-\end{lstlisting}
-
-    \item Ubah permission file menjadi \texttt{640} lalu verifikasi:
-\begin{lstlisting}[language=bash, caption={chmod file dengan oktal}]
-chmod 640 permtest/fileA.txt
-ls -l permtest/fileA.txt
-\end{lstlisting}
-
-    \item Ubah permission direktori menjadi \texttt{700}, lalu coba akses:
-\begin{lstlisting}[language=bash, caption={chmod direktori dan uji akses}]
-chmod 700 permtest/dirA
-ls -ld permtest/dirA
-cd permtest/dirA
-pwd
-cd -
-\end{lstlisting}
-
-    \item Eksperimen: hilangkan \texttt{x} dari direktori dan lihat efeknya:
-\begin{lstlisting}[language=bash, caption={Menguji efek hilangnya x pada direktori}]
-chmod 600 permtest/dirA
-ls -ld permtest/dirA
-cd permtest/dirA 2>/dev/null \
- || echo "Gagal: tidak ada execute (x) pada direktori"
-\end{lstlisting}
-\end{enumerate}
-
-\subsection*{Praktikum 4.8: Shared Folder Proyek + Sticky Bit (Kondisi Riil)}
-\textbf{Skenario:} folder proyek bersama: anggota group bisa kolaborasi, file baru mewarisi group,
-dan tidak saling menghapus file sembarangan.
-
-\textbf{Tujuan:} menerapkan \texttt{chgrp}, \texttt{chmod 2xxx}, dan sticky bit pada direktori kolaboratif.
-
-\begin{enumerate}
-    \item Buat group dan folder proyek:
-\begin{lstlisting}[language=bash, caption={Membuat group dan folder proyek}]
-sudo groupadd project 2>/dev/null \ 
-  || echo "group project sudah ada"
-sudo usermod -aG project $USER
-sudo mkdir -p /srv/project-gamma
-sudo chgrp project /srv/project-gamma
-\end{lstlisting}
-
-    \item Terapkan setgid agar file baru mewarisi group, dan batasi others:
-\begin{lstlisting}[language=bash, caption={Setgid pada direktori proyek}]
-sudo chmod 2770 /srv/project-gamma
-ls -ld /srv/project-gamma
-\end{lstlisting}
-
-    \item Terapkan sticky bit agar user tidak bisa menghapus file milik user lain:
-\begin{lstlisting}[language=bash, caption={Sticky bit pada direktori kolaboratif}]
-sudo chmod +t /srv/project-gamma
-ls -ld /srv/project-gamma
-\end{lstlisting}
-
-    \item Uji pembuatan file (catatan: membership group bisa butuh re-login):
-\begin{lstlisting}[language=bash, caption={Uji akses kolaborasi}]
-touch /srv/project-gamma/test-$USER.txt 2>/dev/null \
-  || echo "Jika gagal: re-login atau jalankan newgrp"
-ls -l /srv/project-gamma | head
-\end{lstlisting}
-\end{enumerate}
-
-\begin{exercisebox}[4.1]
-Tentukan angka chmod untuk:
-\begin{enumerate}
-    \item File: owner \texttt{rw-}, group \texttt{r--}, others \texttt{---}
-    \item Direktori shared: owner+group \texttt{rwx}, others \texttt{---}, file baru mewarisi group (setgid)
-    \item Direktori seperti \texttt{/tmp}: semua bisa buat file, tetapi tidak bisa hapus file user lain (sticky bit)
-\end{enumerate}
-\end{exercisebox}
+\begin{challengebox}
+Buat sebuah tautan simbolis bernama \file{home-link} di direktori \dir{~/lab-os/week05-files/}
+yang menunjuk ke direktori home kamu (\dir{~/}). Verifikasi bahwa tautan tersebut bekerja
+dengan menjalankan \cmd{ls -la home-link/} dan membandingkan hasilnya dengan \cmd{ls -la ~/}.
+Kemudian gunakan \cmd{stat} untuk memeriksa apakah inode \file{home-link} dan \dir{~/}
+sama atau berbeda. Jelaskan mengapa hasilnya demikian.
+\end{challengebox}
 
 % ------------------------------------------------------------------------
 \section{Hard Links dan Symbolic Links}
 \label{sec:links}
 
-\subsection*{Penjelasan Konsep}
-Link adalah cara membuat ``nama lain'' untuk sebuah file.
-\begin{itemize}
-    \item \textbf{Hard link} (\texttt{ln}): menunjuk ke inode yang sama. Menghapus nama asli tidak menghapus data jika masih ada hard link lain.
-    \item \textbf{Symbolic link} / symlink (\texttt{ln -s}): file kecil yang menunjuk ke path target. Jika target pindah/hilang, symlink menjadi \textit{broken}.
-\end{itemize}
+Di Linux, satu data bisa memiliki lebih dari satu nama. Inilah ide dasar \textit{link}.
+Bayangkan sebuah buku di perpustakaan. Kamu bisa menaruh satu kartu indeks yang langsung
+menunjuk ke buku itu, atau membuat salinan entri katalog di tempat lain yang tetap
+mengacu ke buku fisik yang sama. Dua pendekatan ini sepadan dengan \textit{hard link}
+dan \textit{symbolic link}.
 
-\subsection*{Perintah yang dipakai}
-\begin{itemize}
-    \item \texttt{ln}, \texttt{ln -s}: membuat link.
-    \item \texttt{ls -li}: menampilkan inode dan link count.
-    \item \texttt{stat}: verifikasi inode dan metadata.
-\end{itemize}
+\textbf{Hard link} adalah nama tambahan yang menunjuk ke inode yang sama dengan berkas
+aslinya. Selama masih ada satu hard link yang tersisa, data berkas tetap ada di disk.
+Karena berbagi inode, perubahan isi melalui salah satu nama langsung terlihat pada nama
+lainnya. Hard link umumnya hanya dapat dibuat untuk berkas reguler dan tidak melintasi
+filesystem yang berbeda.
 
-\subsection*{Praktikum 4.9: Uji Hard Link vs Symlink (Mudah)}
-\textbf{Tujuan:} melihat perbedaan inode dan efek penghapusan.
+\textbf{Symbolic link} atau \textit{symlink} berbeda. Ia bukan nama tambahan untuk inode
+yang sama, melainkan berkas kecil yang berisi path tujuan. Karena itu, symlink bisa
+menunjuk ke direktori, bisa melintasi filesystem, dan bisa menjadi \textit{broken link}
+jika targetnya dihapus atau dipindahkan.
 
-\begin{enumerate}
-    \item Siapkan file:
-\begin{lstlisting}[language=bash, caption={Membuat file sumber}]
-cd ~/praktikum-os/week04
-echo "version1" > target.txt
-\end{lstlisting}
+Perintah \cmd{ln sumber target} membuat hard link, sedangkan \cmd{ln -s sumber target}
+membuat symbolic link. Gunakan \cmd{ls -li} untuk melihat nomor inode dan memverifikasi
+apakah dua nama berbagi inode yang sama.
 
-    \item Buat hard link dan symlink:
-\begin{lstlisting}[language=bash, caption={Membuat hard link dan symlink}]
-ln target.txt hardlink.txt
-ln -s target.txt symlink.txt
-ls -li target.txt hardlink.txt symlink.txt
-\end{lstlisting}
+\subsection*{Praktikum 5.3 Bandingkan Hard Link dan Symbolic Link}
 
-    \item Hapus file asli dan cek efeknya:
-\begin{lstlisting}[language=bash, caption={Menghapus target dan mengecek link}]
-rm target.txt
-ls -li hardlink.txt symlink.txt
-cat hardlink.txt
-cat symlink.txt \
-  || echo "symlink broken karena target hilang"
-\end{lstlisting}
-\end{enumerate}
-
-\begin{warningbox}
-Hard link umumnya tidak dipakai untuk direktori (dibatasi untuk mencegah loop struktur).
-Untuk kebutuhan ``shortcut'' direktori, gunakan symlink.
-\end{warningbox}
-
-\subsection*{Praktikum 4.10: Symlink untuk Deploy Versi Aplikasi (Kondisi Riil)}
-\textbf{Skenario:} pola deployment umum: folder versi aplikasi terpisah, lalu \texttt{current} adalah symlink ke versi aktif.
-
-\textbf{Tujuan:} memahami kenapa symlink sangat berguna untuk rollback cepat.
+Tujuan praktikum ini adalah memahami perbedaan hard link dan symbolic link melalui inode,
+perubahan isi berkas, dan perilaku saat target asli dihapus.
 
 \begin{enumerate}
-    \item Buat struktur versi:
-\begin{lstlisting}[language=bash, caption={Membuat versi aplikasi palsu}]
-cd ~/praktikum-os/week04
-mkdir -p app/releases/v1 app/releases/v2 app/shared
-echo "APP_VERSION=v1" > app/releases/v1/.env
-echo "APP_VERSION=v2" > app/releases/v2/.env
+    \item Siapkan satu berkas sumber dan buat dua jenis link:
+\begin{lstlisting}[language=bash, caption={Membuat hard link dan symbolic link}]
+cd ~/lab-os/week05-files
+mkdir -p latihan-link
+echo "versi awal" > latihan-link/catatan.txt
+ln latihan-link/catatan.txt latihan-link/catatan-hard.txt
+ln -s latihan-link/catatan.txt latihan-link/catatan-soft.txt
+ls -li latihan-link/
+\end{lstlisting}
+    \textit{Amati:} \file{catatan.txt} dan \file{catatan-hard.txt} harus memiliki nomor inode yang sama. Symlink memiliki inode berbeda dan menampilkan panah menuju targetnya.
+
+    \item Ubah isi berkas melalui hard link lalu baca kembali dari nama asli:
+\begin{lstlisting}[language=bash, caption={Mengubah isi melalui hard link}]
+echo "ditambah lewat hard link" >> latihan-link/catatan-hard.txt
+cat latihan-link/catatan.txt
 \end{lstlisting}
 
-    \item Buat symlink \texttt{current} menunjuk ke versi aktif:
-\begin{lstlisting}[language=bash, caption={Membuat symlink current}]
-ln -s releases/v1 app/current
-ls -lah app
-cat app/current/.env
+    \item Ubah target asli dan baca isi melalui symlink:
+\begin{lstlisting}[language=bash, caption={Membaca target melalui symbolic link}]
+echo "ditambah lewat target asli" >> latihan-link/catatan.txt
+cat latihan-link/catatan-soft.txt
 \end{lstlisting}
 
-    \item Simulasikan upgrade dan rollback hanya dengan mengganti symlink:
-\begin{lstlisting}[language=bash, caption={Switch versi via symlink}]
-rm app/current
-ln -s releases/v2 app/current
-cat app/current/.env
-
-rm app/current
-ln -s releases/v1 app/current
-cat app/current/.env
+    \item Hapus berkas asli lalu amati perilaku kedua link:
+\begin{lstlisting}[language=bash, caption={Menghapus target asli}]
+rm latihan-link/catatan.txt
+ls -li latihan-link/
+cat latihan-link/catatan-hard.txt
+cat latihan-link/catatan-soft.txt
 \end{lstlisting}
+    \textit{Amati:} Hard link masih dapat dibaca karena masih menunjuk ke inode yang sama. Symlink gagal karena path targetnya tidak lagi ada.
 \end{enumerate}
+
+\begin{challengebox}
+Buat satu berkas bernama \file{laporan.txt}, lalu buat hard link dan symbolic link untuk
+berkas itu. Gunakan \cmd{ls -li} untuk membandingkan inode ketiganya. Setelah itu hapus
+berkas asli dan jelaskan mengapa salah satu link masih berfungsi sementara yang lain tidak.
+\end{challengebox}
 
 % ------------------------------------------------------------------------
-\section{Pencarian File dengan find dan locate}
+\section{Pencarian Berkas}
 \label{sec:search}
 
-\subsection*{Penjelasan Konsep}
-Pada server, Anda sering perlu mencari:
-\begin{itemize}
-    \item file konfigurasi (\texttt{*.conf}), log, atau file besar yang memakan disk
-    \item file yang permission-nya bermasalah
-    \item file yang berubah dalam rentang waktu tertentu (debug)
-\end{itemize}
+Seiring waktu, sebuah sistem Linux bisa berisi ribuan berkas di ratusan direktori. Ketika
+kamu perlu menemukan satu berkas konfigurasi atau mencari semua log yang berukuran besar,
+menelusuri direktori satu per satu bukan pilihan yang masuk akal. Di sinilah perintah
+pencarian berperan.
 
-\subsection*{Perintah yang dipakai}
-\begin{itemize}
-    \item \texttt{find}: pencarian real-time (akurat, fleksibel).
-    \item \texttt{locate}: pencarian berbasis database (cepat, perlu update database).
-\end{itemize}
+Perintah \cmd{find} melakukan pencarian secara langsung (\textit{real-time}) di filesystem.
+Kamu bisa menentukan kriteria pencarian seperti nama berkas, tipe, ukuran, waktu modifikasi
+terakhir, bahkan izin aksesnya. Setelah menemukan berkas yang cocok, \cmd{find} bisa
+langsung menjalankan perintah tertentu pada setiap berkas yang ditemukan menggunakan opsi
+\texttt{-exec}. Fleksibilitas ini menjadikan \cmd{find} salah satu perintah paling kuat
+di Linux.
 
-\subsection*{Praktikum 4.11: find Dasar: Nama, Tipe, Ukuran (Mudah)}
-\textbf{Tujuan:} mencari file berdasarkan nama, tipe, dan ukuran.
+Perintah \cmd{locate} bekerja dengan cara yang berbeda. Ia mencari berdasarkan database
+indeks yang dibangun sebelumnya oleh \cmd{updatedb}. Hasilnya sangat cepat karena tidak
+perlu menelusuri filesystem secara langsung. Kelemahannya: jika berkas baru dibuat setelah
+database terakhir diperbarui, \cmd{locate} tidak akan menemukannya. Gunakan \cmd{locate}
+ketika kamu butuh jawaban cepat dan berkas yang dicari bukan yang baru saja dibuat.
+
+Dua perintah tambahan yang berguna untuk mencari program: \cmd{which} menampilkan lokasi
+lengkap sebuah program yang ada di \var{PATH}, dan \cmd{whereis} menampilkan lokasi binary,
+halaman manual, dan kode sumber sebuah program.
+
+\subsection*{Praktikum 5.4 Cari Berkas dengan Kriteria Tertentu}
+
+Tujuan praktikum ini adalah menggunakan \cmd{find} dengan berbagai kriteria untuk menemukan
+berkas secara efisien dan menggabungkannya dengan teknik redirection dari Bab~3.
 
 \begin{enumerate}
-    \item Cari semua file \texttt{.txt} di workspace:
-\begin{lstlisting}[language=bash, caption={find berdasarkan nama dan tipe}]
-cd ~/praktikum-os/week04
-find . -type f -name "*.txt"
+    \item Buat beberapa berkas uji dengan nama dan ukuran yang berbeda:
+\begin{lstlisting}[language=bash, caption={Membuat berkas uji untuk pencarian}]
+cd ~/lab-os/week05-files
+mkdir -p data-cari/logs data-cari/config data-cari/scripts
+echo "isi log kecil" > data-cari/logs/app.log
+echo "isi log besar" > data-cari/logs/error.log
+yes "baris log panjang" | head -5000 > data-cari/logs/access.log
+echo "host=localhost" > data-cari/config/app.conf
+echo '#!/bin/bash' > data-cari/scripts/backup.sh
 \end{lstlisting}
 
-    \item Cari file lebih besar dari 1MB (contoh umum troubleshooting):
-\begin{lstlisting}[language=bash, caption={find berdasarkan ukuran file}]
-find ~ -type f -size +1M 2>/dev/null | head
+    \item Cari semua berkas \file{.log} di dalam direktori percobaan:
+\begin{lstlisting}[language=bash, caption={Mencari berkas berdasarkan nama}]
+find data-cari -type f -name "*.log"
+\end{lstlisting}
+    \textit{Amati:} Opsi \texttt{-type f} membatasi pencarian hanya pada berkas reguler, mengabaikan direktori. Opsi \texttt{-name} menerima pola dengan wildcard \texttt{*}.
+
+    \item Cari berkas yang lebih besar dari 10 KB:
+\begin{lstlisting}[language=bash, caption={Mencari berkas berdasarkan ukuran}]
+find data-cari -type f -size +10k
+\end{lstlisting}
+
+    \item Cari semua berkas \file{.log} lebih besar dari 1 MB di \dir{/var/log/}
+    dan simpan daftar hasilnya ke sebuah berkas menggunakan redirection:
+\begin{lstlisting}[language=bash, caption={Mencari log besar dan menyimpan hasil}]
+find /var/log -type f -name "*.log" -size +1M 2>/dev/null \
+    > ~/lab-os/week05-files/log-besar.txt
+cat ~/lab-os/week05-files/log-besar.txt
+\end{lstlisting}
+    \textit{Amati:} Pola \texttt{2>/dev/null} membuang pesan error ``Permission denied'' yang muncul ketika \cmd{find} mencoba masuk ke direktori yang tidak bisa diaksesnya. Teknik redirection ini sudah kamu pelajari di Bab~3.
+
+    \item Gunakan \cmd{find} dengan \texttt{-exec} untuk menampilkan ukuran setiap berkas yang ditemukan:
+\begin{lstlisting}[language=bash, caption={Menjalankan perintah pada setiap berkas yang ditemukan}]
+find data-cari -type f -name "*.log" -exec ls -lh {} \;
+\end{lstlisting}
+
+    \item Gunakan \cmd{which} dan \cmd{whereis} untuk menemukan lokasi program:
+\begin{lstlisting}[language=bash, caption={Menemukan lokasi program}]
+which ls
+which bash
+whereis grep
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 4.12: find Kondisi Riil: Scan Konfigurasi Sistem (Sulit/Riil)}
-\textbf{Skenario:} cari file konfigurasi \texttt{*.conf} pada seluruh sistem,
-tetapi buang error permission agar output bersih.
-
-\textbf{Tujuan:} menggunakan \texttt{find} pada root filesystem dan mengelola error dengan redirection.
-
-\begin{lstlisting}[language=bash, caption={Scan *.conf tanpa membanjiri error permission}]
-sudo find / -type f -name "*.conf" 2>/dev/null \
-  | head -n 30
-\end{lstlisting}
-
-\begin{tipbox}
-Pola \texttt{2>/dev/null} sangat sering dipakai saat scanning seluruh sistem,
-karena banyak direktori memang tidak bisa dibaca user biasa.
-\end{tipbox}
-
-\subsection*{Praktikum 4.13: locate + updatedb (Mudah)}
-\textbf{Tujuan:} menggunakan index database untuk pencarian cepat.
-
-\begin{enumerate}
-    \item Pastikan \texttt{plocate} tersedia:
-\begin{lstlisting}[language=bash, caption={Memasang locate tool}]
-sudo apt update
-sudo apt install -y plocate \
-  || sudo apt install -y mlocate
-\end{lstlisting}
-
-    \item Update database (butuh root), lalu cari:
-\begin{lstlisting}[language=bash, caption={Update database locate dan melakukan pencarian}]
-sudo updatedb
-locate sshd_config | head
-\end{lstlisting}
-\end{enumerate}
-
-\begin{warningbox}
-\texttt{locate} tidak selalu real-time. Jika file baru dibuat dan belum terindeks,
-hasil bisa kosong sampai \texttt{updatedb} dijalankan.
-\end{warningbox}
-
-\subsection*{Praktikum 4.14: Audit Permission Bermasalah dengan find (Kondisi Riil)}
-\textbf{Skenario:} admin ingin menemukan file/folder yang ``terlalu terbuka'' (world-writable),
-atau file setuid/setgid untuk audit keamanan ringan.
-
-\textbf{Tujuan:} mencari objek yang berisiko dari sisi permission.
-
-\begin{enumerate}
-    \item Cari direktori world-writable di home:
-\begin{lstlisting}[language=bash, caption={Mencari direktori yang world-writable}]
-find ~ -type d -perm -0002 2>/dev/null | head -n 30
-\end{lstlisting}
-
-    \item Cari file world-writable:
-\begin{lstlisting}[language=bash, caption={Mencari file yang world-writable}]
-find ~ -type f -perm -0002 2>/dev/null | head -n 30
-\end{lstlisting}
-
-    \item (Opsional) Cari file setuid/setgid:
-\begin{lstlisting}[language=bash, caption={Audit setuid/setgid di sistem (butuh sudo)}]
-sudo find / -type f -perm -4000 2>/dev/null \
-  | head -n 30   # setuid
-sudo find / -type f -perm -2000 2>/dev/null \ 
-  | head -n 30   # setgid
-\end{lstlisting}
-\end{enumerate}
-
-\begin{warningbox}
-Jangan asal mengubah permission file setuid/setgid sistem. Praktikum ini hanya untuk identifikasi.
-\end{warningbox}
+\begin{challengebox}
+Gunakan \cmd{find} untuk mencari semua berkas \file{.log} di \dir{/var/log/} yang lebih
+besar dari 1 MB. Arahkan hasilnya ke sebuah berkas bernama \file{laporan-log.txt}
+di direktori \dir{~/lab-os/week05-files/}. Pastikan pesan error permission diabaikan
+menggunakan \texttt{2>/dev/null}. Kemudian gunakan \cmd{grep} (dari Bab~2) dan \cmd{wc -l}
+untuk menghitung berapa banyak berkas log besar yang ditemukan. Tuliskan jumlahnya sebagai
+komentar di bawah perintahmu.
+\end{challengebox}
 
 % ------------------------------------------------------------------------
-\section{Kompresi dan Pengarsipan File (tar, gzip, zip)}
+\section{Kompresi dan Pengarsipan}
 \label{sec:archive}
 
-\subsection*{Penjelasan Konsep}
-\textbf{Arsip} (\textit{archive}) menggabungkan banyak file/folder menjadi satu paket.
-\textbf{Kompresi} mengecilkan ukuran data.
-Pada server, kombinasi umum adalah:
+Ketika kamu perlu mengirim puluhan berkas ke rekan tim, atau menyimpan cadangan sebuah
+direktori sebelum melakukan perubahan besar, mengemas semua berkas menjadi satu paket
+adalah langkah yang tepat. Proses ini disebut pengarsipan. Ketika paket tersebut juga
+diperkecil ukurannya, proses itu disebut kompresi.
+
+Di Linux, \cmd{tar} adalah perintah utama untuk pengarsipan. Nama \texttt{tar} berasal
+dari \textit{tape archive}, karena dulu digunakan untuk menyimpan data ke pita magnetik.
+Sekarang \cmd{tar} digunakan untuk menggabungkan banyak berkas dan direktori menjadi satu
+berkas \texttt{.tar}. Secara default, \texttt{.tar} tidak terkompresi; ia hanya
+menggabungkan. Untuk mengompresi sekaligus, kamu bisa menambahkan flag \texttt{-z}
+agar \cmd{tar} menggunakan \cmd{gzip} secara otomatis, menghasilkan berkas \texttt{.tar.gz}.
+
+Berikut flag \cmd{tar} yang paling sering digunakan:
+
 \begin{itemize}
-    \item \texttt{tar} untuk mengarsipkan folder
-    \item \texttt{gzip} (atau \texttt{bzip2}/\texttt{xz}) untuk mengompresi arsip
-    \item \texttt{zip} untuk pertukaran lintas OS (Windows/macOS) atau kebutuhan tertentu
+    \item \texttt{-c} : buat arsip baru (\textit{create})
+    \item \texttt{-x} : ekstrak isi arsip (\textit{extract})
+    \item \texttt{-t} : tampilkan isi arsip tanpa mengekstrak (\textit{list})
+    \item \texttt{-f berkas} : tentukan nama berkas arsip (selalu dibutuhkan)
+    \item \texttt{-v} : tampilkan nama berkas yang diproses (\textit{verbose})
+    \item \texttt{-z} : gunakan kompresi gzip (untuk \texttt{.tar.gz})
+    \item \texttt{-C direktori} : ekstrak ke direktori tertentu
 \end{itemize}
 
-\subsection*{tar: flag yang paling sering dipakai}
-\begin{itemize}
-    \item \texttt{-c} : create (buat arsip)
-    \item \texttt{-x} : extract (ekstrak arsip)
-    \item \texttt{-t} : list (lihat isi arsip tanpa ekstrak)
-    \item \texttt{-f <file>} : nama file arsip (wajib jika pakai file)
-    \item \texttt{-v} : verbose (tampilkan file yang diproses)
-    \item \texttt{-C <dir>} : ekstrak/kerjakan dari direktori tertentu
-    \item \texttt{-z} : gunakan gzip (\texttt{.tar.gz / .tgz})
-    \item \texttt{-J} : gunakan xz (\texttt{.tar.xz}) — kompresi lebih kuat, lebih lambat
-\end{itemize}
+Perintah \cmd{gzip} bekerja pada berkas tunggal: ia mengompresi satu berkas menjadi
+\texttt{.gz} dan secara default menghapus berkas aslinya. Gunakan flag \texttt{-k} untuk
+mempertahankan berkas asli, dan flag \texttt{-d} untuk dekompresi (setara dengan \cmd{gunzip}).
 
-Contoh cepat:
-\begin{itemize}
-    \item Buat: \texttt{tar -czvf backup.tar.gz folder/}
-    \item Lihat isi: \texttt{tar -tzvf backup.tar.gz}
-    \item Ekstrak: \texttt{tar -xzvf backup.tar.gz -C /tujuan}
-\end{itemize}
+Perintah \cmd{zip} berguna ketika kamu perlu berbagi arsip dengan pengguna Windows atau
+macOS, karena format \texttt{.zip} didukung secara native oleh semua sistem operasi populer.
+Gunakan \cmd{zip -r} untuk mengarsipkan direktori secara rekursif, dan \cmd{unzip -l}
+untuk melihat isi arsip tanpa mengekstraknya.
 
-\subsection*{gzip: flag penting}
-\begin{itemize}
-    \item \texttt{-k} : keep file asli (jangan hapus sumber)
-    \item \texttt{-d} : decompress (gunzip)
-    \item \texttt{-1} sampai \texttt{-9} : level kompresi (1 cepat, 9 maksimum)
-\end{itemize}
-Catatan: \texttt{gzip} bekerja pada \textbf{file tunggal}. Untuk folder, biasanya \texttt{tar} dulu baru \texttt{gzip}.
+\subsection*{Praktikum 5.5 Buat dan Ekstrak Arsip}
 
-\subsection*{zip/unzip: flag penting}
-\begin{itemize}
-    \item \texttt{zip -r} : rekursif untuk folder
-    \item \texttt{zip -9} : kompresi maksimum (lebih lambat)
-    \item \texttt{unzip -l} : lihat isi zip tanpa ekstrak
-    \item \texttt{unzip -d <dir>} : ekstrak ke direktori tertentu
-\end{itemize}
-
-\subsection*{Praktikum 4.15: Arsip Workspace: tar + gzip (Mudah)}
-\textbf{Tujuan:} membuat \texttt{.tar.gz}, mengecek isi, lalu mengekstraknya.
+Tujuan praktikum ini adalah membuat arsip terkompresi, memeriksa isinya, dan mengekstraknya
+ke lokasi yang berbeda.
 
 \begin{enumerate}
-    \item Buat arsip terkompresi dari workspace:
-\begin{lstlisting}[language=bash, caption={Membuat tar.gz}]
-cd ~/praktikum-os
-tar -czvf week04-backup.tar.gz week04
-ls -lah week04-backup.tar.gz
+    \item Buat struktur direktori berisi beberapa berkas untuk diarsipkan:
+\begin{lstlisting}[language=bash, caption={Menyiapkan direktori yang akan diarsipkan}]
+cd ~/lab-os/week05-files
+mkdir -p proyek/src proyek/config proyek/docs
+echo "# Kode utama" > proyek/src/main.sh
+echo "PORT=8080" > proyek/config/app.conf
+echo "# Dokumentasi" > proyek/docs/readme.txt
+ls -lR proyek/
 \end{lstlisting}
 
-    \item Lihat isi arsip tanpa ekstrak:
-\begin{lstlisting}[language=bash, caption={Melihat isi tar.gz}]
-tar -tzvf week04-backup.tar.gz | head -n 30
+    \item Buat arsip terkompresi dari direktori \dir{proyek/}:
+\begin{lstlisting}[language=bash, caption={Membuat arsip .tar.gz}]
+tar -czvf proyek-backup.tar.gz proyek/
+ls -lah proyek-backup.tar.gz
+\end{lstlisting}
+    \textit{Amati:} Flag \texttt{-v} menampilkan setiap berkas yang ditambahkan ke arsip. Perhatikan ukuran arsip hasil kompresi dibandingkan ukuran direktori aslinya.
+
+    \item Lihat isi arsip tanpa mengekstraknya:
+\begin{lstlisting}[language=bash, caption={Melihat isi arsip tanpa ekstrak}]
+tar -tzvf proyek-backup.tar.gz
 \end{lstlisting}
 
-    \item Ekstrak ke folder uji:
-\begin{lstlisting}[language=bash, caption={Mengekstrak tar.gz ke folder tertentu}]
-mkdir -p ~/praktikum-os/restore-test
-tar -xzvf week04-backup.tar.gz \ 
-  -C ~/praktikum-os/restore-test
-ls -lah ~/praktikum-os/restore-test/week04 | head
+    \item Ekstrak arsip ke direktori baru:
+\begin{lstlisting}[language=bash, caption={Mengekstrak arsip ke direktori lain}]
+mkdir -p hasil-ekstrak
+tar -xzvf proyek-backup.tar.gz -C hasil-ekstrak/
+ls -lR hasil-ekstrak/
+\end{lstlisting}
+
+    \item Kompres sebuah berkas tunggal menggunakan \cmd{gzip} sambil mempertahankan berkas aslinya:
+\begin{lstlisting}[language=bash, caption={Kompresi berkas tunggal dengan gzip}]
+yes "baris log" | head -10000 > catatan-panjang.txt
+ls -lah catatan-panjang.txt
+gzip -k catatan-panjang.txt
+ls -lah catatan-panjang.txt catatan-panjang.txt.gz
+\end{lstlisting}
+    \textit{Amati:} Bandingkan ukuran berkas asli dengan versi yang sudah dikompres. Berapa persen penghematan ruang yang kamu dapatkan?
+
+    \item Buat arsip ZIP untuk kompatibilitas lintas sistem operasi:
+\begin{lstlisting}[language=bash, caption={Membuat arsip ZIP}]
+zip -r proyek.zip proyek/
+unzip -l proyek.zip | head -15
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Praktikum 4.16: Backup Konfigurasi Sistem (Subset) + Validasi (Kondisi Riil)}
-\textbf{Skenario:} sebelum perubahan konfigurasi server, admin membuat backup subset \texttt{/etc} dan menaruhnya di folder backup.
-
-\textbf{Tujuan:} membuat arsip yang rapi, bisa diverifikasi, dan tidak membanjiri error permission.
-
-\begin{enumerate}
-    \item Siapkan folder backup:
-\begin{lstlisting}[language=bash, caption={Membuat folder backup}]
-mkdir -p ~/backup
-\end{lstlisting}
-
-    \item Buat backup konfigurasi penting dan verifikasi ukuran:
-\begin{lstlisting}[language=bash, caption={Backup konfigurasi penting dengan tar.gz}]
-sudo tar -czvf ~/backup/etc-core-$(date +%F).tar.gz \
-  /etc/ssh /etc/hosts /etc/netplan /etc/systemd \
-  2>/dev/null
-ls -lah ~/backup/etc-core-*.tar.gz
-\end{lstlisting}
-
-    \item Validasi isi backup (tanpa ekstrak):
-\begin{lstlisting}[language=bash, caption={Validasi isi backup}]
-tar -tzvf ~/backup/etc-core-$(date +%F).tar.gz \
-  | head -n 40
-\end{lstlisting}
-
-    \item Restore uji ke direktori aman (jangan overwrite sistem):
-\begin{lstlisting}[language=bash, caption={Restore uji ke folder sandbox}]
-mkdir -p ~/backup/restore-sandbox
-tar -xzvf ~/backup/etc-core-$(date +%F).tar.gz \
-  -C ~/backup/restore-sandbox
-ls -lah ~/backup/restore-sandbox/etc | head -n 20
-\end{lstlisting}
-\end{enumerate}
-
-\begin{tipbox}
-Pola ``backup subset penting'' lebih aman daripada \texttt{tar /etc} seluruhnya, dan lebih realistis untuk admin.
-\end{tipbox}
-
-\subsection*{Praktikum 4.17: gzip untuk File Tunggal (Mudah)}
-\textbf{Tujuan:} memahami gzip sebagai kompresor file tunggal, serta efek \texttt{-k} dan level kompresi.
-
-\begin{enumerate}
-    \item Buat file besar sederhana untuk uji:
-\begin{lstlisting}[language=bash, caption={Membuat file uji besar}]
-cd ~/praktikum-os/week04
-yes "logline" | head -n 200000 > biglog.txt
-ls -lah biglog.txt
-\end{lstlisting}
-
-    \item Kompres dengan gzip dan simpan file asli:
-\begin{lstlisting}[language=bash, caption={gzip dengan keep}]
-gzip -k -9 biglog.txt
-ls -lah biglog.txt biglog.txt.gz
-\end{lstlisting}
-
-    \item Decompress:
-\begin{lstlisting}[language=bash, caption={Decompress gzip}]
-gzip -d -k biglog.txt.gz
-ls -lah biglog.txt biglog.txt.gz
-\end{lstlisting}
-\end{enumerate}
-
-\subsection*{Praktikum 4.18: zip untuk Distribusi ke Lintas OS (Kondisi Riil)}
-\textbf{Skenario:} Anda perlu mengirim folder backup/restore ke user Windows/macOS.
-
-\begin{enumerate}
-    \item Pastikan zip/unzip ada:
-\begin{lstlisting}[language=bash, caption={Install zip/unzip}]
-sudo apt update
-sudo apt install -y zip unzip
-\end{lstlisting}
-
-    \item Buat zip rekursif dan cek isinya:
-\begin{lstlisting}[language=bash, caption={Membuat zip dan melihat isi tanpa ekstrak}]
-cd ~/backup
-zip -r -9 restore-sandbox.zip restore-sandbox
-unzip -l restore-sandbox.zip | head -n 30
-\end{lstlisting}
-
-    \item Ekstrak ke folder baru:
-\begin{lstlisting}[language=bash, caption={Ekstrak zip ke folder tujuan}]
-mkdir -p ~/backup/unzip-test
-unzip restore-sandbox.zip -d ~/backup/unzip-test
-ls -lah ~/backup/unzip-test | head
-\end{lstlisting}
-\end{enumerate}
+\begin{challengebox}
+Arsipkan seluruh direktori \dir{~/lab-os/week05-files/} menjadi sebuah berkas bernama
+\file{week05-backup.tar.gz} yang disimpan di \dir{~/lab-os/}. Setelah selesai, gunakan
+\cmd{tar -tzvf} untuk memverifikasi isi arsip dan pastikan semua subdirektori dan berkas
+masuk ke dalam arsip. Kemudian gunakan pipa (\texttt{|}) untuk menghitung berapa banyak
+berkas yang ada di dalam arsip tersebut menggunakan \cmd{wc -l}. Teknik pipa ini sudah
+kamu pelajari di Bab~3.
+\end{challengebox}
 
 % ------------------------------------------------------------------------
 \section{Rangkuman}
 \label{sec:summary-filesystem}
 
-\begin{itemize}
-    \item Struktur Linux berpusat pada \texttt{/} dan mengikuti praktik FHS: konfigurasi di \texttt{/etc}, log di \texttt{/var/log}, home di \texttt{/home}.
-    \item Linux punya banyak jenis file: reguler, direktori, symlink, serta file perangkat (\texttt{/dev}) dan virtual FS (\texttt{/proc}, \texttt{/sys}).
-    \item Navigasi terminal (\texttt{pwd}, \texttt{ls}, \texttt{cd}, \texttt{pushd/popd}) adalah fondasi administrasi server.
-    \item Kontrol akses dibangun dari permission (\texttt{chmod}) dan ownership (\texttt{chown}/\texttt{chgrp}); shared folder adalah skenario nyata yang sering ditemui.
-    \item Hard link berbagi inode; symlink menunjuk path target dan cocok untuk pola deploy/rollback.
-    \item \texttt{find} fleksibel untuk pencarian real-time; \texttt{locate} cepat tapi tergantung database.
-    \item Backup sederhana sangat umum dengan \texttt{tar.gz}; \texttt{gzip} untuk file tunggal; \texttt{zip} nyaman untuk pertukaran lintas OS.
+Dalam bab ini, kamu telah mempelajari:
+
+\begin{itemize}[noitemsep,topsep=2pt]
+    \item \textbf{Hierarki FHS}: Linux mengatur semua berkas dalam satu pohon direktori dengan akar \dir{/}. Setiap direktori memiliki fungsi khusus: \dir{/etc/} untuk konfigurasi, \dir{/var/log/} untuk log, \dir{/home/} untuk data pengguna.
+    \item \textbf{Jenis berkas}: Karakter pertama pada output \cmd{ls -l} menentukan jenis berkas. Tujuh jenis utama meliputi berkas reguler (\texttt{-}), direktori (\texttt{d}), tautan simbolis (\texttt{l}), dan berkas perangkat (\texttt{b}, \texttt{c}).
+    \item \textbf{Links}: Hard link menunjuk ke inode yang sama dengan berkas asli, sedangkan symbolic link menunjuk ke path target. Perintah \cmd{ln} dan \cmd{ln -s} digunakan untuk membuat keduanya.
+    \item \textbf{Pencarian berkas}: Perintah \cmd{find} mencari secara langsung di filesystem dengan berbagai kriteria seperti nama, tipe, ukuran, dan waktu modifikasi. Perintah \cmd{locate} mencari dengan cepat menggunakan database indeks yang perlu diperbarui secara berkala.
+    \item \textbf{Kompresi dan pengarsipan}: Perintah \cmd{tar} menggabungkan banyak berkas menjadi satu arsip. Dengan flag \texttt{-z}, \cmd{tar} sekaligus mengompresi menggunakan \cmd{gzip}. Format \texttt{.zip} berguna untuk berbagi berkas lintas sistem operasi.
 \end{itemize}
 
 % ------------------------------------------------------------------------
-\section{Latihan dan Tugas Mandiri}
+\section{Tugas Praktikum}
 \label{sec:exercises-filesystem}
 
-\subsection*{A. Latihan Konseptual}
-\begin{exercisebox}[4.A]
-Pilih 8 direktori dari daftar FHS (\texttt{/etc, /var, /home, /tmp, /usr, /opt, /srv, /dev, /proc, /sys})
-dan jelaskan fungsi masing-masing dalam 1--2 kalimat.
+\textbf{Instruksi Umum}: Kerjakan seluruh tugas secara mandiri. Dokumentasikan setiap
+langkah dengan tangkapan layar dan kumpulkan dalam format PDF.
+
+\begin{exercisebox}[5.1 Pemetaan Sistem File]
+Jalankan \cmd{ls -lah /} dan pilih delapan direktori dari hasilnya. Untuk setiap direktori,
+tuliskan fungsinya dalam satu kalimat dan berikan contoh satu berkas nyata yang ada di
+dalamnya (verifikasi dengan \cmd{ls}). Sertakan bukti tangkapan layar untuk setiap
+direktori yang kamu pilih.
 \end{exercisebox}
 
-\begin{exercisebox}[4.B]
-Jelaskan perbedaan hard link vs symlink, lalu sebutkan 1 use case realistis untuk masing-masing.
+\begin{exercisebox}[5.2 Hard Link dan Symbolic Link]
+Buat satu berkas \file{sumber.txt} di \dir{~/lab-os/week05-tugas/}. Setelah itu:
+\begin{enumerate}
+    \item buat satu hard link bernama \file{sumber-hard.txt};
+    \item buat satu symbolic link bernama \file{sumber-soft.txt};
+    \item buktikan dengan \cmd{ls -li} mana yang berbagi inode;
+    \item ubah isi berkas melalui hard link lalu tampilkan isi dari ketiga nama;
+    \item hapus \file{sumber.txt} dan jelaskan keadaan kedua link yang tersisa.
+\end{enumerate}
+Sertakan semua perintah dan ringkasan pengamatanmu.
 \end{exercisebox}
 
-\subsection*{B. Latihan Praktikum (Mudah--Menengah)}
-\begin{exercisebox}[4.C]
-Buat folder \texttt{\~/praktikum-os/week04-latihan} berisi:
+\begin{exercisebox}[5.3 Pencarian dan Pengarsipan]
+Lakukan langkah-langkah berikut secara berurutan dan dokumentasikan hasilnya:
+\begin{enumerate}
+    \item Gunakan \cmd{find} untuk mencari semua berkas \file{.conf} di \dir{/etc/} yang
+    berukuran kurang dari 5 KB. Arahkan hasilnya ke \file{config-kecil.txt}, buang
+    error permission.
+    \item Hitung berapa banyak berkas yang ditemukan menggunakan \cmd{wc -l}.
+    \item Arsipkan seluruh direktori \dir{~/lab-os/week05-tugas/} menjadi
+    \file{week05-tugas.tar.gz}.
+    \item Verifikasi isi arsip dengan \cmd{tar -tzvf} dan hitung jumlah berkas di
+    dalamnya menggunakan pipa ke \cmd{wc -l}.
+\end{enumerate}
+\end{exercisebox}
+
+% ------------------------------------------------------------------------
+\section{Referensi}
+\label{sec:ref-filesystem}
+
 \begin{itemize}
-    \item 3 file teks, 1 subfolder, dan 1 symlink yang menunjuk salah satu file.
-\end{itemize}
-Tampilkan bukti dengan \texttt{ls -lah} dan \texttt{ls -li}.
-\end{exercisebox}
-
-\begin{exercisebox}[4.D]
-Atur permission file \texttt{laporan.txt} agar:
-owner boleh baca+tulis, group hanya baca, others tidak punya akses.
-Tuliskan perintahnya dan verifikasi dengan \texttt{ls -l}.
-\end{exercisebox}
-
-\begin{exercisebox}[4.E]
-Gunakan \texttt{find} untuk mencari 20 file terbesar di \texttt{/var/log}.
-Jika permission mengganggu, buang error dengan \texttt{2>/dev/null}.
-Tampilkan output 20 baris pertama.
-\end{exercisebox}
-
-\subsection*{C. Latihan Praktikum (Kondisi Riil)}
-\begin{exercisebox}[4.F: Kasus Admin 1]
-Anda diminta membuat folder \texttt{/srv/data-share} untuk tim (group \texttt{project}) dengan aturan:
-\begin{itemize}
-\item semua anggota group bisa membuat dan mengedit file
-\item file baru mewarisi group folder (setgid)
-\item user lain tidak bisa akses
-\item user tidak boleh menghapus file milik user lain di folder tersebut (sticky bit)
-\end{itemize}
-Tuliskan perintah dan bukti \texttt{ls -ld}.
-\end{exercisebox}
-
-\begin{exercisebox}[4.G: Kasus Admin 2]
-Anda diminta mengumpulkan bukti troubleshooting:
-\begin{itemize}
-\item salin 100 baris terakhir \texttt{/var/log/auth.log} ke file di home Anda
-\item kompres file tersebut menjadi \texttt{.gz} tanpa menghapus file asli
-\item arsipkan folder bukti menjadi \texttt{tar.gz}
-\end{itemize}
-Tuliskan semua perintah dan tampilkan \texttt{ls -lah} hasil akhirnya.
-\end{exercisebox}
-
-\subsection*{Referensi (Manual Pages)}
-\begin{itemize}
-    \item \texttt{man hier}, \texttt{man ls}, \texttt{man stat}, \texttt{man file}
-    \item \texttt{man chmod}, \texttt{man chown}, \texttt{man chgrp}, \texttt{man umask}
-    \item \texttt{man ln}
-    \item \texttt{man find}, \texttt{man locate}, \texttt{man updatedb}
-    \item \texttt{man tar}, \texttt{man gzip}, \texttt{man zip}, \texttt{man unzip}
+    \item Kerrisk, M. \textit{The Linux Programming Interface} (1st ed.). No Starch Press, 2010.
+    \item Barrett, D., Silverman, R., Byrnes, R. \textit{Linux Pocket Guide} (3rd ed.). O'Reilly Media, 2016.
+    \item Ward, B. \textit{How Linux Works} (3rd ed.). No Starch Press, 2021.
+    \item Halaman manual: \texttt{man hier}, \texttt{man ls}, \texttt{man stat}, \texttt{man ln}, \texttt{man find}, \texttt{man tar}, \texttt{man gzip}.
 \end{itemize}

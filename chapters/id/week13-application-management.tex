@@ -5,283 +5,229 @@
 \chapter{Manajemen Aplikasi}
 \label{ch:application-management}
 
-Bab ini membahas pengelolaan software di lingkungan Linux secara menyeluruh:
-sistem manajemen paket (\cmd{apt} dan \cmd{dpkg}), manajemen repositori, kompilasi
-dari source code, penggunaan container dengan Docker, serta pemantauan dan
-pemecahan masalah aplikasi. Setiap topik disajikan mulai dari teori kemudian
-dilanjutkan dengan praktikum di Ubuntu Server 22.04.
+Bayangkan kamu baru pindah ke kota baru dan ingin melengkapi dapur apartemenmu.
+Ada dua cara: pergi ke toko swalayan yang sudah mengatur semua kebutuhan di rak
+yang berlabel rapi, atau berkeliling dari toko ke toko secara manual mencari
+barang satu per satu. Di Linux, \cmd{apt} berperan seperti swalayan modern itu.
+Kamu cukup menyebut nama aplikasi, dan \cmd{apt} akan mengunduh, memeriksa
+keaslian, memasang semua bagian yang dibutuhkan, dan mendaftarkan semuanya agar
+mudah dihapus kapan saja.
+
+Di balik layanan \cmd{apt} yang nyaman itu, ada lapisan yang lebih mendasar bernama
+\cmd{dpkg}. Jika \cmd{apt} adalah kasir swalayan yang mengurus segalanya, maka
+\cmd{dpkg} adalah petugas gudang yang benar-benar meletakkan barang ke rak. Ada
+saat-saat ketika kamu perlu berbicara langsung dengan petugas gudang itu, misalnya
+saat menginstal file \texttt{.deb} yang kamu unduh sendiri dari situs vendor.
+
+Bab ini juga membahas situasi ketika aplikasi yang kamu butuhkan belum tersedia
+di toko mana pun. Dalam kasus itu, kamu perlu merakit sendiri dari bahan mentah,
+yang di Linux berarti mengompilasi dari \emph{source code}. Dan untuk aplikasi
+ yang membutuhkan lingkungan terisolasi agar tidak bertabrakan dengan sistem,
+ teknologi container seperti Docker dan Podman menawarkan cara membungkus
+ aplikasi beserta semua perlengkapannya.
+
+\textbf{Yang Akan Kamu Pelajari}
+
+Setelah menyelesaikan bab ini, kamu akan mampu:
+
+\begin{enumerate}
+    \item menginstal, memperbarui, dan menghapus paket menggunakan \cmd{apt} dan
+        \cmd{dpkg} secara tepat;
+    \item menambahkan repositori pihak ketiga dengan metode GPG key yang aman;
+    \item mengompilasi program sederhana dari source code menggunakan pola
+        \cmd{./configure}, \cmd{make}, dan \cmd{make install};
+    \item membangun dan menjalankan aplikasi di dalam container, dengan Docker
+        sebagai contoh utama dan Podman sebagai alternatif yang sepadan;
+    \item memantau performa aplikasi yang sedang berjalan menggunakan \cmd{top},
+        \cmd{lsof}, dan \cmd{ss}.
+\end{enumerate}
+
+\begin{notebox}
+Seluruh praktikum pada bab ini dijalankan pada direktori \dir{~/lab-os/week13-apps/}.
+\begin{lstlisting}[language=bash]
+mkdir -p ~/lab-os/week13-apps
+cd ~/lab-os/week13-apps
+\end{lstlisting}
+\end{notebox}
 
 %% ========================================================================
-\section{Sistem Manajemen Paket}
-\label{sec:package-management}
+\section{Manajemen Paket dengan apt}
+\label{sec:apt-package-management}
 %% ========================================================================
 
-Sistem manajemen paket adalah komponen inti dari setiap distribusi Linux modern.
-Alih-alih mengunduh dan menginstal software secara manual, administrator sistem
-menggunakan package manager untuk menangani seluruh siklus hidup software:
-pencarian, instalasi, pembaruan, penghapusan, dan pelacakan dependensi secara
-otomatis.
+Sistem manajemen paket di Ubuntu dibangun dari dua lapisan yang bekerja sama.
+\cmd{dpkg} adalah lapisan bawah: alat tingkat rendah yang langsung membongkar
+dan memasang file \texttt{.deb} ke tempatnya masing-masing di filesystem. Namun
+\cmd{dpkg} tidak peduli apakah semua bahan pendukung sudah tersedia sebelum
+pemasangan dilakukan.
 
-\subsection{Arsitektur Manajemen Paket di Debian/Ubuntu}
+\cmd{apt} mengisi celah itu. Sebelum memasang paket apa pun, \cmd{apt}
+membaca daftar paket dari server repositori, memeriksa semua dependensi yang
+dibutuhkan, mengunduh semuanya dalam urutan yang benar, kemudian menyerahkan
+pekerjaan pemasangan fisik ke \cmd{dpkg}. Dalam praktik sehari-hari, kamu
+hampir selalu berinteraksi dengan \cmd{apt}. \cmd{dpkg} baru digunakan
+langsung ketika menginstal file \texttt{.deb} yang diunduh manual, atau
+saat mengaudit apa yang sudah terinstal.
 
-Ubuntu mewarisi sistem manajemen paket dari Debian. Arsitekturnya terdiri dari dua
-lapisan:
+Sebelum menginstal atau memperbarui apa pun, \cmd{apt} perlu menyegarkan
+daftar paket yang dimilikinya. Daftar ini adalah katalog yang berisi versi
+terbaru setiap paket dari semua repositori yang dikonfigurasi. Tanpa pembaruan
+daftar, \cmd{apt} mungkin masih merujuk ke informasi yang sudah usang.
 
-\begin{description}
-    \item[dpkg] Alat tingkat rendah yang bekerja langsung dengan file \file{.deb}.
-        Menangani instalasi dan penghapusan fisik paket, tetapi tidak mengelola
-        dependensi secara otomatis.
-    \item[apt] Alat tingkat tinggi yang bekerja di atas dpkg. Mengunduh paket dari
-        repositori, menyelesaikan dependensi secara otomatis, dan menyediakan
-        antarmuka yang lebih ramah pengguna.
-\end{description}
-
-Dalam praktik sehari-hari, administrator hampir selalu menggunakan \cmd{apt} untuk
-tugas rutin. \cmd{dpkg} digunakan saat menginstal file \file{.deb} yang diunduh
-manual, atau untuk inspeksi paket yang sudah terinstall.
-
-\subsection{apt: Manajemen Paket Tingkat Tinggi}
-
-\subsubsection{Memperbarui Daftar Paket dan Sistem}
-
-\begin{lstlisting}[language=bash, caption={Memperbarui indeks dan sistem}]
+\begin{lstlisting}[language=bash, caption={Memperbarui daftar paket dan sistem}]
 sudo apt update
 sudo apt upgrade
 sudo apt full-upgrade
-sudo apt dist-upgrade
-sudo apt update && sudo apt upgrade -y
 \end{lstlisting}
 
-Perintah \cmd{apt update} mengunduh daftar paket terbaru dari semua repositori
-yang dikonfigurasi; perintah ini harus selalu dijalankan sebelum operasi lain
-agar informasi versi paket mutakhir. Perbedaan \texttt{upgrade} dan
-\texttt{full-upgrade}: \texttt{upgrade} tidak menghapus paket apapun saat
-memperbarui, sedangkan \texttt{full-upgrade} (sinonim \texttt{dist-upgrade})
-boleh menghapus paket lama jika diperlukan untuk menyelesaikan konflik dependensi.
-Opsi \texttt{-y} menjawab ``ya'' otomatis pada semua konfirmasi, berguna untuk
-skrip otomatis.
+Perintah \cmd{apt update} mengunduh metadata terbaru dari semua repositori,
+bukan aplikasinya. \cmd{apt upgrade} kemudian memperbarui semua paket yang
+sudah terinstal ke versi terbaru, tetapi tidak akan menghapus paket mana pun
+dalam prosesnya. \cmd{apt full-upgrade} lebih agresif: ia boleh menghapus
+paket lama jika diperlukan untuk menyelesaikan konflik dependensi saat ada
+pembaruan besar.
 
-\subsubsection{Instalasi dan Penghapusan Paket}
+Untuk memasang paket baru, cukup sebutkan namanya. \cmd{apt} akan mencari
+semua yang dibutuhkan dan meminta konfirmasi sebelum mengunduh.
 
 \begin{lstlisting}[language=bash, caption={Instalasi dan penghapusan paket}]
-sudo apt install nginx
-sudo apt install nginx php8.1-fpm mariadb-server
-sudo apt install nginx=1.18.0-0ubuntu1.4
-sudo apt remove nginx
-sudo apt purge nginx
+sudo apt install tree
+sudo apt install curl wget git
+sudo apt remove tree
+sudo apt purge tree
 sudo apt autoremove
-sudo apt autoremove --purge
 \end{lstlisting}
 
-Perintah \cmd{install} menginstal satu atau lebih paket sekaligus beserta semua
-dependensinya. Menambahkan \texttt{=versi} setelah nama paket memaksa instalasi
-versi tertentu, berguna untuk menjamin kompatibilitas. Perbedaan \texttt{remove}
-dan \texttt{purge}: \texttt{remove} menghapus program tetapi menyisakan file
-konfigurasi di \dir{/etc/}, sementara \texttt{purge} menghapus program beserta
-seluruh file konfigurasinya. Perintah \texttt{autoremove} menghapus paket yang
-diinstal sebagai dependensi tetapi sekarang tidak dibutuhkan lagi oleh paket manapun.
+Perbedaan antara \cmd{remove} dan \cmd{purge} penting untuk dipahami.
+\cmd{remove} menghapus binary dan file program, tetapi menyisakan file
+konfigurasi di \dir{/etc/}. Ini berguna jika kamu ingin menginstal ulang
+nanti dengan konfigurasi yang sama. \cmd{purge} menghapus semuanya termasuk
+konfigurasi. Gunakan \cmd{purge} saat kamu benar-benar ingin memulai bersih.
+Setelah penghapusan, \cmd{autoremove} membersihkan paket dependensi yang dulu
+dipasang otomatis tetapi kini tidak lagi dibutuhkan siapa pun.
 
-\begin{tipbox}
-Gunakan \cmd{apt purge} diikuti \cmd{apt autoremove --purge} saat menghapus
-layanan seperti MySQL atau PostgreSQL agar tidak ada file konfigurasi atau data
-sisa yang dapat menyebabkan konflik saat instalasi ulang.
-\end{tipbox}
-
-\subsubsection{Pencarian dan Inspeksi Paket}
+Mencari dan memeriksa informasi paket sebelum menginstalnya adalah kebiasaan
+yang baik. \cmd{apt} menyediakan beberapa cara untuk itu.
 
 \begin{lstlisting}[language=bash, caption={Mencari dan memeriksa informasi paket}]
-apt search web server
-apt search --names-only nginx
-apt show nginx
+apt search tree
+apt search --names-only tree
+apt show tree
 apt list --installed
-apt list --installed | grep nginx
-apt list --upgradable
-apt depends nginx
-apt rdepends nginx
-\end{lstlisting}
-
-Perintah \texttt{apt search} mencari paket berdasarkan nama dan deskripsi;
-\texttt{--names-only} membatasi pencarian hanya pada nama paket sehingga hasilnya
-lebih fokus. Perintah \texttt{apt show} menampilkan informasi lengkap sebuah paket:
-versi, ukuran, dependensi, deskripsi, dan homepage. Perintah \texttt{apt list
---installed} mendaftar semua paket yang terinstall. Perintah \texttt{apt depends}
-menampilkan daftar dependensi paket, sedangkan \texttt{apt rdepends} (reverse
-depends) menampilkan paket-paket yang bergantung pada paket tersebut.
-
-\subsection{dpkg: Manajemen Paket Tingkat Rendah}
-
-\subsubsection{Inspeksi Paket Terinstall}
-
-\begin{lstlisting}[language=bash, caption={Inspeksi paket dengan dpkg}]
+apt list --installed | grep python
 dpkg -l
-dpkg -l nginx
 dpkg -l | grep "^ii"
-dpkg -L nginx
-dpkg -s nginx
-dpkg -S /usr/sbin/nginx
-dpkg --get-selections > installed-packages.txt
+dpkg -L tree
+dpkg -S /bin/ls
 \end{lstlisting}
 
-Perintah \cmd{dpkg -l} mendaftar semua paket dengan status instalasi; kolom pertama
-menunjukkan status: \texttt{ii} artinya terinstall lengkap, \texttt{rc} artinya
-dihapus tetapi konfigurasi masih ada. Opsi \texttt{-L} mendaftar semua file yang
-dimiliki sebuah paket. Opsi \texttt{-s} menampilkan status dan informasi paket.
-Opsi \texttt{-S} (huruf besar) sangat berguna: diberikan sebuah path file, ia
-menampilkan paket mana yang menginstal file tersebut. Opsi \texttt{--get-selections}
-mengekspor daftar paket terinstall ke format yang dapat digunakan kembali untuk
-instalasi ulang massal.
+\cmd{apt search} mencari berdasarkan nama dan deskripsi. Opsi
+\texttt{--names-only} membatasi pencarian hanya pada nama paket sehingga
+hasilnya lebih fokus. \cmd{apt show} menampilkan detail lengkap: versi, ukuran,
+deskripsi, dan dependensi. \cmd{dpkg -l} mendaftar semua paket dengan statusnya,
+di mana awalan \texttt{ii} berarti terinstal lengkap dan \texttt{rc} berarti
+sudah dihapus tetapi konfigurasi masih ada. \cmd{dpkg -L} mendaftar semua file
+yang dimiliki sebuah paket, dan \cmd{dpkg -S} menjawab pertanyaan ``file ini
+dipasang oleh paket apa?''
 
-\subsubsection{Instalasi File .deb Lokal}
+\subsection*{Praktikum 13.1: Instal, Verifikasi, dan Hapus Paket}
 
-\begin{lstlisting}[language=bash, caption={Instalasi dan penanganan file .deb}]
-sudo dpkg -i package.deb
-sudo apt install -f
-sudo dpkg -i package.deb && sudo apt install -f
-dpkg -I package.deb
-dpkg -c package.deb
-\end{lstlisting}
+Tujuan praktikum ini adalah memahami siklus hidup paket secara menyeluruh,
+dari pencarian hingga penghapusan bersih.
 
-Perintah \cmd{dpkg -i} menginstal file \file{.deb} secara langsung. Jika instalasi
-gagal karena dependensi yang belum terpenuhi, perintah \cmd{apt install -f}
-(fix-broken) akan mengunduh dan menginstal dependensi yang kurang secara otomatis.
-Opsi \texttt{-I} (huruf besar) menampilkan metadata dari file \file{.deb} sebelum
-diinstal. Opsi \texttt{-c} menampilkan daftar file yang akan diinstal oleh paket tersebut.
-
-\subsection{Perbandingan Package Manager Antar Distribusi}
-
-\begin{table}[htbp]
-    \centering
-    \caption{Padanan Perintah Package Manager Antar Distribusi}
-    \label{tab:package-managers}
-    \begin{tblr}{
-        colspec = {lX[l]X[l]X[l]},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \textbf{Operasi} & \textbf{apt (Debian/Ubuntu)} & \textbf{dnf (RHEL/Fedora)} & \textbf{zypper (openSUSE)} \\
-    Update index     & apt update        & dnf check-update   & zypper refresh   \\
-    Upgrade sistem   & apt upgrade       & dnf upgrade        & zypper update    \\
-    Install paket    & apt install pkg   & dnf install pkg    & zypper install pkg \\
-    Hapus paket      & apt remove pkg    & dnf remove pkg     & zypper remove pkg \\
-    Cari paket       & apt search pkg    & dnf search pkg     & zypper search pkg \\
-    Info paket       & apt show pkg      & dnf info pkg       & zypper info pkg  \\
-    \end{tblr}
-\end{table}
-
-Meski sintaksnya berbeda, konsep di balik semua package manager ini sama: indeks
-repositori, dependensi otomatis, dan manajemen siklus hidup paket. Memahami satu
-tool memudahkan pembelajaran tool lainnya.
-
-%%: Praktikum ---
-\subsection*{Praktikum 11.1: Eksplorasi Manajemen Paket}
-\textbf{Tujuan:} memahami alur kerja apt dan dpkg untuk instalasi, inspeksi, dan
-penghapusan paket secara tepat.
-
-\textbf{Langkah-langkah:}
 \begin{enumerate}
-    \item Perbarui daftar paket dan periksa paket yang tersedia untuk diupgrade:\
-\begin{lstlisting}[language=bash, caption={Update dan cek upgrade}]
+    \item Pastikan daftar paket mutakhir, lalu cari informasi paket \cmd{tree}:
+\begin{lstlisting}[language=bash, caption={Perbarui dan cari informasi paket}]
+cd ~/lab-os/week13-apps
 sudo apt update
-apt list --upgradable 2>/dev/null | head -20
-apt list --upgradable 2>/dev/null | wc -l
-\end{lstlisting}
-
-    \item Cari dan inspeksi paket \texttt{tree} sebelum menginstalnya:
-\begin{lstlisting}[language=bash, caption={Mencari dan memeriksa informasi paket}]
-apt search "^tree$"
+apt search --names-only "^tree$"
 apt show tree
 apt depends tree
 \end{lstlisting}
+    \textit{Amati:} berapa dependensi yang dimiliki \cmd{tree}? Apakah semua
+    sudah terinstal di sistem kamu?
 
-    \item Install paket \texttt{tree} dan verifikasi instalasinya:
-\begin{lstlisting}[language=bash, caption={Instalasi dan verifikasi paket}]
+    \item Instal paket \cmd{tree} dan verifikasi hasilnya:
+\begin{lstlisting}[language=bash, caption={Instal dan verifikasi paket tree}]
 sudo apt install tree -y
 dpkg -l tree
 dpkg -L tree
 which tree
 tree --version
+tree ~/lab-os/
 \end{lstlisting}
+    \textit{Amati:} perhatikan kolom status pada output \cmd{dpkg -l}. Apa arti
+    awalan \texttt{ii}?
 
-    \item Gunakan \cmd{dpkg -S} untuk mencari tahu paket mana yang memiliki
-        beberapa binary sistem:
-\begin{lstlisting}[language=bash, caption={Mencari pemilik file dengan dpkg}]
+    \item Gunakan \cmd{dpkg -S} untuk menyelidiki beberapa binary sistem:
+\begin{lstlisting}[language=bash, caption={Mencari paket pemilik file}]
 dpkg -S /bin/ls
 dpkg -S /usr/bin/ssh
-dpkg -S /usr/sbin/nginx 2>/dev/null || echo "nginx tidak terinstall"
+dpkg -S $(which tree)
 \end{lstlisting}
 
-    \item Hapus paket \texttt{tree} dengan purge dan verifikasi tidak ada sisa:
-\begin{lstlisting}[language=bash, caption={Menghapus paket dengan purge}]
+    \item Hapus paket \cmd{tree} dengan purge dan verifikasi tidak ada sisa:
+\begin{lstlisting}[language=bash, caption={Hapus paket dan verifikasi sisa}]
 sudo apt purge tree -y
 sudo apt autoremove -y
 dpkg -l tree
-apt list --installed 2>/dev/null | grep tree
+apt list --installed 2>/dev/null | grep "^tree"
 \end{lstlisting}
+    \textit{Amati:} setelah \cmd{purge}, apakah status paket berubah menjadi
+    \texttt{rc} atau hilang sepenuhnya?
 \end{enumerate}
 
-\begin{exercisebox}[11.1]
-\begin{enumerate}
-    \item Apa perbedaan output \cmd{dpkg -l} saat paket berstatus \texttt{ii}
-        dibandingkan \texttt{rc}? Apa yang menyebabkan paket berstatus \texttt{rc}?
-    \item Jalankan \cmd{apt depends curl}. Identifikasi dependensi mana yang bersifat
-        wajib (\texttt{Depends}) dan mana yang bersifat opsional (\texttt{Recommends}).
-        Apa perbedaan keduanya?
-    \item Jelaskan skenario di mana Anda perlu menginstal file \file{.deb} secara
-        manual menggunakan \cmd{dpkg -i} daripada menggunakan \cmd{apt install}.
-\end{enumerate}
-\end{exercisebox}
+\begin{challengebox}
+Cari semua paket terinstal yang berkaitan dengan Python menggunakan kombinasi
+\cmd{apt list --installed} dan \cmd{grep} (dari Bab~2), lalu tampilkan juga
+versi masing-masing paket. Simpan hasilnya ke file \file{python-packages.txt}
+di direktori lab menggunakan redirection (dari Bab~3). Hitung berapa total
+paket Python yang terinstal.
+\end{challengebox}
 
 %% ========================================================================
 \section{Manajemen Repositori}
 \label{sec:repository-management}
 %% ========================================================================
 
-Repositori adalah server yang menyimpan koleksi paket beserta metadata-nya. Ubuntu
-dikonfigurasi dengan beberapa repositori resmi, tetapi administrator sering perlu
-menambahkan repositori pihak ketiga untuk software yang tidak tersedia di repositori
-resmi.
+Repositori adalah server yang menyimpan koleksi paket beserta metadata-nya.
+Bayangkan repositori seperti jaringan toko waralaba: ada toko resmi Ubuntu yang
+menjamin kualitas barangnya, dan ada toko pihak ketiga yang menjual produk
+spesifik yang belum tersedia di toko resmi. Kamu bisa menambahkan toko pihak
+ketiga ke daftar belanjamu, tetapi kamu perlu memverifikasi bahwa toko itu
+terpercaya terlebih dahulu.
 
-\subsection{Struktur Konfigurasi Repositori}
+Konfigurasi repositori disimpan di dua lokasi. File utama adalah
+\file{/etc/apt/sources.list}, dan direktori \dir{/etc/apt/sources.list.d/}
+berisi file konfigurasi tambahan untuk setiap repositori pihak ketiga. Memisahkan
+setiap repositori ke file tersendiri memudahkan pengelolaan karena kamu bisa
+menghapus satu repositori cukup dengan menghapus satu file.
 
-\subsubsection{File sources.list}
+Format setiap baris di \file{sources.list} mengikuti pola yang konsisten.
 
-\begin{lstlisting}[language=bash, caption={Melihat konfigurasi repositori}]
-cat /etc/apt/sources.list
-ls /etc/apt/sources.list.d/
-cat /etc/apt/sources.list.d/*.list 2>/dev/null | head -20
-\end{lstlisting}
-
-File \file{/etc/apt/sources.list} adalah konfigurasi repositori utama. Direktori
-\dir{/etc/apt/sources.list.d/} berisi file konfigurasi tambahan; setiap repositori
-pihak ketiga biasanya meletakkan konfigurasinya di sini sebagai file \file{.list}
-tersendiri agar mudah dikelola.
-
-\subsubsection{Format Baris sources.list}
-
-\begin{lstlisting}[language=bash, caption={Format entri sources.list}]
-# Format: deb [options] URI suite components
+\begin{lstlisting}[language=bash, caption={Format entri sources.list dan contohnya}]
+# Format: deb [opsi] URI suite komponen
 deb http://archive.ubuntu.com/ubuntu jammy main restricted
 deb http://archive.ubuntu.com/ubuntu jammy universe multiverse
 deb http://archive.ubuntu.com/ubuntu jammy-security main restricted
-deb http://archive.ubuntu.com/ubuntu jammy-updates main restricted
+
+# Contoh repositori pihak ketiga dengan signed-by modern
 deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
     http://nginx.org/packages/ubuntu jammy nginx
 \end{lstlisting}
 
-Setiap baris terdiri dari: tipe paket (\texttt{deb} untuk binary, \texttt{deb-src}
-untuk source code), opsi opsional dalam kurung siku, URI repositori, nama suite
-(misalnya \texttt{jammy} untuk Ubuntu 22.04), dan satu atau lebih komponen.
-Komponen \texttt{main} berisi software open-source yang didukung resmi, \texttt{restricted}
-berisi software berproprietary dengan dukungan resmi (seperti driver NVIDIA),
-\texttt{universe} berisi paket open-source yang dipelihara komunitas, dan
-\texttt{multiverse} berisi software yang tidak sepenuhnya bebas.
+Kolom \texttt{deb} menunjukkan paket binary. URI adalah alamat server repositori.
+\texttt{jammy} adalah kode nama Ubuntu 22.04. Komponen \texttt{main} berisi
+software open-source yang didukung resmi, \texttt{restricted} berisi driver
+proprietari seperti NVIDIA, \texttt{universe} berisi paket open-source yang
+dipelihara komunitas, dan \texttt{multiverse} berisi software yang tidak
+sepenuhnya bebas.
 
-\subsubsection{Menambahkan Repositori Pihak Ketiga}
+Menambahkan repositori pihak ketiga memerlukan dua langkah penting: menyimpan
+kunci GPG repositori itu secara lokal, lalu mendaftarkan repositorinya dengan
+referensi ke kunci tersebut.
 
-\begin{lstlisting}[language=bash, caption={Menambahkan repositori dengan GPG key}]
+\begin{lstlisting}[language=bash, caption={Menambahkan repositori pihak ketiga dengan metode modern}]
 sudo apt install -y curl gnupg2
 
 curl -fsSL https://nginx.org/keys/nginx_signing.key | \
@@ -295,417 +241,268 @@ sudo apt update
 apt-cache policy nginx
 \end{lstlisting}
 
-Pola modern penambahan repositori pihak ketiga menggunakan tiga langkah: (1) unduh
-dan simpan GPG key repositori ke \dir{/usr/share/keyrings/} menggunakan \cmd{gpg
---dearmor}, (2) buat file konfigurasi di \dir{/etc/apt/sources.list.d/} yang
-merujuk ke key tersebut dengan opsi \texttt{signed-by}, (3) jalankan \cmd{apt
-update} untuk mengunduh metadata paket dari repositori baru. Perintah
-\cmd{apt-cache policy} menampilkan versi yang tersedia dari berbagai repositori
-beserta prioritasnya.
-
 \begin{notebox}
 Metode lama menggunakan \cmd{apt-key add} sudah \emph{deprecated} sejak Ubuntu
-22.04 karena alasan keamanan: key yang ditambahkan dengan \cmd{apt-key} berlaku
-untuk semua repositori, bukan hanya repositori yang bersangkutan. Metode
-\texttt{signed-by} yang baru membatasi kepercayaan ke repositori tertentu saja.
+22.04. Kunci yang ditambahkan dengan cara lama berlaku untuk semua repositori,
+bukan hanya satu. Metode \texttt{signed-by} modern membatasi kepercayaan kunci
+hanya untuk repositori yang bersangkutan, sehingga lebih aman.
 \end{notebox}
 
-\subsubsection{Mengelola dan Menonaktifkan Repositori}
+Untuk repositori yang berasal dari Launchpad Ubuntu (dikenal sebagai PPA atau
+\emph{Personal Package Archive}), ada perintah yang lebih praktis.
 
-\begin{lstlisting}[language=bash, caption={Mengelola repositori}]
-sudo add-apt-repository ppa:ondrej/php
-sudo add-apt-repository --remove ppa:ondrej/php
-sudo rm /etc/apt/sources.list.d/nginx.list
-sudo apt update
-apt-cache policy
-\end{lstlisting}
-
-Perintah \cmd{add-apt-repository} menyederhanakan penambahan PPA (Personal Package
-Archive) dari Launchpad dengan satu perintah. Opsi \texttt{--remove} menghapus PPA
-tersebut. Untuk repositori yang ditambahkan secara manual, hapus file
-\file{.list} yang bersangkutan dari \dir{/etc/apt/sources.list.d/}. Perintah
-\cmd{apt-cache policy} tanpa argumen menampilkan semua sumber paket yang aktif
-beserta prioritasnya.
-
-%%: Praktikum ---
-\subsection*{Praktikum 11.2: Manajemen Repositori}
-\textbf{Tujuan:} memeriksa konfigurasi repositori aktif, menambahkan repositori
-pihak ketiga dengan metode GPG key modern, dan memverifikasi paket dari repositori
-baru tersedia.
-
-\textbf{Langkah-langkah:}
-\begin{enumerate}
-    \item Periksa konfigurasi repositori yang sedang aktif:
-\begin{lstlisting}[language=bash, caption={Memeriksa konfigurasi repositori}]
-cat /etc/apt/sources.list
-ls -la /etc/apt/sources.list.d/
-apt-cache policy | head -30
-\end{lstlisting}
-
-    \item Periksa berapa banyak paket yang tersedia dari masing-masing sumber:
-\begin{lstlisting}[language=bash, caption={Statistik repositori}]
-apt-cache stats
-apt-cache pkgnames | wc -l
-\end{lstlisting}
-
-    \item Tambahkan repositori Git terbaru dari PPA:
-\begin{lstlisting}[language=bash, caption={Menambahkan PPA git-core}]
+\begin{lstlisting}[language=bash, caption={Mengelola PPA dengan add-apt-repository}]
 sudo add-apt-repository ppa:git-core/ppa -y
 sudo apt update
 apt-cache policy git
+
+sudo add-apt-repository --remove ppa:git-core/ppa -y
+sudo apt update
 \end{lstlisting}
 
-    Perhatikan output \cmd{apt-cache policy git}: sekarang ada dua sumber
-    (\texttt{archive.ubuntu.com} dan \texttt{ppa.launchpad.net}) dengan versi
-    yang mungkin berbeda.
+Perintah \cmd{add-apt-repository} mengurus pengunduhan kunci GPG dan pembuatan
+file konfigurasi secara otomatis. Opsi \texttt{--remove} membalik proses itu.
+Perintah \cmd{apt-cache policy} tanpa argumen nama paket menampilkan semua
+sumber aktif beserta prioritasnya.
+
+\subsection*{Praktikum 13.2: Tambahkan Repositori Pihak Ketiga}
+
+Tujuan praktikum ini adalah menambahkan repositori PPA, mengamati perubahan
+yang terjadi, lalu membersihkan kembali.
+
+\begin{enumerate}
+    \item Periksa konfigurasi repositori yang sedang aktif:
+\begin{lstlisting}[language=bash, caption={Memeriksa repositori aktif}]
+cat /etc/apt/sources.list
+ls -la /etc/apt/sources.list.d/
+apt-cache policy | head -20
+\end{lstlisting}
+    \textit{Amati:} berapa banyak sumber repositori yang terdaftar saat ini?
+
+    \item Tambahkan PPA git-core dan amati perubahannya:
+\begin{lstlisting}[language=bash, caption={Menambahkan PPA dan memeriksa hasilnya}]
+sudo add-apt-repository ppa:git-core/ppa -y
+sudo apt update
+apt-cache policy git
+ls /etc/apt/sources.list.d/ | grep git
+\end{lstlisting}
+    \textit{Amati:} pada output \cmd{apt-cache policy git}, ada berapa sumber
+    yang menawarkan paket git? Versi mana yang akan diinstal jika kamu
+    menjalankan \cmd{apt install git}?
 
     \item Periksa file konfigurasi yang dibuat oleh \cmd{add-apt-repository}:
-\begin{lstlisting}[language=bash, caption={Memeriksa file konfigurasi PPA}]
-ls /etc/apt/sources.list.d/ | grep git
+\begin{lstlisting}[language=bash, caption={Memeriksa file konfigurasi PPA baru}]
 cat /etc/apt/sources.list.d/*git*.list 2>/dev/null || \
     cat /etc/apt/sources.list.d/*git*.sources 2>/dev/null
 ls /usr/share/keyrings/ | grep git
 \end{lstlisting}
 
-    \item Hapus PPA yang baru ditambahkan dan verifikasi:
-\begin{lstlisting}[language=bash, caption={Menghapus PPA}]
+    \item Hapus PPA dan verifikasi kembali:
+\begin{lstlisting}[language=bash, caption={Menghapus PPA dan verifikasi}]
 sudo add-apt-repository --remove ppa:git-core/ppa -y
 sudo apt update
 ls /etc/apt/sources.list.d/ | grep git
 apt-cache policy git
 \end{lstlisting}
+    \textit{Amati:} setelah penghapusan, apakah sumber dari Launchpad masih
+    muncul di output \cmd{apt-cache policy git}?
 \end{enumerate}
 
-\begin{exercisebox}[11.2]
-\begin{enumerate}
-    \item Dari output \cmd{apt-cache policy git} setelah menambahkan PPA, jelaskan
-        bagaimana apt menentukan versi mana yang akan diinstall jika Anda menjalankan
-        \cmd{apt install git}. Apa artinya angka \texttt{500} dan \texttt{100} di
-        kolom prioritas?
-    \item Apa risiko keamanan dari menambahkan repositori pihak ketiga yang tidak
-        terpercaya? Jelaskan mengapa metode \texttt{signed-by} lebih aman dari
-        \cmd{apt-key add} yang lama.
-    \item Apa perbedaan antara PPA di Launchpad dan repositori pihak ketiga yang
-        dikelola vendor (seperti repositori resmi nginx atau Docker)?
-\end{enumerate}
-\end{exercisebox}
+\begin{challengebox}
+Buat skrip Bash (merujuk ke Bab~9) bernama \file{cek-repo.sh} di direktori lab
+yang menerima satu argumen berupa string URL repositori. Skrip memeriksa apakah
+string tersebut sudah ada di file mana pun di dalam \dir{/etc/apt/sources.list}
+atau \dir{/etc/apt/sources.list.d/}. Jika sudah ada, skrip mencetak pesan
+peringatan dan keluar. Jika belum, skrip mencetak pesan bahwa repositori aman
+untuk ditambahkan.
+\end{challengebox}
 
 %% ========================================================================
-\section{Kompilasi dari Source Code}
+\section{Kompilasi dari Kode Sumber}
 \label{sec:compile-from-source}
 %% ========================================================================
 
-Meskipun package manager tersedia untuk sebagian besar software, ada situasi di
-mana kompilasi dari source code diperlukan: software terlalu baru untuk masuk ke
-repositori, perlu dibangun dengan opsi kustom, atau tidak tersedia sebagai paket
-binary untuk arsitektur yang digunakan.
+Ada situasi di mana paket yang kamu butuhkan tidak tersedia di repositori mana
+pun: versinya terlalu baru, kamu perlu mengaktifkan fitur tertentu yang tidak
+disertakan di build standar, atau kamu sedang mengembangkan program sendiri.
+Dalam kasus itu, kompilasi dari kode sumber adalah jalannya.
 
-\subsection{Prasyarat: Build Tools}
+Analogi yang tepat adalah memasak dari bahan mentah. Package manager seperti
+memesan makanan jadi dari restoran, kompilasi dari source seperti memasak sendiri
+dari bahan-bahan yang kamu pilih sendiri. Hasilnya bisa dikustomisasi, tetapi
+prosesnya lebih panjang.
+
+Langkah pertama adalah memastikan peralatan memasak tersedia. Di Linux, paket
+\texttt{build-essential} adalah perangkat lengkap yang menginstal kompiler C
+(\cmd{gcc}), kompiler C++ (\cmd{g++}), \cmd{make}, dan header yang dibutuhkan.
 
 \begin{lstlisting}[language=bash, caption={Instalasi build tools}]
-sudo apt install build-essential
-sudo apt install build-essential cmake git
-gcc --version
-make --version
-\end{lstlisting}
-
-Paket \texttt{build-essential} adalah metapaket yang menginstal semua alat yang
-dibutuhkan untuk kompilasi: \cmd{gcc} (kompiler C), \cmd{g++} (kompiler C++),
-\cmd{make}, \cmd{libc6-dev}, dan header kernel. Ini adalah langkah pertama yang
-selalu dilakukan di server Ubuntu baru yang akan digunakan untuk kompilasi.
-Perintah \cmd{cmake} adalah sistem build generator modern yang digunakan oleh banyak
-proyek C/C++ terkini sebagai pengganti \texttt{autotools}.
-
-\subsection{Pola Kompilasi dengan Autotools}
-
-Banyak proyek open-source lama menggunakan sistem \texttt{autotools} yang mengikuti
-pola tiga langkah:
-
-\subsubsection{Langkah-langkah Kompilasi Autotools}
-
-\begin{lstlisting}[language=bash, caption={Pola kompilasi autotools}]
-tar -xzf software-1.0.tar.gz
-cd software-1.0/
-
-./configure
-./configure --prefix=/usr/local --with-openssl --without-debug
-
-make
-make -j$(nproc)
-
-sudo make install
-\end{lstlisting}
-
-Skrip \cmd{./configure} memeriksa sistem: kompiler tersedia, library yang
-dibutuhkan terinstall, dan menghasilkan \file{Makefile} yang disesuaikan untuk
-sistem saat ini. Opsi \texttt{--prefix} menentukan direktori instalasi;
-\texttt{/usr/local} adalah konvensi untuk software yang diinstall di luar package
-manager. Opsi \texttt{--with-*} dan \texttt{--without-*} mengaktifkan atau
-menonaktifkan fitur opsional. Perintah \cmd{make} mengompilasi kode; opsi
-\texttt{-j\$(nproc)} menjalankan kompilasi paralel menggunakan semua core CPU
-tersedia, mempercepat proses secara signifikan pada mesin multicore. Perintah
-\cmd{sudo make install} menyalin binary dan file terkait ke lokasi yang
-ditentukan saat \texttt{configure}.
-
-\begin{lstlisting}[language=bash, caption={Melihat opsi konfigurasi yang tersedia}]
-./configure --help
-./configure --help | grep "enable\|disable\|with\|without"
-\end{lstlisting}
-
-Menjalankan \cmd{./configure --help} sebelum konfigurasi sebenarnya adalah
-praktik yang baik untuk memahami semua opsi yang tersedia, termasuk fitur opsional
-dan lokasi library yang mungkin perlu ditentukan secara eksplisit.
-
-\subsubsection{Mengelola Instalasi dari Source}
-
-\begin{lstlisting}[language=bash, caption={Mengelola software yang dikompilasi dari source}]
-make -n install
-sudo make uninstall
-
-sudo checkinstall
-dpkg -l | grep checkinstall
-\end{lstlisting}
-
-Opsi \texttt{-n} pada \cmd{make} adalah dry run: menampilkan apa yang akan
-dilakukan tanpa benar-benar menjalankannya. Banyak proyek menyediakan target
-\texttt{uninstall}, tetapi tidak semua. Alat \cmd{checkinstall} adalah solusi yang
-lebih baik: alih-alih langsung menginstal, ia membungkus hasil \cmd{make install}
-menjadi paket \file{.deb} yang kemudian diinstall melalui dpkg, sehingga
-penghapusan dapat dilakukan dengan \cmd{apt remove} seperti paket biasa.
-
-\begin{tipbox}
-Pertimbangkan menggunakan \cmd{checkinstall} daripada \cmd{make install} langsung.
-Paket yang dikelola dpkg/apt jauh lebih mudah dihapus dan dilacak dibandingkan
-file yang tersebar di \dir{/usr/local/} tanpa registry apapun.
-\end{tipbox}
-
-\subsection{Kompilasi dengan CMake}
-
-\begin{lstlisting}[language=bash, caption={Pola kompilasi CMake}]
-git clone https://github.com/contoh/project.git
-cd project/
-
-mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release
-cmake .. -DENABLE_TESTS=ON -DWITH_SSL=ON
-
-make -j$(nproc)
-sudo make install
-\end{lstlisting}
-
-CMake menggunakan direktori build terpisah (\emph{out-of-source build}) yang menjaga
-direktori source tetap bersih: semua file hasil kompilasi berada di
-\dir{build/}. Perintah \cmd{cmake ..} memproses \file{CMakeLists.txt} dari
-direktori induk. Opsi \texttt{-D} mengatur variabel CMake; \texttt{CMAKE\_BUILD\_TYPE=Release}
-mengaktifkan optimasi kompiler sementara \texttt{Debug} menyertakan informasi
-debugging.
-
-%%: Praktikum ---
-\subsection*{Praktikum 11.3: Kompilasi dari Source Code}
-\textbf{Tujuan:} mengompilasi program sederhana dari source code menggunakan
-pola autotools, memahami setiap tahap, dan mengelola hasilnya dengan checkinstall.
-
-\textbf{Langkah-langkah:}
-\begin{enumerate}
-    \item Pastikan build tools terinstall:
-\begin{lstlisting}[language=bash, caption={Verifikasi build tools}]
 sudo apt install build-essential -y
 gcc --version
 make --version
-which gcc make
 \end{lstlisting}
 
-    \item Buat program C sederhana dan kompilasi secara manual untuk memahami
-        proses dasar:
-\begin{lstlisting}[language=bash, caption={Kompilasi manual program C}]
-mkdir -p ~/lab-compile && cd ~/lab-compile
+Sebagian besar proyek open-source menggunakan pola kompilasi tiga langkah yang
+disebut autotools. Langkah pertama adalah \cmd{./configure}, yang memeriksa
+lingkungan sistem dan menghasilkan \file{Makefile} yang disesuaikan. Opsi
+\texttt{--prefix} menentukan di mana program akan dipasang setelah dikompilasi.
+Konvensi standar menggunakan \dir{/usr/local} untuk software yang dipasang di
+luar package manager.
 
-cat > hello.c << 'EOF'
+\begin{lstlisting}[language=bash, caption={Pola kompilasi autotools}]
+./configure --prefix=/usr/local
+./configure --help | grep "with\|without\|enable\|disable"
+
+make
+make -j$(nproc)
+
+sudo make install
+sudo make uninstall
+\end{lstlisting}
+
+Langkah kedua adalah \cmd{make}, yang mengompilasi kode menjadi binary. Opsi
+\texttt{-j\$(nproc)} menjalankan kompilasi secara paralel menggunakan semua
+core CPU yang tersedia, mempercepat proses secara signifikan. \texttt{\$(nproc)}
+adalah substitusi perintah yang mengembalikan jumlah core.
+
+Langkah ketiga, \cmd{sudo make install}, menyalin hasil kompilasi ke lokasi
+yang ditentukan saat \cmd{./configure}. Beberapa proyek juga menyediakan target
+\texttt{uninstall} untuk membersihkan file yang dipasang.
+
+\begin{tipbox}
+Pertimbangkan menggunakan \cmd{checkinstall} sebagai pengganti \cmd{make install}.
+Alih-alih langsung menyalin file, \cmd{checkinstall} membungkus hasilnya menjadi
+paket \texttt{.deb} yang kemudian diinstal melalui \cmd{dpkg}. Hasilnya dapat
+dihapus rapi dengan \cmd{apt remove}, berbeda dari file yang tersebar di
+\dir{/usr/local/} tanpa catatan apapun.
+\end{tipbox}
+
+\subsection*{Praktikum 13.3: Kompilasi Program Sederhana dari Source}
+
+Tujuan praktikum ini adalah memahami setiap langkah kompilasi dari source
+dengan mengompilasi program C sederhana menggunakan Makefile buatan sendiri.
+
+\begin{enumerate}
+    \item Verifikasi build tools dan buat direktori kerja:
+\begin{lstlisting}[language=bash, caption={Persiapan lingkungan kompilasi}]
+cd ~/lab-os/week13-apps
+sudo apt install build-essential -y
+gcc --version
+make --version
+mkdir -p src-compile
+cd src-compile
+\end{lstlisting}
+
+    \item Buat program C sederhana:
+\begin{lstlisting}[language=bash, caption={Membuat source code program C}]
+cat > salam.c << 'EOF'
 #include <stdio.h>
-int main() {
-    printf("Hello dari source code!\n");
+#include <stdlib.h>
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Penggunaan: %s <nama>\n", argv[0]);
+        return 1;
+    }
+    printf("Halo, %s! Dikompilasi dari source code.\n", argv[1]);
     return 0;
 }
 EOF
-
-gcc -o hello hello.c
-./hello
-
-gcc -Wall -O2 -o hello-optimized hello.c
-ls -lh hello hello-optimized
 \end{lstlisting}
 
-    \item Simulasikan pola autotools dengan Makefile manual:
-\begin{lstlisting}[language=bash, caption={Membuat dan menggunakan Makefile}]
+    \item Kompilasi secara manual untuk memahami proses dasarnya:
+\begin{lstlisting}[language=bash, caption={Kompilasi manual dengan gcc}]
+gcc -Wall -O2 -o salam salam.c
+ls -lh salam
+file salam
+./salam Dunia
+./salam
+\end{lstlisting}
+    \textit{Amati:} apa output \cmd{file salam}? Apa arti flag \texttt{-Wall}
+    dan \texttt{-O2}?
+
+    \item Buat Makefile untuk mengotomatisasi proses build dan install:
+\begin{lstlisting}[language=bash, caption={Membuat Makefile dengan target install dan uninstall}]
 cat > Makefile << 'EOF'
 PREFIX ?= /usr/local
+CC = gcc
+CFLAGS = -Wall -O2
 
-all: hello
+all: salam
 
-hello: hello.c
-	gcc -Wall -O2 -o hello hello.c
+salam: salam.c
+	$(CC) $(CFLAGS) -o salam salam.c
 
-install: hello
-	install -D -m 755 hello $(PREFIX)/bin/hello
+install: salam
+	install -D -m 755 salam $(PREFIX)/bin/salam
+	@echo "Terpasang ke $(PREFIX)/bin/salam"
 
 uninstall:
-	rm -f $(PREFIX)/bin/hello
+	rm -f $(PREFIX)/bin/salam
+	@echo "Dihapus dari $(PREFIX)/bin/salam"
 
 clean:
-	rm -f hello hello-optimized
-EOF
+	rm -f salam
 
+.PHONY: all install uninstall clean
+EOF
+\end{lstlisting}
+
+    \item Jalankan proses build dan install:
+\begin{lstlisting}[language=bash, caption={Build dan install dengan Makefile}]
+make clean
 make
 make -n install
 sudo make install
-which hello
-hello
+which salam
+salam Linux
 \end{lstlisting}
+    \textit{Amati:} \cmd{make -n} adalah dry run yang menampilkan apa yang
+    akan dilakukan tanpa menjalankannya. Bandingkan outputnya dengan perintah
+    yang benar-benar dijalankan saat \cmd{make install}.
 
-    \item Verifikasi instalasi dan hapus:
-\begin{lstlisting}[language=bash, caption={Verifikasi dan penghapusan}]
-ls -la /usr/local/bin/hello
-file /usr/local/bin/hello
+    \item Bersihkan setelah praktikum:
+\begin{lstlisting}[language=bash, caption={Uninstall dan bersihkan direktori}]
 sudo make uninstall
-ls /usr/local/bin/hello 2>/dev/null || echo "File berhasil dihapus"
-cd ~ && rm -rf ~/lab-compile
+ls /usr/local/bin/salam 2>/dev/null || echo "File berhasil dihapus"
+cd ~/lab-os/week13-apps
+rm -rf src-compile
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[11.3]
-\begin{enumerate}
-    \item Apa fungsi opsi \texttt{-Wall} dan \texttt{-O2} pada perintah \cmd{gcc}?
-        Dalam kondisi apa Anda akan menggunakan \texttt{-O0} (tanpa optimasi)
-        alih-alih \texttt{-O2}?
-    \item Jelaskan apa yang dilakukan perintah \cmd{install -D -m 755} pada
-        Makefile. Mengapa menggunakan \cmd{install} lebih baik daripada \cmd{cp}
-        untuk menginstal binary?
-    \item Saat Anda menjalankan \cmd{./configure --prefix=/usr/local} pada proyek
-        nyata dan muncul pesan \texttt{error: libssl not found}, apa langkah yang
-        perlu dilakukan untuk mengatasinya?
-\end{enumerate}
-\end{exercisebox}
+\begin{challengebox}
+Buat Makefile minimal untuk program C sederhana yang punya dua file source:
+\file{main.c} dan \file{utils.c}. Makefile harus memiliki target \texttt{all},
+\texttt{install}, \texttt{uninstall}, dan \texttt{clean}. Target \texttt{all}
+harus mengompilasi kedua file dan menghubungkannya menjadi satu binary.
+Gunakan variabel \texttt{PREFIX} dengan nilai default \dir{/usr/local} sehingga
+lokasi instalasi bisa diubah dari command line dengan \cmd{make install PREFIX=\$HOME/.local}.
+\end{challengebox}
 
 %% ========================================================================
-\section{Container dengan Docker}
+\section{Container Docker}
 \label{sec:docker-containers}
 %% ========================================================================
 
-Container adalah teknologi virtualisasi tingkat OS yang mengisolasi aplikasi beserta
-seluruh dependensinya ke dalam unit yang portabel dan reproducible. Berbeda dengan
-Virtual Machine (VM) yang memvirtualisasi seluruh hardware, container berbagi kernel
-dengan host OS sehingga jauh lebih ringan.
+Container adalah cara menjalankan aplikasi dalam lingkungan yang terisolasi.
+Bayangkan container seperti kabin hotel: setiap tamu mendapat kamar sendiri
+dengan pintu yang bisa dikunci, namun semua kabin berbagi fondasi gedung yang
+sama. Berbeda dengan Virtual Machine (VM) yang seperti membangun gedung baru
+untuk setiap tamu lengkap dengan fondasi tersendiri, container jauh lebih
+efisien karena berbagi kernel sistem operasi host.
 
-\subsection{Konsep Dasar Container}
+Beberapa konsep dasar perlu dipahami sebelum mulai menggunakan Docker.
+\emph{Image} adalah cetakan beku yang berisi sistem file, aplikasi, dan semua
+dependensinya. Image bersifat read-only dan tidak berubah setelah dibuat.
+\emph{Container} adalah instance yang berjalan dari sebuah image: seperti
+mencetak fotokopi dari master dokumen. Satu image bisa menghasilkan banyak
+container yang berjalan sekaligus. \emph{Dockerfile} adalah resep yang
+mendefinisikan cara membangun image langkah demi langkah.
 
-\begin{description}
-    \item[Image] Template read-only yang berisi sistem file, aplikasi, dan
-        dependensinya. Image bersifat immutable; setelah dibuat tidak berubah.
-    \item[Container] Instance yang sedang berjalan dari sebuah image. Container
-        memiliki lapisan read-write di atas image yang menampung perubahan saat
-        runtime.
-    \item[Registry] Repositori penyimpanan image. Docker Hub adalah registry publik
-        terbesar, tetapi organisasi biasanya memiliki private registry sendiri.
-    \item[Dockerfile] File instruksi untuk membangun image secara deklaratif.
-\end{description}
+Instalasi Docker mengikuti pola repositori pihak ketiga yang sudah dibahas di
+seksi sebelumnya.
 
-\begin{table}[htbp]
-    \centering
-    \caption{Perbandingan Container vs Virtual Machine}
-    \label{tab:container-vs-vm}
-    \begin{tabular}{@{}lll@{}}
-        \toprule
-        \textbf{Aspek} & \textbf{Container} & \textbf{Virtual Machine} \\
-        \midrule
-        Ukuran image    & MB               & GB                  \\
-        Waktu start     & Detik            & Menit               \\
-        Isolasi kernel  & Berbagi host     & Kernel sendiri      \\
-        Overhead        & Sangat rendah    & Signifikan          \\
-        Portabilitas    & Tinggi           & Sedang              \\
-        Keamanan        & Lebih lemah      & Lebih kuat          \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\cref{fig:docker-vs-vm} mengilustrasikan perbedaan arsitektur mendasar antara
-Docker Container dan Virtual Machine. Pada sisi kiri, Docker Engine berjalan
-langsung di atas kernel host. Ketiga container (A, B, C) berbagi kernel yang
-sama dan hanya membawa library serta aplikasi masing-masing, itulah mengapa
-ukuran image Docker jauh lebih kecil dibanding VM. Panah dari Docker Engine
-membentuk \emph{T-junction bus}, menunjukkan bahwa engine mengorkestrasi semua
-container secara terpusat.
-
-Pada sisi kanan, Hypervisor (misalnya VMware, KVM, atau VirtualBox) berjalan
-di atas kernel host dan menyediakan lapisan virtualisasi. Setiap VM harus
-membawa \emph{Guest OS Kernel}-nya sendiri, sehingga konsumsi RAM dan disk
-jauh lebih besar. Namun isolasi VM lebih kuat karena setiap VM beroperasi
-seolah-olah pada hardware tersendiri, celah keamanan di satu VM tidak
-langsung memengaruhi VM lain.
-
-\begin{figure}[htbp]
-    \centering
-    \begin{tikzpicture}[
-        layer/.style={draw, rounded corners=4pt, minimum width=7.5cm,
-                       minimum height=0.85cm, align=center, font=\small},
-        hostlayer/.style={layer, fill=gray!20},
-        enginelayer/.style={layer, fill=blue!20},
-        ctbox/.style={draw, rounded corners=3pt, minimum width=1.8cm,
-                       minimum height=0.9cm, align=center, font=\footnotesize},
-        ctA/.style={ctbox, fill=green!20},
-        ctB/.style={ctbox, fill=orange!20},
-        ctC/.style={ctbox, fill=red!15},
-    ]
-        %% === SISI KIRI: Docker ===
-        \node[hostlayer] (hw)
-            at (0, 0) {\textbf{Hardware} (CPU, RAM, Disk, Jaringan)};
-        \node[hostlayer, fill=gray!35] (kernel)
-            at (0, 1.1) {\textbf{Host OS Kernel} (Linux)};
-        \node[enginelayer] (engine)
-            at (0, 2.2) {\textbf{Docker Engine} (daemon)};
-
-        \node[ctA] (c1) at (-2.2, 3.9) {\textbf{Cont. A}\\App A\\Libs A};
-        \node[ctB] (c2) at (  0,  3.9) {\textbf{Cont. B}\\App B\\Libs B};
-        \node[ctC] (c3) at ( 2.2, 3.9) {\textbf{Cont. C}\\App C\\Libs C};
-
-        %% T-junction bus: satu batang naik, bus horizontal, tiga cabang
-        \draw (engine.north) -- (0, 3.05);
-        \draw (-2.2, 3.05) -- (2.2, 3.05);
-        \draw[->] (-2.2, 3.05) -- (c1.south);
-        \draw[->] (   0, 3.05) -- (c2.south);
-        \draw[->] ( 2.2, 3.05) -- (c3.south);
-
-        \node[font=\scriptsize\bfseries, gray] at (0, 4.9)
-            {Docker Container (berbagi Host OS Kernel)};
-
-        %% === DIVIDER ===
-        \draw[dashed, gray!60] (4.0, -0.5) -- (4.0, 5.1);
-
-        %% === SISI KANAN: Virtual Machine ===
-        \begin{scope}[xshift=6.0cm]
-            \node[hostlayer, minimum width=3.6cm]
-                at (0, 0) {\textbf{Hardware}};
-            \node[hostlayer, fill=gray!35, minimum width=3.6cm]
-                at (0, 1.1) {\textbf{Host OS Kernel}};
-            \node[layer, minimum width=3.6cm, fill=purple!20] (hypervisor)
-                at (0, 2.2) {\textbf{Hypervisor}};
-            \node[draw, rounded corners=3pt, fill=yellow!20,
-                  minimum width=3.4cm, minimum height=1.5cm,
-                  align=center, font=\footnotesize] (vm1)
-                at (0, 3.7) {\textbf{VM}\\Guest OS Kernel\\App + Libs};
-            \draw[->] (hypervisor.north) -- (vm1.south);
-            \node[font=\scriptsize\bfseries, gray] at (0, 4.9)
-                {Virtual Machine (kernel sendiri)};
-        \end{scope}
-    \end{tikzpicture}
-    \caption{Arsitektur Docker Container vs Virtual Machine: container berbagi
-        kernel host sehingga lebih ringan, sementara VM menjalankan kernel tamu
-        tersendiri di atas hypervisor.}
-    \label{fig:docker-vs-vm}
-\end{figure}
-
-\subsection{Instalasi Docker di Ubuntu}
-
-\begin{lstlisting}[language=bash, caption={Instalasi Docker Engine di Ubuntu 22.04}]
+\begin{lstlisting}[language=bash, caption={Instalasi Docker Engine di Ubuntu}]
 sudo apt update
 sudo apt install -y ca-certificates curl gnupg
 
@@ -723,741 +520,341 @@ echo \
 
 sudo apt update
 sudo apt install -y docker-ce docker-ce-cli containerd.io
-
 sudo systemctl enable --now docker
 docker --version
 \end{lstlisting}
 
-Instalasi Docker resmi menggunakan repositori Docker, bukan paket \texttt{docker.io}
-dari repositori Ubuntu (yang versinya sering jauh tertinggal). Proses instalasi
-mengikuti pola standar repositori pihak ketiga yang telah dibahas sebelumnya.
-Setelah \cmd{systemctl enable --now}, Docker akan aktif sekaligus dikonfigurasi
-untuk start otomatis saat boot.
+Secara default, Docker daemon hanya bisa diakses oleh root. Menambahkan pengguna
+ke grup \texttt{docker} memungkinkan penggunaan Docker tanpa \cmd{sudo}.
 
-\begin{lstlisting}[language=bash, caption={Menambahkan user ke grup docker}]
+\begin{lstlisting}[language=bash, caption={Mengizinkan user menggunakan Docker tanpa sudo}]
 sudo usermod -aG docker $USER
 newgrp docker
 docker run hello-world
 \end{lstlisting}
 
-Secara default Docker daemon hanya bisa diakses oleh root. Perintah \cmd{usermod
--aG docker} menambahkan user saat ini ke grup \texttt{docker}, memungkinkan
-penggunaan Docker tanpa \cmd{sudo}. Perintah \cmd{newgrp docker} mengaktifkan
-keanggotaan grup baru untuk sesi terminal saat ini tanpa perlu logout.
+Perintah dasar Docker mengikuti pola yang konsisten. Mengelola image dimulai
+dengan mengunduhnya dari registry.
 
-\subsection{Perintah Docker Dasar}
-
-\subsubsection{Mengelola Image}
-
-\begin{lstlisting}[language=bash, caption={Mengelola image Docker}]
-docker pull ubuntu:22.04
-docker pull nginx:latest
-docker pull nginx:1.25-alpine
+\begin{lstlisting}[language=bash, caption={Mengelola image dan menjalankan container}]
+docker pull nginx:alpine
 docker images
-docker image ls
-docker rmi nginx:latest
-docker image prune
-\end{lstlisting}
 
-Perintah \cmd{docker pull} mengunduh image dari registry (default: Docker Hub).
-Tag setelah tanda titik dua (\texttt{:}) menentukan versi; \texttt{latest} adalah
-tag default jika tidak disebutkan. Tag \texttt{alpine} menunjuk ke varian berbasis
-Alpine Linux yang jauh lebih kecil (\textasciitilde 5--10 MB vs \textasciitilde
-50--200 MB untuk varian standar). Perintah \cmd{docker images} atau \cmd{docker image
-ls} mendaftar semua image yang tersimpan lokal. Perintah \cmd{docker rmi} menghapus
-image. Perintah \cmd{docker image prune} menghapus semua image yang tidak digunakan.
-
-\subsubsection{Menjalankan dan Mengelola Container}
-
-\begin{lstlisting}[language=bash, caption={Menjalankan dan mengelola container}]
-docker run ubuntu:22.04 echo "Hello dari container"
-docker run -it ubuntu:22.04 /bin/bash
-docker run -d --name web-server -p 8080:80 nginx
-docker run -d --name web-server -p 8080:80 -v /var/www:/usr/share/nginx/html nginx
+docker run -d --name web-percobaan -p 8080:80 nginx:alpine
 docker ps
-docker ps -a
-docker stop web-server
-docker start web-server
-docker rm web-server
-docker logs web-server
-docker logs -f web-server
-docker exec -it web-server /bin/bash
+docker logs web-percobaan
+docker exec -it web-percobaan /bin/sh
+
+docker stop web-percobaan
+docker rm web-percobaan
+docker rmi nginx:alpine
 \end{lstlisting}
 
-Opsi \texttt{-it} menggabungkan \texttt{-i} (stdin tetap terhubung) dan \texttt{-t}
-(alokasikan pseudo-TTY) untuk sesi interaktif. Opsi \texttt{-d} (detached) menjalankan
-container di background. Opsi \texttt{--name} memberi nama yang mudah diingat.
-Opsi \texttt{-p host:container} meneruskan port host ke port di dalam container.
-Opsi \texttt{-v host-path:container-path} me-mount direktori host ke container,
-memungkinkan data persisten melewati siklus hidup container. Perintah \cmd{docker
-ps} menampilkan container yang sedang berjalan; \texttt{-a} menampilkan semua
-termasuk yang berhenti. Perintah \cmd{docker logs -f} memantau log secara real-time.
-Perintah \cmd{docker exec -it} membuka shell di dalam container yang sedang berjalan.
+Opsi \texttt{-d} menjalankan container di background (detached). Opsi \texttt{-p
+8080:80} meneruskan port 8080 di host ke port 80 di dalam container. Opsi
+\texttt{--name} memberi nama yang mudah diingat. Perintah \cmd{docker exec -it}
+membuka shell interaktif di dalam container yang sedang berjalan.
 
-\subsubsection{Membuat Image dengan Dockerfile}
+Untuk membuat image kustom, gunakan Dockerfile. Setiap baris instruksi dalam
+Dockerfile menambahkan lapisan baru ke image.
 
-\begin{lstlisting}[language=bash, caption={Contoh Dockerfile aplikasi web sederhana}]
+\begin{lstlisting}[language=bash, caption={Contoh Dockerfile dan proses build}]
 cat > Dockerfile << 'EOF'
-FROM ubuntu:22.04
+FROM nginx:alpine
 
-ENV DEBIAN_FRONTEND=noninteractive
+RUN echo "Menambahkan halaman kustom..."
 
-RUN apt-get update && apt-get install -y \
-    nginx \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY index.html /usr/share/nginx/html/
+COPY index.html /usr/share/nginx/html/index.html
 
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
 EOF
 
-echo "<h1>Hello dari Docker!</h1>" > index.html
-docker build -t my-webapp:1.0 .
-docker images my-webapp
-docker run -d -p 8080:80 my-webapp:1.0
+echo "<h1>Halo dari container kustom!</h1>" > index.html
+
+docker build -t web-kustom:1.0 .
+docker images web-kustom
+docker run -d --name test-web -p 8080:80 web-kustom:1.0
 curl http://localhost:8080
+docker stop test-web && docker rm test-web
 \end{lstlisting}
 
-Instruksi \texttt{FROM} menentukan image dasar. Instruksi \texttt{RUN} menjalankan
-perintah saat membangun image; penghapusan \dir{/var/lib/apt/lists/} mengurangi
-ukuran image. Instruksi \texttt{COPY} menyalin file dari konteks build ke dalam
-image. Instruksi \texttt{EXPOSE} mendokumentasikan port yang didengarkan container
-(tidak secara otomatis mem-publish port). Instruksi \texttt{CMD} menentukan perintah
-default yang dijalankan saat container dimulai.
+Instruksi \texttt{FROM} menentukan image dasar. \texttt{RUN} menjalankan
+perintah selama proses build. \texttt{COPY} menyalin file dari direktori build
+ke dalam image. \texttt{EXPOSE} mendokumentasikan port yang digunakan. \texttt{CMD}
+menentukan perintah default saat container dijalankan.
 
-\begin{figure}[htbp]
-    \centering
-    \begin{tikzpicture}[
-        box/.style={draw, rounded corners=4pt, minimum width=2.6cm,
-                    minimum height=1.1cm, align=center, font=\small},
-        srcbox/.style={box, fill=gray!15},
-        imgbox/.style={box, fill=blue!20},
-        ctbox/.style={box, fill=green!20},
-        regbox/.style={box, fill=orange!15},
-        arr/.style={->, thick, >=stealth},
-    ]
-        %% === Nodes ===
-        \node[srcbox] (df)  at (0,    5.0)  {\textbf{Dockerfile}\\(instruksi build)};
-        \node[imgbox] (img) at (0,    2.5)  {\textbf{Image}\\(template ro)};
-        \node[regbox] (reg) at (6.0,  2.5)  {\textbf{Registry}\\(Docker Hub)};
-        \node[ctbox]  (ct1) at (-3.5, 0)    {\textbf{Container 1}\\(running)};
-        \node[ctbox]  (ct2) at (0,    0)    {\textbf{Container 2}\\(running)};
-        \node[ctbox]  (ct3) at (3.5,  0)    {\textbf{Container 3}\\(stopped)};
+\subsection*{Praktikum 13.4: Jalankan Aplikasi di Dalam Container}
 
-        %% === docker build: df → img (vertikal, label di kanan) ===
-        \draw[arr] (df.south) -- (img.north)
-            node[midway, right=5pt, font=\footnotesize] {\cmd{docker build}};
+Tujuan praktikum ini adalah membangun image Docker untuk aplikasi web statis
+dan menjalankannya dengan port mapping.
 
-        %% === docker push: img → reg (atas, label di atas) ===
-        \draw[arr, dashed]
-            ([yshift= 7pt] img.east) -- ([yshift= 7pt] reg.west)
-            node[midway, above=3pt, font=\footnotesize] {\cmd{docker push}};
-
-        %% === docker pull: reg → img (bawah, label di bawah) ===
-        \draw[arr, dashed]
-            ([yshift=-7pt] reg.west) -- ([yshift=-7pt] img.east)
-            node[midway, below=3pt, font=\footnotesize] {\cmd{docker pull}};
-
-        %% === docker run: img → bus horizontal → containers ===
-        \draw     (img.south)  -- (0, 1.2);       %% batang dari img ke bus
-        \draw     (-3.5, 1.2)  -- (3.5, 1.2);     %% bus horisontal
-        \draw[arr](-3.5, 1.2)  -- (ct1.north);    %% cabang kiri
-        \draw[arr](   0, 1.2)  -- (ct2.north);    %% cabang tengah
-        \draw[arr]( 3.5, 1.2)  -- (ct3.north);    %% cabang kanan
-        %% label "docker run" di atas bus, terpusat
-        \node[font=\footnotesize, above=3pt] at (0, 1.2) {\cmd{docker run}};
-
-        %% === Keterangan bawah containers ===
-        \draw[decorate, decoration={brace, mirror, amplitude=5pt}, gray]
-            (-4.9, -0.75) -- (4.9, -0.75);
-        \node[font=\scriptsize, gray, below=10pt] at (0, -0.75)
-            {satu image, banyak container};
-    \end{tikzpicture}
-    \caption{Alur kerja Docker: Dockerfile dikompilasi menjadi Image dengan
-        \cmd{docker build}; dari satu Image dapat dijalankan banyak Container
-        secara bersamaan. Image dapat dipublikasikan ke Registry dan diunduh
-        kembali.}
-    \label{fig:docker-workflow}
-\end{figure}
-
-\subsection{Orkestrasi Multi-Container dengan Docker Compose}
-
-Aplikasi nyata jarang berdiri sendiri. Sebuah web application biasanya terdiri dari
-beberapa layanan yang berjalan bersamaan: web server, aplikasi backend, database,
-dan cache. Mengelola masing-masing container secara terpisah dengan perintah
-\cmd{docker run} yang panjang menjadi tidak praktis. Docker Compose menyelesaikan
-masalah ini dengan mendefinisikan seluruh stack multi-container dalam satu file
-deklaratif \file{docker-compose.yml}.
-
-\subsubsection{Instalasi Docker Compose}
-
-\begin{lstlisting}[language=bash, caption={Instalasi Docker Compose Plugin}]
-sudo apt install -y docker-compose-plugin
-docker compose version
-
-docker-compose --version
-\end{lstlisting}
-
-Docker Compose V2 hadir sebagai plugin Docker (dipanggil dengan \cmd{docker compose}
-dua kata) dan sudah termasuk dalam instalasi Docker Engine modern. Versi lama
-\cmd{docker-compose} (satu kata, dengan tanda hubung) adalah binary Python yang sudah
-\emph{deprecated}. Gunakan \cmd{docker compose} (plugin) untuk instalasi baru.
-
-\subsubsection{Struktur File docker-compose.yml}
-
-\begin{lstlisting}[caption={Contoh docker-compose.yml stack web + database}]
-version: "3.9"
-
-services:
-  web:
-    image: nginx:alpine
-    ports:
-      - "8080:80"
-    volumes:
-      - ./html:/usr/share/nginx/html:ro
-    depends_on:
-      - app
-    restart: unless-stopped
-
-  app:
-    build: ./app
-    environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=mydb
-    depends_on:
-      - db
-    restart: unless-stopped
-
-  db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: mydb
-      POSTGRES_USER: appuser
-      POSTGRES_PASSWORD: secret
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    restart: unless-stopped
-
-volumes:
-  db-data:
-\end{lstlisting}
-
-File \file{docker-compose.yml} mendefinisikan beberapa bagian utama. Bagian
-\texttt{services} berisi daftar container; setiap service memiliki nama yang
-sekaligus berfungsi sebagai hostname internal antar container (misalnya service
-\texttt{db} dapat dicapai dari container \texttt{app} melalui hostname
-\texttt{db}). Kunci \texttt{image} menggunakan image yang sudah ada dari registry,
-sedangkan kunci \texttt{build} menunjuk ke direktori yang berisi \texttt{Dockerfile}
-untuk dibangun terlebih dahulu. Kunci \texttt{ports} meneruskan port host ke container,
-\texttt{volumes} me-mount direktori atau named volume, \texttt{environment} mengatur
-variabel lingkungan, dan \texttt{depends\_on} menyatakan urutan start antar service.
-Kunci \texttt{restart: unless-stopped} memastikan container restart otomatis setelah
-crash atau reboot kecuali dihentikan secara eksplisit.
-
-Bagian \texttt{volumes} di level teratas mendefinisikan \emph{named volumes}: volume
-yang dikelola Docker dan persisten melewati siklus hidup container, berbeda dengan
-bind mount (direktori host yang di-mount ke container).
-
-\subsubsection{Perintah Docker Compose}
-
-\begin{lstlisting}[language=bash, caption={Perintah dasar Docker Compose}]
-docker compose up
-docker compose up -d
-docker compose up -d --build
-docker compose down
-docker compose down -v
-docker compose ps
-docker compose logs
-docker compose logs -f web
-docker compose exec app /bin/sh
-docker compose stop
-docker compose start
-docker compose restart web
-docker compose build
-docker compose pull
-\end{lstlisting}
-
-Perintah \cmd{docker compose up} membaca \file{docker-compose.yml} di direktori
-saat ini lalu membuat dan menjalankan semua service yang didefinisikan. Opsi
-\texttt{-d} menjalankan di background. Opsi \texttt{--build} memaksa rebuild image
-sebelum start, berguna setelah mengubah Dockerfile. Perintah \cmd{docker compose
-down} menghentikan dan menghapus semua container dan jaringan yang dibuat; opsi
-\texttt{-v} juga menghapus named volumes (hati-hati: data akan hilang). Perintah
-\cmd{docker compose ps} menampilkan status semua service. Perintah \cmd{docker
-compose exec service command} menjalankan perintah di dalam container service yang
-sedang berjalan, setara dengan \cmd{docker exec} untuk satu container.
-
-\subsubsection{Perbandingan Dockerfile dan Docker Compose}
-
-\begin{table}[htbp]
-    \centering
-    \caption{Perbandingan Dockerfile dan Docker Compose}
-    \label{tab:dockerfile-vs-compose}
-    \begin{tblr}{
-        colspec = {lX[l]X[l]},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \textbf{Aspek} & \textbf{Dockerfile} & \textbf{docker-compose.yml} \\
-    Tujuan utama
-        & Mendefinisikan \emph{bagaimana} sebuah image dibangun
-        & Mendefinisikan \emph{bagaimana} beberapa container dijalankan bersama \\
-    Scope
-        & Satu image / satu container
-        & Satu stack (banyak service/container) \\
-    Isi file
-        & Instruksi build: FROM, RUN, COPY, CMD, dll.
-        & Konfigurasi runtime: port, volume, env var, dependensi antar service \\
-    Jaringan
-        & Tidak diatur (diserahkan ke docker run)
-        & Membuat jaringan internal otomatis; antar service saling bisa dicapai via nama service \\
-    Perintah utama
-        & docker build
-        & docker compose up / down \\
-    Hubungan
-        & Bisa dirujuk dari Compose via kunci build:
-        & Bisa menggunakan image hasil Dockerfile \\
-    Kasus penggunaan
-        & Membangun image kustom untuk aplikasi
-        & Menjalankan lingkungan development, staging, atau produksi lengkap \\
-    \end{tblr}
-\end{table}
-
-\begin{notebox}
-Dockerfile dan Docker Compose bukan alternatif satu sama lain, melainkan
-\emph{saling melengkapi}. Dalam proyek nyata keduanya digunakan bersama: Dockerfile
-mendefinisikan image aplikasi, sedangkan Docker Compose mendefinisikan bagaimana
-image tersebut dijalankan bersama dengan service lain (database, cache, message
-broker, dll.).
-\end{notebox}
-
-%%: Praktikum ---
-\subsection*{Praktikum 11.4: Pengenalan Docker dan Docker Compose}
-\textbf{Tujuan:} menjalankan container dari image yang ada, membuat image kustom
-dengan Dockerfile, dan mengelola stack multi-container menggunakan Docker Compose.
-
-\textbf{Langkah-langkah:}
 \begin{enumerate}
-    \item Verifikasi instalasi Docker dan Docker Compose:
-\begin{lstlisting}[language=bash, caption={Verifikasi instalasi Docker}]
-docker --version
-docker compose version
-docker run hello-world
-\end{lstlisting}
-
-    \item Eksplorasi container interaktif dan periksa siklus hidupnya:
-\begin{lstlisting}[language=bash, caption={Menjalankan container interaktif}]
-docker run -it --name lab-ubuntu ubuntu:22.04 /bin/bash
-\end{lstlisting}
-
-    Di dalam container, jalankan perintah berikut lalu ketik \cmd{exit}:
-\begin{lstlisting}[language=bash, caption={Perintah di dalam container}]
-cat /etc/os-release
-hostname
-ps aux
-ip addr show
-exit
-\end{lstlisting}
-
-\begin{lstlisting}[language=bash, caption={Memeriksa dan menghapus container}]
-docker ps -a
-docker rm lab-ubuntu
-\end{lstlisting}
-
-    \item Buat Dockerfile kustom, build, dan jalankan:
-\begin{lstlisting}[language=bash, caption={Membuat image kustom dengan Dockerfile}]
-mkdir ~/lab-docker && cd ~/lab-docker
+    \item Buat direktori kerja dan file HTML untuk aplikasi web statis:
+\begin{lstlisting}[language=bash, caption={Menyiapkan file aplikasi web}]
+cd ~/lab-os/week13-apps
+mkdir -p docker-web
+cd docker-web
 
 cat > index.html << 'EOF'
-<html><body><h1>Web Server Kustom dari Docker</h1></body></html>
+<!DOCTYPE html>
+<html lang="id">
+<head><meta charset="UTF-8"><title>Aplikasi Lab Week 13</title></head>
+<body>
+  <h1>Manajemen Aplikasi Linux</h1>
+  <p>Container berjalan dengan baik.</p>
+  <p>Waktu build: PLACEHOLDER</p>
+</body>
+</html>
 EOF
 
+cat > about.html << 'EOF'
+<!DOCTYPE html>
+<html lang="id">
+<head><meta charset="UTF-8"><title>Tentang</title></head>
+<body><h1>Tentang Aplikasi Ini</h1><p>Dibuat untuk praktikum Week 13.</p></body>
+</html>
+EOF
+\end{lstlisting}
+
+    \item Buat Dockerfile:
+\begin{lstlisting}[language=bash, caption={Membuat Dockerfile untuk web statis}]
 cat > Dockerfile << 'EOF'
 FROM nginx:alpine
+
+RUN apk add --no-cache tzdata \
+    && cp /usr/share/zoneinfo/Asia/Jakarta /etc/localtime \
+    && echo "Asia/Jakarta" > /etc/timezone \
+    && apk del tzdata
+
 COPY index.html /usr/share/nginx/html/index.html
+COPY about.html /usr/share/nginx/html/about.html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
 EOF
+\end{lstlisting}
 
-docker build -t lab-web:1.0 .
-docker run -d --name lab-web -p 8080:80 lab-web:1.0
+    \item Build image dan jalankan container:
+\begin{lstlisting}[language=bash, caption={Build image dan jalankan container}]
+docker build -t lab-web13:1.0 .
+docker images lab-web13
+
+docker run -d --name lab-web13-container -p 8080:80 lab-web13:1.0
+docker ps
+\end{lstlisting}
+    \textit{Amati:} berapa ukuran image yang dihasilkan dibandingkan image dasar
+    \texttt{nginx:alpine}?
+
+    \item Verifikasi aplikasi berjalan dan periksa log:
+\begin{lstlisting}[language=bash, caption={Verifikasi aplikasi dan periksa log}]
 curl http://localhost:8080
-docker stop lab-web && docker rm lab-web
+curl http://localhost:8080/about.html
+docker logs lab-web13-container
+docker exec -it lab-web13-container ls /usr/share/nginx/html/
 \end{lstlisting}
+    \textit{Amati:} setiap akses halaman via \cmd{curl} menghasilkan entri baru
+    di log. Apa format log nginx yang terlihat?
 
-    \item Buat stack multi-container dengan Docker Compose (nginx + Redis):
-\begin{lstlisting}[language=bash, caption={Membuat docker-compose.yml}]
-cat > docker-compose.yml << 'EOF'
-version: "3.9"
-
-services:
-  web:
-    image: nginx:alpine
-    ports:
-      - "8080:80"
-    volumes:
-      - ./html:/usr/share/nginx/html:ro
-    depends_on:
-      - cache
-    restart: unless-stopped
-
-  cache:
-    image: redis:7-alpine
-    restart: unless-stopped
-
-volumes: {}
-EOF
-
-mkdir html
-echo "<h1>Stack Docker Compose</h1>" > html/index.html
-\end{lstlisting}
-
-    \item Jalankan stack dan periksa statusnya:
-\begin{lstlisting}[language=bash, caption={Menjalankan dan memantau stack Compose}]
-docker compose up -d
-docker compose ps
-docker compose logs web
-curl http://localhost:8080
-docker compose exec web wget -qO- http://cache:6379 2>/dev/null || \
-    echo "Redis berjalan (tidak menerima HTTP, normal)"
-\end{lstlisting}
-
-    \item Hentikan dan bersihkan seluruh stack:
-\begin{lstlisting}[language=bash, caption={Membersihkan setelah praktikum}]
-docker compose down
-docker compose ps
-docker rmi lab-web:1.0
-cd ~ && rm -rf ~/lab-docker
+    \item Hentikan container dan bersihkan:
+\begin{lstlisting}[language=bash, caption={Bersihkan container dan image}]
+docker stop lab-web13-container
+docker rm lab-web13-container
+docker rmi lab-web13:1.0
+cd ~/lab-os/week13-apps
+rm -rf docker-web
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[11.4]
-\begin{enumerate}
-    \item Pada file \file{docker-compose.yml} di atas, service \texttt{web}
-        menggunakan \texttt{depends\_on: cache}. Apakah ini menjamin bahwa Redis
-        sudah \emph{siap menerima koneksi} saat nginx start? Jelaskan batasannya
-        dan bagaimana cara mengatasinya.
-    \item Jelaskan perbedaan antara \cmd{docker compose down} dan \cmd{docker
-        compose down -v}. Dalam skenario apa Anda harus berhati-hati menggunakan
-        opsi \texttt{-v}?
-    \item Jika Anda memiliki Dockerfile di direktori \dir{./app/}, bagaimana
-        cara merujuknya dari \file{docker-compose.yml} agar Compose otomatis
-        membangun image tersebut saat \cmd{docker compose up --build} dijalankan?
-        Tuliskan potongan YAML-nya.
-\end{enumerate}
-\end{exercisebox}
+\begin{challengebox}
+Buat Dockerfile untuk aplikasi web statis yang menggunakan volume untuk
+konten HTML. Jalankan container dengan opsi \texttt{-v \$(pwd)/html:/usr/share/nginx/html:ro}
+sehingga konten diambil dari direktori host, bukan disalin ke dalam image.
+Ubah isi file HTML di direktori host, muat ulang dengan \cmd{curl}, dan amati
+bahwa perubahan langsung terlihat tanpa perlu rebuild image. Jelaskan perbedaan
+pendekatan ini dibandingkan \texttt{COPY} di Dockerfile untuk lingkungan
+pengembangan versus produksi.
+\end{challengebox}
 
 %% ========================================================================
-\section{Pemantauan dan Pemecahan Masalah Aplikasi}
+\section{Pemantauan Performa Aplikasi}
 \label{sec:app-monitoring}
 %% ========================================================================
 
-Memantau performa aplikasi dan mendiagnosis masalah adalah keterampilan kritis
-administrator sistem. Linux menyediakan berbagai alat untuk memahami apa yang
-sedang dilakukan oleh sebuah proses: penggunaan CPU/memori, file yang dibuka,
-port jaringan yang digunakan, system call yang dipanggil, dan dependensi library.
+Menginstal aplikasi hanyalah setengah dari pekerjaan. Memastikan aplikasi berjalan
+dengan sehat dan menggunakan sumber daya secara wajar adalah pekerjaan berkelanjutan.
+Linux menyediakan serangkaian alat untuk melihat apa yang sedang dilakukan sebuah
+proses: berapa CPU dan memori yang dikonsumsi, file apa yang dibuka, dan port
+jaringan mana yang digunakan.
 
-\subsection{Pemantauan Proses}
+Perintah \cmd{ps} adalah titik awal yang selalu tersedia. Perintah \cmd{top}
+dan \cmd{htop} memberikan tampilan real-time yang terus diperbarui.
 
-\subsubsection{Informasi Proses Dasar}
-
-\begin{lstlisting}[language=bash, caption={Memantau proses aplikasi}]
+\begin{lstlisting}[language=bash, caption={Memantau proses dengan ps dan top}]
 ps aux
 ps aux | grep nginx
 ps aux --sort=-%mem | head -10
 ps aux --sort=-%cpu | head -10
-ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%mem | head -15
-pgrep -a nginx
-pidof nginx
-\end{lstlisting}
 
-Perintah \cmd{ps aux} menampilkan semua proses dengan informasi lengkap: \texttt{USER}
-(pemilik), \texttt{PID} (process ID), \texttt{\%CPU}, \texttt{\%MEM}, \texttt{VSZ}
-(virtual memory), \texttt{RSS} (physical memory), dan \texttt{COMMAND}. Opsi
-\texttt{--sort=\%-mem} mengurutkan berdasarkan penggunaan memori tertinggi, berguna
-untuk menemukan proses yang mengonsumsi memori berlebihan. Opsi \texttt{-eo} memilih
-kolom yang ingin ditampilkan. Perintah \cmd{pgrep} mencari PID berdasarkan nama
-proses; \cmd{pidof} mencari PID berdasarkan nama binary.
-
-\subsubsection{Pemantauan Real-time}
-
-\begin{lstlisting}[language=bash, caption={Pemantauan real-time dengan top dan htop}]
 top
-top -p $(pgrep -d, nginx)
-top -b -n 1 | head -20
+top -b -n 1 | head -30
+
 htop
-htop -p $(pgrep -d, nginx)
 \end{lstlisting}
 
-Perintah \cmd{top} adalah monitor sistem klasik yang diperbarui setiap beberapa
-detik. Tekan \texttt{M} untuk mengurutkan berdasarkan memori, \texttt{P} berdasarkan
-CPU, \texttt{q} untuk keluar. Opsi \texttt{-p} membatasi tampilan ke PID tertentu.
-Opsi \texttt{-b -n 1} menjalankan top sekali dalam mode batch tanpa interaktif,
-berguna untuk skrip. Perintah \cmd{htop} adalah versi modern yang lebih interaktif
-dengan tampilan berwarna, scroll horizontal, dan tree view proses.
+\cmd{ps aux} menampilkan semua proses dengan kolom \texttt{PID}, \texttt{\%CPU},
+\texttt{\%MEM}, \texttt{VSZ} (virtual memory), \texttt{RSS} (physical memory
+yang benar-benar digunakan), dan \texttt{COMMAND}. Opsi \texttt{--sort=\%-mem}
+mengurutkan berdasarkan penggunaan memori tertinggi. Opsi \texttt{-b -n 1} pada
+\cmd{top} menghasilkan satu snapshot dalam mode batch, berguna untuk skrip atau
+logging.
 
-\subsection{Pemantauan File dan Port}
+Untuk mengetahui file apa yang sedang dibuka oleh sebuah proses, gunakan
+\cmd{lsof} (\emph{list open files}). Di Linux, segala sesuatu adalah file:
+termasuk socket jaringan, pipe, dan perangkat.
 
-\subsubsection{lsof: Melihat File yang Terbuka}
-
-\begin{lstlisting}[language=bash, caption={Menggunakan lsof}]
-sudo lsof -p 1234
-sudo lsof -u www-data
-sudo lsof /var/log/nginx/access.log
+\begin{lstlisting}[language=bash, caption={Memantau file terbuka dan koneksi jaringan}]
+sudo lsof -p $(pgrep nginx | head -1)
 sudo lsof -i :80
-sudo lsof -i :80 -i :443
-sudo lsof -i tcp
 sudo lsof -i -nP | grep LISTEN
-\end{lstlisting}
 
-\cmd{lsof} (\textit{list open files}) menampilkan semua file yang sedang dibuka oleh
-proses. Di Linux, segala sesuatu adalah file: file reguler, direktori, socket jaringan,
-pipe, dan perangkat. Opsi \texttt{-p PID} menampilkan semua file yang dibuka proses
-tertentu. Opsi \texttt{-u user} menampilkan file yang dibuka oleh user tertentu.
-Memberikan nama file sebagai argumen menampilkan proses mana yang membuka file
-tersebut, berguna untuk mengetahui mengapa sebuah file tidak bisa dihapus (masih
-digunakan). Opsi \texttt{-i :port} menampilkan proses yang menggunakan port tertentu.
-Opsi \texttt{-nP} menonaktifkan resolusi nama host dan nama port untuk output lebih
-cepat; filter \texttt{LISTEN} menampilkan hanya port yang sedang mendengarkan.
-
-\subsubsection{ss: Status Socket Jaringan}
-
-\begin{lstlisting}[language=bash, caption={Memeriksa koneksi jaringan dengan ss}]
 ss -tlnp
 ss -tlnp | grep :80
 ss -an | grep ESTABLISHED | wc -l
-ss -s
 \end{lstlisting}
 
-Perintah \cmd{ss} (\textit{socket statistics}) adalah pengganti modern untuk
-\cmd{netstat}. Opsi \texttt{-t} untuk TCP, \texttt{-l} untuk port yang mendengarkan,
-\texttt{-n} untuk menampilkan angka (tidak resolve nama), \texttt{-p} untuk
-menampilkan nama proses. Perintah \cmd{ss -tlnp} adalah cara cepat untuk melihat
-semua port TCP yang sedang didengarkan beserta program yang menggunakannya.
-Perintah \cmd{ss -s} menampilkan ringkasan statistik semua socket.
+\cmd{lsof -p PID} menampilkan semua file yang dibuka proses tertentu. \cmd{lsof
+-i :80} menampilkan proses yang menggunakan port 80. Perintah \cmd{ss} adalah
+pengganti modern \cmd{netstat}. Opsi \texttt{-t} untuk TCP, \texttt{-l} untuk
+yang sedang mendengarkan, \texttt{-n} untuk angka (tidak resolve nama), \texttt{-p}
+untuk nama proses. Kombinasi \cmd{ss -tlnp} adalah cara cepat melihat semua
+port yang sedang aktif beserta program yang memegangnya.
 
-\subsection{Manajemen Dependensi Library}
+Untuk kasus diagnosis mendalam, \cmd{strace} memungkinkan kamu melihat setiap
+\emph{system call} yang dipanggil sebuah proses. Ini berguna ketika sebuah program
+gagal tanpa pesan error yang jelas.
 
-\begin{lstlisting}[language=bash, caption={Memeriksa dependensi library}]
-ldd /usr/sbin/nginx
-ldd /usr/sbin/nginx | grep "not found"
-ldconfig -p | grep libssl
-sudo ldconfig
-apt-cache depends nginx
-apt-cache rdepends --installed libssl3
-\end{lstlisting}
-
-Perintah \cmd{ldd} menampilkan semua shared library yang dibutuhkan sebuah binary.
-Output \texttt{not found} menunjukkan library yang hilang: ini adalah penyebab
-umum program gagal dijalankan meski sudah terinstal. Perintah \cmd{ldconfig -p}
-mendaftar semua library yang dikenal sistem dari cache \cmd{ldconfig}. Perintah
-\cmd{ldconfig} (tanpa argumen, dengan sudo) memperbarui cache library setelah
-library baru diinstall ke lokasi non-standar. Perintah \cmd{apt-cache rdepends}
-menampilkan semua paket terinstall yang bergantung pada library tertentu, berguna
-sebelum menghapus atau mengupgrade library.
-
-\subsection{Analisis Mendalam dengan strace}
-
-\begin{lstlisting}[language=bash, caption={Debugging dengan strace}]
-strace ls /tmp 2>&1 | tail -20
-strace -p 1234
-strace -p 1234 -e trace=network
+\begin{lstlisting}[language=bash, caption={Analisis mendalam dengan strace dan ldd}]
+strace ls /tmp 2>&1 | tail -10
 strace -c ls /tmp 2>&1
+
+ldd /usr/bin/ls
+ldd /usr/bin/ls | grep "not found"
 \end{lstlisting}
 
-\cmd{strace} menampilkan semua system call yang dipanggil oleh sebuah proses.
-Ini sangat berguna untuk mendiagnosis masalah yang tidak jelas: misalnya program
-gagal membaca file konfigurasi (strace akan menunjukkan path mana yang dicoba),
-atau program mencoba koneksi jaringan ke alamat yang salah. Opsi \texttt{-p PID}
-melampirkan strace ke proses yang sedang berjalan. Opsi \texttt{-e trace=network}
-membatasi output hanya ke system call terkait jaringan. Opsi \texttt{-c} merangkum
-frekuensi dan durasi setiap system call, berguna untuk profiling.
+\cmd{strace -c} merangkum frekuensi setiap system call tanpa menampilkan detailnya,
+berguna untuk profiling cepat. \cmd{ldd} menampilkan semua shared library yang
+dibutuhkan sebuah binary. Output \texttt{not found} menunjukkan library yang
+hilang, penyebab umum program gagal berjalan meski sudah terinstal.
 
 \begin{warningbox}
-\cmd{strace} menghasilkan output yang sangat banyak dan memperlambat proses target
-secara signifikan (hingga 10--100x). Jangan gunakan pada server produksi yang sedang
-melayani traffic tinggi. Gunakan dengan \texttt{-e trace=} untuk memfilter hanya
-system call yang relevan.
+\cmd{strace} memperlambat proses target secara signifikan, bisa 10 hingga 100
+kali lebih lambat dari normal. Jangan gunakan pada server produksi yang sedang
+melayani traffic tinggi. Gunakan opsi \texttt{-e trace=} untuk membatasi hanya
+system call yang relevan, misalnya \texttt{-e trace=file} untuk aktivitas file.
 \end{warningbox}
-
-%%: Praktikum ---
-\subsection*{Praktikum 11.5: Pemantauan Aplikasi}
-\textbf{Tujuan:} menggunakan berbagai alat pemantauan untuk mengidentifikasi
-penggunaan sumber daya, file yang terbuka, port yang digunakan, dan dependensi
-library dari aplikasi yang berjalan.
-
-\textbf{Langkah-langkah:}
-\begin{enumerate}
-    \item Jalankan sebuah aplikasi untuk dipantau (web server nginx dalam container):
-\begin{lstlisting}[language=bash, caption={Menyiapkan aplikasi untuk dipantau}]
-sudo apt install nginx -y
-sudo systemctl start nginx
-sudo systemctl status nginx
-pgrep -a nginx
-\end{lstlisting}
-
-    \item Pantau penggunaan sumber daya nginx:
-\begin{lstlisting}[language=bash, caption={Memantau penggunaan CPU dan memori}]
-ps aux | grep nginx
-ps -eo pid,user,cmd,%mem,%cpu | grep nginx
-top -b -n 1 | grep nginx
-\end{lstlisting}
-
-    \item Periksa port yang digunakan dan file yang terbuka:
-\begin{lstlisting}[language=bash, caption={Memeriksa port dan file terbuka}]
-ss -tlnp | grep nginx
-sudo lsof -p $(pgrep nginx | head -1) | head -20
-sudo lsof -i :80
-sudo lsof /var/log/nginx/access.log
-\end{lstlisting}
-
-    \item Periksa dependensi library nginx:
-\begin{lstlisting}[language=bash, caption={Memeriksa dependensi library}]
-which nginx
-ldd $(which nginx)
-ldd $(which nginx) | wc -l
-apt-cache depends nginx | head -10
-\end{lstlisting}
-
-    \item Gunakan strace untuk melihat apa yang dilakukan nginx saat menerima
-        request (jalankan di terminal terpisah):
-\begin{lstlisting}[language=bash, caption={Analisis system call dengan strace}]
-sudo strace -p $(pgrep nginx | head -1) -e trace=network -c &
-STRACE_PID=$!
-curl -s http://localhost > /dev/null
-sleep 2
-sudo kill $STRACE_PID 2>/dev/null
-\end{lstlisting}
-
-    \item Bersihkan setelah praktikum:
-\begin{lstlisting}[language=bash, caption={Membersihkan setelah praktikum}]
-sudo systemctl stop nginx
-sudo apt purge nginx -y
-sudo apt autoremove -y
-\end{lstlisting}
-\end{enumerate}
-
-\begin{exercisebox}[11.5]
-\begin{enumerate}
-    \item Dari output \cmd{lsof -p \$(pgrep nginx | head -1)}, identifikasi tiga
-        jenis berbeda dari file yang dibuka (gunakan kolom \texttt{TYPE}): file
-        reguler, direktori, dan socket. Apa fungsi masing-masing?
-    \item Mengapa \cmd{ps aux} menampilkan beberapa proses nginx (bukan satu)?
-        Apa peran masing-masing proses tersebut? (Petunjuk: lihat perbedaan nama
-        pengguna di kolom USER.)
-    \item Jalankan \cmd{ldd \$(which ls)} dan hitung berapa library yang
-        dibutuhkan oleh perintah \cmd{ls} yang sederhana. Mengapa binary yang
-        tampaknya sederhana membutuhkan banyak library?
-\end{enumerate}
-\end{exercisebox}
 
 %% ========================================================================
 \section{Rangkuman}
 \label{sec:appmanagement-summary}
 %% ========================================================================
 
-Bab ini telah membahas lima topik utama manajemen aplikasi di Linux:
+Dalam bab ini, kamu telah mempelajari:
 
-\begin{description}
-    \item[Sistem Manajemen Paket] Arsitektur dua lapisan Debian/Ubuntu: \cmd{dpkg}
-        sebagai alat tingkat rendah dan \cmd{apt} sebagai alat tingkat tinggi yang
-        mengelola dependensi otomatis. Perintah kunci: \cmd{apt update}, \cmd{apt
-        install}, \cmd{apt purge}, \cmd{dpkg -L}, \cmd{dpkg -S}.
-
-    \item[Manajemen Repositori] Konfigurasi sumber paket melalui \\
-        \file{/etc/apt/sources.list} dan \dir{/etc/apt/sources.list.d}. \\
-        Penambahan repositori pihak ketiga yang aman menggunakan metode \\
-        \texttt{signed-by} dengan GPG key tersendiri.
-
-    \item[Kompilasi dari Source] Pola tiga langkah autotools: \cmd{./configure},
-        \cmd{make}, \cmd{make install}. Penggunaan \cmd{checkinstall} untuk membungkus
-        hasil kompilasi menjadi paket dpkg yang terkelola. Pola CMake dengan
-        out-of-source build.
-
-    \item[Container Docker] Konsep image, container, Dockerfile, dan Docker Compose.
-        Dockerfile mendefinisikan cara membangun image; Docker Compose
-        mendefinisikan cara menjalankan stack multi-container secara deklaratif
-        melalui \file{docker-compose.yml}. Perintah kunci: \cmd{docker pull},
-        \cmd{docker run}, \cmd{docker build}, \cmd{docker exec}, \cmd{docker
-        compose up}, \cmd{docker compose down}. Container berbagi kernel host
-        sehingga lebih ringan dari VM tetapi dengan isolasi yang lebih lemah.
-
-    \item[Pemantauan Aplikasi] Alat diagnostik: \cmd{ps}/\cmd{top}/\cmd{htop} untuk
-        pemantauan proses, \cmd{lsof} untuk file dan socket yang terbuka, \cmd{ss}
-        untuk status koneksi jaringan, \cmd{ldd} untuk dependensi library, dan
-        \cmd{strace} untuk analisis system call mendalam.
-\end{description}
+\begin{itemize}[noitemsep,topsep=2pt]
+    \item \textbf{apt dan dpkg}: dua lapisan manajemen paket Ubuntu, di mana
+        \cmd{apt} mengurus dependensi otomatis di atas \cmd{dpkg} yang bekerja
+        langsung dengan file \texttt{.deb}.
+    \item \textbf{Siklus paket}: alur instalasi (\cmd{apt install}), verifikasi
+        (\cmd{dpkg -l}, \cmd{dpkg -L}), pembaruan (\cmd{apt upgrade}), dan
+        penghapusan bersih (\cmd{apt purge} diikuti \cmd{autoremove}).
+    \item \textbf{Repositori}: konfigurasi di \file{/etc/apt/sources.list} dan
+        \dir{sources.list.d/}, serta cara menambahkan repositori pihak ketiga
+        menggunakan metode \texttt{signed-by} yang aman.
+    \item \textbf{Kompilasi dari source}: pola tiga langkah autotools
+        (\cmd{./configure}, \cmd{make}, \cmd{make install}) dan pembuatan
+        Makefile untuk mengotomatisasi proses build.
+    \item \textbf{Docker}: konsep image dan container, pembuatan image dengan
+        Dockerfile, serta menjalankan container dengan port mapping dan volume.
+    \item \textbf{Pemantauan aplikasi}: alat \cmd{ps}, \cmd{top}, \cmd{lsof},
+        \cmd{ss}, \cmd{ldd}, dan \cmd{strace} untuk memahami perilaku dan
+        kesehatan aplikasi yang berjalan.
+\end{itemize}
 
 %% ========================================================================
-\section{Latihan}
+\section{Tugas Praktikum}
 \label{sec:appmanagement-exercises}
 %% ========================================================================
 
-\begin{exercisebox}[Latihan 11.A: Audit Software Server]
-Lakukan audit lengkap software yang terinstall di sistem Ubuntu Server:
+\textbf{Instruksi Umum}: Kerjakan seluruh tugas secara mandiri. Dokumentasikan
+setiap langkah dengan tangkapan layar dan kumpulkan dalam format PDF.
+
+\begin{exercisebox}[13.1 Audit Paket dan Repositori]
+Lakukan audit menyeluruh terhadap kondisi paket di sistem Ubuntu kamu.
 \begin{enumerate}
-    \item Tampilkan jumlah total paket yang terinstall dan buat daftar 20 paket
-        terbesar berdasarkan ukuran disk yang digunakan (\cmd{dpkg-query -Wf}
-        dengan format \texttt{\$\{Installed-Size\}\textbackslash{}t\$\{Package\}}).
-    \item Identifikasi paket-paket yang memiliki status \texttt{rc} (dihapus tapi
-        konfigurasi masih ada) dan hapus konfigurasi yang tersisa menggunakan
-        \cmd{apt purge}.
-    \item Periksa apakah ada pembaruan keamanan yang belum diinstall menggunakan
-        \cmd{apt list --upgradable} dan filter hanya pembaruan dari
-        \texttt{-security}.
+    \item Tampilkan jumlah total paket terinstal menggunakan \cmd{dpkg -l | grep
+        "\^{}ii" | wc -l}.
+    \item Cari semua paket terinstal yang namanya mengandung kata ``lib'' dan
+        simpan hasilnya ke file \file{lib-packages.txt} menggunakan redirection.
+    \item Identifikasi paket yang berstatus \texttt{rc} (konfigurasi tersisa)
+        dengan \cmd{dpkg -l | grep "\^{}rc"}. Jelaskan mengapa paket bisa berada
+        dalam status ini.
+    \item Periksa apakah ada pembaruan yang tersedia dengan \cmd{apt list
+        --upgradable 2>/dev/null}. Catat berapa paket yang bisa diperbarui.
 \end{enumerate}
 \end{exercisebox}
 
-\begin{exercisebox}[Latihan 11.B: Containerisasi Aplikasi Web]
-Buat setup container untuk melayani aplikasi web statis:
+\begin{exercisebox}[13.2 Kompilasi dan Containerisasi]
+Gabungkan dua keterampilan dari bab ini: kompilasi dari source dan Docker.
 \begin{enumerate}
-    \item Buat Dockerfile yang menggunakan \texttt{nginx:alpine} sebagai base image
-        dan menyalin direktori berisi minimal 3 file HTML ke dalam image.
-    \item Build image dengan tag yang bermakna (\texttt{nama-app:versi}).
-    \item Jalankan container dengan port forwarding ke port 8080.
-    \item Verifikasi semua halaman dapat diakses menggunakan \cmd{curl}.
-    \item Periksa ukuran image yang dihasilkan (\cmd{docker images}) dan bandingkan
-        dengan image dasar \texttt{nginx:alpine}.
+    \item Buat program C sederhana yang mencetak informasi sistem: nama host,
+        tanggal saat ini, dan pesan selamat datang. Kompilasi menggunakan Makefile.
+    \item Buat Dockerfile yang menggunakan \texttt{ubuntu:22.04} sebagai base
+        image, menginstal \texttt{build-essential}, menyalin source code ke
+        dalam image, mengompilasi di dalam container saat build, dan menjalankan
+        binary sebagai \texttt{CMD}.
+    \item Build image tersebut dan jalankan container. Verifikasi output program
+        muncul di terminal.
+    \item Periksa ukuran image yang dihasilkan dengan \cmd{docker images}.
+        Jelaskan mengapa image ini jauh lebih besar dari \texttt{nginx:alpine}.
 \end{enumerate}
 \end{exercisebox}
 
-\begin{exercisebox}[Latihan 11.C: Pemecahan Masalah Aplikasi]
-Seorang administrator melaporkan bahwa web server tidak bisa distart karena
-``port sudah digunakan''. Selesaikan skenario berikut:
+\begin{exercisebox}[13.3 Diagnosis Masalah Aplikasi]
+Sebuah web server dilaporkan tidak bisa distart karena port sudah terpakai.
 \begin{enumerate}
-    \item Gunakan \cmd{ss -tlnp} untuk mengidentifikasi proses mana yang menggunakan
-        port 80 dan/atau 443.
-    \item Gunakan \cmd{ps aux} dan \cmd{lsof -i :80} untuk mendapatkan informasi
-        lengkap tentang proses tersebut.
-    \item Jelaskan langkah-langkah yang akan Anda ambil untuk memutuskan apakah
-        proses tersebut harus dihentikan atau dikonfigurasi ulang agar tidak konflik.
-    \item Tulis skrip bash sederhana yang memeriksa apakah port 80 sudah digunakan
-        sebelum mencoba start nginx, dan menampilkan pesan yang informatif jika port
-        sudah terpakai.
+    \item Gunakan \cmd{ss -tlnp} untuk mengidentifikasi semua port yang sedang
+        aktif di sistem kamu. Catat proses apa yang menggunakan port 80 dan 443
+        jika ada.
+    \item Jalankan container nginx: \cmd{docker run -d --name test-nginx -p 8080:80
+        nginx:alpine}. Kemudian gunakan \cmd{lsof -i :8080} dan \cmd{ss -tlnp |
+        grep 8080} untuk membuktikan port 8080 sudah dipakai.
+    \item Coba jalankan container nginx kedua dengan port yang sama:
+        \cmd{docker run -d --name test-nginx2 -p 8080:80 nginx:alpine}.
+        Catat pesan error yang muncul.
+    \item Tulis skrip Bash \file{cek-port.sh} yang menerima argumen nomor port,
+        memeriksa apakah port tersebut sudah digunakan menggunakan \cmd{ss},
+        dan mencetak pesan informatif beserta nama proses yang memakainya.
+    \item Bersihkan: \cmd{docker stop test-nginx \&\& docker rm test-nginx}.
 \end{enumerate}
 \end{exercisebox}
 
 %% ========================================================================
-\section{Referensi Tambahan}
+\section{Referensi}
 \label{sec:appmanagement-references}
 %% ========================================================================
 
 \begin{itemize}
-    \item \textbf{Halaman manual}: \cmd{man apt}, \cmd{man dpkg}, \cmd{man lsof},
-        \cmd{man strace}, \cmd{man ss}, \cmd{man docker}
-    \item \textbf{Ubuntu Server Guide: Package Management}:
-        \url{https://ubuntu.com/server/docs/package-management}
-    \item \textbf{Debian Policy Manual}: spesifikasi lengkap sistem paket Debian:
+    \item Debian Policy Manual. \textit{Debian Policy Manual}. Debian Project, 2024.
         \url{https://www.debian.org/doc/debian-policy/}
-    \item \textbf{Docker Documentation}:
+    \item Canonical Ltd. \textit{Ubuntu Server Guide: Package Management}.
+        \url{https://ubuntu.com/server/docs/package-management}
+    \item Docker Inc. \textit{Docker Engine Documentation}.
         \url{https://docs.docker.com/engine/install/ubuntu/}
-    \item \textbf{Dockerfile best practices}:
-        \url{https://docs.docker.com/develop/develop-images/dockerfile_best-practices/}
-    \item \textbf{Ubuntu Manpage: apt}: \url{https://manpages.ubuntu.com/manpages/jammy/man8/apt.8.html}
-    \item \textbf{The Linux Command Line} oleh William Shotts, Bab 14 (Package
-        Management): tersedia gratis di \url{https://linuxcommand.org/tlcl.php}
+    \item Shotts, William E. \textit{The Linux Command Line}, 5th ed.
+        No Starch Press, 2019. \url{https://linuxcommand.org/tlcl.php}
+    \item Kerrisk, Michael. \textit{The Linux Programming Interface}.
+        No Starch Press, 2010.
 \end{itemize}

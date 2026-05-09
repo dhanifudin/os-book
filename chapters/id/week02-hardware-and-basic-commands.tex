@@ -1,671 +1,380 @@
 %% ========================================================================
-%% Chapter 2: Manajemen Perangkat Keras & Perintah Dasar
+%% Chapter 2: Manajemen Perangkat Keras dan Perintah Dasar
 %% ========================================================================
 
-\chapter{Manajemen Perangkat Keras \& Perintah Dasar Sistem Operasi}
+\chapter{Manajemen Perangkat Keras dan Perintah Dasar}
 \label{ch:hardware-and-basic-commands}
 
-Bab ini membahas cara Linux mendeteksi dan mengelola perangkat keras, modul kernel,
-driver perangkat, serta perintah-perintah dasar terminal Linux yang esensial untuk praktikum
-Ubuntu Server 22.04. Fokus utama bab ini adalah keterampilan praktik: mengidentifikasi perangkat,
-mengecek driver/modul kernel, memahami perangkat di \texttt{/dev}, melakukan manipulasi teks
-dengan \texttt{grep/sed/awk}, mengelola proses, dan memantau kondisi sistem.
+Bayangkan kamu baru membeli laptop baru dan menyalakannya untuk pertama kali. Sistem operasi perlu tahu apa saja komponen di dalamnya: jenis prosesor, kapasitas RAM, kartu grafis, dan disk. Di Windows, informasi ini tersedia di Device Manager. Di Linux, kamu mendapatkan akses yang jauh lebih dalam lewat terminal.
+
+Linux mendeteksi perangkat keras melalui proses bertahap. Saat komputer dinyalakan, kernel melakukan pemindaian terhadap semua bus seperti PCI dan USB, lalu mencocokkan perangkat yang ditemukan dengan modul kernel yang sesuai. Hasil deteksi ini bisa ditelusuri melalui perintah seperti \cmd{lscpu}, \cmd{lspci}, \cmd{lsusb}, dan \cmd{dmesg}. Prosesnya berlangsung otomatis, tetapi jejaknya tetap bisa kamu audit dari terminal.
+
+Memahami perangkat keras dan perintah dasar terminal adalah fondasi dari semua praktikum Linux berikutnya. Tanpa keterampilan ini, kamu tidak akan bisa membaca informasi sistem, berpindah direktori dengan percaya diri, mengelola berkas sederhana, atau menafsirkan dokumentasi perintah yang kamu temui sepanjang buku ini.
+
+\textbf{Yang Akan Kamu Pelajari}
+
+Setelah menyelesaikan bab ini, kamu akan mampu:
+
+\begin{enumerate}
+    \item mengidentifikasi komponen perangkat keras menggunakan perintah \cmd{lspci}, \cmd{lsusb}, \cmd{lscpu}, dan \cmd{dmesg};
+    \item menjelaskan fungsi modul kernel dan melihat modul yang aktif dengan \cmd{lsmod} dan \cmd{modinfo};
+    \item menggunakan perintah dasar terminal untuk navigasi serta operasi file dan direktori;
+    \item membaca isi berkas dan output perintah dengan \cmd{cat}, \cmd{head}, dan \cmd{tail};
+    \item menyaring dan mengolah teks menggunakan \cmd{grep}, \cmd{sed}, dan \cmd{awk};
+    \item menggunakan dokumentasi bawaan seperti \cmd{man}, \cmd{--help}, dan \cmd{info} untuk mempelajari perintah baru secara mandiri.
+\end{enumerate}
+
+\begin{notebox}
+Seluruh praktikum pada bab ini dijalankan pada direktori \dir{~/lab-os/week02-hardware/}.
+Buat direktori ini sebelum memulai praktikum pertama:
+\begin{lstlisting}[language=bash]
+mkdir -p ~/lab-os/week02-hardware
+cd ~/lab-os/week02-hardware
+\end{lstlisting}
+\end{notebox}
 
 %% ------------------------------------------------------------------------
-\section{Deteksi Perangkat Keras di Linux}
+\section{Deteksi Perangkat Keras}
 \label{sec:hardware-detection}
 
-\subsection*{Bagaimana Linux Dapat Mendeteksi Hardware?}
-Hardware merupakan bagian yang penting dalam penggunaan sistem operasi. Memastikan hardware dapat terbaca pada sistem operasi merupakan hal esensial. Dalam prosesnya, kita juga sering menambahkan hardware baru pada komputer kita, baik pada personal computer (PC) ataupun pada server. Oleh karena itu penting untuk mengetahui apakah hardware yang kita pasang sudah terdeteksi oleh sistem operasi. Selain untuk memastikan hardware terbaca dengan benar, kita juga dapat mengetaui pada bagian I/O mana hardware itu terpasang. Kita juga perlu memastikan driver yang terpasang telah sesuai. 
+Setiap kali Linux menyala, kernel memeriksa semua perangkat yang terpasang. Hasilnya tersimpan dan bisa kamu baca kapan saja. Perintah \cmd{lscpu} menampilkan arsitektur prosesor, jumlah inti fisik, jumlah thread, dan fitur virtualisasi. Perintah \cmd{lspci} memperlihatkan semua perangkat di bus PCI, termasuk kartu jaringan, kartu grafis, dan pengendali penyimpanan. Untuk perangkat USB, gunakan \cmd{lsusb}. Jika kamu ingin laporan perangkat keras yang lebih lengkap dalam satu perintah, \cmd{lshw} adalah pilihan yang tepat meski memerlukan hak akses superuser.
 
-Pada sistem operasi Linux, informasi perangkat keras dapat terlihat melalui beberapa tahapan proses, yaitu 
-\textbf{kernel} melakukan enumerasi/scan perangkat (contoh: PCI/USB/storage), menampilkan informasi melalui \textbf{sysfs} (\texttt{/sys}),
-kemudian \textbf{udev} membuat node perangkat di \textbf{/dev}. Setelah menyelesaikan bab ini, diharapkan,
-\begin{itemize}
-    \item Anda dapat \textbf{melihat daftar perangkat} (misal: NIC, disk, USB) dengan menggunakan perintah seperti \texttt{lspci/lsusb/lsblk}.
-    \item Anda dapat \textbf{melihat driver/modul} yang meng-handle perangkat (misal: nama modul kernel) dari output \texttt{lspci -k} atau \texttt{lsmod}.
-    \item Anda dapat \textbf{melihat jejak deteksi} pada log kernel dengan \texttt{dmesg} atau \texttt{journalctl -k}.
-\end{itemize}
-
-\subsection*{Fungsi Perintah yang Digunakan}
-Berikut perintah-perintah yang umum digunakan untuk deteksi hardware:
-\begin{itemize}
-    \item \texttt{lscpu}: menampilkan arsitektur CPU, jumlah core/thread, fitur virtualisasi, dsb.
-    \item \texttt{free -h}: ringkasan penggunaan RAM dan swap dalam format mudah dibaca.
-    \item \texttt{lspci}: daftar perangkat PCI (misal GPU, NIC, controller).
-    \item \texttt{lsusb}: daftar perangkat USB.
-    \item \texttt{lsblk}: daftar block device (disk/partisi) beserta mount point dan filesystem.
-    \item \texttt{blkid}: menampilkan UUID/TYPE filesystem dari sebuah device.
-    \item \texttt{dmesg}: menampilkan pesan kernel (termasuk deteksi perangkat saat boot).
-    \item \texttt{journalctl -k}: menampilkan log kernel berbasis systemd journal.
-\end{itemize}
+Pesan kernel yang dihasilkan saat boot tersimpan dalam buffer cincin yang bisa dibaca dengan \cmd{dmesg}. Di sana kamu bisa melihat catatan deteksi perangkat: kapan disk ditemukan, driver apa yang dimuat, dan apakah ada perangkat yang gagal diinisialisasi. Tambahkan flag \texttt{-T} untuk menampilkan waktu dalam format yang bisa dibaca manusia.
 
 \begin{tipbox}
-Beberapa perintah mungkin perlu paket tambahan. Pada Ubuntu Server 22.04, Anda dapat memasang utilitas penting ini:
+Beberapa perintah deteksi perangkat keras mungkin belum terpasang di instalasi minimal. Pasang paket yang diperlukan dengan:
 \begin{lstlisting}[language=bash]
 sudo apt update
-sudo apt install -y pciutils usbutils lshw dmidecode
+sudo apt install -y pciutils usbutils lshw
 \end{lstlisting}
 \end{tipbox}
 
-\subsection*{Praktikum 2.1: Identifikasi CPU dan Memori}
-\textbf{Tujuan:} memahami spesifikasi CPU dan kondisi memori pada server/VM.
+\subsection*{Praktikum 2.1: Identifikasi Komponen Perangkat Keras VM}
 
-\textbf{Langkah-langkah:}
+Tujuan praktikum ini adalah membaca spesifikasi prosesor, memori, dan perangkat PCI dari mesin virtual.
+
 \begin{enumerate}
-    \item Tampilkan informasi CPU:
-\begin{lstlisting}[language=bash, caption={Melihat informasi CPU}]
+    \item Tampilkan informasi prosesor:
+\begin{lstlisting}[language=bash, caption={Membaca spesifikasi prosesor}]
 lscpu
 \end{lstlisting}
+    \textit{Amati:} Perhatikan baris \texttt{CPU(s)}, \texttt{Core(s) per socket}, dan \texttt{Vendor ID}. Mesin virtual biasanya memperlihatkan prosesor host dengan jumlah inti yang dibatasi.
 
-    \item Tampilkan ringkasan memori:
-\begin{lstlisting}[language=bash, caption={Melihat penggunaan memori}]
-free -h
-\end{lstlisting}
-
-    \item (Opsional) cek informasi hardware dari DMI/BIOS (butuh sudo):
-\begin{lstlisting}[language=bash, caption={Informasi DMI (opsional)}]
-sudo dmidecode -t system
-\end{lstlisting}
-\end{enumerate}
-
-\begin{exercisebox}[2.1]
-Catat: (1) jumlah CPU(s), core/thread, (2) total RAM, (3) total swap. Jelaskan perbedaan RAM vs swap dalam 2--3 kalimat.
-\end{exercisebox}
-
-\subsection*{Praktikum 2.2: Identifikasi Perangkat PCI/USB dan Driver}
-\textbf{Tujuan:} mengenali perangkat PCI/USB dan melihat driver/modul yang dipakai.
-
-\begin{notebox}
-Jika Anda menggunakan VirtualBox, Anda perlu melalukan proses \textbf{mounting} device USB dari komputer host agar dapat dibaca oleh sistem operasi pada VirtualBox.
-\end{notebox}
-
-\textbf{Langkah-langkah:}
-\begin{enumerate}
     \item Lihat daftar perangkat PCI:
-\begin{lstlisting}[language=bash, caption={Daftar perangkat PCI (ringkas)}]
-lspci
-\end{lstlisting}
-
-    \item Lihat perangkat PCI beserta driver kernel yang digunakan:
-\begin{lstlisting}[language=bash, caption={Melihat driver perangkat PCI}]
+\begin{lstlisting}[language=bash, caption={Daftar perangkat PCI beserta driver aktif}]
 lspci -nnk
 \end{lstlisting}
+    \textit{Amati:} Setiap entri menampilkan ID vendor dan perangkat dalam tanda kurung, diikuti baris \texttt{Kernel driver in use} yang menunjukkan nama modul driver aktif.
 
-    \item Fokus pada NIC (Ethernet) untuk mencari modul driver:
-\begin{lstlisting}[language=bash, caption={Mencari info NIC dan drivernya}]
+    \item Cari kartu jaringan dan driver yang menanganinya:
+\begin{lstlisting}[language=bash, caption={Filter informasi kartu jaringan}]
 lspci -nnk | grep -A3 -i ethernet
 \end{lstlisting}
 
-    \item Lihat perangkat USB:
-\begin{lstlisting}[language=bash, caption={Daftar perangkat USB}]
-lsusb
+    \item Lihat pesan kernel dari proses boot:
+\begin{lstlisting}[language=bash, caption={Pesan kernel saat boot}]
+dmesg -T | head -50
 \end{lstlisting}
+    \textit{Amati:} Cari baris yang menyebutkan nama perangkat seperti \texttt{sda}, \texttt{eth0}, atau \texttt{ens3}. Baris itu menandai saat kernel pertama kali mendeteksi perangkat tersebut.
 
-    \item Lihat topologi USB (tree):
-\begin{lstlisting}[language=bash, caption={Topologi perangkat USB}]
-lsusb -t
-\end{lstlisting}
-\end{enumerate}
-
-\begin{exercisebox}[2.2]
-Temukan 1 perangkat PCI (misal NIC) dan tuliskan: \textit{Vendor:Device ID} (angka heksadesimal), nama driver/modul kernel, dan deskripsi singkat fungsinya.
-\end{exercisebox}
-
-\subsection*{Praktikum 2.3: Identifikasi Storage dan Filesystem}
-\textbf{Tujuan:} memahami disk/partisi dan filesystem yang terpasang.
-
-\textbf{Langkah-langkah:}
-\begin{enumerate}
-    \item Lihat daftar disk/partisi:
-\begin{lstlisting}[language=bash, caption={Melihat block device dan filesystem}]
-lsblk -f
-\end{lstlisting}
-
-    \item Tampilkan UUID dan tipe filesystem:
-\begin{lstlisting}[language=bash, caption={Melihat UUID filesystem}]
-sudo blkid
-\end{lstlisting}
-
-    \item Lihat mount point untuk root filesystem:
-\begin{lstlisting}[language=bash, caption={Melihat device untuk root filesystem}]
-findmnt /
+    \item Cari pesan boot yang berkaitan dengan virtualisasi atau perangkat penyimpanan:
+\begin{lstlisting}[language=bash, caption={Menyaring pesan kernel dengan dmesg}]
+dmesg -T | grep -Ei "virtio|nvme|sata|usb"
 \end{lstlisting}
 \end{enumerate}
 
-\begin{examplebox}[Interpretasi Cepat]
-Jika \texttt{findmnt /} menunjukkan root berada di \texttt{/dev/sda2}, maka pada \texttt{lsblk -f} Anda bisa lihat tipe filesystem (misal ext4)
-dan UUID partisi tersebut. UUID penting untuk konfigurasi mounting di \texttt{/etc/fstab}.
-\end{examplebox}
-
+\begin{challengebox}
+Pilih satu modul kernel yang aktif dari output \cmd{lsmod}. Gunakan \cmd{modinfo} untuk mencari deskripsi, lisensi, dan nama berkas modulnya. Lalu gunakan \cmd{dmesg -T | grep -i nama-modul} untuk memeriksa apakah ada pesan kernel yang berkaitan dengan modul tersebut saat sistem menyala.
+\end{challengebox}
 
 %% ------------------------------------------------------------------------
 \section{Modul Kernel dan Driver Perangkat}
 \label{sec:kernel-modules}
 
-\subsection*{Konsep Inti: Modul Kernel}
-\textbf{Modul kernel} adalah komponen kernel yang dapat dimuat (\textit{load}) atau dilepas (\textit{unload}) saat sistem berjalan.
-Banyak driver perangkat (misal NIC, filesystem tertentu) tersedia sebagai modul agar kernel fleksibel dan ukuran kernel inti tetap efisien.
+Kernel Linux tidak memuat semua kode driver sekaligus. Sebaliknya, driver tersedia sebagai \textit{modul kernel}, yaitu berkas kode yang bisa dimuat saat dibutuhkan dan dilepas ketika tidak lagi diperlukan. Prinsip ini sama dengan menancapkan steker alat listrik hanya saat akan digunakan, bukan membiarkannya terus terpasang. Modul tersimpan di \dir{/lib/modules/\$(uname -r)/} dan biasanya memiliki ekstensi \texttt{.ko}.
 
-Di Ubuntu, modul biasanya tersimpan pada,
-\begin{lstlisting}[language=bash, caption={Lokasi modul kernel}]
-/lib/modules/$(uname -r)/
-\end{lstlisting}
+Perintah \cmd{lsmod} memperlihatkan semua modul yang sedang aktif bersama ukuran dan jumlah proses yang menggunakannya. Untuk melihat detail satu modul, gunakan \cmd{modinfo nama-modul}: kamu akan melihat deskripsi, parameter yang tersedia, nama penulis, lisensi, dan path file modulnya. Perintah \cmd{modprobe nama-modul} memuat modul beserta semua dependensinya secara otomatis.
 
-\subsection*{Fungsi Perintah yang Digunakan}
-\begin{itemize}
-    \item \texttt{uname -r}: melihat versi kernel yang sedang berjalan.
-    \item \texttt{lsmod}: daftar modul kernel yang sedang aktif.
-    \item \texttt{modinfo <modul>}: detail modul (deskripsi, parameter, file .ko, dependensi).
-    \item \texttt{modprobe <modul>}: memuat modul beserta dependensinya.
-    \item \texttt{modprobe -r <modul>}: melepas modul (jika aman dan tidak sedang digunakan).
-\end{itemize}
+Saat kernel berhasil memuat modul, hasilnya biasanya terlihat di pesan \cmd{dmesg}, di daftar perangkat PCI/USB, atau pada kemampuan baru yang tersedia di sistem. Karena itu, tiga alat yang paling sering dipakai bersama adalah \cmd{lsmod} untuk melihat apa yang aktif, \cmd{modinfo} untuk memahami modul tertentu, dan \cmd{dmesg} untuk menelusuri kapan driver tersebut dipakai atau menimbulkan error.
 
 \begin{warningbox}
-Jangan mencoba melepas modul yang terkait storage, filesystem, atau network yang sedang dipakai (contoh: modul driver disk, \texttt{ext4}, modul NIC),
-karena bisa membuat sistem hang atau koneksi SSH terputus.
+Jangan melepas modul yang sedang digunakan oleh sistem aktif. Melepas driver disk atau modul jaringan dapat menyebabkan sistem tidak responsif atau koneksi SSH terputus.
 \end{warningbox}
 
-\subsection*{Praktikum 2.4: Melihat Modul Aktif dan Informasinya}
-\textbf{Tujuan:} mengenal modul aktif dan keterkaitannya dengan perangkat.
+\subsection*{Praktikum 2.2: Eksplorasi Modul Aktif dan Driver Perangkat}
 
-\textbf{Langkah-langkah:}
+Tujuan praktikum ini adalah melihat modul kernel yang sedang berjalan dan menghubungkannya dengan perangkat yang terdeteksi sistem.
+
 \begin{enumerate}
-    \item Cek versi kernel:
-\begin{lstlisting}[language=bash, caption={Cek versi kernel}]
+    \item Tampilkan versi kernel yang sedang berjalan:
+\begin{lstlisting}[language=bash, caption={Versi kernel aktif}]
 uname -r
 \end{lstlisting}
 
-    \item Tampilkan daftar modul aktif:
-\begin{lstlisting}[language=bash, caption={Daftar modul aktif}]
-lsmod | head
+    \item Lihat daftar modul aktif:
+\begin{lstlisting}[language=bash, caption={Daftar modul kernel aktif}]
+lsmod | head -20
 \end{lstlisting}
+    \textit{Amati:} Kolom pertama adalah nama modul, kolom kedua ukuran dalam byte, kolom ketiga jumlah proses yang menggunakan modul ini.
 
-    \item Pilih salah satu modul (contoh aman: \texttt{loop}) dan lihat detailnya:
-\begin{lstlisting}[language=bash, caption={Detail modul dengan modinfo}]
+    \item Baca detail modul \texttt{loop} (modul untuk membuat disk virtual dari berkas):
+\begin{lstlisting}[language=bash, caption={Detail modul loop}]
 modinfo loop
 \end{lstlisting}
 
-    \item Muat modul (jika belum aktif), lalu verifikasi:
-\begin{lstlisting}[language=bash, caption={Load modul dan verifikasi}]
+    \item Pastikan modul \texttt{loop} termuat, lalu verifikasi:
+\begin{lstlisting}[language=bash, caption={Muat dan verifikasi modul loop}]
 sudo modprobe loop
-lsmod | grep -i loop
+lsmod | grep loop
 \end{lstlisting}
 
-    \item (Opsional) lihat pesan kernel terbaru:
-\begin{lstlisting}[language=bash, caption={Cek log kernel terbaru}]
-dmesg -T | tail -n 20
+    \item Lihat bagaimana \cmd{modprobe} menyelesaikan dependensi modul tanpa benar-benar memuat ulang modul:
+\begin{lstlisting}[language=bash, caption={Simulasi pemuatan modul dan dependensinya}]
+modprobe -n -v loop
 \end{lstlisting}
-\end{enumerate}
+    \textit{Amati:} Flag \texttt{-n} melakukan simulasi, sedangkan \texttt{-v} menampilkan langkah yang akan diambil. Ini berguna ketika kamu ingin memahami dependensi modul tanpa mengubah keadaan sistem.
 
-\subsection*{Praktikum 2.5: Konfigurasi Auto-load dan Blacklist}
-\textbf{Tujuan:} memahami cara membuat modul otomatis dimuat atau diblokir.
-
-\textbf{Fungsi konfigurasi:}
-\begin{itemize}
-    \item \texttt{/etc/modules-load.d/*.conf}: daftar modul yang di-load saat boot.
-    \item \texttt{/etc/modprobe.d/*.conf}: aturan modprobe, termasuk blacklist modul.
-\end{itemize}
-
-\textbf{Langkah demo (gunakan modul aman, contoh \texttt{loop}):}
-\begin{enumerate}
-    \item Buat file auto-load:
-\begin{lstlisting}[language=bash, caption={Menambahkan modul untuk auto-load (demo)}]
-echo "loop" | sudo tee /etc/modules-load.d/loop.conf
-\end{lstlisting}
-
-    \item Simulasikan verifikasi (tanpa reboot) dengan memastikan modul sudah aktif:
-\begin{lstlisting}[language=bash, caption={Verifikasi modul aktif}]
-lsmod | grep -i loop
-\end{lstlisting}
-
-    \item (Opsional, konsep) blacklist modul:
-\begin{lstlisting}[language=bash, caption={Contoh blacklist modul (jangan diterapkan sembarangan)}]
-# echo "blacklist loop" | sudo tee /etc/modprobe.d/blacklist-loop.conf
+    \item Hubungkan modul dengan perangkat nyata menggunakan keluaran PCI dan pesan kernel:
+\begin{lstlisting}[language=bash, caption={Hubungkan modul, perangkat, dan pesan kernel}]
+lspci -nnk | grep -A3 -i -E "ethernet|network|vga|storage"
+dmesg -T | grep -Ei "virtio|nvme|usb|ethernet" | tail -20
 \end{lstlisting}
 \end{enumerate}
 
-\begin{notebox}
-Auto-load dan blacklist sering dipakai untuk: menghindari konflik driver, menonaktifkan modul yang tidak diperlukan, atau menerapkan kebijakan keamanan.
-\end{notebox}
+\begin{challengebox}
+Pilih satu perangkat dari output \cmd{lspci -nnk}. Catat nama perangkat dan driver aktifnya. Lalu gunakan \cmd{modinfo} untuk mencari deskripsi modul tersebut, kemudian verifikasi dengan \cmd{dmesg} apakah ada pesan boot yang menyebut perangkat atau driver yang sama.
+\end{challengebox}
 
 %% ------------------------------------------------------------------------
-\section{Sistem File dan /dev di Linux}
-\label{sec:dev-filesystem}
-
-\subsection*{Konsep: /dev sebagai Device Node}
-Folder \texttt{/dev} berisi \textbf{device node} (file khusus) yang merepresentasikan perangkat.
-Ada dua kategori utama,
-\begin{itemize}
-    \item \textbf{Block device}: akses berbasis blok (contoh: disk \texttt{/dev/sda}, partisi \texttt{/dev/sda1}).
-    \item \textbf{Character device}: akses berbasis stream karakter (contoh: terminal \texttt{/dev/tty}, device serial).
-\end{itemize}
-
-\subsection*{Fungsi Perintah yang Digunakan}
-\begin{itemize}
-    \item \texttt{ls -l /dev/...}: melihat tipe file dan major/minor number.
-    \item \texttt{lsblk}: melihat mapping disk/partisi dan mount point.
-    \item \texttt{udevadm info}: melihat atribut udev dari sebuah device node.
-    \item \texttt{udevadm monitor}: memonitor event saat perangkat muncul/hilang.
-\end{itemize}
-
-\subsection*{Praktikum 2.6: Mengenali Block vs Character Device}
-\textbf{Tujuan:} membedakan perangkat disk vs terminal.
-
-\textbf{Langkah-langkah:}
-\begin{enumerate}
-    \item Lihat detail salah satu disk (sesuaikan dengan perangkat Anda, misal \texttt{sda}):
-\begin{lstlisting}[language=bash, caption={Melihat detail device node disk}]
-ls -l /dev/sda
-\end{lstlisting}
-
-    \item Lihat detail device terminal:
-\begin{lstlisting}[language=bash, caption={Melihat detail device node terminal}]
-ls -l /dev/tty
-\end{lstlisting}
-
-    \item Lihat disk dan partisi untuk mengaitkan dengan \texttt{/dev}:
-\begin{lstlisting}[language=bash, caption={Mapping disk/partisi}]
-lsblk
-\end{lstlisting}
-\end{enumerate}
-
-\begin{exercisebox}[2.3]
-Dari output \texttt{ls -l}, jelaskan perbedaan penanda file untuk block device dan character device. (Hint: karakter pertama pada permission string)
-\end{exercisebox}
-
-\subsection*{Praktikum 2.7: Melihat Informasi udev}
-\textbf{Tujuan:} melihat metadata yang dipakai udev untuk membuat device node.
-
-\textbf{Langkah-langkah:}
-\begin{enumerate}
-    \item Cek atribut udev untuk disk:
-\begin{lstlisting}[language=bash, caption={Melihat atribut udev untuk disk}]
-udevadm info --query=all --name=/dev/sda | head -n 30
-\end{lstlisting}
-
-    \item (Opsional) monitor event udev (jalankan, lalu colok/lepas USB pada mesin fisik):
-\begin{lstlisting}[language=bash, caption={Monitor event udev (opsional)}]
-sudo udevadm monitor
-\end{lstlisting}
-\end{enumerate}
-
-%% ------------------------------------------------------------------------
-\section{Perintah Dasar Terminal Linux}
+\section{Perintah Dasar Terminal}
 \label{sec:basic-commands}
 
-\subsection*{Konsep: Terminal sebagai Antarmuka Administrasi}
-Pada sistem operasi Linux, khususnya yang digunakan pada server, termasuk Ubuntu Server, terminal adalah antarmuka utama administrasi. Penguasaan terhadap penggunaan terminal sangat krusial dikarenakan terminal merupakan antarmuka utama untuk dapat mengakses sistem operasi. Kemampuan dasar terminal yang \textbf{wajib} dikuasai adalah,
-navigasi direktori, operasi file, membaca file/log, memahami permission, dan menggunakan bantuan perintah.
+Terminal Linux adalah antarmuka utama administrasi server. Tidak seperti antarmuka grafis yang menyembunyikan detail, terminal memberi kontrol penuh: kamu tahu persis apa yang terjadi dan mengapa. Penguasaan perintah dasar bukan pilihan, melainkan keharusan.
 
-\subsection*{Fungsi Perintah yang Digunakan}
-\begin{itemize}
-    \item Navigasi: \texttt{pwd}, \texttt{ls}, \texttt{cd}
-    \item Operasi file/direktori: \texttt{mkdir}, \texttt{touch}, \texttt{cp}, \texttt{mv}, \texttt{rm}
-    \item Membaca file: \texttt{cat}, \texttt{less}, \texttt{head}, \texttt{tail}
-    \item Bantuan: \texttt{man}, \texttt{--help}, \texttt{apropos}
-    \item Redirection \& pipe: \texttt{>}, \texttt{>>}, \texttt{2>}, \texttt{|}, \texttt{tee}
-\end{itemize}
+Navigasi dimulai dengan tiga perintah: \cmd{pwd} menampilkan lokasi direktori saat ini, \cmd{ls} memperlihatkan isi direktori, dan \cmd{cd} berpindah ke direktori lain. Flag \texttt{-l} pada \cmd{ls} menampilkan format panjang dengan permission, pemilik, ukuran, dan waktu modifikasi. Flag \texttt{-a} memperlihatkan berkas tersembunyi yang diawali titik. Flag \texttt{-h} menyajikan ukuran dalam satuan yang mudah dibaca seperti KB atau MB.
+
+Membuat dan mengelola berkas menggunakan \cmd{mkdir} untuk membuat direktori, \cmd{touch} untuk membuat berkas kosong, \cmd{cp} untuk menyalin, \cmd{mv} untuk memindahkan atau mengganti nama, dan \cmd{rm} untuk menghapus. Flag \texttt{-p} pada \cmd{mkdir} membuat seluruh jalur direktori sekaligus, termasuk direktori induk yang belum ada. Flag \texttt{-r} pada \cmd{cp} dan \cmd{rm} menerapkan operasi secara rekursif ke isi direktori.
+
+Untuk membaca isi berkas, \cmd{cat} menampilkan semua konten sekaligus, \cmd{head} menampilkan beberapa baris pertama, dan \cmd{tail} menampilkan beberapa baris terakhir. Flag \texttt{-n} pada keduanya menentukan jumlah baris.
 
 \begin{warningbox}
-Perintah \texttt{rm -rf} dapat menghapus direktori beserta isinya tanpa konfirmasi. Untuk praktikum, biasakan memakai \texttt{rm -ri}
-atau pastikan path yang Anda hapus benar.
+Perintah \cmd{rm -rf} menghapus direktori beserta seluruh isinya tanpa konfirmasi. Tidak ada tempat sampah. Verifikasi path yang akan dihapus sebelum menekan Enter.
 \end{warningbox}
 
-\subsection*{Praktikum 2.8: Membuat Workspace Praktikum}
-\textbf{Tujuan:} membuat area kerja aman untuk semua latihan bab ini.
+\subsection*{Praktikum 2.3: Buat Struktur Direktori Latihan}
 
-\textbf{Langkah-langkah:}
+Tujuan praktikum ini adalah membangun struktur direktori kerja dan melatih manipulasi berkas dasar.
+
 \begin{enumerate}
-    \item Buat direktori praktikum dan masuk ke dalamnya:
-\begin{lstlisting}[language=bash, caption={Membuat workspace praktikum}]
-mkdir -p ~/praktikum-os/week02
-cd ~/praktikum-os/week02
+    \item Pindah ke direktori kerja bab ini:
+\begin{lstlisting}[language=bash, caption={Masuk ke direktori kerja}]
+cd ~/lab-os/week02-hardware
 pwd
 \end{lstlisting}
 
-    \item Buat beberapa file contoh:
-\begin{lstlisting}[language=bash, caption={Membuat file contoh}]
-touch notes.txt data.log config.txt
-ls -lah
+    \item Buat struktur direktori bertingkat sekaligus:
+\begin{lstlisting}[language=bash, caption={Membuat struktur direktori}]
+mkdir -p proyek/src proyek/docs proyek/logs
+ls -l proyek/
+\end{lstlisting}
+    \textit{Amati:} Flag \texttt{-p} membuat semua direktori dalam jalur tersebut. Tanpa \texttt{-p}, perintah akan gagal jika direktori induk belum ada.
+
+    \item Buat beberapa berkas contoh dan isi salah satunya:
+\begin{lstlisting}[language=bash, caption={Membuat dan mengisi berkas}]
+touch proyek/docs/readme.txt
+echo "INFO: layanan dimulai" > proyek/logs/app.log
+echo "WARN: disk hampir penuh" >> proyek/logs/app.log
+echo "ERROR: koneksi gagal" >> proyek/logs/app.log
+cat proyek/logs/app.log
 \end{lstlisting}
 
-    \item Isi file log contoh (simulasi):
-\begin{lstlisting}[language=bash, caption={Mengisi file log contoh}]
-echo "INFO: service started" >> data.log
-echo "WARN: disk usage high" >> data.log
-echo "ERROR: failed to connect" >> data.log
-cat data.log
+    \item Salin berkas log ke direktori lain:
+\begin{lstlisting}[language=bash, caption={Menyalin berkas}]
+cp proyek/logs/app.log proyek/docs/app-backup.log
+ls -lh proyek/docs/
 \end{lstlisting}
 
-    \item Baca file dengan \texttt{less}:
-\begin{lstlisting}[language=bash, caption={Membaca file dengan less}]
-less data.log
+    \item Ganti nama berkas backup:
+\begin{lstlisting}[language=bash, caption={Mengganti nama berkas}]
+mv proyek/docs/app-backup.log proyek/docs/app-2024.log
+ls proyek/docs/
+\end{lstlisting}
+
+    \item Tampilkan tiga baris terakhir dari log:
+\begin{lstlisting}[language=bash, caption={Membaca akhir berkas log}]
+tail -3 proyek/logs/app.log
 \end{lstlisting}
 \end{enumerate}
+
+\begin{challengebox}
+Buat struktur direktori \texttt{arsip/2024/01}, \texttt{arsip/2024/02}, dan \texttt{arsip/2024/03} menggunakan \textbf{satu perintah} \cmd{mkdir -p} dengan ekspansi brace. Periksa hasilnya dengan \cmd{ls -R arsip/}. Kemudian hapus seluruh direktori \texttt{arsip} sekaligus menggunakan \cmd{rm -r arsip/}.
+\end{challengebox}
 
 %% ------------------------------------------------------------------------
 \section{Manipulasi Teks}
 \label{sec:text-manipulation}
 
-\subsection*{Konsep: Data Administrasi = Teks}
-Banyak aktivitas administrasi Linux menghasilkan teks, seperti, log, konfigurasi, output perintah. Tool seperti \texttt{grep}, \texttt{sed}, dan \texttt{awk}
-adalah tools untuk menyaring, mengubah, dan meringkas teks secara cepat.
+Hampir semua data di Linux berbentuk teks: log sistem, berkas konfigurasi, output perintah. Kemampuan menyaring, mengubah, dan mengekstrak informasi dari teks adalah keterampilan yang akan kamu gunakan setiap hari sebagai administrator sistem.
 
-\subsection{Perintah grep}
-\subsubsection*{Fungsi grep}
-\texttt{grep} digunakan untuk mencari baris yang cocok dengan pola (pattern) di file atau stream.
-Sangat berguna untuk mencari error pada log atau mencari konfigurasi tertentu.
+Perintah \cmd{grep} mencari baris yang cocok dengan pola tertentu. Flag \texttt{-n} menampilkan nomor baris, \texttt{-i} mengabaikan perbedaan huruf besar-kecil, \texttt{-v} menampilkan baris yang tidak cocok, dan \texttt{-r} melakukan pencarian rekursif di semua berkas dalam direktori. Untuk mencari dua pola sekaligus, gunakan flag \texttt{-E} dengan pola \texttt{pola1|pola2}.
 
-\subsubsection*{Praktikum 2.9: Pencarian Pola dengan grep}
-\textbf{Langkah-langkah:}
+Perintah \cmd{sed} adalah editor stream yang memproses teks baris per baris. Operasi yang paling sering digunakan adalah substitusi dengan sintaks \texttt{s/lama/baru/g}: huruf \texttt{s} berarti substitusi, \texttt{g} di akhir berarti ganti semua kemunculan dalam satu baris. Flag \texttt{-i} menerapkan perubahan langsung ke berkas asli. Untuk keamanan saat bekerja di sistem produksi, gunakan \texttt{-i.bak} agar berkas asli disimpan sebagai cadangan.
+
+Perintah \cmd{awk} memproses teks berdasarkan kolom. Setiap baris dibagi menjadi kolom yang dipisahkan spasi, dan kamu bisa mengakses kolom tertentu dengan \texttt{\$1}, \texttt{\$2}, dan seterusnya. Variabel \texttt{\$NF} merujuk ke kolom terakhir. Variabel \texttt{NR} berisi nomor baris saat ini. Kamu bisa menambahkan kondisi seperti \texttt{NR>1} untuk melewati baris header.
+
+\subsection*{Praktikum 2.4: Filter dan Ekstrak Teks dari Output Sistem}
+
+Tujuan praktikum ini adalah menggunakan \cmd{grep}, \cmd{sed}, dan \cmd{awk} untuk mengolah output perintah sistem nyata.
+
 \begin{enumerate}
-    \item Cari baris yang mengandung \texttt{ERROR} pada \texttt{data.log}:
-\begin{lstlisting}[language=bash, caption={grep sederhana}]
-grep "ERROR" data.log
-\end{lstlisting}
-
-    \item Cari tanpa memperhatikan huruf besar/kecil:
-\begin{lstlisting}[language=bash, caption={grep case-insensitive}]
-grep -i "error" data.log
-\end{lstlisting}
-
-    \item Tampilkan nomor baris:
-\begin{lstlisting}[language=bash, caption={grep dengan nomor baris}]
-grep -n "WARN" data.log
-\end{lstlisting}
-
-    \item Tampilkan baris yang \textbf{tidak} cocok (invert match):
-\begin{lstlisting}[language=bash, caption={grep invert match}]
-grep -v "INFO" data.log
-\end{lstlisting}
-\end{enumerate}
-
-\begin{exercisebox}[2.4]
-Gunakan \texttt{grep} untuk menampilkan hanya baris yang mengandung \texttt{INFO} atau \texttt{WARN} dari \texttt{data.log}.
-(Hint: gunakan \texttt{grep -E} dengan pola alternatif)
-\end{exercisebox}
-
-\subsection{Perintah sed}
-\subsubsection*{Fungsi sed}
-\texttt{sed} adalah stream editor untuk melakukan transformasi teks, terutama substitusi (cari-ganti).
-Umum dipakai untuk memperbarui konfigurasi atau melakukan normalisasi output.
-
-\subsubsection*{Praktikum 2.10: Substitusi dengan sed (Aman di File Latihan)}
-\textbf{Langkah-langkah:}
-\begin{enumerate}
-    \item Siapkan file konfigurasi latihan:
-\begin{lstlisting}[language=bash, caption={Membuat file config latihan}]
-cat > config.txt << 'EOF'
-PORT=8080
-MODE=dev
-SERVICE_NAME=myserver
+    \item Siapkan berkas log latihan dengan lebih banyak konten:
+\begin{lstlisting}[language=bash, caption={Membuat berkas log latihan}]
+cat > ~/lab-os/week02-hardware/sistem.log << 'EOF'
+INFO: layanan web dimulai pada port 8080
+WARN: penggunaan CPU mencapai 75%
+ERROR: gagal membaca berkas konfigurasi
+INFO: cadangan data selesai
+WARN: memori tersisa kurang dari 20%
+ERROR: koneksi database terputus
+INFO: pembaruan sistem dijadwalkan
 EOF
-cat config.txt
+cat sistem.log
 \end{lstlisting}
 
-    \item Ganti \texttt{dev} menjadi \texttt{prod} (tanpa mengubah file asli):
-\begin{lstlisting}[language=bash, caption={sed substitusi tanpa in-place}]
-sed 's/MODE=dev/MODE=prod/' config.txt
+    \item Cari baris yang berisi kata ERROR:
+\begin{lstlisting}[language=bash, caption={Filter baris ERROR}]
+grep "ERROR" sistem.log
+\end{lstlisting}
+    \textit{Amati:} Hasilnya hanya baris dengan kata ERROR. Coba tambahkan flag \texttt{-n} untuk melihat nomor baris.
+
+    \item Tampilkan baris yang bukan INFO:
+\begin{lstlisting}[language=bash, caption={Tampilkan baris selain INFO}]
+grep -v "INFO" sistem.log
 \end{lstlisting}
 
-    \item Terapkan perubahan langsung ke file (\texttt{-i}):
-\begin{lstlisting}[language=bash, caption={sed in-place}]
-sed -i 's/MODE=dev/MODE=prod/' config.txt
-cat config.txt
+    \item Ganti kata \texttt{WARN} menjadi \texttt{PERINGATAN} di semua baris:
+\begin{lstlisting}[language=bash, caption={Substitusi teks dengan sed}]
+sed 's/WARN/PERINGATAN/g' sistem.log
+\end{lstlisting}
+    \textit{Amati:} Berkas asli tidak berubah. Hanya output yang tampil di terminal yang sudah dimodifikasi.
+
+    \item Buat berkas konfigurasi latihan dan ubah nilainya:
+\begin{lstlisting}[language=bash, caption={Edit konfigurasi dengan sed}]
+cat > server.conf << 'EOF'
+PORT=8080
+MODE=development
+HOST=localhost
+EOF
+sed -i 's/development/production/g' server.conf
+cat server.conf
 \end{lstlisting}
 
-    \item Ganti semua kemunculan kata (\texttt{g} untuk global), contoh ubah \texttt{myserver} menjadi \texttt{node}:
-\begin{lstlisting}[language=bash, caption={sed global replacement}]
-sed -i 's/myserver/node/g' config.txt
-cat config.txt
+    \item Ekstrak kolom pertama dan terakhir dari output \cmd{df -h}:
+\begin{lstlisting}[language=bash, caption={Ekstrak kolom dengan awk}]
+df -h | awk '{print $1, $NF}'
 \end{lstlisting}
-\end{enumerate}
+    \textit{Amati:} \texttt{\$1} adalah kolom pertama (nama filesystem), \texttt{\$NF} adalah kolom terakhir (titik kait). Output jauh lebih ringkas dari output \cmd{df -h} penuh.
 
-\begin{warningbox}
-Gunakan \texttt{sed -i} dengan hati-hati jika mengedit file sistem. Untuk administrasi nyata, praktik aman adalah membuat backup:
-\texttt{sed -i.bak 's/old/new/g' file.conf}
-\end{warningbox}
-
-\subsection{Perintah awk}
-\subsubsection*{Fungsi awk}
-\texttt{awk} digunakan untuk memproses teks berbasis kolom/field. Sangat efektif untuk meringkas output perintah seperti \texttt{df}, \texttt{ps},
-atau file berformat kolom.
-
-\subsubsection*{Praktikum 2.11: Ekstraksi Kolom dengan awk}
-\textbf{Langkah-langkah:}
-\begin{enumerate}
-    \item Lihat output \texttt{df -h}:
-\begin{lstlisting}[language=bash, caption={Output df -h}]
-df -h
-\end{lstlisting}
-
-    \item Ambil kolom filesystem dan persentase pemakaian:
-\begin{lstlisting}[language=bash, caption={awk print kolom tertentu}]
-df -h | awk 'NR==1 {print $1, $5, $6} NR>1 {print $1, $5, $6}'
-\end{lstlisting}
-
-    \item Filter hanya yang pemakaian disk di atas 80\%:
-\begin{lstlisting}[language=bash, caption={awk filter berdasarkan kondisi}]
-df -h | awk 'NR==1 || ($5+0) > 80 {print $1, $5, $6}'
+    \item Filter filesystem yang penggunaan disk di atas 50\%:
+\begin{lstlisting}[language=bash, caption={Filter dengan kondisi awk}]
+df -h | awk 'NR==1 {print} NR>1 && ($5+0) > 50 {print}'
 \end{lstlisting}
 \end{enumerate}
 
+\begin{challengebox}
+Gabungkan \cmd{grep} dan \cmd{awk} dalam satu pipeline untuk mengekstrak informasi dari \file{/proc/meminfo}. Cari baris yang mengandung kata \texttt{Mem} menggunakan \cmd{grep}, lalu ekstrak nama field (kolom pertama) dan nilainya (kolom kedua) menggunakan \cmd{awk}. Perintahnya: \texttt{grep Mem /proc/meminfo | awk '\{print \$1, \$2, \$3\}'}. Tambahkan \cmd{sort} di akhir pipeline untuk mengurutkan hasilnya.
+\end{challengebox}
 
 %% ------------------------------------------------------------------------
-\section{Manajemen Proses}
-\label{sec:process-commands}
+\section{Bantuan dan Dokumentasi Perintah}
+\label{sec:command-documentation}
 
-\subsection*{Konsep: Proses, PID, dan Sinyal}
-Setiap program yang berjalan direpresentasikan sebagai \textbf{proses} dengan \textbf{PID} (Process ID).
-Linux menggunakan \textbf{sinyal} untuk mengontrol proses, misalnya:
-\begin{itemize}
-    \item \texttt{SIGTERM} (15): meminta proses berhenti secara baik (graceful).
-    \item \texttt{SIGKILL} (9): memaksa proses berhenti segera (force).
-\end{itemize}
+Jumlah perintah di Linux sangat banyak, dan tidak ada administrator yang menghafal semuanya. Keterampilan yang lebih penting adalah mengetahui cara mencari jawaban dengan cepat. Linux menyediakan dokumentasi bawaan yang sangat kaya: halaman manual, ringkasan opsi lewat \cmd{--help}, dokumentasi GNU lewat \cmd{info}, dan indeks topik melalui \cmd{apropos}.
 
-\subsection{Perintah ps}
-\subsubsection*{Fungsi ps}
-\texttt{ps} menampilkan snapshot proses pada saat perintah dijalankan. Berguna untuk mencari PID, melihat pemakaian CPU/MEM, dan memfilter proses tertentu.
+Perintah \cmd{man nama-perintah} menampilkan halaman manual lengkap berisi deskripsi, opsi, contoh, dan berkas terkait. Hampir semua utilitas modern juga mendukung \cmd{nama-perintah --help} untuk ringkasan cepat. Untuk beberapa program GNU, \cmd{info nama-perintah} menyediakan dokumentasi yang lebih panjang dan terstruktur. Sementara itu, \cmd{apropos kata-kunci} berguna ketika kamu belum tahu nama perintahnya, misalnya mencari semua perintah yang berkaitan dengan ``copy'' atau ``archive''.
 
-\subsubsection*{Praktikum 2.12: Melihat Proses dengan ps}
-\textbf{Langkah-langkah:}
+Ada juga perintah bantu lain yang sering dipakai di terminal: \cmd{which} untuk menemukan lokasi executable di \var{PATH}, \cmd{type} untuk mengetahui apakah sebuah nama adalah builtin shell, alias, fungsi, atau executable biasa, serta \cmd{help} untuk bantuan perintah bawaan shell Bash.
+
+Pendekatan ini penting untuk buku ini: alih-alih berhenti ketika menjumpai perintah baru, biasakan membuka dokumentasinya, membaca opsi yang relevan, lalu mencoba contoh kecil secara langsung di terminal.
+
+\subsection*{Praktikum 2.5: Telusuri Dokumentasi Perintah}
+
+Tujuan praktikum ini adalah membiasakan diri mencari dokumentasi dan memahami perbedaan sumber bantuan yang tersedia di Linux.
+
 \begin{enumerate}
-    \item Tampilkan semua proses (format BSD):
-\begin{lstlisting}[language=bash, caption={ps aux}]
-ps aux | head
+    \item Buka halaman manual untuk \cmd{ls} dan cari bagian yang menjelaskan flag \texttt{-a}:
+\begin{lstlisting}[language=bash, caption={Membuka halaman manual}]
+man ls
+\end{lstlisting}
+    \textit{Amati:} Di dalam \cmd{man}, gunakan tombol \texttt{/} untuk mencari kata kunci seperti \texttt{-a}, lalu tekan \texttt{n} untuk hasil berikutnya dan \texttt{q} untuk keluar.
+
+    \item Lihat ringkasan opsi cepat untuk \cmd{grep} dan \cmd{tar}:
+\begin{lstlisting}[language=bash, caption={Ringkasan bantuan cepat}]
+grep --help | head -20
+tar --help | head -20
 \end{lstlisting}
 
-    \item Cari proses tertentu (misal \texttt{sshd}):
-\begin{lstlisting}[language=bash, caption={Filter proses dengan grep}]
-ps aux | grep -i sshd
+    \item Gunakan \cmd{apropos} untuk mencari perintah berdasarkan topik:
+\begin{lstlisting}[language=bash, caption={Mencari perintah berdasarkan kata kunci}]
+apropos copy
+apropos archive
+\end{lstlisting}
+
+    \item Periksa lokasi dan tipe perintah \cmd{cd}, \cmd{ls}, dan \cmd{grep}:
+\begin{lstlisting}[language=bash, caption={Mengenali jenis perintah di shell}]
+type cd
+type ls
+which grep
+\end{lstlisting}
+
+    \item Baca bantuan untuk builtin shell dan dokumentasi info bila tersedia:
+\begin{lstlisting}[language=bash, caption={Bantuan builtin dan info}]
+help cd
+info coreutils 'ls invocation'
 \end{lstlisting}
 \end{enumerate}
 
-\subsection{Perintah top}
-\subsubsection*{Fungsi top}
-\texttt{top} menampilkan pemakaian resource secara real-time: CPU, memori, serta proses paling berat.
-Ini alat cepat untuk diagnosis ``server terasa lambat''.
-
-\subsubsection*{Praktikum 2.13: Monitoring Real-time dengan top}
-\textbf{Langkah-langkah:}
-\begin{enumerate}
-    \item Jalankan \texttt{top}:
-\begin{lstlisting}[language=bash, caption={Menjalankan top}]
-top
-\end{lstlisting}
-
-    \item Amati nilai load average, pemakaian CPU, dan proses teratas. Tekan \texttt{q} untuk keluar.
-\end{enumerate}
-
-\begin{tipbox}
-Altenatif lainnya, Anda dapat menggunakan, \texttt{htop} atau \texttt{btop}. Kedua tools tersebut lebih nyaman digunakan secara visual.
-\begin{lstlisting}[language=bash]
-sudo apt install -y htop btop
-\end{lstlisting}
-\end{tipbox}
-
-\subsection{Perintah kill}
-\subsubsection*{Fungsi kill}
-\texttt{kill} mengirim sinyal ke proses berdasarkan PID. Sinyal yang dikirimkan merupakan sinyal untuk menghentikan proses.
-Sinyal default adalah \texttt{SIGTERM}.
-
-\subsubsection*{Praktikum 2.14: Menghentikan Proses dengan kill}
-\textbf{Langkah-langkah:}
-\begin{enumerate}
-    \item Jalankan proses dummy di background:
-\begin{lstlisting}[language=bash, caption={Membuat proses dummy}]
-sleep 300 &
-\end{lstlisting}
-
-    \item Cari PID proses \texttt{sleep}:
-\begin{lstlisting}[language=bash, caption={Mencari PID sleep}]
-ps aux | grep -E "sleep 300" | grep -v grep
-\end{lstlisting}
-
-    \item Hentikan dengan \texttt{SIGTERM}:
-\begin{lstlisting}[language=bash, caption={Mengirim SIGTERM}]
-kill <PID_ANDA>
-\end{lstlisting}
-
-    \item Verifikasi proses berhenti:
-\begin{lstlisting}[language=bash, caption={Verifikasi proses sudah berhenti}]
-ps aux | grep -E "sleep 300" | grep -v grep
-\end{lstlisting}
-
-    \item (Opsional) Jika proses sulit untuk dihentikan dan Anda membutukan untuk menghentikan proses tersebut, gunakan \texttt{SIGKILL}:
-\begin{lstlisting}[language=bash, caption={Mengirim SIGKILL (opsional)}]
-kill -9 <PID_ANDA>
-\end{lstlisting}
-\end{enumerate}
-
-%% ------------------------------------------------------------------------
-\section{Pemantauan Sistem}
-\label{sec:system-monitoring}
-
-\subsection*{Konsep: ``Health Check'' Server}
-Pemantauan sistem berfokus pada tiga pertanyaan praktis:
-\begin{enumerate}
-    \item Apakah CPU/memori sedang terbebani?
-    \item Apakah disk hampir penuh?
-    \item Apakah service penting berjalan normal dan log tidak menunjukkan error?
-\end{enumerate}
-
-\subsection*{Fungsi Perintah yang Digunakan}
-\begin{itemize}
-    \item Disk: \texttt{df -h} (kapasitas), \texttt{du -sh} (ukuran direktori).
-    \item Load \& memori: \texttt{uptime}, \texttt{free -h}.
-    \item Network (ringkas): \texttt{ip a}, \texttt{ip r}, \texttt{ss -tulpn}.
-    \item Service: \texttt{systemctl status}, \texttt{systemctl --failed}.
-    \item Log: \texttt{journalctl -xe}, \texttt{journalctl -u <service>}.
-\end{itemize}
-
-
-\subsection*{Praktikum 2.15: Cek Disk, Load, dan Service}
-\textbf{Langkah-langkah:}
-\begin{enumerate}
-    \item Cek penggunaan disk:
-\begin{lstlisting}[language=bash, caption={Cek kapasitas disk}]
-df -h
-\end{lstlisting}
-
-    \item Cari direktori yang besar (contoh pada \texttt{/var}):
-\begin{lstlisting}[language=bash, caption={Cek ukuran direktori (contoh /var)}]
-sudo du -sh /var/* 2>/dev/null | sort -h | tail -n 10
-\end{lstlisting}
-
-    \item Cek load dan uptime:
-\begin{lstlisting}[language=bash, caption={Cek load average}]
-uptime
-\end{lstlisting}
-
-    \item Cek service yang gagal:
-\begin{lstlisting}[language=bash, caption={Service yang gagal}]
-systemctl --failed
-\end{lstlisting}
-
-    \item Ambil log error terbaru (jika ada indikasi masalah):
-\begin{lstlisting}[language=bash, caption={Log error terbaru}]
-journalctl -xe | tail -n 50
-\end{lstlisting}
-\end{enumerate}
-
-\subsection*{Praktikum 2.16: Monitoring Port dan Koneksi (Network Basics)}
-\textbf{Tujuan:} melihat interface, routing, dan port yang sedang listen (berguna untuk troubleshooting service).
-
-\textbf{Langkah-langkah:}
-\begin{enumerate}
-    \item Lihat interface dan IP:
-\begin{lstlisting}[language=bash, caption={Cek IP address}]
-ip a
-\end{lstlisting}
-
-    \item Lihat routing table:
-\begin{lstlisting}[language=bash, caption={Cek routing}]
-ip r
-\end{lstlisting}
-
-    \item Lihat port yang sedang listening:
-\begin{lstlisting}[language=bash, caption={Cek port listening}]
-sudo ss -tulpn
-\end{lstlisting}
-\end{enumerate}
-
-\begin{exercisebox}[2.5]
-Pilih satu port yang listening dari output \texttt{ss -tulpn}(misal port 22), lalu tuliskan service/proses yang membukanya. Jelaskan kegunaan port tersebut secara singkat.
-\end{exercisebox}
+\begin{challengebox}
+Pilih tiga perintah dari bab ini, misalnya \cmd{ls}, \cmd{grep}, dan \cmd{tar}. Untuk masing-masing, catat: satu cara membuka dokumentasi lengkap, satu cara melihat bantuan singkat, dan satu opsi yang menurutmu paling berguna. Jelaskan kapan kamu akan memakai opsi tersebut.
+\end{challengebox}
 
 %% ------------------------------------------------------------------------
 \section{Rangkuman}
-\begin{itemize}
-    \item Linux mendeteksi perangkat melalui kernel, sysfs (\texttt{/sys}), udev, dan membuat node perangkat di \texttt{/dev}.
-    \item Utilitas seperti \texttt{lspci/lsusb/lsblk} membantu identifikasi perangkat; \texttt{lspci -k} membantu melihat driver/modul.
-    \item Modul kernel dapat dilihat dengan \texttt{lsmod}, dianalisis dengan \texttt{modinfo}, dan dikelola dengan \texttt{modprobe}.
-    \item \texttt{/dev} berisi device node (block vs character device) untuk interaksi perangkat.
-    \item Perintah dasar terminal dan konsep pipe/redirection adalah fondasi administrasi server.
-    \item \texttt{grep/sed/awk} memudahkan pencarian, pengubahan, dan peringkasan teks/log.
-    \item \texttt{ps/top/kill} digunakan untuk observasi proses dan pengiriman sinyal penghentian.
-    \item Monitoring sistem mencakup disk (\texttt{df/du}), load (\texttt{uptime}), service (\texttt{systemctl}), dan log (\texttt{journalctl}).
+
+Dalam bab ini, kamu telah mempelajari:
+
+\begin{itemize}[noitemsep,topsep=2pt]
+    \item \textbf{Deteksi perangkat keras}: perintah \cmd{lspci}, \cmd{lsusb}, \cmd{lscpu}, dan \cmd{dmesg} memperlihatkan komponen sistem yang dideteksi oleh kernel.
+    \item \textbf{Modul kernel}: \cmd{lsmod} menampilkan modul aktif, \cmd{modinfo} membaca detail modul, dan \cmd{modprobe} memuat modul beserta dependensinya.
+    \item \textbf{Perintah dasar terminal}: \cmd{ls}, \cmd{cd}, \cmd{pwd}, \cmd{mkdir -p}, \cmd{cp}, \cmd{mv}, \cmd{rm}, \cmd{cat}, \cmd{head}, dan \cmd{tail} adalah fondasi navigasi dan manipulasi berkas.
+    \item \textbf{Manipulasi teks}: \cmd{grep} menyaring baris berdasarkan pola, \cmd{sed} mengganti teks, \cmd{awk} mengekstrak kolom dari output berformat.
+    \item \textbf{Dokumentasi perintah}: \cmd{man}, \cmd{--help}, \cmd{info}, \cmd{apropos}, \cmd{type}, dan \cmd{which} membantu kamu mempelajari perintah baru secara mandiri.
 \end{itemize}
 
 %% ------------------------------------------------------------------------
-\section{Latihan}
+\section{Tugas Praktikum}
 
-\begin{exercisebox}[2.A]
-Jalankan \texttt{lspci -nnk}. Pilih 1 perangkat PCI dan tuliskan: nama perangkat, ID vendor:device, dan kernel driver in use.
+\textbf{Instruksi Umum}: Kerjakan seluruh tugas secara mandiri. Dokumentasikan setiap langkah dengan tangkapan layar dan kumpulkan dalam format PDF.
+
+\begin{exercisebox}[2.1 Profil Perangkat Keras VM]
+Jalankan \cmd{lspci -nnk} dan pilih satu perangkat PCI. Catat: (a) nama perangkat, (b) ID vendor dan perangkat dalam format heksadesimal, (c) nama driver kernel aktif. Kemudian jalankan \cmd{modinfo} untuk driver tersebut dan tuliskan deskripsi singkat serta nama penulis modulnya.
 \end{exercisebox}
 
-\begin{exercisebox}[2.B]
-Tentukan device root filesystem dengan \texttt{findmnt /}. Lalu cocokkan dengan \texttt{lsblk -f} dan tuliskan tipe filesystem serta UUID-nya.
+\begin{exercisebox}[2.2 Dokumentasi dan Modul Kernel]
+Pilih satu modul aktif dari hasil \cmd{lsmod}. Dokumentasikan: (a) nama modul, (b) deskripsi dan lisensi dari \cmd{modinfo}, (c) satu pesan kernel terkait dari \cmd{dmesg} bila ada. Setelah itu, gunakan \cmd{man} atau \cmd{--help} untuk mencari arti salah satu opsi dari perintah \cmd{modprobe} dan jelaskan fungsinya.
 \end{exercisebox}
 
-\begin{exercisebox}[2.C]
-Buat file \texttt{server.log} berisi minimal 10 baris dengan variasi kata: INFO, WARN, ERROR. Gunakan \texttt{grep} untuk menampilkan hanya baris ERROR.
-\end{exercisebox}
-
-\begin{exercisebox}[2.D]
-Gunakan \texttt{sed} untuk mengganti semua kata \texttt{server} menjadi \texttt{node} pada file latihan. Tunjukkan sebelum dan sesudah.
-\end{exercisebox}
-
-\begin{exercisebox}[2.E]
-Gunakan \texttt{df -h} lalu \texttt{awk} untuk menampilkan filesystem yang penggunaan disk di atas 70\%.
-\end{exercisebox}
-
-\begin{exercisebox}[2.F]
-Jalankan \texttt{sleep 600 \&}. Temukan PID-nya dengan \texttt{ps}. Hentikan dengan \texttt{SIGTERM}. Jelaskan beda SIGTERM vs SIGKILL.
-\end{exercisebox}
-
-\begin{exercisebox}[2.G]
-Gunakan \texttt{systemctl --failed}. Jika tidak ada yang gagal, pilih satu service aktif (misal \texttt{ssh}) dan tampilkan status serta 30 baris log terakhirnya.
+\begin{exercisebox}[2.3 Analisis Log dengan grep/sed/awk]
+Buat berkas \file{server.log} berisi minimal 10 baris dengan variasi tingkat pesan: INFO, WARN, dan ERROR. Kemudian: (a) gunakan \cmd{grep -c ERROR server.log} untuk menghitung jumlah baris ERROR, (b) gunakan \cmd{sed} untuk mengganti semua kata \texttt{WARN} menjadi \texttt{WARNING} dan simpan ke berkas baru \file{server-clean.log}, (c) gunakan \cmd{awk} untuk menampilkan hanya kata pertama (tingkat pesan) dari setiap baris. Sertakan tangkapan layar output setiap perintah.
 \end{exercisebox}
 
 %% ------------------------------------------------------------------------
-\section{Referensi Tambahan}
+\section{Referensi}
 
 \begin{itemize}
-    \item Manual pages: \texttt{man lspci}, \texttt{man lsusb}, \texttt{man lsblk}, \texttt{man modprobe}, \texttt{man journalctl}, \texttt{man systemctl}
-    \item William E. Shotts, \textit{The Linux Command Line} (dasar command line dan text processing)
-    \item Dokumentasi Ubuntu Server (administrasi service systemd dan troubleshooting log)
+    \item Shotts, W. \textit{The Linux Command Line}, edisi ke-2. No Starch Press, 2019.
+    \item Nemeth, E., Snyder, G., Hein, T. R. \textit{UNIX and Linux System Administration Handbook}, edisi ke-5. Pearson, 2017.
+    \item Ward, B. \textit{How Linux Works}, edisi ke-3. No Starch Press, 2021.
+    \item Dokumentasi Ubuntu Server: \url{https://ubuntu.com/server/docs}
+    \item Kernel.org Documentation: \url{https://www.kernel.org/doc/html/latest/}
 \end{itemize}
-
-%% ------------------------------------------------------------------------

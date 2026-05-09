@@ -1,7 +1,7 @@
 
-# Rencana Pembelajaran Sistem Operasi
+# Outline Buku Sistem Operasi
 
-## Minggu 1: Pengenalan Sistem Operasi & Instalasi
+## Bab 1: Pengenalan Sistem Operasi dan Instalasi Linux
 - **Materi**:
   - Konsep dasar dan fungsi sistem operasi
   - Sejarah dan evolusi sistem operasi Linux
@@ -11,17 +11,16 @@
   - Partisi disk dan sistem file di Linux
   - Konfigurasi awal pasca instalasi
 
-## Minggu 2: Manajemen Perangkat Keras & Perintah Dasar Sistem Operasi
+## Bab 2: Manajemen Perangkat Keras dan Perintah Dasar
 - **Materi**:
   - Deteksi perangkat keras dan konfigurasi di Linux
   - Modul kernel dan driver perangkat
-  - Sistem file dan `/dev` di Linux
   - Perintah dasar terminal Linux (`ls`, `cd`, `pwd`, dll.)
+  - Operasi dasar file dan direktori (`cp`, `mv`, `rm`, `mkdir`, `touch`)
   - Manipulasi teks dengan `sed`, `awk`, dan `grep`
-  - Manajemen proses dengan `ps`, `top`, dan `kill`
-  - Pemantauan sistem dengan `free`, `df`, `du`, dan `iostat`
+  - Bantuan dan dokumentasi perintah (`man`, `--help`, `info`)
 
-## Minggu 3: Dasar Input/Output (I/O)
+## Bab 3: Dasar Input dan Output (I/O)
 - **Materi**:
   - File descriptor di Linux
   - Pengalihan I/O standar (stdin, stdout, stderr)
@@ -29,31 +28,27 @@
   - Pengalihan output ke file (`>`, `>>`)
   - Penggunaan `tee` untuk output ganda
 
-## Minggu 4: Kuis Tengah Semester (Minggu 1-3)
-- **Konten**:
-  - Ujian untuk menilai materi dari minggu 1 hingga 3.
-
-## Minggu 5: Struktur Direktori & Operasi File
+## Bab 4: Struktur Direktori dan Operasi File
 - **Materi**:
   - Standar Hierarki Sistem File (FHS) di Linux
+  - Sistem file Linux dan peran `/dev`
   - Jenis file di Linux (reguler, direktori, symlink, perangkat)
-  - Navigasi sistem file melalui command line
-  - Operasi file lanjutan (`chmod`, `chown`, `chgrp`)
+  - Eksplorasi struktur direktori Linux melalui command line
   - Hard links dan symbolic links
   - Pencarian file dengan `find` dan `locate`
   - Kompresi dan pengarsipan file (`tar`, `gzip`, `zip`)
 
-## Minggu 6: Manajemen Proses
+## Bab 5: Manajemen Proses
 - **Materi**:
   - Konsep proses dan thread di Linux
   - Siklus hidup proses
   - Penjadwalan proses dan prioritas
   - Sinyal proses dan penanganannya
   - Manajemen job (foreground dan background)
+  - Pemantauan proses dengan `ps`, `top`, `htop`, dan `atop`
   - Penggunaan `nice` dan `renice` untuk prioritas proses
-  - Pemantauan proses dengan `htop` dan `atop`
 
-## Minggu 7: Bash Shell
+## Bab 6: Bash Shell
 - **Materi**:
   - Pengenalan Bash sebagai shell default di Linux
   - Konfigurasi Bash (`.bashrc`, `.bash_profile`)
@@ -63,11 +58,7 @@
   - Wildcards dan ekspansi nama file
   - Quoting dan escaping di Bash
 
-## Minggu 8: Ujian Tengah Semester
-- **Konten**:
-  - Ujian tengah semester yang mencakup materi dari Minggu 1–7.
-
-## Minggu 9: Pemrograman Bash
+## Bab 7: Pemrograman Bash
 - **Materi**:
   - Dasar-dasar scripting Bash
   - Variabel dan parameter posisional
@@ -77,25 +68,26 @@
   - Debugging shell script
   - Praktik terbaik dalam shell scripting
 
-## Minggu 10: Manajemen Memori & System Call
+## Bab 8: Manajemen Memori dan System Call
 - **Materi**:
   - Arsitektur memori di Linux
   - Manajemen memori virtual
   - Konfigurasi swap space
-  - Pemantauan penggunaan memori
+  - Pemantauan penggunaan memori (`free`, `vmstat`, `top`)
   - Pengenalan system call di Linux
   - Jenis-jenis system call umum
   - Interaksi antara user space dan kernel space
 
-## Minggu 11: Manajemen File & User/Group
+## Bab 9: Manajemen File, User, dan Group
 - **Materi**:
   - Sistem kontrol akses di Linux (permissions)
+  - Perintah izin dan kepemilikan file (`chmod`, `chown`, `chgrp`)
   - Access Control Lists (ACLs)
   - Manajemen user dan group (`useradd`, `usermod`, `groupadd`, dll.)
   - Konfigurasi `sudo` dan penggunaan `su`
   - Disk quota untuk user dan group
 
-## Minggu 12: Manajemen Layanan (Services)
+## Bab 10: Manajemen Layanan (Services)
 - **Materi**:
   - Pengenalan sistem init di Linux (SysV init, Upstart, systemd)
   - Mengelola layanan dengan `systemctl`
@@ -106,7 +98,7 @@
   - Automatisasi start-up dan shutdown layanan
   - Troubleshooting layanan Linux
 
-## Minggu 13: Manajemen Aplikasi
+## Bab 11: Manajemen Aplikasi
 - **Materi**:
   - Sistem manajemen paket di Linux (apt, yum, dnf)
   - Instalasi, update, dan penghapusan software
@@ -116,18 +108,10 @@
   - Manajemen dependensi aplikasi
   - Pemantauan performa aplikasi
 
-## Minggu 14: Backup dan Pemulihan Sistem
+## Bab 12: Backup dan Pemulihan Sistem
 - **Materi**:
   - Strategi backup di lingkungan Linux
   - Penggunaan tools backup (`rsync`, `tar`, `dd`)
   - Implementasi backup terjadwal
   - Pemulihan sistem dari backup
   - Perencanaan pemulihan bencana untuk sistem Linux
-
-## Minggu 15: Tugas Besar
-- **Konten**:
-  - Mahasiswa akan mengerjakan proyek akhir yang berkaitan dengan operasi dan administrasi sistem, mendemonstrasikan pembelajaran dan keterampilan mereka.
-
-## Minggu 16: Ujian Akhir Semester
-- **Konten**:
-  - Ujian akhir semester yang mencakup semua topik yang telah dibahas sepanjang semester.

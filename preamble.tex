@@ -145,7 +145,7 @@
     keywordstyle=\color{magenta}\bfseries,
     numberstyle=\tiny\color{codegray},
     stringstyle=\color{codepurple},
-    basicstyle=\ttfamily\small,
+    basicstyle=\ttfamily\footnotesize,
     breakatwhitespace=false,
     breaklines=true,
     captionpos=b,
@@ -157,8 +157,9 @@
     tabsize=4,
     frame=single,            % Simple frame around code
     rulecolor=\color{black!30},
-    xleftmargin=2em,
-    framexleftmargin=1.5em
+    xleftmargin=0.6em,
+    framexleftmargin=0.5em,
+    framesep=2pt
 }
 
 \lstset{style=bashstyle}
@@ -168,8 +169,8 @@
 %% ------------------------------------------------------------------------
 %% Add penalties to discourage page breaks inside listings
 \lstset{
-    aboveskip=\medskipamount,
-    belowskip=\medskipamount
+    aboveskip=2pt,
+    belowskip=2pt
 }
 
 %% For very long code that MUST be allowed to break, use this environment
@@ -257,12 +258,14 @@
     \def\tipboxTitle{Tips}
     \def\exampleboxPrefix{Contoh: }
     \def\exerciseboxPrefix{Latihan }
+    \def\challengeboxTitle{Tantangan}
 \else
     \def\noteboxTitle{Note}
     \def\warningboxTitle{Warning}
     \def\tipboxTitle{Tip}
     \def\exampleboxPrefix{Example: }
     \def\exerciseboxPrefix{Exercise }
+    \def\challengeboxTitle{Challenge}
 \fi
 
 % Box untuk catatan / note
@@ -271,7 +274,11 @@
     colframe=blue!75!black,
     title=\noteboxTitle,
     fonttitle=\bfseries,
-    top=3pt, bottom=3pt, toptitle=2pt, bottomtitle=2pt
+    enhanced,
+    breakable,
+    top=2pt, bottom=2pt, left=3pt, right=3pt,
+    toptitle=1pt, bottomtitle=1pt,
+    before skip=4pt, after skip=4pt
 }
 
 % Box untuk peringatan / warning
@@ -280,7 +287,11 @@
     colframe=red!75!black,
     title=\warningboxTitle,
     fonttitle=\bfseries,
-    top=3pt, bottom=3pt, toptitle=2pt, bottomtitle=2pt
+    enhanced,
+    breakable,
+    top=2pt, bottom=2pt, left=3pt, right=3pt,
+    toptitle=1pt, bottomtitle=1pt,
+    before skip=4pt, after skip=4pt
 }
 
 % Box untuk tip
@@ -289,7 +300,11 @@
     colframe=green!75!black,
     title=\tipboxTitle,
     fonttitle=\bfseries,
-    top=3pt, bottom=3pt, toptitle=2pt, bottomtitle=2pt
+    enhanced,
+    breakable,
+    top=2pt, bottom=2pt, left=3pt, right=3pt,
+    toptitle=1pt, bottomtitle=1pt,
+    before skip=4pt, after skip=4pt
 }
 
 % Box untuk contoh / example
@@ -298,7 +313,11 @@
     colframe=orange!75!black,
     title=\exampleboxPrefix#1,
     fonttitle=\bfseries,
-    top=3pt, bottom=3pt, toptitle=2pt, bottomtitle=2pt
+    enhanced,
+    breakable,
+    top=2pt, bottom=2pt, left=3pt, right=3pt,
+    toptitle=1pt, bottomtitle=1pt,
+    before skip=4pt, after skip=4pt
 }
 
 % Box untuk latihan / exercise
@@ -307,7 +326,24 @@
     colframe=purple!75!black,
     title=\exerciseboxPrefix#1,
     fonttitle=\bfseries,
-    top=3pt, bottom=3pt, toptitle=2pt, bottomtitle=2pt
+    enhanced,
+    breakable,
+    top=2pt, bottom=2pt, left=3pt, right=3pt,
+    toptitle=1pt, bottomtitle=1pt,
+    before skip=4pt, after skip=4pt
+}
+
+% Box untuk tantangan / challenge
+\newtcolorbox{challengebox}{
+    colback=teal!5!white,
+    colframe=teal!75!black,
+    title=\challengeboxTitle,
+    fonttitle=\bfseries,
+    enhanced,
+    breakable,
+    top=2pt, bottom=2pt, left=3pt, right=3pt,
+    toptitle=1pt, bottomtitle=1pt,
+    before skip=4pt, after skip=4pt
 }
 
 %% Unbreakable code listing using tcolorbox (prevents page breaks)
@@ -397,7 +433,7 @@
 %% Spacing dan Format
 %% ------------------------------------------------------------------------
 \usepackage{setspace}
-\setstretch{1.1}
+\setstretch{1.0}
 
 \setlength{\parindent}{0cm}
 \setlength{\parskip}{3cm}
@@ -415,17 +451,17 @@
 \addtokomafont{subparagraph}{\fontsize{11}{13}\selectfont}
 
 %% Compact heading spacing
-\RedeclareSectionCommand[beforeskip=1.2cm, afterskip=0.4cm]{chapter}
+\RedeclareSectionCommand[beforeskip=0.6cm, afterskip=0.25cm]{chapter}
 \RedeclareSectionCommand[
-    beforeskip=-1.8ex plus -1ex minus -.2ex,
-    afterskip=0.5ex plus .2ex
+    beforeskip=-1.4ex plus -.8ex minus -.2ex,
+    afterskip=0.35ex plus .15ex
 ]{section}
 \RedeclareSectionCommand[
-    beforeskip=-1.4ex plus -1ex minus -.2ex,
-    afterskip=0.3ex plus .2ex
+    beforeskip=-1.1ex plus -.8ex minus -.2ex,
+    afterskip=0.2ex plus .1ex
 ]{subsection}
 \RedeclareSectionCommand[
-    beforeskip=-1ex plus -1ex minus -.2ex,
+    beforeskip=-0.8ex plus -.6ex minus -.2ex,
     afterskip=0.1ex plus .1ex
 ]{subsubsection}
 
@@ -434,7 +470,7 @@
 %% ------------------------------------------------------------------------
 \usepackage{lipsum}              % Dummy text (hapus untuk versi final)
 \usepackage{enumitem}            % Enhanced list environments
-\setlist{topsep=3pt, parsep=0pt, itemsep=2pt, partopsep=2pt}
+\setlist{topsep=1pt, parsep=0pt, itemsep=0.5pt, partopsep=0pt}
 \usepackage{csquotes}            % Context sensitive quotation
 
 %% Suppress overfull hbox warnings di batas tertentu
