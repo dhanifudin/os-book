@@ -5,6 +5,8 @@
 \chapter{Manajemen Aplikasi}
 \label{ch:application-management}
 
+\chapterhero{brown}{Kelola perangkat lunak dari repositori, kompilasi sumber, hingga container agar instalasi dan pemeliharaan aplikasi lebih terstruktur.}{paket}{repositori}{container}
+
 Bayangkan kamu baru pindah ke kota baru dan ingin melengkapi dapur apartemenmu.
 Ada dua cara: pergi ke toko swalayan yang sudah mengatur semua kebutuhan di rak
 yang berlabel rapi, atau berkeliling dari toko ke toko secara manual mencari
@@ -43,10 +45,10 @@ Setelah menyelesaikan bab ini, kamu akan mampu:
 \end{enumerate}
 
 \begin{notebox}
-Seluruh praktikum pada bab ini dijalankan pada direktori \dir{~/lab-os/week13-apps/}.
+Seluruh praktek pada bab ini dijalankan pada direktori \dir{~/lab-os/chapter11-apps/}.
 \begin{lstlisting}[language=bash]
-mkdir -p ~/lab-os/week13-apps
-cd ~/lab-os/week13-apps
+mkdir -p ~/lab-os/chapter11-apps
+cd ~/lab-os/chapter11-apps
 \end{lstlisting}
 \end{notebox}
 
@@ -130,15 +132,15 @@ sudah dihapus tetapi konfigurasi masih ada. \cmd{dpkg -L} mendaftar semua file
 yang dimiliki sebuah paket, dan \cmd{dpkg -S} menjawab pertanyaan ``file ini
 dipasang oleh paket apa?''
 
-\subsection*{Praktikum 13.1: Instal, Verifikasi, dan Hapus Paket}
+\subsection*{Praktek 11.1: Instal, Verifikasi, dan Hapus Paket}
 
-Tujuan praktikum ini adalah memahami siklus hidup paket secara menyeluruh,
+Tujuan praktek ini adalah memahami siklus hidup paket secara menyeluruh,
 dari pencarian hingga penghapusan bersih.
 
 \begin{enumerate}
     \item Pastikan daftar paket mutakhir, lalu cari informasi paket \cmd{tree}:
 \begin{lstlisting}[language=bash, caption={Perbarui dan cari informasi paket}]
-cd ~/lab-os/week13-apps
+cd ~/lab-os/chapter11-apps
 sudo apt update
 apt search --names-only "^tree$"
 apt show tree
@@ -265,9 +267,9 @@ file konfigurasi secara otomatis. Opsi \texttt{--remove} membalik proses itu.
 Perintah \cmd{apt-cache policy} tanpa argumen nama paket menampilkan semua
 sumber aktif beserta prioritasnya.
 
-\subsection*{Praktikum 13.2: Tambahkan Repositori Pihak Ketiga}
+\subsection*{Praktek 11.2: Tambahkan Repositori Pihak Ketiga}
 
-Tujuan praktikum ini adalah menambahkan repositori PPA, mengamati perubahan
+Tujuan praktek ini adalah menambahkan repositori PPA, mengamati perubahan
 yang terjadi, lalu membersihkan kembali.
 
 \begin{enumerate}
@@ -309,7 +311,7 @@ apt-cache policy git
 \end{enumerate}
 
 \begin{challengebox}
-Buat skrip Bash (merujuk ke Bab~9) bernama \file{cek-repo.sh} di direktori lab
+Buat skrip Bash (merujuk ke Bab~7) bernama \file{cek-repo.sh} di direktori lab
 yang menerima satu argumen berupa string URL repositori. Skrip memeriksa apakah
 string tersebut sudah ada di file mana pun di dalam \dir{/etc/apt/sources.list}
 atau \dir{/etc/apt/sources.list.d/}. Jika sudah ada, skrip mencetak pesan
@@ -377,15 +379,15 @@ dihapus rapi dengan \cmd{apt remove}, berbeda dari file yang tersebar di
 \dir{/usr/local/} tanpa catatan apapun.
 \end{tipbox}
 
-\subsection*{Praktikum 13.3: Kompilasi Program Sederhana dari Source}
+\subsection*{Praktek 11.3: Kompilasi Program Sederhana dari Source}
 
-Tujuan praktikum ini adalah memahami setiap langkah kompilasi dari source
+Tujuan praktek ini adalah memahami setiap langkah kompilasi dari source
 dengan mengompilasi program C sederhana menggunakan Makefile buatan sendiri.
 
 \begin{enumerate}
     \item Verifikasi build tools dan buat direktori kerja:
 \begin{lstlisting}[language=bash, caption={Persiapan lingkungan kompilasi}]
-cd ~/lab-os/week13-apps
+cd ~/lab-os/chapter11-apps
 sudo apt install build-essential -y
 gcc --version
 make --version
@@ -461,11 +463,11 @@ salam Linux
     akan dilakukan tanpa menjalankannya. Bandingkan outputnya dengan perintah
     yang benar-benar dijalankan saat \cmd{make install}.
 
-    \item Bersihkan setelah praktikum:
+    \item Bersihkan setelah praktek:
 \begin{lstlisting}[language=bash, caption={Uninstall dan bersihkan direktori}]
 sudo make uninstall
 ls /usr/local/bin/salam 2>/dev/null || echo "File berhasil dihapus"
-cd ~/lab-os/week13-apps
+cd ~/lab-os/chapter11-apps
 rm -rf src-compile
 \end{lstlisting}
 \end{enumerate}
@@ -559,7 +561,8 @@ Untuk membuat image kustom, gunakan Dockerfile. Setiap baris instruksi dalam
 Dockerfile menambahkan lapisan baru ke image.
 
 \begin{lstlisting}[language=bash, caption={Contoh Dockerfile dan proses build}]
-cat > Dockerfile << 'EOF'
+nano Dockerfile
+# Tulis isi berkas berikut
 FROM nginx:alpine
 
 RUN echo "Menambahkan halaman kustom..."
@@ -569,7 +572,6 @@ COPY index.html /usr/share/nginx/html/index.html
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
-EOF
 
 echo "<h1>Halo dari container kustom!</h1>" > index.html
 
@@ -585,42 +587,43 @@ perintah selama proses build. \texttt{COPY} menyalin file dari direktori build
 ke dalam image. \texttt{EXPOSE} mendokumentasikan port yang digunakan. \texttt{CMD}
 menentukan perintah default saat container dijalankan.
 
-\subsection*{Praktikum 13.4: Jalankan Aplikasi di Dalam Container}
+\subsection*{Praktek 11.4: Jalankan Aplikasi di Dalam Container}
 
-Tujuan praktikum ini adalah membangun image Docker untuk aplikasi web statis
+Tujuan praktek ini adalah membangun image Docker untuk aplikasi web statis
 dan menjalankannya dengan port mapping.
 
 \begin{enumerate}
     \item Buat direktori kerja dan file HTML untuk aplikasi web statis:
 \begin{lstlisting}[language=bash, caption={Menyiapkan file aplikasi web}]
-cd ~/lab-os/week13-apps
+cd ~/lab-os/chapter11-apps
 mkdir -p docker-web
 cd docker-web
 
-cat > index.html << 'EOF'
+nano index.html
+# Tulis isi berkas berikut
 <!DOCTYPE html>
 <html lang="id">
-<head><meta charset="UTF-8"><title>Aplikasi Lab Week 13</title></head>
+<head><meta charset="UTF-8"><title>Aplikasi Lab Chapter 11</title></head>
 <body>
   <h1>Manajemen Aplikasi Linux</h1>
   <p>Container berjalan dengan baik.</p>
   <p>Waktu build: PLACEHOLDER</p>
 </body>
 </html>
-EOF
 
-cat > about.html << 'EOF'
+nano about.html
+# Tulis isi berkas berikut
 <!DOCTYPE html>
 <html lang="id">
 <head><meta charset="UTF-8"><title>Tentang</title></head>
-<body><h1>Tentang Aplikasi Ini</h1><p>Dibuat untuk praktikum Week 13.</p></body>
+<body><h1>Tentang Aplikasi Ini</h1><p>Dibuat untuk praktek Chapter 11.</p></body>
 </html>
-EOF
 \end{lstlisting}
 
     \item Buat Dockerfile:
 \begin{lstlisting}[language=bash, caption={Membuat Dockerfile untuk web statis}]
-cat > Dockerfile << 'EOF'
+nano Dockerfile
+# Tulis isi berkas berikut
 FROM nginx:alpine
 
 RUN apk add --no-cache tzdata \
@@ -634,7 +637,6 @@ COPY about.html /usr/share/nginx/html/about.html
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
-EOF
 \end{lstlisting}
 
     \item Build image dan jalankan container:
@@ -663,7 +665,7 @@ docker exec -it lab-web13-container ls /usr/share/nginx/html/
 docker stop lab-web13-container
 docker rm lab-web13-container
 docker rmi lab-web13:1.0
-cd ~/lab-os/week13-apps
+cd ~/lab-os/chapter11-apps
 rm -rf docker-web
 \end{lstlisting}
 \end{enumerate}
@@ -784,14 +786,13 @@ Dalam bab ini, kamu telah mempelajari:
 \end{itemize}
 
 %% ========================================================================
-\section{Tugas Praktikum}
-\label{sec:appmanagement-exercises}
+\section{Latihan}
+\label{sec:latihan-aplikasi}
 %% ========================================================================
 
-\textbf{Instruksi Umum}: Kerjakan seluruh tugas secara mandiri. Dokumentasikan
-setiap langkah dengan tangkapan layar dan kumpulkan dalam format PDF.
+\textbf{Instruksi Umum}: Kerjakan seluruh latihan secara mandiri. Catat langkah penting, simpan tangkapan layar bila diperlukan, lalu rangkum hasilnya sebagai dokumentasi pribadi.
 
-\begin{exercisebox}[13.1 Audit Paket dan Repositori]
+\subsubsection*{Latihan 11.1 Audit Paket dan Repositori}
 Lakukan audit menyeluruh terhadap kondisi paket di sistem Ubuntu kamu.
 \begin{enumerate}
     \item Tampilkan jumlah total paket terinstal menggunakan \cmd{dpkg -l | grep
@@ -801,12 +802,11 @@ Lakukan audit menyeluruh terhadap kondisi paket di sistem Ubuntu kamu.
     \item Identifikasi paket yang berstatus \texttt{rc} (konfigurasi tersisa)
         dengan \cmd{dpkg -l | grep "\^{}rc"}. Jelaskan mengapa paket bisa berada
         dalam status ini.
-    \item Periksa apakah ada pembaruan yang tersedia dengan \cmd{apt list
+\item Periksa apakah ada pembaruan yang tersedia dengan \cmd{apt list
         --upgradable 2>/dev/null}. Catat berapa paket yang bisa diperbarui.
 \end{enumerate}
-\end{exercisebox}
 
-\begin{exercisebox}[13.2 Kompilasi dan Containerisasi]
+\subsubsection*{Latihan 11.2 Kompilasi dan Containerisasi}
 Gabungkan dua keterampilan dari bab ini: kompilasi dari source dan Docker.
 \begin{enumerate}
     \item Buat program C sederhana yang mencetak informasi sistem: nama host,
@@ -817,12 +817,11 @@ Gabungkan dua keterampilan dari bab ini: kompilasi dari source dan Docker.
         binary sebagai \texttt{CMD}.
     \item Build image tersebut dan jalankan container. Verifikasi output program
         muncul di terminal.
-    \item Periksa ukuran image yang dihasilkan dengan \cmd{docker images}.
+\item Periksa ukuran image yang dihasilkan dengan \cmd{docker images}.
         Jelaskan mengapa image ini jauh lebih besar dari \texttt{nginx:alpine}.
 \end{enumerate}
-\end{exercisebox}
 
-\begin{exercisebox}[13.3 Diagnosis Masalah Aplikasi]
+\subsubsection*{Latihan 11.3 Diagnosis Masalah Aplikasi}
 Sebuah web server dilaporkan tidak bisa distart karena port sudah terpakai.
 \begin{enumerate}
     \item Gunakan \cmd{ss -tlnp} untuk mengidentifikasi semua port yang sedang
@@ -837,13 +836,12 @@ Sebuah web server dilaporkan tidak bisa distart karena port sudah terpakai.
     \item Tulis skrip Bash \file{cek-port.sh} yang menerima argumen nomor port,
         memeriksa apakah port tersebut sudah digunakan menggunakan \cmd{ss},
         dan mencetak pesan informatif beserta nama proses yang memakainya.
-    \item Bersihkan: \cmd{docker stop test-nginx \&\& docker rm test-nginx}.
+\item Bersihkan: \cmd{docker stop test-nginx \&\& docker rm test-nginx}.
 \end{enumerate}
-\end{exercisebox}
 
 %% ========================================================================
 \section{Referensi}
-\label{sec:appmanagement-references}
+\label{sec:referensi-aplikasi}
 %% ========================================================================
 
 \begin{itemize}

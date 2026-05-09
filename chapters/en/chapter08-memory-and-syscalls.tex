@@ -11,7 +11,7 @@ all documents end up in the drawer and you keep going back and forth to retrieve
 them, work slows to a crawl. That is a simple picture of how Linux manages memory.
 In this chapter we will also learn about \textbf{system calls} --- the mechanism
 programs use to request services from the kernel, and put the Bash skills from
-Chapter~9 to work building real monitoring scripts.
+Chapter~7 to work building real monitoring scripts.
 
 \textbf{What You'll Learn}
 
@@ -30,7 +30,7 @@ By the end of this chapter, you will be able to:
 All lab tasks are run as a regular user unless the command explicitly uses
 \texttt{sudo}. Create the working directory first:
 \begin{lstlisting}
-mkdir -p ~/lab-os/week10-memory
+mkdir -p ~/lab-os/chapter08-memory
 \end{lstlisting}
 \end{notebox}
 
@@ -80,7 +80,7 @@ Process isolation guarantees system stability. If one program crashes, the damag
 is contained to that process --- other processes continue running normally.
 \end{notebox}
 
-\subsection*{Lab 10.1 Viewing Memory Usage}
+\subsection*{Lab 8.1 Viewing Memory Usage}
 
 Run \texttt{free -h} to see a summary of RAM and swap, then view kernel memory
 details:
@@ -152,7 +152,7 @@ and loads them back (\texttt{si}/\texttt{so} in \texttt{vmstat}) when needed.}
 \label{fig:virtual-memory}
 \end{figure}
 
-\subsection*{Lab 10.2 Observing Paging Activity}
+\subsection*{Lab 8.2 Observing Paging Activity}
 
 \begin{lstlisting}[caption={Virtual memory statistics}]
 vmstat 1 5
@@ -172,7 +172,7 @@ more RAM. Solutions: add RAM, reduce concurrent processes, or optimise applicati
 \end{warningbox}
 
 \begin{challengebox}
-Use the loop technique from Chapter~9 to record \texttt{si} and \texttt{so} values
+Use the loop technique from Chapter~7 to record \texttt{si} and \texttt{so} values
 every 5 seconds for 30 seconds, saving to \texttt{paging-log.txt}:
 \begin{lstlisting}
 for i in $(seq 1 6); do
@@ -197,16 +197,16 @@ moves data to swap even when RAM is still available. A low value (10--20) means
 the kernel prefers RAM and only uses swap when truly necessary --- recommended for
 application servers.
 
-\subsection*{Lab 10.3 Creating and Configuring a Swap File}
+\subsection*{Lab 8.3 Creating and Configuring a Swap File}
 
 \textbf{Step 1}: Create a 512~MB file, secure its permissions, format it as swap,
 then activate it.
 
 \begin{lstlisting}[caption={Creating and activating swap}]
-sudo fallocate -l 512M /swapfile-week10
-sudo chmod 600 /swapfile-week10
-sudo mkswap /swapfile-week10
-sudo swapon /swapfile-week10
+sudo fallocate -l 512M /swapfile-chapter08
+sudo chmod 600 /swapfile-chapter08
+sudo mkswap /swapfile-chapter08
+sudo swapon /swapfile-chapter08
 \end{lstlisting}
 
 \begin{warningbox}
@@ -225,7 +225,7 @@ sudo sysctl vm.swappiness=10
 cat /proc/sys/vm/swappiness
 \end{lstlisting}
 
-\textit{Observe:} The \texttt{/swapfile-week10} entry should appear in
+\textit{Observe:} The \texttt{/swapfile-chapter08} entry should appear in
 \texttt{swapon --show} and the \texttt{total} on the \texttt{Swap} row in
 \texttt{free -h} should increase by 512~MB. Confirm the swappiness value changed
 from 60 to 10 in the second \texttt{cat} output.
@@ -236,8 +236,8 @@ setting, add \texttt{vm.swappiness=10} to \texttt{/etc/sysctl.conf}.
 
 Clean up after the lab:
 \begin{lstlisting}
-sudo swapoff /swapfile-week10
-sudo rm /swapfile-week10
+sudo swapoff /swapfile-chapter08
+sudo rm /swapfile-chapter08
 \end{lstlisting}
 \end{notebox}
 
@@ -257,7 +257,7 @@ suitable for reports). Key columns in \texttt{ps aux}: \texttt{\%MEM} (percentag
 of total RAM), \texttt{RSS} (physical RAM actually in use right now, in KB), and
 \texttt{VSZ} (total virtual memory allocated, always larger than RSS).
 
-\subsection*{Lab 10.4 Memory Monitoring with a Script}
+\subsection*{Lab 8.4 Memory Monitoring with a Script}
 
 \textbf{Step 1}: Take a snapshot of processes sorted by highest memory usage.
 
@@ -269,11 +269,11 @@ ps aux --sort=-%mem | head
 memory consumer at that moment. Convert \texttt{RSS} from KB to MB (divide by 1024)
 to understand how much physical RAM it is actually using.
 
-\textbf{Step 2}: Build an automated monitoring script applying Chapter~9 concepts
+\textbf{Step 2}: Build an automated monitoring script applying Chapter~7 concepts
 (variables, \texttt{if} conditionals, and \texttt{awk} parsing).
 
 \begin{lstlisting}[caption={Navigate to directory and open nano}]
-cd ~/lab-os/week10-memory
+cd ~/lab-os/chapter08-memory
 nano monitor-memory.sh
 \end{lstlisting}
 
@@ -318,7 +318,7 @@ output change? Why?
 
 \begin{challengebox}
 Extend \texttt{monitor-memory.sh} so that each run saves a log to a file named
-\texttt{memory-YYYYMMDD-HHMMSS.txt} using \texttt{date} (a technique from Chapter~9)
+\texttt{memory-YYYYMMDD-HHMMSS.txt} using \texttt{date} (a technique from Chapter~7)
 while still displaying output on screen with \texttt{tee}:
 \begin{lstlisting}
 LOGFILE="memory-$(date +%Y%m%d-%H%M%S).txt"
@@ -377,13 +377,13 @@ System calls are grouped by function: \textbf{Process Management}
 (\texttt{getpid}, \texttt{uname}). The \texttt{strace} command lets us see every
 system call a command makes, along with its arguments and return value.
 
-\subsection*{Lab 10.5 Observing System Calls with strace}
+\subsection*{Lab 8.5 Observing System Calls with strace}
 
 \textbf{Step 1}: Simulate a file access failure due to permissions.
 
 \begin{lstlisting}[caption={Simulate a permission error}]
-mkdir -p ~/lab-os/week10-memory/syscall-case
-cd ~/lab-os/week10-memory/syscall-case
+mkdir -p ~/lab-os/chapter08-memory/syscall-case
+cd ~/lab-os/chapter08-memory/syscall-case
 echo "PORT=8080" > app.conf
 chmod 000 app.conf
 cat app.conf
@@ -431,11 +431,11 @@ just to display \texttt{/etc/hostname}?
 \textbf{General Instructions}: Complete all tasks in the following directory.
 
 \begin{lstlisting}[caption={Preparing the assignment directory}]
-mkdir -p ~/lab-os/week10-memory
-cd ~/lab-os/week10-memory
+mkdir -p ~/lab-os/chapter08-memory
+cd ~/lab-os/chapter08-memory
 \end{lstlisting}
 
-\subsubsection{Assignment 10.1 System Memory Audit}
+\subsubsection{Assignment 8.1 System Memory Audit}
 
 Create a script \texttt{memory-audit.sh} that automatically generates a memory
 condition report.
@@ -471,7 +471,7 @@ Answer: (1) What is the \texttt{available / total} percentage? (2) Why is
 (3) What are the values of \texttt{SwapTotal} and \texttt{SwapFree} in
 \texttt{/proc/meminfo}?
 
-\subsubsection{Assignment 10.2 Identify Highest Memory Processes}
+\subsubsection{Assignment 8.2 Identify Highest Memory Processes}
 
 \begin{lstlisting}[caption={Save and display the top processes}]
 ps aux --sort=-%mem | head -n 10 > top-memory-process.txt
@@ -482,13 +482,13 @@ Answer: (1) Which process is at the top? Record \texttt{\%MEM} and \texttt{RSS}.
 (2) Convert \texttt{RSS} to MB. (3) Sum the \texttt{\%MEM} of the top 5 processes
 --- what percentage of RAM do they consume together?
 
-\subsubsection{Assignment 10.3 Create and Verify a Swap File}
+\subsubsection{Assignment 8.3 Create and Verify a Swap File}
 
 \begin{lstlisting}[caption={Create and activate the assignment swap file}]
-sudo fallocate -l 256M /swapfile-assign-week10
-sudo chmod 600 /swapfile-assign-week10
-sudo mkswap /swapfile-assign-week10
-sudo swapon /swapfile-assign-week10
+sudo fallocate -l 256M /swapfile-assign-chapter08
+sudo chmod 600 /swapfile-assign-chapter08
+sudo mkswap /swapfile-assign-chapter08
+sudo swapon /swapfile-assign-chapter08
 \end{lstlisting}
 
 \begin{lstlisting}[caption={Verify and save the result}]
@@ -503,14 +503,14 @@ cat swap-check.txt
 
 \begin{notebox}
 Clean up when done:\\
-\texttt{sudo swapoff /swapfile-assign-week10 \&\& sudo rm /swapfile-assign-week10}
+\texttt{sudo swapoff /swapfile-assign-chapter08 \&\& sudo rm /swapfile-assign-chapter08}
 \end{notebox}
 
 Answer: (1) Identify the \texttt{NAME}, \texttt{TYPE}, \texttt{SIZE}, and
 \texttt{USED} columns. (2) Did \texttt{total} on the \texttt{Swap} row increase
 by 256~MB? (3) Why is permission \texttt{600} important?
 
-\subsubsection{Assignment 10.4 System Call Analysis with strace}
+\subsubsection{Assignment 8.4 System Call Analysis with strace}
 
 \begin{lstlisting}[caption={Save summary and detailed system calls}]
 strace -c ls 2> strace-summary.txt
@@ -522,13 +522,13 @@ Answer: (1) List at least 5 system calls with a brief description of each.
 (2) Which system call is invoked most frequently? Why? (3) Are there any
 \texttt{errors} greater than 0? Does the program still run normally?
 
-\subsubsection{Assignment 10.5 Case Study: Diagnosing a Slow Server}
+\subsubsection{Assignment 8.5 Case Study: Diagnosing a Slow Server}
 
 Create a diagnostic script that combines all checks from this chapter using
-Bash functions from Chapter~9.
+Bash functions from Chapter~7.
 
 \begin{lstlisting}[caption={Open file with nano}]
-nano ~/lab-os/week10-memory/diagnose-server.sh
+nano ~/lab-os/chapter08-memory/diagnose-server.sh
 \end{lstlisting}
 
 \begin{longlisting}[language=bash, caption={Contents of diagnose-server.sh}]
@@ -607,7 +607,7 @@ Save: \keystroke{Ctrl+O} $\to$ \keystroke{Enter} $\to$ exit: \keystroke{Ctrl+X}.
 \end{notebox}
 
 \begin{lstlisting}[caption={Run the diagnostic script}]
-chmod +x ~/lab-os/week10-memory/diagnose-server.sh
+chmod +x ~/lab-os/chapter08-memory/diagnose-server.sh
 bash diagnose-server.sh
 \end{lstlisting}
 

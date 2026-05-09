@@ -5,6 +5,8 @@
 \chapter{Manajemen Layanan (Services)}
 \label{ch:service-management}
 
+\chapterhero{magenta}{Pahami alur hidup layanan Linux modern, dari unit systemd dan ketergantungan hingga logging dan hardening layanan jaringan.}{systemd}{unit}{journal}
+
 Bayangkan sebuah kantor besar yang buka 24 jam. Di sana ada resepsionis yang selalu siap menerima tamu, petugas keamanan yang berjaga di pintu, teknisi jaringan yang memantau koneksi, dan sistem CCTV yang terus merekam. Mereka semua bekerja di latar belakang, tidak perlu diinstruksikan setiap kali ada tamu datang. Di Linux, program-program yang bekerja seperti itu disebut \textit{layanan} atau \textit{service} — proses yang berjalan di latar belakang, menunggu permintaan, dan merespons secara otomatis.
 
 Setiap kali kamu menghubungkan laptop ke server via SSH, ada layanan bernama \texttt{sshd} yang mendengarkan koneksi dan menjawab. Setiap kali halaman web terbuka, ada layanan web server yang memprosesnya. Layanan-layanan ini dikelola oleh sebuah sistem khusus yang disebut \textit{init system}. Pada Linux modern termasuk Ubuntu 22.04, init system yang digunakan adalah \textbf{systemd}.
@@ -25,10 +27,10 @@ Setelah menyelesaikan bab ini, kamu akan mampu:
 \end{enumerate}
 
 \begin{notebox}
-Seluruh praktikum pada bab ini dijalankan pada direktori \dir{~/lab-os/week12-services/}.
+Seluruh praktek pada bab ini dijalankan pada direktori \dir{~/lab-os/chapter10-services/}.
 \begin{lstlisting}[language=bash]
-mkdir -p ~/lab-os/week12-services
-cd ~/lab-os/week12-services
+mkdir -p ~/lab-os/chapter10-services
+cd ~/lab-os/chapter10-services
 \end{lstlisting}
 \end{notebox}
 
@@ -80,7 +82,7 @@ Berkas unit disimpan di beberapa lokasi dengan prioritas berbeda:
     \item \file{~/.config/systemd/user/}: unit tingkat pengguna, tidak perlu hak root
 \end{itemize}
 
-\subsection*{Praktikum 12.1: Amati Layanan Aktif Saat Boot}
+\subsection*{Praktek 10.1: Amati Layanan Aktif Saat Boot}
 
 Periksa layanan yang berjalan di sistem dan identifikasi layanan yang paling lambat saat boot.
 
@@ -189,7 +191,7 @@ systemctl list-unit-files --type=service
 systemctl list-dependencies ssh
 \end{lstlisting}
 
-\subsection*{Praktikum 12.2: Kelola Layanan SSH}
+\subsection*{Praktek 10.2: Kelola Layanan SSH}
 
 Praktikkan semua operasi dasar \cmd{systemctl} pada layanan SSH yang tersedia di sistem.
 
@@ -224,7 +226,7 @@ systemctl --failed
 \end{enumerate}
 
 \begin{challengebox}
-Buat skrip Bash (referensi Bab~9) bernama \texttt{cek-layanan.sh} yang memeriksa status daftar layanan dari sebuah berkas teks. Berkas teks \texttt{daftar-layanan.txt} berisi satu nama layanan per baris (isi minimal: ssh, cron, rsyslog). Skrip membaca setiap nama layanan, memeriksa statusnya dengan \cmd{systemctl is-active}, lalu menulis laporan ke berkas \texttt{laporan-layanan.log} dengan format: \texttt{[TANGGAL] nama-layanan: ACTIVE/INACTIVE}. Gunakan \cmd{date} untuk mendapatkan tanggal.
+Buat skrip Bash (referensi Bab~7) bernama \texttt{cek-layanan.sh} yang memeriksa status daftar layanan dari sebuah berkas teks. Berkas teks \texttt{daftar-layanan.txt} berisi satu nama layanan per baris (isi minimal: ssh, cron, rsyslog). Skrip membaca setiap nama layanan, memeriksa statusnya dengan \cmd{systemctl is-active}, lalu menulis laporan ke berkas \texttt{laporan-layanan.log} dengan format: \texttt{[TANGGAL] nama-layanan: ACTIVE/INACTIVE}. Gunakan \cmd{date} untuk mendapatkan tanggal.
 \end{challengebox}
 
 %% ========================================================================
@@ -274,61 +276,59 @@ Nilai \texttt{Type} pada blok \texttt{[Service]} menentukan bagaimana systemd ta
     \item \texttt{notify}: proses mengirim notifikasi ke systemd saat sudah siap menerima koneksi.
 \end{itemize}
 
-\subsection*{Praktikum 12.3: Buat Layanan Sederhana dari Skrip Bash}
+\subsection*{Praktek 10.3: Buat Layanan Sederhana dari Skrip Bash}
 
 Buat layanan systemd yang menjalankan server HTTP sederhana berbasis Python.
 
 \begin{enumerate}
     \item Siapkan konten yang akan dilayani.
 \begin{lstlisting}[language=bash, caption={Menyiapkan direktori dan konten layanan}]
-cd ~/lab-os/week12-services
+cd ~/lab-os/chapter10-services
 mkdir -p situs-demo
-cat > situs-demo/index.html << 'EOF'
+nano situs-demo/index.html
+# Tulis isi berkas berikut
 <!DOCTYPE html>
 <html>
 <body>
 <h1>Halo dari layanan systemd kustom!</h1>
-<p>Layanan ini dibuat pada praktikum Bab 12.</p>
+<p>Layanan ini dibuat pada praktek Bab 10.</p>
 </body>
 </html>
-EOF
 \end{lstlisting}
 
     \item Buat skrip wrapper untuk server HTTP.
 \begin{lstlisting}[language=bash, caption={Skrip server HTTP untuk layanan}]
-cat > ~/lab-os/week12-services/jalankan-server.sh << 'EOF'
+nano ~/lab-os/chapter10-services/jalankan-server.sh
+# Tulis isi berkas berikut
 #!/bin/bash
-DIREKTORI="$HOME/lab-os/week12-services/situs-demo"
+DIREKTORI="$HOME/lab-os/chapter10-services/situs-demo"
 PORT=9090
 echo "Memulai server di port $PORT..."
 exec python3 -m http.server $PORT --directory "$DIREKTORI"
-EOF
-chmod +x ~/lab-os/week12-services/jalankan-server.sh
+chmod +x ~/lab-os/chapter10-services/jalankan-server.sh
 \end{lstlisting}
 
     \item Buat berkas unit systemd untuk layanan ini.
 \begin{lstlisting}[language=bash, caption={Membuat berkas unit kustom}]
-# CATATAN: ganti $USER dengan nama pengguna kamu yang sebenarnya
-HOMEDIR=$HOME
-USERNAME=$USER
-
-sudo tee /etc/systemd/system/demo-web.service > /dev/null << EOF
+nano ~/lab-os/chapter10-services/demo-web.service
+# Tulis isi berkas berikut
 [Unit]
-Description=Demo Web Server Praktikum Bab 12
+Description=Demo Web Server Praktek Bab 10
 After=network.target
 
 [Service]
 Type=simple
-User=${USERNAME}
-WorkingDirectory=${HOMEDIR}/lab-os/week12-services/situs-demo
+User=nama-pengguna-kamu
+WorkingDirectory=/home/nama-pengguna-kamu/lab-os/chapter10-services/situs-demo
 ExecStart=/usr/bin/python3 -m http.server 9090
 Restart=on-failure
 RestartSec=3s
 
 [Install]
 WantedBy=multi-user.target
-EOF
 
+# salin ke lokasi unit systemd
+sudo cp ~/lab-os/chapter10-services/demo-web.service /etc/systemd/system/demo-web.service
 # minta systemd membaca ulang berkas unit yang baru dibuat
 sudo systemctl daemon-reload
 \end{lstlisting}
@@ -436,7 +436,7 @@ sudo journalctl --vacuum-time=7d
 sudo journalctl --vacuum-size=500M
 \end{lstlisting}
 
-\subsection*{Praktikum 12.4: Filter dan Analisis Log Layanan}
+\subsection*{Praktek 10.4: Filter dan Analisis Log Layanan}
 
 Gunakan berbagai opsi \cmd{journalctl} untuk mencari informasi spesifik dalam log sistem.
 
@@ -468,7 +468,7 @@ journalctl -u ssh -f
 
     \item Ekstrak log ke berkas untuk analisis.
 \begin{lstlisting}[language=bash, caption={Simpan log ke berkas}]
-cd ~/lab-os/week12-services
+cd ~/lab-os/chapter10-services
 
 # simpan semua log layanan ssh dari hari ini ke berkas
 journalctl -u ssh --since today --no-pager > log-ssh-hari-ini.txt
@@ -562,7 +562,7 @@ ss -tlnp
 ss -tlnp | grep ssh
 \end{lstlisting}
 
-\subsection*{Praktikum 12.5: Konfigurasi SSH Server}
+\subsection*{Praktek 10.5: Konfigurasi SSH Server}
 
 Ubah port SSH ke port non-standar, validasi konfigurasi, dan verifikasi perubahan dengan \cmd{ss}.
 
@@ -606,11 +606,11 @@ ss -tlnp | grep ssh
 # seharusnya menampilkan port 2222, bukan 22
 
 # simpan hasil ke berkas bukti
-ss -tlnp | grep ssh > ~/lab-os/week12-services/bukti-port-ssh.txt
-cat ~/lab-os/week12-services/bukti-port-ssh.txt
+ss -tlnp | grep ssh > ~/lab-os/chapter10-services/bukti-port-ssh.txt
+cat ~/lab-os/chapter10-services/bukti-port-ssh.txt
 \end{lstlisting}
 
-    \item Kembalikan port SSH ke 22 setelah praktikum.
+    \item Kembalikan port SSH ke 22 setelah praktek.
 \begin{lstlisting}[language=bash, caption={Kembalikan konfigurasi SSH ke port 22}]
 sudo cp /etc/ssh/sshd_config.backup.lab12 /etc/ssh/sshd_config
 sudo sshd -t
@@ -621,7 +621,7 @@ ss -tlnp | grep ssh
 \end{enumerate}
 
 \begin{challengebox}
-Ubah konfigurasi SSH untuk menambahkan dua pengaturan keamanan: \texttt{PermitRootLogin no} (larang login root langsung) dan \texttt{MaxAuthTries 3} (maksimal tiga kali percobaan). Lakukan dengan urutan yang aman: backup, edit, validasi dengan \cmd{sshd -t}, reload. Verifikasi perubahan dengan \cmd{grep -E "PermitRoot|MaxAuth" /etc/ssh/sshd\_config}. Kemudian periksa log SSH untuk memastikan tidak ada error setelah perubahan dengan \cmd{journalctl -u ssh -n 20}. Referensi Bab~2 untuk penggunaan \cmd{ss} dan Bab~11 untuk keamanan pengguna.
+Ubah konfigurasi SSH untuk menambahkan dua pengaturan keamanan: \texttt{PermitRootLogin no} (larang login root langsung) dan \texttt{MaxAuthTries 3} (maksimal tiga kali percobaan). Lakukan dengan urutan yang aman: backup, edit, validasi dengan \cmd{sshd -t}, reload. Verifikasi perubahan dengan \cmd{grep -E "PermitRoot|MaxAuth" /etc/ssh/sshd\_config}. Kemudian periksa log SSH untuk memastikan tidak ada error setelah perubahan dengan \cmd{journalctl -u ssh -n 20}. Referensi Bab~2 untuk penggunaan \cmd{ss} dan Bab~9 untuk keamanan pengguna.
 \end{challengebox}
 
 %% ========================================================================
@@ -641,45 +641,42 @@ Dalam bab ini, kamu telah mempelajari:
 \end{itemize}
 
 %% ========================================================================
-\section{Tugas Praktikum}
-\label{sec:service-exercises}
+\section{Latihan}
+\label{sec:latihan-layanan}
 %% ========================================================================
 
-\textbf{Instruksi Umum}: Kerjakan seluruh tugas secara mandiri. Dokumentasikan setiap langkah dengan tangkapan layar dan kumpulkan dalam format PDF.
+\textbf{Instruksi Umum}: Kerjakan seluruh latihan secara mandiri. Catat langkah penting, simpan tangkapan layar bila diperlukan, lalu rangkum hasilnya sebagai dokumentasi pribadi.
 
-\begin{exercisebox}[12.1 Audit Layanan dan Analisis Boot]
+\subsubsection*{Latihan 10.1 Audit Layanan dan Analisis Boot}
 Lakukan audit menyeluruh terhadap layanan yang berjalan di sistem.
 \begin{enumerate}
     \item Jalankan \cmd{systemctl list-units --type=service --state=running} dan catat semua layanan aktif. Pilih tiga layanan yang kamu kenal, periksa status masing-masing dengan \cmd{systemctl status}, dan jelaskan fungsinya.
     \item Jalankan \cmd{systemd-analyze blame} dan identifikasi lima layanan dengan waktu inisialisasi terlama. Tampilkan hasilnya menggunakan pipeline: \cmd{systemd-analyze blame | head -5}.
-    \item Jalankan \cmd{systemctl --failed} dan dokumentasikan hasilnya. Jika ada layanan yang gagal, cari tahu penyebabnya dengan \cmd{journalctl -u nama-layanan -n 30}.
+\item Jalankan \cmd{systemctl --failed} dan dokumentasikan hasilnya. Jika ada layanan yang gagal, cari tahu penyebabnya dengan \cmd{journalctl -u nama-layanan -n 30}.
 \end{enumerate}
-\end{exercisebox}
 
-\begin{exercisebox}[12.2 Layanan Kustom dengan Restart Otomatis]
+\subsubsection*{Latihan 10.2 Layanan Kustom dengan Restart Otomatis}
 Buat layanan systemd kustom yang mendemonstrasikan fitur restart otomatis.
 \begin{enumerate}
-    \item Buat skrip Bash (referensi Bab~9) bernama \texttt{monitor-disk.sh} yang setiap 30 detik menuliskan penggunaan disk ke berkas log. Gunakan \cmd{df -h} dan \cmd{date}.
+    \item Buat skrip Bash (referensi Bab~7) bernama \texttt{monitor-disk.sh} yang setiap 30 detik menuliskan penggunaan disk ke berkas log. Gunakan \cmd{df -h} dan \cmd{date}.
     \item Buat berkas unit \file{/etc/systemd/system/monitor-disk.service} untuk menjalankan skrip tersebut dengan konfigurasi: \texttt{Restart=always}, \texttt{RestartSec=5s}, dan berjalan sebagai pengguna kamu sendiri.
     \item Aktifkan dan jalankan layanan. Verifikasi dengan \cmd{systemctl status} dan pastikan log masuk ke journal.
     \item Simulasikan crash dengan membunuh proses secara paksa (\cmd{kill -9}), tunggu 10 detik, dan verifikasi bahwa layanan hidup kembali secara otomatis.
-    \item Bersihkan: nonaktifkan layanan dan hapus berkas unit setelah selesai.
+\item Bersihkan: nonaktifkan layanan dan hapus berkas unit setelah selesai.
 \end{enumerate}
-\end{exercisebox}
 
-\begin{exercisebox}[12.3 Investigasi Log dan Keamanan SSH]
+\subsubsection*{Latihan 10.3 Investigasi Log dan Keamanan SSH}
 Analisis log sistem dan tingkatkan keamanan konfigurasi SSH.
 \begin{enumerate}
     \item Gunakan \cmd{journalctl -b -p err} untuk menemukan semua error sejak boot terakhir. Simpan hasilnya ke berkas dan hitung jumlah baris dengan \cmd{wc -l}.
     \item Lakukan tiga perubahan keamanan pada \file{/etc/ssh/sshd\_config}: tambahkan \texttt{PermitRootLogin no}, \texttt{MaxAuthTries 3}, dan \texttt{LoginGraceTime 30}. Ikuti alur aman: backup, edit, validasi \cmd{sshd -t}, reload.
     \item Setelah reload, verifikasi tiga hal: layanan masih berjalan (\cmd{systemctl status ssh}), port masih mendengarkan (\cmd{ss -tlnp | grep ssh}), dan konfigurasi baru terbaca (\cmd{grep -E "PermitRoot|MaxAuth|GraceTime" /etc/ssh/sshd\_config}).
-    \item Kembalikan konfigurasi SSH ke kondisi semula menggunakan berkas backup.
+\item Kembalikan konfigurasi SSH ke kondisi semula menggunakan berkas backup.
 \end{enumerate}
-\end{exercisebox}
 
 %% ========================================================================
 \section{Referensi}
-\label{sec:service-references}
+\label{sec:referensi-layanan}
 %% ========================================================================
 
 \begin{itemize}

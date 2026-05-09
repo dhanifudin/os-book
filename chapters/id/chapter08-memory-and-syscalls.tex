@@ -4,14 +4,16 @@
 \chapter{Manajemen Memori dan System Call}
 \label{ch:memory-and-syscalls}
 
+\chapterhero{blue}{Hubungkan konsep RAM, swap, dan tekanan memori dengan cara program berbicara ke kernel melalui system call dan alat diagnosis Linux.}{memori}{swap}{strace}
+
 Bayangkan meja kerja kamu. Di atas meja tersimpan dokumen yang sedang aktif digunakan
 --- inilah yang diibaratkan sebagai \textbf{RAM}. Saat meja mulai penuh, beberapa
 dokumen dipindahkan ke laci agar ada ruang baru --- inilah yang diibaratkan sebagai
 \textbf{swap}. Jika semua dokumen tersimpan di laci dan kamu terus bolak-balik
 mengambilnya, pekerjaan menjadi lambat. Itulah gambaran sederhana bagaimana Linux
 mengelola memori. Di bab ini kita juga akan mempelajari \textbf{system call} ---
-mekanisme yang digunakan program untuk meminta layanan dari kernel, dan memanfaatkan
-keterampilan Bash dari Bab~9 untuk membangun script monitoring yang nyata.
+ mekanisme yang digunakan program untuk meminta layanan dari kernel, dan memanfaatkan
+ keterampilan Bash dari Bab~7 untuk membangun skrip pemantauan yang nyata.
 
 \textbf{Yang Akan Kamu Pelajari}
 
@@ -22,15 +24,15 @@ Setelah menyelesaikan bab ini, kamu akan mampu:
     \item mengamati dan menginterpretasi aktivitas paging dengan \texttt{vmstat};
     \item membuat dan mengonfigurasi swap space beserta parameter swappiness;
     \item mengidentifikasi proses dengan penggunaan memori terbesar;
-    \item menulis script Bash untuk monitoring memori otomatis;
+    \item menulis skrip Bash untuk pemantauan memori otomatis;
     \item mengamati dan menganalisis system call menggunakan \texttt{strace}.
 \end{enumerate}
 
 \begin{notebox}
-Seluruh praktikum dijalankan sebagai pengguna biasa kecuali perintah yang secara
+Seluruh praktek dijalankan sebagai pengguna biasa kecuali perintah yang secara
 eksplisit menggunakan \texttt{sudo}. Buat direktori kerja terlebih dahulu:
 \begin{lstlisting}
-mkdir -p ~/praktikum-os/week10-memory
+mkdir -p ~/lab-os/chapter08-memory
 \end{lstlisting}
 \end{notebox}
 
@@ -80,7 +82,7 @@ Isolasi antar proses menjamin stabilitas sistem. Jika satu program crash, kerusa
 hanya berdampak pada proses tersebut --- proses lain tetap berjalan normal.
 \end{notebox}
 
-\subsection*{Praktikum 10.1 Melihat Penggunaan Memori}
+\subsection*{Praktek 8.1 Melihat Penggunaan Memori}
 
 Jalankan \texttt{free -h} untuk melihat ringkasan RAM dan swap, lalu lihat detail
 memori dari kernel:
@@ -152,7 +154,7 @@ dan memuatnya kembali (\texttt{si}/\texttt{so} pada \texttt{vmstat}) saat dibutu
 \label{fig:virtual-memory}
 \end{figure}
 
-\subsection*{Praktikum 10.2 Mengamati Aktivitas Paging}
+\subsection*{Praktek 8.2 Mengamati Aktivitas Paging}
 
 \begin{lstlisting}[caption={Statistik memori virtual}]
 vmstat 1 5
@@ -172,7 +174,7 @@ lebih banyak RAM. Solusi: tambah RAM, kurangi proses, atau optimalkan aplikasi.
 \end{warningbox}
 
 \begin{challengebox}
-Gunakan teknik loop dari Bab~9 untuk mencatat nilai \texttt{si} dan \texttt{so}
+Gunakan teknik loop dari Bab~7 untuk mencatat nilai \texttt{si} dan \texttt{so}
 setiap 5 detik selama 30 detik, simpan ke file \texttt{paging-log.txt}:
 \begin{lstlisting}
 for i in $(seq 1 6); do
@@ -197,16 +199,16 @@ memindahkan data ke swap meski RAM masih tersedia. Nilai rendah (10--20) berarti
 kernel lebih mengutamakan RAM dan hanya menggunakan swap jika benar-benar terpaksa
 --- disarankan untuk server aplikasi.
 
-\subsection*{Praktikum 10.3 Membuat dan Mengonfigurasi Swap File}
+\subsection*{Praktek 8.3 Membuat dan Mengonfigurasi Swap File}
 
 \textbf{Langkah 1}: Buat file 512~MB, amankan permission-nya, format sebagai swap,
 lalu aktifkan.
 
 \begin{lstlisting}[caption={Membuat dan mengaktifkan swap}]
-sudo fallocate -l 512M /swapfile-week10
-sudo chmod 600 /swapfile-week10
-sudo mkswap /swapfile-week10
-sudo swapon /swapfile-week10
+sudo fallocate -l 512M /swapfile-chapter08
+sudo chmod 600 /swapfile-chapter08
+sudo mkswap /swapfile-chapter08
+sudo swapon /swapfile-chapter08
 \end{lstlisting}
 
 \begin{warningbox}
@@ -225,7 +227,7 @@ sudo sysctl vm.swappiness=10
 cat /proc/sys/vm/swappiness
 \end{lstlisting}
 
-\textit{Amati:} Entri \texttt{/swapfile-week10} harus muncul di \texttt{swapon --show}
+\textit{Amati:} Entri \texttt{/swapfile-chapter08} harus muncul di \texttt{swapon --show}
 dan nilai \texttt{total} pada baris \texttt{Swap} di \texttt{free -h} bertambah 512~MB.
 Konfirmasi nilai swappiness berubah dari 60 ke 10 pada output \texttt{cat} kedua.
 
@@ -233,10 +235,10 @@ Konfirmasi nilai swappiness berubah dari 60 ke 10 pada output \texttt{cat} kedua
 Perubahan \texttt{sysctl} bersifat sementara dan hilang setelah reboot. Untuk
 konfigurasi permanen, tambahkan \texttt{vm.swappiness=10} ke \texttt{/etc/sysctl.conf}.
 
-Bersihkan setelah praktikum:
+Bersihkan setelah praktek:
 \begin{lstlisting}
-sudo swapoff /swapfile-week10
-sudo rm /swapfile-week10
+sudo swapoff /swapfile-chapter08
+sudo rm /swapfile-chapter08
 \end{lstlisting}
 \end{notebox}
 
@@ -256,7 +258,7 @@ cocok untuk laporan). Kolom penting pada \texttt{ps aux}: \texttt{\%MEM} (persen
 RAM), \texttt{RSS} (RAM fisik benar-benar terpakai saat ini dalam KB), dan
 \texttt{VSZ} (total memori virtual yang dialokasikan, selalu lebih besar dari RSS).
 
-\subsection*{Praktikum 10.4 Monitor Memori dengan Script}
+\subsection*{Praktek 8.4 Monitor Memori dengan Skrip}
 
 \textbf{Langkah 1}: Ambil snapshot proses dengan penggunaan memori terbesar.
 
@@ -268,11 +270,11 @@ ps aux --sort=-%mem | head
 terbesar saat itu. Konversikan \texttt{RSS} dari KB ke MB (bagi 1024) untuk
 memahami berapa RAM fisik yang benar-benar dipakai.
 
-\textbf{Langkah 2}: Buat script monitoring otomatis yang menerapkan konsep Bab~9
+\textbf{Langkah 2}: Buat skrip pemantauan otomatis yang menerapkan konsep Bab~7
 (variabel, kondisi \texttt{if}, dan parsing dengan \texttt{awk}).
 
 \begin{lstlisting}[caption={Pindah ke direktori dan buka nano}]
-cd ~/praktikum-os/week10-memory
+cd ~/lab-os/chapter08-memory
 nano monitor-memori.sh
 \end{lstlisting}
 
@@ -305,7 +307,7 @@ ps aux --sort=-%mem | head -n 6 | tail -n 5
 Simpan: \keystroke{Ctrl+O} $\to$ \keystroke{Enter} $\to$ keluar: \keystroke{Ctrl+X}.
 \end{notebox}
 
-\begin{lstlisting}[caption={Jalankan script monitor}]
+\begin{lstlisting}[caption={Jalankan skrip monitor}]
 chmod +x monitor-memori.sh
 bash monitor-memori.sh
 \end{lstlisting}
@@ -318,10 +320,10 @@ jalankan ulang --- apakah output berubah? Mengapa?
 \begin{challengebox}
 Kembangkan \texttt{monitor-memori.sh} agar setiap kali dijalankan menyimpan log
 ke file bernama \texttt{memori-YYYYMMDD-HHMMSS.txt} menggunakan \texttt{date}
-(teknik dari Bab~9) dan juga tetap menampilkan output ke layar dengan \texttt{tee}:
+(teknik dari Bab~7) dan juga tetap menampilkan output ke layar dengan \texttt{tee}:
 \begin{lstlisting}
 LOGFILE="memori-$(date +%Y%m%d-%H%M%S).txt"
-# ... isi script ... | tee "$LOGFILE"
+# ... isi skrip ... | tee "$LOGFILE"
 \end{lstlisting}
 Jalankan dua kali dan verifikasi dua file log terpisah terbuat.
 \end{challengebox}
@@ -377,13 +379,13 @@ System call dikelompokkan berdasarkan fungsinya: \textbf{Manajemen Proses}
 melihat setiap system call yang dipanggil suatu perintah, beserta argumen dan
 nilai kembaliannya.
 
-\subsection*{Praktikum 10.5 Mengamati System Call dengan strace}
+\subsection*{Praktek 8.5 Mengamati System Call dengan strace}
 
 \textbf{Langkah 1}: Simulasikan kegagalan akses file karena permission.
 
 \begin{lstlisting}[caption={Simulasi permission error}]
-mkdir -p ~/praktikum-os/week10-memory/syscall-case
-cd ~/praktikum-os/week10-memory/syscall-case
+mkdir -p ~/lab-os/chapter08-memory/syscall-case
+cd ~/lab-os/chapter08-memory/syscall-case
 echo "PORT=8080" > app.conf
 chmod 000 app.conf
 cat app.conf
@@ -440,8 +442,8 @@ Dalam bab ini, kamu telah mempelajari:
           agresivitas penggunaan swap.
     \item \textbf{Pemantauan memori}: \cmd{free -h}, \cmd{top}/\cmd{htop}, dan
           \cmd{/proc/meminfo} memberi laporan penggunaan RAM dan swap dari berbagai sudut;
-          script Bash dapat mengotomatiskan pemantauan berkala.
-    \item \textbf{Script monitoring}: teknik Bash dari Bab~9 --- fungsi, loop, dan
+          skrip Bash dapat mengotomatiskan pemantauan berkala.
+    \item \textbf{Skrip pemantauan}: teknik Bash dari Bab~7 --- fungsi, loop, dan
           \cmd{tee} --- digabungkan untuk membangun \texttt{monitor-memori.sh} yang
           mencatat log bertanggal secara otomatis.
     \item \textbf{System call}: program berinteraksi dengan kernel melalui system call;
@@ -449,18 +451,18 @@ Dalam bab ini, kamu telah mempelajari:
           menganalisis perilaku dan kesalahan program.
 \end{itemize}
 
-\section{Tugas Praktikum}
+\section{Latihan}
 
-\textbf{Instruksi Umum}: Kerjakan seluruh tugas pada direktori berikut.
+\textbf{Instruksi Umum}: Kerjakan seluruh latihan pada direktori berikut dan simpan hasilnya sebagai catatan kerja pribadi.
 
 \begin{lstlisting}[caption={Persiapan direktori tugas}]
-mkdir -p ~/praktikum-os/week10-memory
-cd ~/praktikum-os/week10-memory
+mkdir -p ~/lab-os/chapter08-memory
+cd ~/lab-os/chapter08-memory
 \end{lstlisting}
 
-\subsubsection{Tugas 10.1 Audit Penggunaan Memori Sistem}
+\subsubsection{Latihan 8.1 Audit Penggunaan Memori Sistem}
 
-Buat script \texttt{memory-audit.sh} yang menghasilkan laporan kondisi memori
+Buat skrip \texttt{memory-audit.sh} yang menghasilkan laporan kondisi memori
 sistem secara otomatis.
 
 \begin{lstlisting}[caption={Isi file memory-audit.sh}]
@@ -484,7 +486,7 @@ echo "Laporan disimpan ke: $LAPORAN"
 cat "$LAPORAN"
 \end{lstlisting}
 
-\begin{lstlisting}[caption={Jalankan script audit}]
+\begin{lstlisting}[caption={Jalankan skrip audit}]
 chmod +x memory-audit.sh
 bash memory-audit.sh
 \end{lstlisting}
@@ -493,7 +495,7 @@ Jawab: (1) Berapa persentase \texttt{available / total}? (2) Mengapa \texttt{buf
 tidak dihitung sebagai memori terpakai dari sudut pandang aplikasi? (3) Berapa nilai
 \texttt{SwapTotal} dan \texttt{SwapFree} dari \texttt{/proc/meminfo}?
 
-\subsubsection{Tugas 10.2 Identifikasi Proses dengan Memori Tertinggi}
+\subsubsection{Latihan 8.2 Identifikasi Proses dengan Memori Tertinggi}
 
 \begin{lstlisting}[caption={Simpan daftar proses teratas}]
 ps aux --sort=-%mem | head -n 10 > top-memory-process.txt
@@ -504,13 +506,13 @@ Jawab: (1) Proses apa di urutan pertama? Catat \texttt{\%MEM} dan \texttt{RSS}.
 (2) Konversikan \texttt{RSS} ke MB. (3) Jumlahkan \texttt{\%MEM} 5 proses teratas
 --- berapa persen RAM yang mereka gunakan bersama?
 
-\subsubsection{Tugas 10.3 Membuat dan Memverifikasi Swap File}
+\subsubsection{Latihan 8.3 Membuat dan Memverifikasi Swap File}
 
 \begin{lstlisting}[caption={Buat dan aktifkan swap file tugas}]
-sudo fallocate -l 256M /swapfile-tugas-week10
-sudo chmod 600 /swapfile-tugas-week10
-sudo mkswap /swapfile-tugas-week10
-sudo swapon /swapfile-tugas-week10
+sudo fallocate -l 256M /swapfile-tugas-chapter08
+sudo chmod 600 /swapfile-tugas-chapter08
+sudo mkswap /swapfile-tugas-chapter08
+sudo swapon /swapfile-tugas-chapter08
 \end{lstlisting}
 
 \begin{lstlisting}[caption={Verifikasi dan simpan hasil}]
@@ -525,14 +527,14 @@ cat swap-check.txt
 
 \begin{notebox}
 Bersihkan setelah selesai:\\
-\texttt{sudo swapoff /swapfile-tugas-week10 \&\& sudo rm /swapfile-tugas-week10}
+\texttt{sudo swapoff /swapfile-tugas-chapter08 \&\& sudo rm /swapfile-tugas-chapter08}
 \end{notebox}
 
 Jawab: (1) Identifikasi kolom \texttt{NAME}, \texttt{TYPE}, \texttt{SIZE}, \texttt{USED}.
 (2) Apakah \texttt{total} pada baris \texttt{Swap} bertambah 256~MB? (3) Mengapa
 permission \texttt{600} penting?
 
-\subsubsection{Tugas 10.4 Analisis System Call dengan strace}
+\subsubsection{Latihan 8.4 Analisis System Call dengan strace}
 
 \begin{lstlisting}[caption={Simpan ringkasan dan detail system call}]
 strace -c ls 2> strace-summary.txt
@@ -544,13 +546,13 @@ Jawab: (1) Sebutkan minimal 5 system call beserta fungsi singkatnya. (2) System 
 mana yang paling sering dipanggil? Mengapa? (3) Apakah ada \texttt{errors} lebih dari
 0? Apakah program tetap berjalan normal?
 
-\subsubsection{Tugas 10.5 Studi Kasus Diagnosa Server Lambat}
+\subsubsection{Latihan 8.5 Studi Kasus Diagnosis Server Lambat}
 
-Buat script diagnosa yang menggabungkan semua pemeriksaan dari bab ini menggunakan
-fungsi Bash dari Bab~9.
+Buat skrip diagnosis yang menggabungkan semua pemeriksaan dari bab ini menggunakan
+fungsi Bash dari Bab~7.
 
 \begin{lstlisting}[caption={Buka file dengan nano}]
-nano ~/praktikum-os/week10-memory/diagnosa-server.sh
+nano ~/lab-os/chapter08-memory/diagnosa-server.sh
 \end{lstlisting}
 
 \begin{longlisting}[language=bash, caption={Isi file diagnosa-server.sh}]
@@ -628,14 +630,14 @@ echo "Laporan disimpan ke: $LAPORAN"
 Simpan: \keystroke{Ctrl+O} $\to$ \keystroke{Enter} $\to$ keluar: \keystroke{Ctrl+X}.
 \end{notebox}
 
-\begin{lstlisting}[caption={Jalankan script diagnosa}]
-chmod +x ~/praktikum-os/week10-memory/diagnosa-server.sh
+\begin{lstlisting}[caption={Jalankan skrip diagnosis}]
+chmod +x ~/lab-os/chapter08-memory/diagnosa-server.sh
 bash diagnosa-server.sh
 \end{lstlisting}
 
 Jawab: (1) Jelaskan peran masing-masing fungsi dan mengapa diagnosa dipecah menjadi
 fungsi terpisah. (2) Berdasarkan bagian \texttt{RINGKASAN}, apakah kondisi sistem
-normal atau kritis? (3) Mengapa script menggunakan \texttt{tee "\$LAPORAN"} bukan
+normal atau kritis? (3) Mengapa skrip menggunakan \texttt{tee "\$LAPORAN"} bukan
 redirection biasa \texttt{> "\$LAPORAN"}? (4) Apakah ada aktivitas \texttt{si} atau
 \texttt{so} dari \texttt{cek\_paging}? Apa implikasinya?
 

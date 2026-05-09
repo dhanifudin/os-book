@@ -86,8 +86,8 @@ ps -p $$ -o pid,ppid,args=
 
   \item Create the lab workspace:
 \begin{lstlisting}[language=bash, caption={Creating the Bash lab workspace}]
-mkdir -p ~/lab-os/week07-bash/{bin,backup,logs,samples,named-files}
-cd ~/lab-os/week07-bash
+mkdir -p ~/lab-os/chapter06-bash/{bin,backup,logs,samples,named-files}
+cd ~/lab-os/chapter06-bash
 pwd
 \end{lstlisting}
 
@@ -113,7 +113,7 @@ context before performing maintenance.
 \begin{enumerate}
   \item Enter the lab workspace:
 \begin{lstlisting}[language=bash, caption={Entering the lab workspace}]
-cd ~/lab-os/week07-bash
+cd ~/lab-os/chapter06-bash
 \end{lstlisting}
 
   \item Save terminal session information to a report file:
@@ -193,10 +193,10 @@ cp ~/.bashrc ~/.bashrc.bak-lab
 \begin{lstlisting}[language=bash, caption={Adding configuration to .bashrc}]
 cat <<'EOF' >> ~/.bashrc
 
-# --- Week 7 Bash Lab ---
-export BASH_LAB_DIR="$HOME/lab-os/week07-bash"
+# --- Chapter 6 Bash Lab ---
+export BASH_LAB_DIR="$HOME/lab-os/chapter06-bash"
 export EDITOR=nano
-# --- End Week 7 Bash Lab ---
+# --- End Chapter 6 Bash Lab ---
 
 EOF
 \end{lstlisting}
@@ -225,14 +225,14 @@ Objective: understand the relationship between \texttt{.bash\_profile} and
 \begin{lstlisting}[language=bash, caption={Adding configuration to .bash\_profile}]
 cat <<'EOF' >> ~/.bash_profile
 
-# --- Week 7 Bash Login Shell ---
+# --- Chapter 6 Bash Login Shell ---
 if [ -f ~/.bashrc ]; then
   . ~/.bashrc
 fi
 
 echo "Bash login at $(date '+%F %T')" \
-  >> "$HOME/lab-os/week07-bash/login-audit.log"
-# --- End Week 7 Bash Login Shell ---
+  >> "$HOME/lab-os/chapter06-bash/login-audit.log"
+# --- End Chapter 6 Bash Login Shell ---
 
 EOF
 \end{lstlisting}
@@ -240,7 +240,7 @@ EOF
   \item Test by opening a new login shell:
 \begin{lstlisting}[language=bash, caption={Testing .bash\_profile with a login shell}]
 bash -l
-tail -n 3 ~/lab-os/week07-bash/login-audit.log
+tail -n 3 ~/lab-os/chapter06-bash/login-audit.log
 exit
 \end{lstlisting}
 \end{enumerate}
@@ -323,16 +323,16 @@ anywhere.
 \begin{enumerate}
   \item Make sure the lab \texttt{bin} directory exists:
 \begin{lstlisting}[language=bash, caption={Preparing the bin directory}]
-mkdir -p ~/lab-os/week07-bash/bin
+mkdir -p ~/lab-os/chapter06-bash/bin
 \end{lstlisting}
 
   \item Add that directory to \texttt{PATH} via \texttt{.bashrc}:
 \begin{lstlisting}[language=bash, caption={Adding the bin directory to PATH}]
 cat <<'EOF' >> ~/.bashrc
 
-# --- Week 7 PATH ---
-export PATH="$HOME/lab-os/week07-bash/bin:$PATH"
-# --- End Week 7 PATH ---
+# --- Chapter 6 PATH ---
+export PATH="$HOME/lab-os/chapter06-bash/bin:$PATH"
+# --- End Chapter 6 PATH ---
 
 EOF
 
@@ -342,7 +342,7 @@ echo "$PATH"
 
   \item Create a system summary script:
 \begin{lstlisting}[language=bash, caption={Creating a system-summary script}]
-cat <<'EOF' > ~/lab-os/week07-bash/bin/system-summary
+cat <<'EOF' > ~/lab-os/chapter06-bash/bin/system-summary
 #!/usr/bin/env bash
 echo "Hostname : $(hostname)"
 echo "User     : $(whoami)"
@@ -351,7 +351,7 @@ echo "Disk /   :"
 df -h /
 EOF
 
-chmod +x ~/lab-os/week07-bash/bin/system-summary
+chmod +x ~/lab-os/chapter06-bash/bin/system-summary
 \end{lstlisting}
 
   \item Run the script from a different directory:
@@ -411,11 +411,11 @@ Objective: create shortcuts for frequently used commands.
 \begin{lstlisting}[language=bash, caption={Adding aliases to .bashrc}]
 cat <<'EOF' >> ~/.bashrc
 
-# --- Week 7 Aliases ---
+# --- Chapter 6 Aliases ---
 alias ll='ls -lah --color=auto'
 alias hist10='history | tail -n 10'
-alias cdlab='cd $HOME/lab-os/week07-bash'
-# --- End Week 7 Aliases ---
+alias cdlab='cd $HOME/lab-os/chapter06-bash'
+# --- End Chapter 6 Aliases ---
 
 EOF
 
@@ -440,15 +440,15 @@ files.
 \begin{enumerate}
   \item Prepare a sample configuration file:
 \begin{lstlisting}[language=bash, caption={Creating a sample configuration file}]
-echo "PORT=8080" > ~/lab-os/week07-bash/sample-app.conf
-cat ~/lab-os/week07-bash/sample-app.conf
+echo "PORT=8080" > ~/lab-os/chapter06-bash/sample-app.conf
+cat ~/lab-os/chapter06-bash/sample-app.conf
 \end{lstlisting}
 
   \item Add the function to \texttt{.bashrc}:
 \begin{lstlisting}[language=bash, caption={Adding the backup\_conf function to .bashrc}]
 cat <<'EOF' >> ~/.bashrc
 
-# --- Week 7 Shell Functions ---
+# --- Chapter 6 Shell Functions ---
 backup_conf() {
   if [ $# -ne 1 ]; then
     echo "Usage: backup_conf <file>"
@@ -456,7 +456,7 @@ backup_conf() {
   fi
 
   local src="$1"
-  local dst="$HOME/lab-os/week07-bash/backup"
+  local dst="$HOME/lab-os/chapter06-bash/backup"
 
   if [ ! -f "$src" ]; then
     echo "File not found: $src"
@@ -467,7 +467,7 @@ backup_conf() {
   cp -- "$src" "$dst/$(basename "$src").$(date +%F-%H%M%S).bak"
   echo "Backup saved to $dst"
 }
-# --- End Week 7 Shell Functions ---
+# --- End Chapter 6 Shell Functions ---
 
 EOF
 
@@ -476,8 +476,8 @@ source ~/.bashrc
 
   \item Test the function:
 \begin{lstlisting}[language=bash, caption={Testing the backup\_conf function}]
-backup_conf ~/lab-os/week07-bash/sample-app.conf
-ls -lah ~/lab-os/week07-bash/backup
+backup_conf ~/lab-os/chapter06-bash/sample-app.conf
+ls -lah ~/lab-os/chapter06-bash/backup
 type backup_conf
 \end{lstlisting}
 \end{enumerate}
@@ -528,7 +528,7 @@ Objective: use the \keystroke{Tab} key and history to work faster.
 \begin{enumerate}
   \item Make sure the sample files are available:
 \begin{lstlisting}[language=bash, caption={Preparing files for completion}]
-cd ~/lab-os/week07-bash/samples
+cd ~/lab-os/chapter06-bash/samples
 ls
 \end{lstlisting}
 
@@ -576,8 +576,8 @@ history | grep -E 'df -h|free -h|uptime|ps aux'
   \item Save a snippet of history to a documentation file:
 \begin{lstlisting}[language=bash, caption={Saving history to a file}]
 history | tail -n 20 \
-  > ~/lab-os/week07-bash/diag-history.txt
-cat ~/lab-os/week07-bash/diag-history.txt
+  > ~/lab-os/chapter06-bash/diag-history.txt
+cat ~/lab-os/chapter06-bash/diag-history.txt
 \end{lstlisting}
 \end{enumerate}
 
@@ -626,7 +626,7 @@ Objective: understand wildcard patterns and filename expansion.
 \begin{enumerate}
   \item Enter the samples directory:
 \begin{lstlisting}[language=bash, caption={Entering the samples directory}]
-cd ~/lab-os/week07-bash/samples
+cd ~/lab-os/chapter06-bash/samples
 ls
 \end{lstlisting}
 
@@ -641,7 +641,7 @@ ls backup-0[12].tar
 \begin{lstlisting}[language=bash, caption={Trying brace and tilde expansion}]
 echo log-{morning,afternoon,evening}.txt
 echo ~
-echo ~/lab-os/week07-bash
+echo ~/lab-os/chapter06-bash
 \end{lstlisting}
 \end{enumerate}
 
@@ -652,7 +652,7 @@ Objective: use wildcards safely for routine administration tasks.
 \begin{enumerate}
   \item Prepare additional log files:
 \begin{lstlisting}[language=bash, caption={Preparing additional log files}]
-cd ~/lab-os/week07-bash/logs
+cd ~/lab-os/chapter06-bash/logs
 touch access-01.log access-02.log access-03.log
 ls
 \end{lstlisting}
@@ -746,7 +746,7 @@ echo "$USER is working in $HOME"
 
   \item Test escaping a filename with spaces:
 \begin{lstlisting}[language=bash, caption={Using escape on a path with spaces}]
-cd ~/lab-os/week07-bash/named-files
+cd ~/lab-os/chapter06-bash/named-files
 ls server\ april\ report.txt
 \end{lstlisting}
 
@@ -764,28 +764,28 @@ errors.
 \begin{enumerate}
   \item Make sure the target files are available:
 \begin{lstlisting}[language=bash, caption={Verifying the target files exist}]
-cd ~/lab-os/week07-bash/named-files
+cd ~/lab-os/chapter06-bash/named-files
 ls -lah
 \end{lstlisting}
 
   \item Copy the file with a complex name to the backup folder:
 \begin{lstlisting}[language=bash, caption={Safely copying a file with a complex name}]
 cp -- "backup [weekly] server.conf" \
-  "$HOME/lab-os/week07-bash/backup/backup-weekly-server.conf"
+  "$HOME/lab-os/chapter06-bash/backup/backup-weekly-server.conf"
 \end{lstlisting}
 
   \item Use variables to handle the path safely:
 \begin{lstlisting}[language=bash, caption={Using variables to handle a complex path safely}]
-src="$HOME/lab-os/week07-bash/named-files/backup [weekly] server.conf"
-dst="$HOME/lab-os/week07-bash/backup/backup-weekly-server-v2.conf"
+src="$HOME/lab-os/chapter06-bash/named-files/backup [weekly] server.conf"
+dst="$HOME/lab-os/chapter06-bash/backup/backup-weekly-server-v2.conf"
 
 cp -- "$src" "$dst"
-ls -lah "$HOME/lab-os/week07-bash/backup"
+ls -lah "$HOME/lab-os/chapter06-bash/backup"
 \end{lstlisting}
 
   \item Display the list of backed-up files:
 \begin{lstlisting}[language=bash, caption={Displaying the backup files safely}]
-for file in "$HOME"/lab-os/week07-bash/backup/*; do
+for file in "$HOME"/lab-os/chapter06-bash/backup/*; do
   printf 'Backup result: %s\n' "$file"
 done
 \end{lstlisting}
@@ -803,7 +803,7 @@ arguments and the command either fails or processes the wrong files entirely.
 
 \begin{warningbox}
 All assignments must be completed inside your own lab workspace, for example
-\texttt{\$HOME/lab-os/week07-bash}, unless the instructions explicitly ask you
+\texttt{\$HOME/lab-os/chapter06-bash}, unless the instructions explicitly ask you
 to read system files such as \texttt{/etc} or \texttt{/proc}. Do not modify
 important system files directly without a backup.
 \end{warningbox}

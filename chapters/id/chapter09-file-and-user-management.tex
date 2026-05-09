@@ -5,6 +5,8 @@
 \chapter{Manajemen File, User, dan Group}
 \label{ch:file-and-user-management}
 
+\chapterhero{green}{Kendalikan izin akses, kepemilikan, akun pengguna, grup, dan sudo agar sistem tetap aman sekaligus mudah dikelola.}{izin}{ACL}{sudo}
+
 Bayangkan sebuah kantor dengan lemari arsip besar. Setiap dokumen punya label nama pemilik dan label divisi. Tidak semua karyawan boleh membuka semua laci: ada yang hanya bisa membaca, ada yang bisa menulis, dan hanya manajer yang bisa menghapus berkas. Di Linux, sistem yang mengatur siapa boleh membaca, menulis, atau menjalankan berkas disebut \textit{kontrol akses}. Setiap berkas dan direktori memiliki tiga identitas: pengguna pemilik (\textit{owner}), grup terkait, dan semua pengguna lain.
 
 Bab ini menggabungkan pengelolaan izin berkas dan administrasi identitas pengguna. Pembahasannya dimulai dari model izin standar \texttt{rwx} beserta perintah \cmd{chmod}, \cmd{chown}, dan \cmd{chgrp}, lalu berlanjut ke izin khusus seperti \textit{setuid}, \textit{setgid}, dan \textit{sticky bit}, kemudian Access Control List (ACL), manajemen akun pengguna dan grup, pendelegasian hak administratif lewat \cmd{sudo}, serta pembatasan ruang disk dengan quota.
@@ -26,10 +28,10 @@ Setelah menyelesaikan bab ini, kamu akan mampu:
 \end{enumerate}
 
 \begin{notebox}
-Seluruh praktikum pada bab ini dijalankan pada direktori \dir{~/lab-os/week11-users/}.
+Seluruh praktek pada bab ini dijalankan pada direktori \dir{~/lab-os/chapter09-users/}.
 \begin{lstlisting}[language=bash]
-mkdir -p ~/lab-os/week11-users
-cd ~/lab-os/week11-users
+mkdir -p ~/lab-os/chapter09-users
+cd ~/lab-os/chapter09-users
 \end{lstlisting}
 \end{notebox}
 
@@ -100,14 +102,14 @@ lsattr /etc/app-config-kritis.conf
 sudo chattr -i /etc/app-config-kritis.conf
 \end{lstlisting}
 
-\subsection*{Praktikum 11.1: Setuid, Sticky Bit, dan Direktori Bersama}
+\subsection*{Praktek 9.1: Setuid, Sticky Bit, dan Direktori Bersama}
 
 Amati bagaimana setuid bekerja pada berkas sistem, lalu buat direktori bersama dengan sticky bit yang melindungi berkas masing-masing pengguna.
 
 \begin{enumerate}
     \item Persiapkan direktori kerja dan amati setuid pada berkas sistem.
 \begin{lstlisting}[language=bash, caption={Amati setuid pada berkas sistem}]
-cd ~/lab-os/week11-users
+cd ~/lab-os/chapter09-users
 ls -l /usr/bin/passwd /usr/bin/sudo
 # catat: huruf 's' pada posisi execute pemilik
 \end{lstlisting}
@@ -222,14 +224,14 @@ getfacl proyek-data/data-baru.csv
 setfacl -k proyek-data
 \end{lstlisting}
 
-\subsection*{Praktikum 11.2: ACL Granular untuk Kolaborasi}
+\subsection*{Praktek 9.2: ACL Granular untuk Kolaborasi}
 
 Berikan akses baca ke pengguna tertentu tanpa mengubah grup berkas, lalu buat direktori yang mewariskan ACL ke semua berkas baru.
 
 \begin{enumerate}
     \item Siapkan berkas dan verifikasi kondisi awal tanpa ACL tambahan.
 \begin{lstlisting}[language=bash, caption={Kondisi awal berkas tanpa ACL}]
-cd ~/lab-os/week11-users
+cd ~/lab-os/chapter09-users
 echo "data rahasia proyek" > rahasia.txt
 chmod 640 rahasia.txt
 ls -l rahasia.txt
@@ -270,7 +272,7 @@ getfacl rahasia.txt
 \end{enumerate}
 
 \begin{challengebox}
-Buat direktori bernama \texttt{arsip-proyek} dengan default ACL berikut: grup \texttt{developers} mendapat akses baca, tulis, dan eksekusi; grup \texttt{auditor} hanya mendapat akses baca. Buat beberapa berkas dan subdirektori di dalamnya, lalu verifikasi dengan \cmd{getfacl} bahwa semua berkas baru mewarisi aturan tersebut. Sebagai referensi Bab~5: bandingkan pendekatan ACL ini dengan pendekatan \cmd{chmod} biasa dan jelaskan kelebihan ACL dalam skenario ini.
+Buat direktori bernama \texttt{arsip-proyek} dengan default ACL berikut: grup \texttt{developers} mendapat akses baca, tulis, dan eksekusi; grup \texttt{auditor} hanya mendapat akses baca. Buat beberapa berkas dan subdirektori di dalamnya, lalu verifikasi dengan \cmd{getfacl} bahwa semua berkas baru mewarisi aturan tersebut. Sebagai referensi Bab~4: bandingkan pendekatan ACL ini dengan pendekatan \cmd{chmod} biasa dan jelaskan kelebihan ACL dalam skenario ini.
 \end{challengebox}
 
 %% ========================================================================
@@ -330,7 +332,7 @@ last | head -20
 # last menampilkan riwayat login dan logout
 \end{lstlisting}
 
-\subsection*{Praktikum 11.3: Membuat dan Mengonfigurasi Akun Pengguna}
+\subsection*{Praktek 9.3: Membuat dan Mengonfigurasi Akun Pengguna}
 
 Buat akun pengguna baru dengan konfigurasi lengkap dan verifikasi setiap perubahan.
 
@@ -375,7 +377,7 @@ ls /home/ | grep labuser
 \end{enumerate}
 
 \begin{challengebox}
-Buat skrip Bash (referensi Bab~9) bernama \texttt{buat-pengguna-massal.sh} yang membaca daftar nama dari berkas teks \texttt{daftar-pengguna.txt} (satu nama per baris) dan membuat akun pengguna untuk masing-masing. Setiap akun harus dibuat dengan direktori rumah, shell \texttt{/bin/bash}, dan ditambahkan ke grup \texttt{mahasiswa}. Buat grup tersebut lebih dulu jika belum ada. Skrip harus mencetak pesan sukses atau gagal untuk setiap nama.
+Buat skrip Bash (referensi Bab~7) bernama \texttt{buat-pengguna-massal.sh} yang membaca daftar nama dari berkas teks \texttt{daftar-pengguna.txt} (satu nama per baris) dan membuat akun pengguna untuk masing-masing. Setiap akun harus dibuat dengan direktori rumah, shell \texttt{/bin/bash}, dan ditambahkan ke grup \texttt{mahasiswa}. Buat grup tersebut lebih dulu jika belum ada. Skrip harus mencetak pesan sukses atau gagal untuk setiap nama.
 \end{challengebox}
 
 %% ========================================================================
@@ -433,7 +435,7 @@ id
 # ketik 'exit' untuk kembali ke shell sebelumnya
 \end{lstlisting}
 
-\subsection*{Praktikum 11.4: Kelola Keanggotaan Grup dan Direktori Bersama}
+\subsection*{Praktek 9.4: Kelola Keanggotaan Grup dan Direktori Bersama}
 
 Buat grup baru, kelola keanggotaan, dan buat direktori bersama dengan kepemilikan grup.
 
@@ -550,7 +552,7 @@ sudo grep "sudo" /var/log/auth.log | tail -20
 # setiap baris log berisi: waktu, host, pengguna, perintah yang dijalankan
 \end{lstlisting}
 
-\subsection*{Praktikum 11.5: Konfigurasi Hak sudo Terbatas}
+\subsection*{Praktek 9.5: Konfigurasi Hak sudo Terbatas}
 
 Buat konfigurasi sudo yang hanya mengizinkan pengguna tertentu menjalankan perintah spesifik.
 
@@ -618,22 +620,22 @@ Dalam bab ini, kamu telah mempelajari:
 \end{itemize}
 
 %% ========================================================================
-\section{Tugas Praktikum}
-\label{sec:file-user-exercises}
+\section{Latihan}
+\label{sec:latihan-user-group}
 %% ========================================================================
 
-\textbf{Instruksi Umum}: Kerjakan seluruh tugas secara mandiri. Dokumentasikan setiap langkah dengan tangkapan layar dan kumpulkan dalam format PDF.
+\textbf{Instruksi Umum}: Kerjakan seluruh latihan secara mandiri. Catat langkah penting, simpan tangkapan layar bila diperlukan, lalu rangkum hasilnya sebagai dokumentasi pribadi.
 
-\begin{exercisebox}[11.1 Audit Izin dan Direktori Kolaborasi]
+\subsubsection*{Latihan 9.1 Audit Izin dan Direktori Kolaborasi}
 Kamu ditugaskan mengaudit dan mengonfigurasi izin untuk proyek bersama.
 \begin{enumerate}
     \item Temukan semua berkas SUID di sistem dengan perintah \cmd{find / -perm -4000 -type f 2>/dev/null}. Catat minimal tiga berkas yang kamu temukan dan jelaskan mengapa masing-masing membutuhkan SUID.
     \item Buat direktori \dir{~/proyek-audit} dengan konfigurasi berikut: SGID aktif agar semua berkas baru mewarisi grup direktori, sticky bit aktif agar pengguna tidak bisa menghapus berkas milik orang lain. Verifikasi dengan \cmd{ls -ld}.
     \item Buat minimal tiga berkas di dalam direktori tersebut dan verifikasi bahwa grup berkas sesuai grup direktori.
 \end{enumerate}
-\end{exercisebox}
 
-\begin{exercisebox}[11.2 Konfigurasi ACL untuk Tim Pengembang]
+
+\subsubsection*{Latihan 9.2 Konfigurasi ACL untuk Tim Pengembang}
 Simulasikan skenario manajemen akses tim nyata.
 \begin{enumerate}
     \item Buat tiga akun pengguna: \texttt{pemimpin}, \texttt{anggota-a}, dan \texttt{pengamat}. Buat grup \texttt{tim-dev}.
@@ -641,9 +643,9 @@ Simulasikan skenario manajemen akses tim nyata.
     \item Buat tiga berkas baru di direktori tersebut dan verifikasi bahwa masing-masing mewarisi ACL yang tepat.
     \item Hapus akses \texttt{pengamat} dari salah satu berkas menggunakan \cmd{setfacl -x} dan verifikasi hasilnya.
 \end{enumerate}
-\end{exercisebox}
 
-\begin{exercisebox}[11.3 Kebijakan Akun dan sudo Terbatas]
+
+\subsubsection*{Latihan 9.3 Kebijakan Akun dan sudo Terbatas}
 Terapkan kebijakan akun yang aman dan delegasikan hak administratif terbatas.
 \begin{enumerate}
     \item Buat akun \texttt{staf-it} dengan shell \texttt{/bin/bash} dan tambahkan ke grup \texttt{helpdesk} (buat grupnya lebih dulu).
@@ -651,11 +653,11 @@ Terapkan kebijakan akun yang aman dan delegasikan hak administratif terbatas.
     \item Verifikasi konfigurasi dengan \cmd{sudo -l -U staf-it} dan pastikan hanya tiga perintah itu yang tercantum.
     \item Dokumentasikan perbedaan baris aturan untuk yang menggunakan \texttt{NOPASSWD} dan yang tidak.
 \end{enumerate}
-\end{exercisebox}
+
 
 %% ========================================================================
 \section{Referensi}
-\label{sec:file-user-references}
+\label{sec:referensi-user-group}
 %% ========================================================================
 
 \begin{itemize}

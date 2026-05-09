@@ -162,7 +162,7 @@
     framesep=2pt
 }
 
-\lstset{style=bashstyle}
+\lstset{style=bashstyle, language=bash}
 
 %% ------------------------------------------------------------------------
 %% Prevent Page Breaks in Listings - Simple approach
@@ -183,9 +183,9 @@
 %% ------------------------------------------------------------------------
 \usepackage[
     colorlinks=true,
-    linkcolor=linkcolor,
+    linkcolor=black,
     urlcolor=blue,
-    citecolor=linkcolor,
+    citecolor=black,
     bookmarks=true,
     bookmarksnumbered=true,
     pdfborder={0 0 0}
@@ -253,20 +253,31 @@
 
 %% Define box titles based on language
 \ifIndonesian
-    \def\noteboxTitle{Catatan}
-    \def\warningboxTitle{Peringatan}
-    \def\tipboxTitle{Tips}
-    \def\exampleboxPrefix{Contoh: }
+    \def\noteboxTitle{\boxicon{blue!70!black}{i}~Catatan}
+    \def\warningboxTitle{\boxicon{red!75!black}{!}~Peringatan}
+    \def\tipboxTitle{\boxicon{green!60!black}{+}~Tips}
+    \def\exampleboxPrefix{\boxicon{orange!80!black}{C}~Contoh: }
     \def\exerciseboxPrefix{Latihan }
-    \def\challengeboxTitle{Tantangan}
+    \def\challengeboxTitle{\boxicon{teal!75!black}{*}~Tantangan}
 \else
-    \def\noteboxTitle{Note}
-    \def\warningboxTitle{Warning}
-    \def\tipboxTitle{Tip}
-    \def\exampleboxPrefix{Example: }
+    \def\noteboxTitle{\boxicon{blue!70!black}{i}~Note}
+    \def\warningboxTitle{\boxicon{red!75!black}{!}~Warning}
+    \def\tipboxTitle{\boxicon{green!60!black}{+}~Tip}
+    \def\exampleboxPrefix{\boxicon{orange!80!black}{E}~Example: }
     \def\exerciseboxPrefix{Exercise }
-    \def\challengeboxTitle{Challenge}
+    \def\challengeboxTitle{\boxicon{teal!75!black}{*}~Challenge}
 \fi
+
+\newcommand{\boxicon}[2]{%
+    \tikz[baseline=(icon.base)]\node[
+        circle,
+        fill=#1,
+        text=white,
+        minimum size=1.55em,
+        inner sep=0pt,
+        font=\sffamily\bfseries\scriptsize
+    ] (icon) {#2};%
+}
 
 % Box untuk catatan / note
 \newtcolorbox{notebox}{
@@ -275,7 +286,6 @@
     title=\noteboxTitle,
     fonttitle=\bfseries,
     enhanced,
-    breakable,
     top=2pt, bottom=2pt, left=3pt, right=3pt,
     toptitle=1pt, bottomtitle=1pt,
     before skip=4pt, after skip=4pt
@@ -288,7 +298,6 @@
     title=\warningboxTitle,
     fonttitle=\bfseries,
     enhanced,
-    breakable,
     top=2pt, bottom=2pt, left=3pt, right=3pt,
     toptitle=1pt, bottomtitle=1pt,
     before skip=4pt, after skip=4pt
@@ -301,7 +310,6 @@
     title=\tipboxTitle,
     fonttitle=\bfseries,
     enhanced,
-    breakable,
     top=2pt, bottom=2pt, left=3pt, right=3pt,
     toptitle=1pt, bottomtitle=1pt,
     before skip=4pt, after skip=4pt
@@ -314,7 +322,6 @@
     title=\exampleboxPrefix#1,
     fonttitle=\bfseries,
     enhanced,
-    breakable,
     top=2pt, bottom=2pt, left=3pt, right=3pt,
     toptitle=1pt, bottomtitle=1pt,
     before skip=4pt, after skip=4pt
@@ -327,7 +334,6 @@
     title=\exerciseboxPrefix#1,
     fonttitle=\bfseries,
     enhanced,
-    breakable,
     top=2pt, bottom=2pt, left=3pt, right=3pt,
     toptitle=1pt, bottomtitle=1pt,
     before skip=4pt, after skip=4pt
@@ -340,7 +346,6 @@
     title=\challengeboxTitle,
     fonttitle=\bfseries,
     enhanced,
-    breakable,
     top=2pt, bottom=2pt, left=3pt, right=3pt,
     toptitle=1pt, bottomtitle=1pt,
     before skip=4pt, after skip=4pt
@@ -388,9 +393,57 @@
 %% ------------------------------------------------------------------------
 \newcommand{\cmd}[1]{\texttt{\textcolor{commandcolor}{#1}}}
 \newcommand{\file}[1]{\texttt{#1}}
-\newcommand{\dir}[1]{\texttt{#1/}}
+\newcommand{\dir}[1]{\texttt{#1}}
 \newcommand{\var}[1]{\texttt{\$#1}}
 \newcommand{\keystroke}[1]{\framebox{\texttt{#1}}}
+
+\newcommand{\chaptertag}[1]{%
+    \tikz[baseline=(tag.base)]\node[
+        fill=white,
+        fill opacity=0.15,
+        text opacity=1,
+        rounded corners=3pt,
+        inner xsep=6pt,
+        inner ysep=3pt,
+        text=white,
+        font=\sffamily\scriptsize\bfseries
+    ] (tag) {#1};%
+}
+
+\newcommand{\chapterhero}[5]{%
+    \begin{tcolorbox}[
+        enhanced,
+        boxrule=0pt,
+        arc=2pt,
+        outer arc=2pt,
+        left=10pt,
+        right=10pt,
+        top=10pt,
+        bottom=10pt,
+        before skip=2pt,
+        after skip=10pt,
+        colframe=white,
+        colback=black,
+        interior style={left color=#1!88!black, right color=#1!60!black},
+        overlay={
+            \fill[white, opacity=0.07] ([xshift=-1.6cm,yshift=-0.1cm]frame.north east) circle (1.7cm);
+            \fill[white, opacity=0.05] ([xshift=-0.8cm,yshift=-1.1cm]frame.north east) circle (0.7cm);
+            \draw[white, opacity=0.10, line width=0.5pt] ([xshift=-3.2cm,yshift=-0.8cm]frame.north east) rectangle ([xshift=-0.7cm,yshift=-2.3cm]frame.north east);
+            \draw[white, opacity=0.10, line width=0.5pt] ([xshift=-2.8cm,yshift=-0.4cm]frame.north east) -- ([xshift=-1.8cm,yshift=-1.1cm]frame.north east) -- ([xshift=-1.0cm,yshift=-0.6cm]frame.north east);
+            \fill[white, opacity=0.16] ([xshift=-2.8cm,yshift=-0.4cm]frame.north east) circle (2.4pt);
+            \fill[white, opacity=0.16] ([xshift=-1.8cm,yshift=-1.1cm]frame.north east) circle (2.4pt);
+            \fill[white, opacity=0.16] ([xshift=-1.0cm,yshift=-0.6cm]frame.north east) circle (2.4pt);
+            \draw[white, opacity=0.08, line width=0.4pt] ([xshift=0.4cm,yshift=-0.5cm]frame.north west) -- ([xshift=4.2cm,yshift=-0.5cm]frame.north west);
+            \draw[white, opacity=0.08, line width=0.4pt] ([xshift=0.4cm,yshift=-0.9cm]frame.north west) -- ([xshift=3.6cm,yshift=-0.9cm]frame.north west);
+        }
+    ]
+    {\color{white}\sffamily\bfseries\small Fokus Bab}\par
+    \vspace{3pt}
+    {\color{white}\fontsize{11}{14}\selectfont #2}\par
+    \vspace{8pt}
+    \chaptertag{#3}\hspace{6pt}\chaptertag{#4}\hspace{6pt}\chaptertag{#5}
+    \end{tcolorbox}%
+}
 
 %% ------------------------------------------------------------------------
 %% Indeks

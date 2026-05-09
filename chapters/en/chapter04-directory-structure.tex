@@ -151,8 +151,8 @@ the first character indicates the type:
 \begin{enumerate}
     \item Create the lab workspace:
 \begin{lstlisting}[language=bash, caption={Creating the workspace for this chapter}]
-mkdir -p ~/lab-os/week05
-cd ~/lab-os/week05
+mkdir -p ~/lab-os/chapter04
+cd ~/lab-os/chapter04
 pwd
 \end{lstlisting}
 
@@ -240,7 +240,7 @@ pwd
 
     \item Practise relative paths:
 \begin{lstlisting}[language=bash, caption={Relative paths in the workspace}]
-cd ~/lab-os/week05
+cd ~/lab-os/chapter04
 mkdir -p a/b/c
 cd a/b
 pwd
@@ -426,7 +426,7 @@ vs a directory, and practise octal conversion.
 \begin{enumerate}
     \item Prepare test objects:
 \begin{lstlisting}[language=bash, caption={Setting up permission test objects}]
-cd ~/lab-os/week05
+cd ~/lab-os/chapter04
 mkdir -p permtest/dirA
 echo "hello" > permtest/fileA.txt
 ls -ld permtest permtest/dirA
@@ -528,7 +528,7 @@ A link is a way to create an ``alternative name'' for a file.
 \begin{enumerate}
     \item Prepare a file:
 \begin{lstlisting}[language=bash, caption={Creating a source file}]
-cd ~/lab-os/week05
+cd ~/lab-os/chapter04
 echo "version1" > target.txt
 \end{lstlisting}
 
@@ -564,7 +564,7 @@ version.
 \begin{enumerate}
     \item Create the version structure:
 \begin{lstlisting}[language=bash, caption={Creating dummy application versions}]
-cd ~/lab-os/week05
+cd ~/lab-os/chapter04
 mkdir -p app/releases/v1 app/releases/v2 app/shared
 echo "APP_VERSION=v1" > app/releases/v1/.env
 echo "APP_VERSION=v2" > app/releases/v2/.env
@@ -613,7 +613,7 @@ On a server, you often need to search for:
 \begin{enumerate}
     \item Find all \texttt{.txt} files in the workspace:
 \begin{lstlisting}[language=bash, caption={find by name and type}]
-cd ~/lab-os/week05
+cd ~/lab-os/chapter04
 find . -type f -name "*.txt"
 \end{lstlisting}
 
@@ -753,21 +753,21 @@ extract it.
     \item Create a compressed archive of the workspace:
 \begin{lstlisting}[language=bash, caption={Creating a tar.gz}]
 cd ~/lab-os
-tar -czvf week05-backup.tar.gz week05
-ls -lah week05-backup.tar.gz
+tar -czvf chapter04-backup.tar.gz chapter04
+ls -lah chapter04-backup.tar.gz
 \end{lstlisting}
 
     \item List the archive contents without extracting:
 \begin{lstlisting}[language=bash, caption={Listing tar.gz contents}]
-tar -tzvf week05-backup.tar.gz | head -n 30
+tar -tzvf chapter04-backup.tar.gz | head -n 30
 \end{lstlisting}
 
     \item Extract to a test folder:
 \begin{lstlisting}[language=bash, caption={Extracting tar.gz to a specific folder}]
 mkdir -p ~/lab-os/restore-test
-tar -xzvf week05-backup.tar.gz \
+tar -xzvf chapter04-backup.tar.gz \
   -C ~/lab-os/restore-test
-ls -lah ~/lab-os/restore-test/week05 | head
+ls -lah ~/lab-os/restore-test/chapter04 | head
 \end{lstlisting}
 \end{enumerate}
 
@@ -819,7 +819,7 @@ of \texttt{-k} and the compression level.
 \begin{enumerate}
     \item Create a simple large test file:
 \begin{lstlisting}[language=bash, caption={Creating a large test file}]
-cd ~/lab-os/week05
+cd ~/lab-os/chapter04
 yes "logline" | head -n 200000 > biglog.txt
 ls -lah biglog.txt
 \end{lstlisting}
@@ -895,7 +895,7 @@ realistic use case for each.
 
 \subsection*{B. Lab Exercises (Easy--Intermediate)}
 \begin{exercisebox}[4.C]
-Create the folder \texttt{\~/lab-os/week05-exercises} containing:
+Create the folder \texttt{\~/lab-os/chapter04-exercises} containing:
 \begin{itemize}
     \item 3 text files, 1 subfolder, and 1 symlink pointing to one of the files.
 \end{itemize}

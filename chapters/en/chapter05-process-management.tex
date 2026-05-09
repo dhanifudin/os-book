@@ -83,7 +83,7 @@ bring down the entire process.
   \end{itemize}
 \end{examplebox}
 
-\subsection*{Lab 6.1 --- Viewing Processes and Threads}
+\subsection*{Lab 5.1 --- Viewing Processes and Threads}
 
 \begin{enumerate}
   \item Display all running processes:
@@ -109,7 +109,7 @@ pstree -p
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[6.1]
+\begin{exercisebox}[5.1]
   Run \cmd{ps aux} and observe its output:
   \begin{enumerate}
     \item How many processes are running in total? Which process has the
@@ -184,7 +184,7 @@ ls /does-not-exist ; echo "Exit code: $?" # prints 2
 \end{lstlisting}
 \end{tipbox}
 
-\subsection*{Lab 6.2 --- Observing the Process Lifecycle}
+\subsection*{Lab 5.2 --- Observing the Process Lifecycle}
 
 \begin{enumerate}
   \item Create a background process and observe its state:
@@ -203,7 +203,7 @@ echo "Failed: $?"
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[6.2]
+\begin{exercisebox}[5.2]
   \begin{enumerate}
     \item Run \cmd{sleep 120 \&} and observe the \texttt{STAT} column in
       \cmd{ps aux}. What state is shown? Why is the sleep process in that
@@ -255,7 +255,7 @@ nice -n 10 command
 renice -n 15 -p <PID>
 \end{lstlisting}
 
-\subsection*{Lab 6.3 --- Adjusting Process Priority}
+\subsection*{Lab 5.3 --- Adjusting Process Priority}
 
 \begin{enumerate}
   \item Run a process with low priority:
@@ -280,7 +280,7 @@ kill %1
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[6.3]
+\begin{exercisebox}[5.3]
   \begin{enumerate}
     \item Run \cmd{nice -n 5 sleep 200 \&} and verify its NI value with
       \cmd{ps}.
@@ -353,7 +353,7 @@ pkill -9 process-name
   corruption or unreleased file locks.
 \end{tipbox}
 
-\subsection*{Lab 6.4 --- Sending Signals to Processes}
+\subsection*{Lab 5.4 --- Sending Signals to Processes}
 
 \begin{enumerate}
   \item Create test processes:
@@ -385,7 +385,7 @@ pkill sleep
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[6.4]
+\begin{exercisebox}[5.4]
   \begin{enumerate}
     \item Run \cmd{sleep 400 \&}, send SIGSTOP, and observe the change in the
       \texttt{STAT} column. What state appears?
@@ -437,7 +437,7 @@ open a new session just to run the next command.
   job 1 has PID 4521.
 \end{notebox}
 
-\subsection*{Lab 6.5 --- Foreground and Background Job Management}
+\subsection*{Lab 5.5 --- Foreground and Background Job Management}
 
 \begin{enumerate}
   \item Start three jobs in the background:
@@ -464,7 +464,7 @@ jobs
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[6.5]
+\begin{exercisebox}[5.5]
   \begin{enumerate}
     \item Run \cmd{top} in the foreground. What happens in the terminal?
     \item Press \keystroke{Ctrl+Z} and check its status with \cmd{jobs}.
@@ -533,7 +533,7 @@ sudo apt install htop
 htop
 \end{lstlisting}
 
-\subsection*{Lab 6.6 --- Process Monitoring}
+\subsection*{Lab 5.6 --- Process Monitoring}
 
 \begin{enumerate}
   \item Find the processes with the highest CPU and memory usage:
@@ -558,7 +558,7 @@ htop
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[6.6]
+\begin{exercisebox}[5.6]
   \begin{enumerate}
     \item Use \cmd{ps aux --sort=\%mem} to find the process using the most
       memory on your VM. What process is it?
@@ -597,7 +597,7 @@ htop
 \section{Exercises}
 \label{sec:process-exercises}
 
-\begin{exercisebox}[6.A]
+\begin{exercisebox}[5.A]
   \textbf{Exploring System Processes}
   \begin{enumerate}
     \item Run \cmd{ps aux --forest} and find the process with PID 1. What is
@@ -609,7 +609,7 @@ htop
   \end{enumerate}
 \end{exercisebox}
 
-\begin{exercisebox}[6.B]
+\begin{exercisebox}[5.B]
   \textbf{Job Management Simulation}
   \begin{enumerate}
     \item Run three \cmd{sleep} commands with durations of 100, 200, and 300
@@ -621,7 +621,7 @@ htop
   \end{enumerate}
 \end{exercisebox}
 
-\begin{exercisebox}[6.C]
+\begin{exercisebox}[5.C]
   \textbf{Priority and Signals}
   \begin{enumerate}
     \item Run two sleep processes: one with nice +5 and one with nice +15.

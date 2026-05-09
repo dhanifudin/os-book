@@ -5,11 +5,13 @@
 \chapter{Manajemen Perangkat Keras dan Perintah Dasar}
 \label{ch:hardware-and-basic-commands}
 
+\chapterhero{teal}{Kenali cara Linux mendeteksi perangkat keras, memuat driver, dan menyediakan perintah terminal dasar untuk mulai bekerja dengan percaya diri.}{hardware}{driver}{terminal}
+
 Bayangkan kamu baru membeli laptop baru dan menyalakannya untuk pertama kali. Sistem operasi perlu tahu apa saja komponen di dalamnya: jenis prosesor, kapasitas RAM, kartu grafis, dan disk. Di Windows, informasi ini tersedia di Device Manager. Di Linux, kamu mendapatkan akses yang jauh lebih dalam lewat terminal.
 
 Linux mendeteksi perangkat keras melalui proses bertahap. Saat komputer dinyalakan, kernel melakukan pemindaian terhadap semua bus seperti PCI dan USB, lalu mencocokkan perangkat yang ditemukan dengan modul kernel yang sesuai. Hasil deteksi ini bisa ditelusuri melalui perintah seperti \cmd{lscpu}, \cmd{lspci}, \cmd{lsusb}, dan \cmd{dmesg}. Prosesnya berlangsung otomatis, tetapi jejaknya tetap bisa kamu audit dari terminal.
 
-Memahami perangkat keras dan perintah dasar terminal adalah fondasi dari semua praktikum Linux berikutnya. Tanpa keterampilan ini, kamu tidak akan bisa membaca informasi sistem, berpindah direktori dengan percaya diri, mengelola berkas sederhana, atau menafsirkan dokumentasi perintah yang kamu temui sepanjang buku ini.
+Memahami perangkat keras dan perintah dasar terminal adalah fondasi dari semua praktek Linux berikutnya. Tanpa keterampilan ini, kamu tidak akan bisa membaca informasi sistem, berpindah direktori dengan percaya diri, mengelola berkas sederhana, atau menafsirkan dokumentasi perintah yang kamu temui sepanjang buku ini.
 
 \textbf{Yang Akan Kamu Pelajari}
 
@@ -25,11 +27,11 @@ Setelah menyelesaikan bab ini, kamu akan mampu:
 \end{enumerate}
 
 \begin{notebox}
-Seluruh praktikum pada bab ini dijalankan pada direktori \dir{~/lab-os/week02-hardware/}.
-Buat direktori ini sebelum memulai praktikum pertama:
+Seluruh praktek pada bab ini dijalankan pada direktori \dir{~/lab-os/chapter02-hardware/}.
+Buat direktori ini sebelum memulai praktek pertama:
 \begin{lstlisting}[language=bash]
-mkdir -p ~/lab-os/week02-hardware
-cd ~/lab-os/week02-hardware
+mkdir -p ~/lab-os/chapter02-hardware
+cd ~/lab-os/chapter02-hardware
 \end{lstlisting}
 \end{notebox}
 
@@ -49,9 +51,9 @@ sudo apt install -y pciutils usbutils lshw
 \end{lstlisting}
 \end{tipbox}
 
-\subsection*{Praktikum 2.1: Identifikasi Komponen Perangkat Keras VM}
+\subsection*{Praktek 2.1: Identifikasi Komponen Perangkat Keras VM}
 
-Tujuan praktikum ini adalah membaca spesifikasi prosesor, memori, dan perangkat PCI dari mesin virtual.
+Tujuan praktek ini adalah membaca spesifikasi prosesor, memori, dan perangkat PCI dari mesin virtual.
 
 \begin{enumerate}
     \item Tampilkan informasi prosesor:
@@ -101,9 +103,9 @@ Saat kernel berhasil memuat modul, hasilnya biasanya terlihat di pesan \cmd{dmes
 Jangan melepas modul yang sedang digunakan oleh sistem aktif. Melepas driver disk atau modul jaringan dapat menyebabkan sistem tidak responsif atau koneksi SSH terputus.
 \end{warningbox}
 
-\subsection*{Praktikum 2.2: Eksplorasi Modul Aktif dan Driver Perangkat}
+\subsection*{Praktek 2.2: Eksplorasi Modul Aktif dan Driver Perangkat}
 
-Tujuan praktikum ini adalah melihat modul kernel yang sedang berjalan dan menghubungkannya dengan perangkat yang terdeteksi sistem.
+Tujuan praktek ini adalah melihat modul kernel yang sedang berjalan dan menghubungkannya dengan perangkat yang terdeteksi sistem.
 
 \begin{enumerate}
     \item Tampilkan versi kernel yang sedang berjalan:
@@ -161,14 +163,14 @@ Untuk membaca isi berkas, \cmd{cat} menampilkan semua konten sekaligus, \cmd{hea
 Perintah \cmd{rm -rf} menghapus direktori beserta seluruh isinya tanpa konfirmasi. Tidak ada tempat sampah. Verifikasi path yang akan dihapus sebelum menekan Enter.
 \end{warningbox}
 
-\subsection*{Praktikum 2.3: Buat Struktur Direktori Latihan}
+\subsection*{Praktek 2.3: Buat Struktur Direktori Latihan}
 
-Tujuan praktikum ini adalah membangun struktur direktori kerja dan melatih manipulasi berkas dasar.
+Tujuan praktek ini adalah membangun struktur direktori kerja dan melatih manipulasi berkas dasar.
 
 \begin{enumerate}
     \item Pindah ke direktori kerja bab ini:
 \begin{lstlisting}[language=bash, caption={Masuk ke direktori kerja}]
-cd ~/lab-os/week02-hardware
+cd ~/lab-os/chapter02-hardware
 pwd
 \end{lstlisting}
 
@@ -222,14 +224,14 @@ Perintah \cmd{sed} adalah editor stream yang memproses teks baris per baris. Ope
 
 Perintah \cmd{awk} memproses teks berdasarkan kolom. Setiap baris dibagi menjadi kolom yang dipisahkan spasi, dan kamu bisa mengakses kolom tertentu dengan \texttt{\$1}, \texttt{\$2}, dan seterusnya. Variabel \texttt{\$NF} merujuk ke kolom terakhir. Variabel \texttt{NR} berisi nomor baris saat ini. Kamu bisa menambahkan kondisi seperti \texttt{NR>1} untuk melewati baris header.
 
-\subsection*{Praktikum 2.4: Filter dan Ekstrak Teks dari Output Sistem}
+\subsection*{Praktek 2.4: Filter dan Ekstrak Teks dari Output Sistem}
 
-Tujuan praktikum ini adalah menggunakan \cmd{grep}, \cmd{sed}, dan \cmd{awk} untuk mengolah output perintah sistem nyata.
+Tujuan praktek ini adalah menggunakan \cmd{grep}, \cmd{sed}, dan \cmd{awk} untuk mengolah output perintah sistem nyata.
 
 \begin{enumerate}
     \item Siapkan berkas log latihan dengan lebih banyak konten:
 \begin{lstlisting}[language=bash, caption={Membuat berkas log latihan}]
-cat > ~/lab-os/week02-hardware/sistem.log << 'EOF'
+cat > ~/lab-os/chapter02-hardware/sistem.log << 'EOF'
 INFO: layanan web dimulai pada port 8080
 WARN: penggunaan CPU mencapai 75%
 ERROR: gagal membaca berkas konfigurasi
@@ -297,9 +299,9 @@ Ada juga perintah bantu lain yang sering dipakai di terminal: \cmd{which} untuk 
 
 Pendekatan ini penting untuk buku ini: alih-alih berhenti ketika menjumpai perintah baru, biasakan membuka dokumentasinya, membaca opsi yang relevan, lalu mencoba contoh kecil secara langsung di terminal.
 
-\subsection*{Praktikum 2.5: Telusuri Dokumentasi Perintah}
+\subsection*{Praktek 2.5: Telusuri Dokumentasi Perintah}
 
-Tujuan praktikum ini adalah membiasakan diri mencari dokumentasi dan memahami perbedaan sumber bantuan yang tersedia di Linux.
+Tujuan praktek ini adalah membiasakan diri mencari dokumentasi dan memahami perbedaan sumber bantuan yang tersedia di Linux.
 
 \begin{enumerate}
     \item Buka halaman manual untuk \cmd{ls} dan cari bagian yang menjelaskan flag \texttt{-a}:
@@ -352,21 +354,21 @@ Dalam bab ini, kamu telah mempelajari:
 \end{itemize}
 
 %% ------------------------------------------------------------------------
-\section{Tugas Praktikum}
+\section{Latihan}
 
-\textbf{Instruksi Umum}: Kerjakan seluruh tugas secara mandiri. Dokumentasikan setiap langkah dengan tangkapan layar dan kumpulkan dalam format PDF.
+\textbf{Instruksi Umum}: Kerjakan seluruh latihan secara mandiri. Catat langkah penting, simpan tangkapan layar bila diperlukan, lalu rangkum hasilnya sebagai dokumentasi pribadi.
 
-\begin{exercisebox}[2.1 Profil Perangkat Keras VM]
+\subsubsection*{Latihan 2.1 Profil Perangkat Keras VM}
 Jalankan \cmd{lspci -nnk} dan pilih satu perangkat PCI. Catat: (a) nama perangkat, (b) ID vendor dan perangkat dalam format heksadesimal, (c) nama driver kernel aktif. Kemudian jalankan \cmd{modinfo} untuk driver tersebut dan tuliskan deskripsi singkat serta nama penulis modulnya.
-\end{exercisebox}
 
-\begin{exercisebox}[2.2 Dokumentasi dan Modul Kernel]
+
+\subsubsection*{Latihan 2.2 Dokumentasi dan Modul Kernel}
 Pilih satu modul aktif dari hasil \cmd{lsmod}. Dokumentasikan: (a) nama modul, (b) deskripsi dan lisensi dari \cmd{modinfo}, (c) satu pesan kernel terkait dari \cmd{dmesg} bila ada. Setelah itu, gunakan \cmd{man} atau \cmd{--help} untuk mencari arti salah satu opsi dari perintah \cmd{modprobe} dan jelaskan fungsinya.
-\end{exercisebox}
 
-\begin{exercisebox}[2.3 Analisis Log dengan grep/sed/awk]
+
+\subsubsection*{Latihan 2.3 Analisis Log dengan grep/sed/awk}
 Buat berkas \file{server.log} berisi minimal 10 baris dengan variasi tingkat pesan: INFO, WARN, dan ERROR. Kemudian: (a) gunakan \cmd{grep -c ERROR server.log} untuk menghitung jumlah baris ERROR, (b) gunakan \cmd{sed} untuk mengganti semua kata \texttt{WARN} menjadi \texttt{WARNING} dan simpan ke berkas baru \file{server-clean.log}, (c) gunakan \cmd{awk} untuk menampilkan hanya kata pertama (tingkat pesan) dari setiap baris. Sertakan tangkapan layar output setiap perintah.
-\end{exercisebox}
+
 
 %% ------------------------------------------------------------------------
 \section{Referensi}

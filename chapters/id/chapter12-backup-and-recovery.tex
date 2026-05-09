@@ -5,6 +5,8 @@
 \chapter{Backup dan Pemulihan Sistem}
 \label{ch:backup-and-recovery}
 
+\chapterhero{gray}{Rancang cadangan data yang andal, otomasi jadwal backup, dan latihan pemulihan agar kehilangan data tidak berubah menjadi bencana.}{rsync}{cron}{pemulihan}
+
 Bayangkan kamu bekerja seharian penuh menyelesaikan laporan penting, kemudian
 laptop mati mendadak dan semua file hilang. Skenario ini bukan sekadar cerita
 menakutkan: kegagalan disk keras, kesalahan penghapusan file, serangan malware,
@@ -43,10 +45,10 @@ Setelah menyelesaikan bab ini, kamu akan mampu:
 \end{enumerate}
 
 \begin{notebox}
-Seluruh praktikum pada bab ini dijalankan pada direktori \dir{~/lab-os/week14-backup/}.
+Seluruh praktek pada bab ini dijalankan pada direktori \dir{~/lab-os/chapter12-backup/}.
 \begin{lstlisting}[language=bash]
-mkdir -p ~/lab-os/week14-backup
-cd ~/lab-os/week14-backup
+mkdir -p ~/lab-os/chapter12-backup
+cd ~/lab-os/chapter12-backup
 \end{lstlisting}
 \end{notebox}
 
@@ -90,16 +92,16 @@ hilang? Jika RPO adalah 24 jam, backup harus berjalan setidaknya sekali sehari.
 yang bisa ditoleransi? Jika RTO adalah 2 jam, proses restore harus bisa selesai
 dalam 2 jam sejak kegagalan terjadi.
 
-\subsection*{Praktikum 14.1: Rencanakan Strategi Backup}
+\subsection*{Praktek 12.1: Rencanakan Strategi Backup}
 
-Tujuan praktikum ini adalah menyusun rencana backup tertulis menggunakan heredoc
-dari Bab~3, lalu membuat data simulasi yang akan digunakan di praktikum-praktikum
+Tujuan praktek ini adalah menyusun rencana backup tertulis menggunakan heredoc
+dari Bab~3, lalu membuat data simulasi yang akan digunakan di praktek-praktek
 berikutnya.
 
 \begin{enumerate}
     \item Buat direktori struktur data simulasi yang akan di-backup:
 \begin{lstlisting}[language=bash, caption={Menyiapkan direktori dan data simulasi}]
-cd ~/lab-os/week14-backup
+cd ~/lab-os/chapter12-backup
 mkdir -p data-sumber/{dokumen,konfigurasi,log}
 
 echo "laporan-keuangan-2026.txt" > data-sumber/dokumen/laporan.txt
@@ -141,7 +143,7 @@ STRATEGI
 Full backup    : setiap Minggu malam (dokumen + konfigurasi)
 Incremental    : Senin-Sabtu malam (dokumen + konfigurasi)
 Log            : TIDAK dibackup (dapat diregenerasi)
-Penyimpanan    : lokal ~/lab-os/week14-backup/arsip/
+Penyimpanan    : lokal ~/lab-os/chapter12-backup/arsip/
 
 ATURAN 3-2-1
 -----------
@@ -194,9 +196,9 @@ permission), \texttt{-t} (simpan timestamp), \texttt{-g} (simpan group), dan
 untuk melihat kemajuan.
 
 \begin{lstlisting}[language=bash, caption={Penggunaan dasar rsync}]
-rsync -av ~/lab-os/week14-backup/data-sumber/ ~/lab-os/week14-backup/arsip-rsync/
-rsync -avn ~/lab-os/week14-backup/data-sumber/ ~/lab-os/week14-backup/arsip-rsync/
-rsync -av --delete ~/lab-os/week14-backup/data-sumber/ ~/lab-os/week14-backup/arsip-rsync/
+rsync -av ~/lab-os/chapter12-backup/data-sumber/ ~/lab-os/chapter12-backup/arsip-rsync/
+rsync -avn ~/lab-os/chapter12-backup/data-sumber/ ~/lab-os/chapter12-backup/arsip-rsync/
+rsync -av --delete ~/lab-os/chapter12-backup/data-sumber/ ~/lab-os/chapter12-backup/arsip-rsync/
 rsync -avz ~/data/ user@server-remote:/backup/data/
 \end{lstlisting}
 
@@ -218,14 +220,14 @@ saat ditelusuri, tetapi file yang tidak berubah hanya berupa hard link ke file
 snapshot sebelumnya. Tidak ada duplikasi data di disk.
 
 \begin{lstlisting}[language=bash, caption={Backup snapshot berbasis hard link}]
-BACKUP_BASE=~/lab-os/week14-backup/snapshots
+BACKUP_BASE=~/lab-os/chapter12-backup/snapshots
 TODAY=$(date +%F)
 YESTERDAY=$(date -d yesterday +%F)
 
 mkdir -p "$BACKUP_BASE/$TODAY"
 rsync -av --delete \
     --link-dest="$BACKUP_BASE/$YESTERDAY" \
-    ~/lab-os/week14-backup/data-sumber/ \
+    ~/lab-os/chapter12-backup/data-sumber/ \
     "$BACKUP_BASE/$TODAY/"
 \end{lstlisting}
 
@@ -240,15 +242,15 @@ rsync -av --log-file=/var/log/rsync.log sumber/ tujuan/
 rsync -av --progress sumber/ tujuan/
 \end{lstlisting}
 
-\subsection*{Praktikum 14.2: Sinkronisasi Direktori dengan rsync}
+\subsection*{Praktek 12.2: Sinkronisasi Direktori dengan rsync}
 
-Tujuan praktikum ini adalah memahami perilaku \cmd{rsync} dengan berbagai opsi,
+Tujuan praktek ini adalah memahami perilaku \cmd{rsync} dengan berbagai opsi,
 termasuk efek \texttt{--delete} dan mekanisme hard link pada snapshot.
 
 \begin{enumerate}
     \item Jalankan sinkronisasi pertama:
 \begin{lstlisting}[language=bash, caption={Sinkronisasi pertama dengan rsync}]
-cd ~/lab-os/week14-backup
+cd ~/lab-os/chapter12-backup
 rsync -avn data-sumber/ arsip-rsync/
 rsync -av data-sumber/ arsip-rsync/
 ls -la arsip-rsync/
@@ -291,14 +293,14 @@ du -sh snapshots/
     di snap-1 dan snap-2. Apakah sama? File \file{baru.txt} yang diubah
     seharusnya punya inode berbeda karena isinya berubah.
 
-    \item Bersihkan snapshot setelah praktikum:
+    \item Bersihkan snapshot setelah praktek:
 \begin{lstlisting}[language=bash, caption={Membersihkan direktori snapshot}]
 rm -rf arsip-rsync/ snapshots/
 \end{lstlisting}
 \end{enumerate}
 
 \begin{challengebox}
-Buat skrip Bash (mengacu ke Bab~9) bernama \file{rsync-backup.sh} di direktori
+Buat skrip Bash (mengacu ke Bab~7) bernama \file{rsync-backup.sh} di direktori
 lab yang menjalankan \cmd{rsync} dari direktori \dir{data-sumber/} ke direktori
 bernama sesuai tanggal hari ini dalam format \texttt{YYYY-MM-DD}. Gunakan
 \cmd{tee} dari Bab~3 untuk menulis output rsync ke layar sekaligus ke file log
@@ -392,15 +394,15 @@ performa yang baik), dan \texttt{status=progress} menampilkan kemajuan real-time
 dua kali nama device dengan \cmd{lsblk} sebelum menjalankan \cmd{dd} ke disk.
 \end{warningbox}
 
-\subsection*{Praktikum 14.3: Buat Arsip Backup dan Verifikasi Integritasnya}
+\subsection*{Praktek 12.3: Buat Arsip Backup dan Verifikasi Integritasnya}
 
-Tujuan praktikum ini adalah membuat arsip backup penuh dan incremental,
+Tujuan praktek ini adalah membuat arsip backup penuh dan incremental,
 kemudian memverifikasi integritas arsip menggunakan checksum.
 
 \begin{enumerate}
     \item Buat arsip full backup dan simpan checksumnya:
 \begin{lstlisting}[language=bash, caption={Full backup dan pembuatan checksum}]
-cd ~/lab-os/week14-backup
+cd ~/lab-os/chapter12-backup
 mkdir -p arsip-tar
 
 tar -czf arsip-tar/full-$(date +%F).tar.gz data-sumber/
@@ -514,10 +516,10 @@ output langsung.
 \begin{longlisting}[language=bash, caption={Contoh skrip backup dengan logging}]
 #!/bin/bash
 
-BACKUP_DIR="$HOME/lab-os/week14-backup/arsip-otomatis"
-SOURCE="$HOME/lab-os/week14-backup/data-sumber"
+BACKUP_DIR="$HOME/lab-os/chapter12-backup/arsip-otomatis"
+SOURCE="$HOME/lab-os/chapter12-backup/data-sumber"
 DATE=$(date +%Y-%m-%d-%H%M)
-LOG="$HOME/lab-os/week14-backup/backup.log"
+LOG="$HOME/lab-os/chapter12-backup/backup.log"
 
 mkdir -p "$BACKUP_DIR"
 
@@ -542,22 +544,23 @@ Baris \cmd{find} di akhir skrip menerapkan retensi otomatis dengan menghapus
 direktori backup yang lebih lama dari 7 hari, sehingga ruang disk tidak habis
 seiring waktu.
 
-\subsection*{Praktikum 14.4: Jadwalkan Skrip Backup Otomatis}
+\subsection*{Praktek 12.4: Jadwalkan Skrip Backup Otomatis}
 
-Tujuan praktikum ini adalah membuat skrip backup, mengujinya secara manual,
+Tujuan praktek ini adalah membuat skrip backup, mengujinya secara manual,
 mendaftarkan ke crontab, dan memverifikasi eksekusi otomatisnya.
 
 \begin{enumerate}
     \item Buat skrip backup yang menggunakan rsync dengan logging:
 \begin{longlisting}[language=bash, caption={Membuat skrip backup otomatis}]
-cd ~/lab-os/week14-backup
+cd ~/lab-os/chapter12-backup
 
-cat > backup-otomatis.sh << 'EOF'
+nano backup-otomatis.sh
+# Tulis isi berkas berikut
 #!/bin/bash
-BACKUP_BASE="$HOME/lab-os/week14-backup/arsip-cron"
-SOURCE="$HOME/lab-os/week14-backup/data-sumber"
+BACKUP_BASE="$HOME/lab-os/chapter12-backup/arsip-cron"
+SOURCE="$HOME/lab-os/chapter12-backup/data-sumber"
 DATE=$(date +%Y-%m-%d-%H%M)
-LOG="$HOME/lab-os/week14-backup/cron-backup.log"
+LOG="$HOME/lab-os/chapter12-backup/cron-backup.log"
 
 mkdir -p "$BACKUP_BASE/$DATE"
 echo "[$(date)] Memulai backup ke $BACKUP_BASE/$DATE" >> "$LOG"
@@ -573,7 +576,6 @@ else
 fi
 
 find "$BACKUP_BASE" -maxdepth 1 -type d -mmin +30 -exec rm -rf {} \; 2>/dev/null
-EOF
 
 chmod +x backup-otomatis.sh
 \end{longlisting}
@@ -591,7 +593,7 @@ cat cron-backup.log
         keperluan pengujian):
 \begin{lstlisting}[language=bash, caption={Mendaftarkan skrip ke crontab}]
 crontab -l 2>/dev/null > /tmp/cron-sementara
-echo "*/2 * * * * $HOME/lab-os/week14-backup/backup-otomatis.sh" \
+echo "*/2 * * * * $HOME/lab-os/chapter12-backup/backup-otomatis.sh" \
     >> /tmp/cron-sementara
 crontab /tmp/cron-sementara
 rm /tmp/cron-sementara
@@ -616,7 +618,7 @@ rm -rf arsip-cron/ arsip-tar/ cron-backup.log backup.log
 \end{enumerate}
 
 \begin{challengebox}
-Jadwalkan skrip \file{rsync-backup.sh} dari challengebox Praktikum 14.2
+Jadwalkan skrip \file{rsync-backup.sh} dari challengebox Praktek 12.2
 agar berjalan setiap hari pukul 02:00 menggunakan crontab. Tambahkan ke skrip
 tersebut agar output rsync disimpan ke \file{/var/log/backup.log} menggunakan
 teknik \cmd{tee} dari Bab~3 (sehingga sekaligus tercetak di terminal saat
@@ -692,15 +694,15 @@ echo "Exit code: $? (0 berarti identik)"
 \cmd{diff -r} membandingkan dua direktori secara rekursif. Exit code 0 berarti
 tidak ada perbedaan: restore berhasil sempurna.
 
-\subsection*{Praktikum 14.5: Simulasi Pemulihan dari Backup}
+\subsection*{Praktek 12.5: Simulasi Pemulihan dari Backup}
 
-Tujuan praktikum ini adalah mensimulasikan skenario kehilangan data nyata,
+Tujuan praktek ini adalah mensimulasikan skenario kehilangan data nyata,
 lalu memulihkan dari backup yang sudah ada dan memverifikasi hasilnya.
 
 \begin{enumerate}
     \item Siapkan data sumber dan buat backup sebagai persiapan:
 \begin{lstlisting}[language=bash, caption={Siapkan data dan buat backup awal}]
-cd ~/lab-os/week14-backup
+cd ~/lab-os/chapter12-backup
 mkdir -p data-sumber/{dokumen,konfigurasi}
 echo "laporan-akhir-tahun" > data-sumber/dokumen/laporan.txt
 echo "catatan-rapat" > data-sumber/dokumen/catatan.txt
@@ -771,7 +773,7 @@ echo "Diff exit code: $? (0 berarti identik dengan snapshot)"
     harus identik dengan versi aslinya.
 
     \item Bersihkan seluruh direktori lab:
-\begin{lstlisting}[language=bash, caption={Membersihkan direktori praktikum}]
+\begin{lstlisting}[language=bash, caption={Membersihkan direktori praktek}]
 rm -rf arsip-pemulihan/ snapshot-pemulihan/
 rm -f checksum-asli.md5 rencana-backup.txt backup-otomatis.sh
 \end{lstlisting}
@@ -813,14 +815,13 @@ Dalam bab ini, kamu telah mempelajari:
 \end{itemize}
 
 %% ========================================================================
-\section{Tugas Praktikum}
-\label{sec:backup-exercises}
+\section{Latihan}
+\label{sec:latihan-backup}
 %% ========================================================================
 
-\textbf{Instruksi Umum}: Kerjakan seluruh tugas secara mandiri. Dokumentasikan
-setiap langkah dengan tangkapan layar dan kumpulkan dalam format PDF.
+\textbf{Instruksi Umum}: Kerjakan seluruh latihan secara mandiri. Catat langkah penting, simpan tangkapan layar bila diperlukan, lalu rangkum hasilnya sebagai dokumentasi pribadi.
 
-\begin{exercisebox}[14.1 Implementasi Sistem Backup Lengkap]
+\subsubsection*{Latihan 12.1 Implementasi Sistem Backup Lengkap}
 Rancang dan implementasikan sistem backup untuk direktori simulasi.
 \begin{enumerate}
     \item Buat struktur direktori simulasi dengan minimal 10 file yang tersebar
@@ -833,12 +834,11 @@ Rancang dan implementasikan sistem backup untuk direktori simulasi.
         setiap arsip yang dibuat.
     \item Daftarkan keduanya ke crontab dengan jadwal yang berbeda. Jalankan
         masing-masing secara manual dan verifikasi log dan output yang dihasilkan.
-    \item Simulasikan kehilangan file dan lakukan restore dari kedua jenis backup.
+\item Simulasikan kehilangan file dan lakukan restore dari kedua jenis backup.
         Dokumentasikan langkah-langkah restore dan waktu yang dibutuhkan.
 \end{enumerate}
-\end{exercisebox}
 
-\begin{exercisebox}[14.2 Analisis Kompresi dan Performa Backup]
+\subsubsection*{Latihan 12.2 Analisis Kompresi dan Performa Backup}
 Analisis trade-off antara kecepatan dan rasio kompresi.
 \begin{enumerate}
     \item Buat direktori dengan tiga jenis file: teks biasa (10 file \texttt{.txt}
@@ -851,13 +851,12 @@ Analisis trade-off antara kecepatan dan rasio kompresi.
         kompresi masing-masing terhadap ukuran asli.
     \item Buat tabel di file \file{analisis-kompresi.txt} yang merangkum: jenis
         kompresi, waktu kompres, ukuran hasil, dan rasio kompresi.
-    \item Berdasarkan data tersebut, rekomendasikan kompresi yang paling tepat
+\item Berdasarkan data tersebut, rekomendasikan kompresi yang paling tepat
         untuk: backup harian otomatis, arsip jangka panjang, dan backup file biner.
         Berikan alasan untuk setiap rekomendasi.
 \end{enumerate}
-\end{exercisebox}
 
-\begin{exercisebox}[14.3 Disaster Recovery Drill]
+\subsubsection*{Latihan 12.3 Disaster Recovery Drill}
 Lakukan simulasi pemulihan bencana secara menyeluruh.
 \begin{enumerate}
     \item Buat direktori ``produksi'' dengan struktur lengkap: file konfigurasi,
@@ -870,14 +869,13 @@ Lakukan simulasi pemulihan bencana secara menyeluruh.
         catat waktu selesai. Hitung RTO aktual.
     \item Verifikasi semua file pulih dengan benar menggunakan checksum yang
         disimpan di langkah 2.
-    \item Bandingkan RTO aktual dengan target yang kamu tentukan. Jika lebih lama,
+\item Bandingkan RTO aktual dengan target yang kamu tentukan. Jika lebih lama,
         identifikasi bottleneck dan usulkan cara mempercepatnya.
 \end{enumerate}
-\end{exercisebox}
 
 %% ========================================================================
 \section{Referensi}
-\label{sec:backup-references}
+\label{sec:referensi-backup}
 %% ========================================================================
 
 \begin{itemize}

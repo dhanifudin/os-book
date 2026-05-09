@@ -5,6 +5,8 @@
 \chapter{Bash Shell}
 \label{ch:bash-shell-basic}
 
+\chapterhero{cyan}{Bangun kebiasaan kerja terminal yang efisien lewat konfigurasi shell, PATH, alias, fungsi, dan teknik interaksi Bash yang lebih produktif.}{shell}{PATH}{alias}
+
 Setiap kali kamu membuka terminal di Linux, ada program yang langsung
 aktif menunggu perintahmu. Program itu bukan aplikasi biasa, melainkan
 \textit{shell}, yaitu penerjemah antara perintah yang kamu ketik dan
@@ -46,12 +48,12 @@ Setelah menyelesaikan bab ini, kamu akan mampu:
 \end{enumerate}
 
 \begin{notebox}
-Seluruh praktikum pada bab ini dijalankan pada direktori
-\dir{~/lab-os/week07-bash/}.
+Seluruh praktek pada bab ini dijalankan pada direktori
+\dir{~/lab-os/chapter06-bash/}.
 Buat direktori ini sebelum memulai:
 \begin{lstlisting}[language=bash]
-mkdir -p ~/lab-os/week07-bash
-cd ~/lab-os/week07-bash
+mkdir -p ~/lab-os/chapter06-bash
+cd ~/lab-os/chapter06-bash
 \end{lstlisting}
 \end{notebox}
 
@@ -91,9 +93,9 @@ memuat ulang file konfigurasi tanpa perlu menutup dan membuka terminal.
 Setelah mengedit \file{~/.bashrc}, jalankan \cmd{source ~/.bashrc} agar
 perubahan langsung aktif di sesi yang sedang berjalan.
 
-\subsection*{Praktikum 7.1: Modifikasi Prompt dan Konfigurasi Shell}
+\subsection*{Praktek 6.1: Modifikasi Prompt dan Konfigurasi Shell}
 
-Tujuan praktikum ini adalah memahami peran file konfigurasi Bash dan
+Tujuan praktek ini adalah memahami peran file konfigurasi Bash dan
 mengubah tampilan prompt secara aman.
 
 \begin{enumerate}
@@ -115,23 +117,23 @@ wc -l ~/.bashrc
 
     \item Buat backup \file{~/.bashrc} sebelum mengubah apapun:
 \begin{lstlisting}[language=bash, caption={Membuat backup .bashrc}]
-cp ~/.bashrc ~/.bashrc.bak-week07
-echo "Backup selesai: ~/.bashrc.bak-week07"
+cp ~/.bashrc ~/.bashrc.bak-chapter06
+echo "Backup selesai: ~/.bashrc.bak-chapter06"
 \end{lstlisting}
 
     \item Tambahkan konfigurasi prompt kustom ke \file{~/.bashrc}. Blok ini
           ditandai komentar agar mudah diidentifikasi dan dihapus jika perlu:
 \begin{lstlisting}[language=bash, caption={Menambahkan konfigurasi prompt ke .bashrc}]
-cat <<'EOF' >> ~/.bashrc
+nano ~/.bashrc
+# Tambahkan blok berikut di akhir file
 
-# === Konfigurasi Week07 Bash Shell ===
+# === Konfigurasi Bab 6 Bash Shell ===
 # Prompt: user@host:dir [waktu]$
 PS1='\u@\h:\w [\t]\$ '
 export EDITOR=nano
 export VISUAL=nano
-# === Akhir Konfigurasi Week07 ===
+# === Akhir Konfigurasi Bab 6 ===
 
-EOF
 \end{lstlisting}
 
     \item Terapkan konfigurasi tanpa menutup terminal:
@@ -148,13 +150,13 @@ echo "Editor: $EDITOR"
           \file{~/.bashrc}. Jika belum, buat konfigurasikan:
 \begin{lstlisting}[language=bash, caption={Memastikan .bash\_profile memanggil .bashrc}]
 if ! grep -q '\.bashrc' ~/.bash_profile 2>/dev/null; then
-    cat <<'EOF' >> ~/.bash_profile
+    nano ~/.bash_profile
+# Tambahkan blok berikut bila belum ada
 
 # Panggil .bashrc dari shell login
 if [ -f ~/.bashrc ]; then
     . ~/.bashrc
 fi
-EOF
     echo ".bash_profile diperbarui"
 else
     echo ".bash_profile sudah memanggil .bashrc"
@@ -213,9 +215,9 @@ home directory, \var{USER} menyimpan nama pengguna yang sedang login,
 aktif saat ini, dan \var{OLDPWD} menyimpan direktori sebelumnya sehingga
 \cmd{cd -} bisa kembali ke sana.
 
-\subsection*{Praktikum 7.2: Kelola Variabel Lingkungan}
+\subsection*{Praktek 6.2: Kelola Variabel Lingkungan}
 
-Tujuan praktikum ini adalah memahami perbedaan variabel lokal dan
+Tujuan praktek ini adalah memahami perbedaan variabel lokal dan
 variabel lingkungan, serta menambahkan direktori pribadi ke \var{PATH}.
 
 \begin{enumerate}
@@ -257,13 +259,13 @@ type ls
 \begin{lstlisting}[language=bash, caption={Menambahkan ~/bin ke PATH}]
 mkdir -p ~/bin
 
-cat <<'EOF' >> ~/.bashrc
+nano ~/.bashrc
+# Tambahkan blok berikut di akhir file
 
 # Tambahkan ~/bin ke PATH jika belum ada
 if [[ ":$PATH:" != *":$HOME/bin:"* ]]; then
     export PATH="$HOME/bin:$PATH"
 fi
-EOF
 
 source ~/.bashrc
 echo "$PATH" | tr ':' '\n' | head -5
@@ -272,19 +274,19 @@ echo "$PATH" | tr ':' '\n' | head -5
     \item Buat skrip sederhana di \dir{~/bin} dan jalankan dari direktori
           yang berbeda:
 \begin{lstlisting}[language=bash, caption={Membuat dan menguji skrip di ~/bin}]
-cat <<'EOF' > ~/bin/sysinfo
+nano ~/bin/sysinfo
+# Tulis isi berkas berikut
 #!/bin/bash
 echo "User   : $(whoami)"
 echo "Host   : $(hostname)"
 echo "Uptime : $(uptime -p)"
 echo "Disk / : $(df -h / | awk 'NR==2 {print $5}') terpakai"
-EOF
 
 chmod +x ~/bin/sysinfo
 
 cd /tmp
 sysinfo
-cd ~/lab-os/week07-bash
+cd ~/lab-os/chapter06-bash
 \end{lstlisting}
     \textit{Amati:} skrip \cmd{sysinfo} bisa dipanggil dari \dir{/tmp}
     tanpa menuliskan path lengkap, karena \dir{~/bin} sudah masuk ke
@@ -292,7 +294,7 @@ cd ~/lab-os/week07-bash
 \end{enumerate}
 
 \begin{challengebox}
-Tambahkan direktori \dir{~/lab-os/week07-bash/bin} ke \var{PATH} secara
+Tambahkan direktori \dir{~/lab-os/chapter06-bash/bin} ke \var{PATH} secara
 permanen di \file{~/.bashrc} menggunakan pola pengecekan yang sama pada
 langkah 5. Kemudian buat skrip \cmd{cuaca-disk} di direktori tersebut yang
 menampilkan status setiap filesystem yang terpasang: jika pemakaian di atas
@@ -342,34 +344,34 @@ Perintah \cmd{type} sangat berguna untuk memverifikasi apakah sebuah nama
 adalah alias, fungsi, perintah builtin Bash, atau program eksternal. Cukup
 ketik \texttt{type nama} untuk melihat jenisnya.
 
-\subsection*{Praktikum 7.3: Buat Alias dan Fungsi Produktivitas}
+\subsection*{Praktek 6.3: Buat Alias dan Fungsi Produktivitas}
 
-Tujuan praktikum ini adalah membuat alias dan fungsi yang berguna untuk
+Tujuan praktek ini adalah membuat alias dan fungsi yang berguna untuk
 pekerjaan sehari-hari di terminal.
 
 \begin{enumerate}
     \item Tambahkan beberapa alias produktivitas ke \file{~/.bashrc}:
 \begin{lstlisting}[language=bash, caption={Menambahkan alias ke .bashrc}]
-cat <<'EOF' >> ~/.bashrc
+nano ~/.bashrc
+# Tambahkan blok berikut di akhir file
 
-# === Alias Week07 ===
+# === Alias Bab 6 ===
 alias ll='ls -lah --color=auto'
 alias la='ls -A --color=auto'
 alias hist10='history | tail -n 10'
 alias grep='grep --color=auto'
 alias ..='cd ..'
 alias ...='cd ../..'
-alias week07='cd ~/lab-os/week07-bash'
-# === Akhir Alias Week07 ===
+alias chapter06='cd ~/lab-os/chapter06-bash'
+# === Akhir Alias Bab 6 ===
 
-EOF
 
 source ~/.bashrc
 \end{lstlisting}
 
     \item Uji alias yang baru dibuat:
 \begin{lstlisting}[language=bash, caption={Menguji alias}]
-ll ~/lab-os/week07-bash
+ll ~/lab-os/chapter06-bash
 type ll
 type hist10
 type ..
@@ -380,16 +382,17 @@ type ..
     \item Tambahkan fungsi \cmd{backup\_conf} yang membuat backup file
           konfigurasi dengan timestamp:
 \begin{lstlisting}[language=bash, caption={Menambahkan fungsi backup\_conf ke .bashrc}]
-cat <<'EOF' >> ~/.bashrc
+nano ~/.bashrc
+# Tambahkan blok berikut di akhir file
 
-# === Fungsi Week07 ===
+# === Fungsi Bab 6 ===
 backup_conf() {
     if [ $# -ne 1 ]; then
         echo "Penggunaan: backup_conf <file>"
         return 1
     fi
     local src="$1"
-    local dst="$HOME/lab-os/week07-bash/backup"
+    local dst="$HOME/lab-os/chapter06-bash/backup"
     if [ ! -f "$src" ]; then
         echo "File tidak ditemukan: $src"
         return 2
@@ -400,9 +403,8 @@ backup_conf() {
     cp -- "$src" "$dst/$nama_backup"
     echo "Backup disimpan: $dst/$nama_backup"
 }
-# === Akhir Fungsi Week07 ===
+# === Akhir Fungsi Bab 6 ===
 
-EOF
 
 source ~/.bashrc
 \end{lstlisting}
@@ -410,13 +412,13 @@ source ~/.bashrc
     \item Uji fungsi dengan membuat file konfigurasi contoh lalu
           mem-backup-nya:
 \begin{lstlisting}[language=bash, caption={Menguji fungsi backup\_conf}]
-mkdir -p ~/lab-os/week07-bash/backup
-echo "PORT=8080\nHOST=localhost" > ~/lab-os/week07-bash/app.conf
+mkdir -p ~/lab-os/chapter06-bash/backup
+echo "PORT=8080\nHOST=localhost" > ~/lab-os/chapter06-bash/app.conf
 
-backup_conf ~/lab-os/week07-bash/app.conf
-backup_conf ~/lab-os/week07-bash/app.conf
+backup_conf ~/lab-os/chapter06-bash/app.conf
+backup_conf ~/lab-os/chapter06-bash/app.conf
 
-ls -lah ~/lab-os/week07-bash/backup/
+ls -lah ~/lab-os/chapter06-bash/backup/
 type backup_conf
 \end{lstlisting}
     \textit{Amati:} setiap panggilan \cmd{backup\_conf} menghasilkan file
@@ -471,15 +473,15 @@ untuk mengulang perintah terakhir. Pencarian interaktif dengan
 \keystroke{Ctrl+R} adalah cara tercepat: tekan \keystroke{Ctrl+R} lalu
 ketik sebagian perintah yang kamu cari.
 
-\subsection*{Praktikum 7.4: Gunakan Ekspansi dan History}
+\subsection*{Praktek 6.4: Gunakan Ekspansi dan History}
 
-Tujuan praktikum ini adalah menguasai wildcard, brace expansion, dan
+Tujuan praktek ini adalah menguasai wildcard, brace expansion, dan
 fitur history untuk bekerja lebih cepat di terminal.
 
 \begin{enumerate}
     \item Buat struktur file sampel menggunakan brace expansion:
 \begin{lstlisting}[language=bash, caption={Membuat file sampel dengan brace expansion}]
-cd ~/lab-os/week07-bash
+cd ~/lab-os/chapter06-bash
 mkdir -p sampel logs arsip
 
 touch sampel/catatan-{a,b,c,d}.txt
@@ -535,7 +537,7 @@ history | grep "ls logs"
 
 \begin{challengebox}
 Gunakan brace expansion untuk membuat 5 direktori sekaligus dengan nama
-\texttt{minggu-\{01..05\}} di dalam \dir{~/lab-os/week07-bash/proyek}.
+\texttt{bab-\{01..05\}} di dalam \dir{~/lab-os/chapter06-bash/proyek}.
 Di dalam setiap direktori, buat tiga file: \texttt{rencana.txt},
 \texttt{progres.txt}, dan \texttt{hasil.txt} menggunakan brace expansion
 bersarang. Kemudian redirect daftar semua file yang dibuat ke file
@@ -585,9 +587,9 @@ atau nama file dengan double quote, ditulis \texttt{"\$VARIABEL"}, bukan
 kutipan akan memecahnya menjadi argumen terpisah yang bisa menyebabkan
 error tak terduga.
 
-\subsection*{Praktikum 7.5: Pahami Perbedaan Quoting}
+\subsection*{Praktek 6.5: Pahami Perbedaan Quoting}
 
-Tujuan praktikum ini adalah memahami kapan menggunakan single quote,
+Tujuan praktek ini adalah memahami kapan menggunakan single quote,
 double quote, dan backslash.
 
 \begin{enumerate}
@@ -605,7 +607,7 @@ echo "$USER bekerja di $HOME pada $(date)"
     \item Buat file dengan nama yang mengandung spasi, lalu akses dengan
           berbagai cara:
 \begin{lstlisting}[language=bash, caption={Menangani nama file dengan spasi}]
-cd ~/lab-os/week07-bash
+cd ~/lab-os/chapter06-bash
 
 touch "laporan bulan ini.txt"
 touch laporan\ bulan\ lalu.txt
@@ -623,12 +625,12 @@ ls -lah *.txt
 
     \item Gunakan variabel untuk menyimpan path yang mengandung spasi:
 \begin{lstlisting}[language=bash, caption={Variabel untuk path dengan spasi}]
-FILE_LAMA="$HOME/lab-os/week07-bash/laporan bulan ini.txt"
-FILE_BARU="$HOME/lab-os/week07-bash/arsip/laporan-baru.txt"
+FILE_LAMA="$HOME/lab-os/chapter06-bash/laporan bulan ini.txt"
+FILE_BARU="$HOME/lab-os/chapter06-bash/arsip/laporan-baru.txt"
 
-mkdir -p ~/lab-os/week07-bash/arsip
+mkdir -p ~/lab-os/chapter06-bash/arsip
 cp "$FILE_LAMA" "$FILE_BARU"
-ls -lah ~/lab-os/week07-bash/arsip/
+ls -lah ~/lab-os/chapter06-bash/arsip/
 \end{lstlisting}
     \textit{Amati:} kutipan ganda pada \texttt{"\$FILE\_LAMA"} memastikan
     path yang mengandung spasi diperlakukan sebagai satu argumen, bukan
@@ -693,43 +695,43 @@ Dalam bab ini, kamu telah mempelajari:
 \end{itemize}
 
 %% ------------------------------------------------------------------------
-\section{Tugas Praktikum}
-\label{sec:tugas-praktikum-bash-shell}
+\section{Latihan}
+\label{sec:latihan-bash-shell}
 
-\textbf{Instruksi Umum}: kerjakan seluruh tugas di direktori
-\dir{~/lab-os/week07-bash/}. Simpan semua skrip di subdirektori
-\dir{bin/} dan semua hasil ke subdirektori \dir{output/}.
+\textbf{Instruksi Umum}: kerjakan seluruh latihan di direktori
+\dir{~/lab-os/chapter06-bash}. Simpan semua skrip di subdirektori
+\dir{bin} dan semua hasil di subdirektori \dir{output}.
 
-\begin{exercisebox}[7.1 Toolkit Bash Pribadi]
+\subsubsection*{Latihan 6.1 Toolkit Bash Pribadi}
 Bangun toolkit Bash pribadimu yang aktif setiap kali terminal dibuka.
 Tambahkan ke \file{~/.bashrc}: minimal tiga alias yang membantu pekerjaan
 harian (bukan alias yang sudah ada di sistem), satu fungsi shell
 \cmd{mkcd()} yang membuat direktori dan langsung berpindah ke dalamnya,
 dan satu fungsi \cmd{ringkas\_sistem()} yang menampilkan user, hostname,
 uptime, dan penggunaan disk root dalam satu tampilan rapi. Tambahkan
-direktori \dir{~/lab-os/week07-bash/bin} ke \var{PATH}. Buat skrip
+direktori \dir{~/lab-os/chapter06-bash/bin} ke \var{PATH}. Buat skrip
 \cmd{cek-toolkit} di direktori tersebut yang memanggil
 \cmd{ringkas\_sistem()}. Uji bahwa \cmd{cek-toolkit} bisa dipanggil dari
 \dir{/tmp} tanpa path lengkap. Simpan output pengujian ke
 \file{output/hasil-toolkit.txt}.
-\end{exercisebox}
 
-\begin{exercisebox}[7.2 Audit File dengan Wildcard dan Redirection]
+
+\subsubsection*{Latihan 6.2 Audit File dengan Wildcard dan Redirection}
 Buat skrip \cmd{audit-log} yang melakukan hal berikut. Pertama, cari
 semua file \texttt{*.log} di dalam \dir{/var/log} menggunakan wildcard
 dan simpan daftarnya ke \file{output/daftar-log.txt}, sedangkan pesan
 error dari file yang tidak bisa dibaca disimpan ke \file{output/error-log.txt}
 secara terpisah. Kedua, buat 10 file log contoh di
-\dir{~/lab-os/week07-bash/logs} menggunakan brace expansion dengan nama
+\dir{~/lab-os/chapter06-bash/logs} menggunakan brace expansion dengan nama
 \texttt{app-\{01..05\}.log} dan \texttt{svc-\{01..05\}.log}. Ketiga,
 gunakan wildcard untuk memindahkan semua file \texttt{svc-*.log} ke
 subdirektori \dir{arsip/} setelah melakukan preview dengan \cmd{echo}
 terlebih dahulu. Keempat, buat arsip \texttt{tar.gz} dari semua log yang
 tersisa. Simpan seluruh perintah yang digunakan ke
 \file{output/riwayat-audit.txt} menggunakan \cmd{history}.
-\end{exercisebox}
 
-\begin{exercisebox}[7.3 Sistem Health Check Harian]
+
+\subsubsection*{Latihan 6.3 Sistem Health Check Harian}
 Buat skrip \cmd{health-check} di direktori \dir{~/bin} yang menampilkan
 ringkasan kondisi sistem. Skrip harus menggunakan minimal dua alias
 (yang kamu definisikan sendiri), satu fungsi shell dengan variabel lokal,
@@ -741,7 +743,7 @@ penggunaan memori, penggunaan disk setiap filesystem. Simpan log ke
 command substitution. Tambahkan penanganan sederhana: jika penggunaan
 disk lebih dari 80\%, tampilkan teks ``PERINGATAN'' berwarna merah
 menggunakan kode ANSI.
-\end{exercisebox}
+
 
 %% ------------------------------------------------------------------------
 \section{Referensi}

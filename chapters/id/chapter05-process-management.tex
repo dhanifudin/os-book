@@ -1,10 +1,12 @@
 %% ========================================================================
-%% week06-process-management.tex
+%% chapter05-process-management.tex
 %% Manajemen Proses di Linux
 %% ========================================================================
 
 \chapter{Manajemen Proses}
 \label{ch:process-management}
+
+\chapterhero{red}{Amati bagaimana proses dibuat, dijadwalkan, diprioritaskan, dan dihentikan agar kamu bisa mengendalikan beban kerja sistem dengan tepat.}{proses}{sinyal}{prioritas}
 
 Saat kamu membuka aplikasi musik di ponsel sambil membaca pesan dan men-download foto,
 ponsel itu menjalankan beberapa program sekaligus. Tidak ada yang terasa lambat karena
@@ -41,11 +43,11 @@ Setelah menyelesaikan bab ini, kamu akan mampu:
 \end{enumerate}
 
 \begin{notebox}
-Seluruh praktikum pada bab ini dijalankan pada direktori \dir{~/lab-os/week06-processes/}.
+Seluruh praktek pada bab ini dijalankan pada direktori \dir{~/lab-os/chapter05-processes/}.
 Buat direktori ini sebelum memulai:
 \begin{lstlisting}[language=bash]
-mkdir -p ~/lab-os/week06-processes
-cd ~/lab-os/week06-processes
+mkdir -p ~/lab-os/chapter05-processes
+cd ~/lab-os/chapter05-processes
 \end{lstlisting}
 \end{notebox}
 
@@ -91,9 +93,9 @@ murah secara komputasi daripada membuat proses baru, karena tidak perlu mengalok
 ruang memori terpisah. Server web seperti Apache atau Nginx memanfaatkan ini untuk
 melayani ratusan permintaan secara bersamaan dalam satu proses.
 
-\subsection*{Praktikum 6.1 Amati Hierarki Proses dengan ps dan pstree}
+\subsection*{Praktek 5.1 Amati Hierarki Proses dengan ps dan pstree}
 
-Tujuan praktikum ini adalah melihat hierarki proses secara langsung dan memahami hubungan
+Tujuan praktek ini adalah melihat hierarki proses secara langsung dan memahami hubungan
 induk-anak antarproses menggunakan \cmd{ps} dan \cmd{pstree}.
 
 \begin{enumerate}
@@ -175,15 +177,15 @@ Kondisi \texttt{D} menandakan proses sedang menunggu operasi I/O yang tidak bisa
 diinterupsi. Banyaknya proses dalam kondisi ini biasanya menandakan ada masalah dengan
 disk atau sistem penyimpanan yang lambat merespons.
 
-\subsection*{Praktikum 6.2 Buat dan Amati Proses di Background}
+\subsection*{Praktek 5.2 Buat dan Amati Proses di Background}
 
-Tujuan praktikum ini adalah mengamati kondisi proses secara langsung dan memahami
+Tujuan praktek ini adalah mengamati kondisi proses secara langsung dan memahami
 bagaimana kondisi proses berubah berdasarkan apa yang sedang dilakukannya.
 
 \begin{enumerate}
     \item Jalankan beberapa proses di latar belakang dan amati kondisinya:
 \begin{lstlisting}[language=bash, caption={Menjalankan proses di background}]
-cd ~/lab-os/week06-processes
+cd ~/lab-os/chapter05-processes
 sleep 120 &
 sleep 240 &
 echo "PID proses sleep pertama: $!"
@@ -263,15 +265,15 @@ Selain prioritas prosesor, ada juga \cmd{ionice} untuk mengatur prioritas akses 
 Perintah ini berguna ketika kamu menjalankan operasi yang intensif membaca atau menulis
 disk, seperti backup besar, dan tidak ingin operasi itu memperlambat akses disk proses lain.
 
-\subsection*{Praktikum 6.3 Ubah Prioritas Proses yang Berjalan}
+\subsection*{Praktek 5.3 Ubah Prioritas Proses yang Berjalan}
 
-Tujuan praktikum ini adalah menggunakan \cmd{nice} dan \cmd{renice} untuk mengatur
+Tujuan praktek ini adalah menggunakan \cmd{nice} dan \cmd{renice} untuk mengatur
 prioritas proses dan memverifikasi perubahannya dengan \cmd{ps}.
 
 \begin{enumerate}
     \item Jalankan tiga proses dengan nilai nice yang berbeda:
 \begin{lstlisting}[language=bash, caption={Menjalankan proses dengan nice berbeda}]
-cd ~/lab-os/week06-processes
+cd ~/lab-os/chapter05-processes
 nice -n 0  sleep 300 &
 nice -n 10 sleep 300 &
 nice -n 19 sleep 300 &
@@ -372,15 +374,15 @@ pkill -9 nama-proses
 pgrep sleep
 \end{lstlisting}
 
-\subsection*{Praktikum 6.4 Kirim Sinyal ke Proses}
+\subsection*{Praktek 5.4 Kirim Sinyal ke Proses}
 
-Tujuan praktikum ini adalah mengirim berbagai jenis sinyal ke proses dan mengamati
+Tujuan praktek ini adalah mengirim berbagai jenis sinyal ke proses dan mengamati
 efeknya pada kondisi proses.
 
 \begin{enumerate}
     \item Buat tiga proses percobaan:
 \begin{lstlisting}[language=bash, caption={Membuat proses percobaan}]
-cd ~/lab-os/week06-processes
+cd ~/lab-os/chapter05-processes
 sleep 500 &
 sleep 600 &
 sleep 700 &
@@ -429,9 +431,9 @@ while true; do
 done
 \end{lstlisting}
 
-Beri izin eksekusi menggunakan \cmd{chmod u+x} (dari Bab~5), jalankan di background,
+Beri izin eksekusi menggunakan \cmd{chmod u+x} (dari Bab~4), jalankan di background,
 lalu kirim SIGTERM ke PID-nya. Amati pesan yang muncul. Ini adalah gambaran awal tentang
-penanganan sinyal dalam skrip yang akan kamu pelajari lebih lanjut di Bab~9.
+penanganan sinyal dalam skrip yang akan kamu pelajari lebih lanjut di Bab~7.
 \end{challengebox}
 
 % ------------------------------------------------------------------------
@@ -490,15 +492,15 @@ nohup perintah > output.log 2>&1 &
 disown %1
 \end{lstlisting}
 
-\subsection*{Praktikum 6.5 Kelola Beberapa Job Sekaligus}
+\subsection*{Praktek 5.5 Kelola Beberapa Job Sekaligus}
 
-Tujuan praktikum ini adalah mengelola job foreground dan background, serta menjalankan
+Tujuan praktek ini adalah mengelola job foreground dan background, serta menjalankan
 proses yang tetap berjalan meski terminal ditutup menggunakan \cmd{nohup}.
 
 \begin{enumerate}
     \item Jalankan tiga job di background dan tampilkan daftarnya:
 \begin{lstlisting}[language=bash, caption={Menjalankan tiga job di background}]
-cd ~/lab-os/week06-processes
+cd ~/lab-os/chapter05-processes
 sleep 300 &
 sleep 400 &
 sleep 500 &
@@ -546,7 +548,7 @@ jobs
 Jalankan perintah berikut di background menggunakan \cmd{nohup}:
 \begin{lstlisting}[language=bash]
 nohup bash -c 'for i in $(seq 1 60); do echo "$(date): iterasi $i"; sleep 2; done' \
-    > ~/lab-os/week06-processes/proses-panjang.log 2>&1 &
+    > ~/lab-os/chapter05-processes/proses-panjang.log 2>&1 &
 \end{lstlisting}
 Gunakan \cmd{tail -f} untuk memantau berkas log secara langsung sambil proses berjalan.
 Tekan \keystroke{Ctrl+C} untuk menghentikan \cmd{tail -f} (bukan prosesnya). Kemudian
@@ -569,40 +571,39 @@ Dalam bab ini, kamu telah mempelajari:
 \end{itemize}
 
 % ------------------------------------------------------------------------
-\section{Tugas Praktikum}
-\label{sec:process-exercises}
+\section{Latihan}
+\label{sec:latihan-proses}
 
-\textbf{Instruksi Umum}: Kerjakan seluruh tugas secara mandiri. Dokumentasikan setiap
-langkah dengan tangkapan layar dan kumpulkan dalam format PDF.
+\textbf{Instruksi Umum}: Kerjakan seluruh latihan secara mandiri. Catat langkah penting, simpan tangkapan layar bila diperlukan, lalu rangkum hasilnya sebagai dokumentasi pribadi.
 
-\begin{exercisebox}[6.1 Eksplorasi Hierarki Proses]
+\subsubsection*{Latihan 5.1 Eksplorasi Hierarki Proses}
 Jalankan \cmd{ps aux --forest} dan temukan proses dengan PID 1. Jawab pertanyaan berikut
 dengan bukti tangkapan layar: (1) Apa nama proses PID 1 dan apa fungsinya di sistem
 Linux modern? (2) Berapa total proses yang dimiliki oleh user root dan berapa yang
 dimiliki oleh usermu? (3) Gunakan \cmd{pstree -p} dan temukan PID dari shell yang sedang
 aktif. Proses apa yang menjadi induknya?
-\end{exercisebox}
 
-\begin{exercisebox}[6.2 Simulasi Manajemen Job]
+
+\subsubsection*{Latihan 5.2 Simulasi Manajemen Job}
 Jalankan lima perintah \cmd{sleep} dengan durasi 100, 200, 300, 400, dan 500 detik di
 background. Dokumentasikan langkah-langkah berikut: (1) Tampilkan daftar semua job
 dengan \cmd{jobs}. (2) Bawa job ketiga ke foreground, jeda dengan \keystroke{Ctrl+Z},
 lalu kembalikan ke background. (3) Hentikan job pertama dan kedua menggunakan \cmd{kill}.
 (4) Tampilkan kembali daftar job yang tersisa. Sertakan tangkapan layar setiap langkah.
-\end{exercisebox}
 
-\begin{exercisebox}[6.3 Prioritas dan Sinyal]
+
+\subsubsection*{Latihan 5.3 Prioritas dan Sinyal}
 Lakukan eksperimen berikut dan dokumentasikan hasilnya: (1) Jalankan dua proses
 \cmd{sleep} dengan nice +5 dan nice +15. Verifikasi nilai NI keduanya. (2) Ubah nice
 proses pertama menjadi +10 menggunakan \cmd{renice}. Setelah diubah, proses mana yang
 sekarang lebih diprioritaskan? (3) Kirim SIGSTOP ke salah satu proses, verifikasi kondisi
 \texttt{T}-nya di output \cmd{ps}, lalu kirim SIGCONT. (4) Akhiri semua proses percobaan
 dengan \cmd{pkill sleep}. Sertakan semua perintah dan tangkapan layar.
-\end{exercisebox}
+
 
 % ------------------------------------------------------------------------
 \section{Referensi}
-\label{sec:process-references}
+\label{sec:referensi-proses}
 
 \begin{itemize}
     \item Kerrisk, M. \textit{The Linux Programming Interface} (1st ed.). No Starch Press, 2010.

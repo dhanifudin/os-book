@@ -5,7 +5,9 @@
 \chapter{Pemrograman Bash}
 \label{ch:bash-programming}
 
-Di Bab~7 kamu belajar cara bekerja lebih cepat di terminal: alias,
+\chapterhero{purple}{Ubah rangkaian perintah manual menjadi skrip yang rapi, dapat dipakai ulang, dan lebih aman melalui fungsi, validasi, serta debugging Bash.}{skrip}{fungsi}{debugging}
+
+Di Bab~6 kamu belajar cara bekerja lebih cepat di terminal: alias,
 fungsi shell sederhana, variabel lingkungan, dan ekspansi. Semua itu
 adalah bekal untuk bab ini. Pemrograman Bash adalah langkah berikutnya:
 menyimpan serangkaian perintah ke dalam file, menambahkan logika
@@ -20,11 +22,11 @@ sekali. Skrip Bash adalah ``resep masakan'' yang bisa dijalankan
 kapan saja, oleh siapa saja yang punya akses yang sama, dan menghasilkan
 hasil yang konsisten setiap kali.
 
-Bab ini membangun langsung di atas fondasi Bash dari Bab~7.
+Bab ini membangun langsung di atas fondasi Bash dari Bab~6.
 Di bab ini kamu akan menulis skrip dari nol, mengelola variabel dan
 parameter, menyusun logika percabangan dan perulangan, membangun fungsi
 yang bisa dipakai ulang, dan akhirnya men-debug skrip yang bermasalah.
-Semua teknik ini menjadi fondasi untuk Bab~10 di mana kamu akan membuat
+Semua teknik ini menjadi fondasi untuk Bab~8 di mana kamu akan membuat
 skrip pemantauan memori sistem yang sesungguhnya.
 
 \textbf{Yang Akan Kamu Pelajari}
@@ -46,18 +48,18 @@ Setelah menyelesaikan bab ini, kamu akan mampu:
 \end{enumerate}
 
 \begin{notebox}
-Seluruh praktikum pada bab ini dijalankan pada direktori
-\dir{~/lab-os/week09-scripting/}.
+Seluruh praktek pada bab ini dijalankan pada direktori
+\dir{~/lab-os/chapter07-scripting/}.
 Buat direktori ini sebelum memulai:
 \begin{lstlisting}[language=bash]
-mkdir -p ~/lab-os/week09-scripting/{skrip,logs,lib}
-cd ~/lab-os/week09-scripting
+mkdir -p ~/lab-os/chapter07-scripting/{skrip,logs,lib}
+cd ~/lab-os/chapter07-scripting
 \end{lstlisting}
 \end{notebox}
 
 %% ------------------------------------------------------------------------
-\section{Dasar Scripting Bash}
-\label{sec:dasar-scripting-bash}
+\section{Dasar Skrip Bash}
+\label{sec:dasar-skrip-bash}
 
 Skrip Bash adalah file teks biasa yang berisi perintah-perintah yang
 biasa kamu ketik di terminal, disusun berurutan. Saat dijalankan, Bash
@@ -90,23 +92,25 @@ menjelaskan tujuan skrip, parameter yang dibutuhkan, dan logika yang tidak
 langsung jelas. Skrip tanpa komentar sulit dipahami saat kamu kembali
 melihatnya enam bulan kemudian.
 
-\subsection*{Praktikum 9.1: Buat dan Jalankan Skrip Pertama}
+\subsection*{Praktek 7.1: Buat dan Jalankan Skrip Pertama}
 
-Tujuan praktikum ini adalah membuat skrip Bash lengkap dengan shebang,
+Tujuan praktek ini adalah membuat skrip Bash lengkap dengan shebang,
 memberikan izin eksekusi, dan memahami exit code.
 
 \begin{enumerate}
-    \item Buat skrip pertama yang menampilkan informasi sistem dasar:
-\begin{lstlisting}[language=bash, caption={Membuat skrip salam-sistem.sh}]
-cat <<'EOF' > ~/lab-os/week09-scripting/skrip/salam-sistem.sh
+    \item Buat skrip pertama dengan pola \textit{Hello World} yang juga menampilkan informasi sistem dasar:
+\begin{lstlisting}[language=bash, caption={Membuat skrip hello-world.sh}]
+nano ~/lab-os/chapter07-scripting/skrip/hello-world.sh
+# Tulis isi berkas berikut
 #!/bin/bash
-# salam-sistem.sh: Menampilkan salam dan info sistem dasar
-# Penggunaan: ./salam-sistem.sh [nama-pengguna]
+# hello-world.sh: Menampilkan Hello World dan info sistem dasar
+# Penggunaan: ./hello-world.sh [nama-pengguna]
 
 NAMA=${1:-"Tamu"}
 
 echo "==============================="
-echo "  Selamat datang, $NAMA!"
+echo "  Hello, World!"
+echo "  Halo, $NAMA!"
 echo "==============================="
 echo "Hostname : $(hostname)"
 echo "User     : $(whoami)"
@@ -114,16 +118,15 @@ echo "Tanggal  : $(date '+%A, %d %B %Y')"
 echo "Jam      : $(date '+%H:%M:%S')"
 echo "Uptime   : $(uptime -p)"
 echo "==============================="
-EOF
 \end{lstlisting}
 
     \item Berikan izin eksekusi dan jalankan:
 \begin{lstlisting}[language=bash, caption={Memberikan izin dan menjalankan skrip}]
-chmod +x ~/lab-os/week09-scripting/skrip/salam-sistem.sh
+chmod +x ~/lab-os/chapter07-scripting/skrip/hello-world.sh
 
-cd ~/lab-os/week09-scripting/skrip
-./salam-sistem.sh
-./salam-sistem.sh "Budi"
+cd ~/lab-os/chapter07-scripting/skrip
+./hello-world.sh
+./hello-world.sh "Budi"
 \end{lstlisting}
     \textit{Amati:} tanpa argumen, skrip menggunakan ``Tamu'' sebagai
     nama default. Dengan argumen, skrip menggunakan nama yang diberikan.
@@ -132,10 +135,10 @@ cd ~/lab-os/week09-scripting/skrip
 
     \item Periksa exit code skrip:
 \begin{lstlisting}[language=bash, caption={Memeriksa exit code}]
-./salam-sistem.sh "Ani"
+./hello-world.sh "Ani"
 echo "Exit code: $?"
 
-./salam-sistem.sh "Budi" > /dev/null
+./hello-world.sh "Budi" > /dev/null
 echo "Exit code setelah redirect: $?"
 \end{lstlisting}
     \textit{Amati:} exit code 0 menandakan skrip berjalan tanpa kesalahan.
@@ -144,7 +147,8 @@ echo "Exit code setelah redirect: $?"
 
     \item Tambahkan exit code eksplisit ke skrip dengan kasus error:
 \begin{lstlisting}[language=bash, caption={Menambahkan penanganan error sederhana}]
-cat <<'EOF' > ~/lab-os/week09-scripting/skrip/cek-file.sh
+nano ~/lab-os/chapter07-scripting/skrip/cek-file.sh
+# Tulis isi berkas berikut
 #!/bin/bash
 # cek-file.sh: Memeriksa apakah file ada dan bisa dibaca
 
@@ -161,9 +165,8 @@ else
     echo "File tidak ditemukan atau tidak bisa dibaca: $1"
     exit 2
 fi
-EOF
 
-chmod +x ~/lab-os/week09-scripting/skrip/cek-file.sh
+chmod +x ~/lab-os/chapter07-scripting/skrip/cek-file.sh
 ./cek-file.sh /etc/hostname
 echo "Exit code: $?"
 
@@ -216,15 +219,16 @@ dalamnya kamu bisa menggunakan \texttt{+}, \texttt{-}, \texttt{*},
 \texttt{/} (pembagian bulat), dan \texttt{\%} (modulo). Untuk desimal,
 gunakan perintah \cmd{bc}.
 
-\subsection*{Praktikum 9.2: Gunakan Parameter Posisional}
+\subsection*{Praktek 7.2: Gunakan Parameter Posisional}
 
-Tujuan praktikum ini adalah membuat skrip yang memproses argumen dari
+Tujuan praktek ini adalah membuat skrip yang memproses argumen dari
 command line dan menggunakan aritmetika.
 
 \begin{enumerate}
     \item Buat skrip yang menampilkan semua parameter posisional:
 \begin{lstlisting}[language=bash, caption={Membuat skrip cek-parameter.sh}]
-cat <<'EOF' > ~/lab-os/week09-scripting/skrip/cek-parameter.sh
+nano ~/lab-os/chapter07-scripting/skrip/cek-parameter.sh
+# Tulis isi berkas berikut
 #!/bin/bash
 # cek-parameter.sh: Menampilkan informasi parameter posisional
 
@@ -241,9 +245,8 @@ for ARG in "$@"; do
     echo "  Arg $NOMOR: $ARG"
     NOMOR=$((NOMOR + 1))
 done
-EOF
 
-chmod +x ~/lab-os/week09-scripting/skrip/cek-parameter.sh
+chmod +x ~/lab-os/chapter07-scripting/skrip/cek-parameter.sh
 ./cek-parameter.sh apel mangga "jeruk nipis" pepaya
 \end{lstlisting}
     \textit{Amati:} ``jeruk nipis'' diperlakukan sebagai satu argumen
@@ -252,7 +255,8 @@ chmod +x ~/lab-os/week09-scripting/skrip/cek-parameter.sh
 
     \item Buat skrip yang menghitung statistik sederhana dari daftar angka:
 \begin{lstlisting}[language=bash, caption={Membuat skrip statistik-angka.sh}]
-cat <<'EOF' > ~/lab-os/week09-scripting/skrip/statistik-angka.sh
+nano ~/lab-os/chapter07-scripting/skrip/statistik-angka.sh
+# Tulis isi berkas berikut
 #!/bin/bash
 # statistik-angka.sh: Hitung jumlah dan rata-rata dari argumen angka
 
@@ -274,9 +278,8 @@ RATA=$((JUMLAH / BANYAK))
 echo "Banyak data : $BANYAK"
 echo "Total       : $JUMLAH"
 echo "Rata-rata   : $RATA (pembulatan ke bawah)"
-EOF
 
-chmod +x ~/lab-os/week09-scripting/skrip/statistik-angka.sh
+chmod +x ~/lab-os/chapter07-scripting/skrip/statistik-angka.sh
 ./statistik-angka.sh 10 20 30 40 50
 ./statistik-angka.sh 7 14 21
 \end{lstlisting}
@@ -338,15 +341,16 @@ berbeda berdasarkan nilai satu variabel. Setiap blok pola diakhiri
 \texttt{;;} untuk menghentikan eksekusi. Pola \texttt{*)} adalah tangkap
 semua yang cocok dengan kondisi apa pun.
 
-\subsection*{Praktikum 9.3: Tulis Skrip dengan Logika Percabangan dan Perulangan}
+\subsection*{Praktek 7.3: Tulis Skrip dengan Logika Percabangan dan Perulangan}
 
-Tujuan praktikum ini adalah menggabungkan \cmd{if}, \cmd{for}, \cmd{while},
+Tujuan praktek ini adalah menggabungkan \cmd{if}, \cmd{for}, \cmd{while},
 dan \cmd{case} dalam skrip yang berguna secara nyata.
 
 \begin{enumerate}
     \item Buat skrip yang memeriksa kondisi setiap filesystem:
 \begin{longlisting}[language=bash, caption={Membuat skrip cek-disk.sh}]
-cat <<'EOF' > ~/lab-os/week09-scripting/skrip/cek-disk.sh
+nano ~/lab-os/chapter07-scripting/skrip/cek-disk.sh
+# Tulis isi berkas berikut
 #!/bin/bash
 # cek-disk.sh: Periksa penggunaan disk setiap filesystem
 # Penggunaan: ./cek-disk.sh [batas-persen]
@@ -376,9 +380,8 @@ done < <(df -h | tail -n +2)
 
 echo ""
 echo "Total peringatan: $PERINGATAN filesystem"
-EOF
 
-chmod +x ~/lab-os/week09-scripting/skrip/cek-disk.sh
+chmod +x ~/lab-os/chapter07-scripting/skrip/cek-disk.sh
 ./cek-disk.sh
 ./cek-disk.sh 50
 \end{longlisting}
@@ -388,7 +391,8 @@ chmod +x ~/lab-os/week09-scripting/skrip/cek-disk.sh
 
     \item Buat skrip dengan \cmd{case} untuk menu monitoring:
 \begin{longlisting}[language=bash, caption={Membuat skrip menu-monitor.sh}]
-cat <<'EOF' > ~/lab-os/week09-scripting/skrip/menu-monitor.sh
+nano ~/lab-os/chapter07-scripting/skrip/menu-monitor.sh
+# Tulis isi berkas berikut
 #!/bin/bash
 # menu-monitor.sh: Menu interaktif pemantauan sistem
 
@@ -429,9 +433,8 @@ while true; do
             ;;
     esac
 done
-EOF
 
-chmod +x ~/lab-os/week09-scripting/skrip/menu-monitor.sh
+chmod +x ~/lab-os/chapter07-scripting/skrip/menu-monitor.sh
 \end{longlisting}
     \textit{Amati:} jalankan skrip dengan \texttt{./menu-monitor.sh} dan
     coba setiap pilihan. Tekan \keystroke{Ctrl+C} atau pilih 5 untuk
@@ -442,11 +445,11 @@ chmod +x ~/lab-os/week09-scripting/skrip/menu-monitor.sh
 \begin{challengebox}
 Buat skrip \cmd{cek-etc.sh} yang memeriksa setiap direktori langsung di
 dalam \dir{/etc} dan melaporkan apakah direktori tersebut kosong atau
-berisi file. Gunakan perintah \cmd{find} dari Bab~5 untuk memeriksa isi
+berisi file. Gunakan perintah \cmd{find} dari Bab~4 untuk memeriksa isi
 direktori. Tampilkan dua kolom: nama direktori dan statusnya (KOSONG atau
 BERISI diikuti jumlah file). Gunakan \cmd{for} untuk mengiterasi direktori
 dan \cmd{if} untuk memeriksa kondisi. Simpan laporan ke
-\file{~/lab-os/week09-scripting/logs/laporan-etc.txt} menggunakan
+\file{~/lab-os/chapter07-scripting/logs/laporan-etc.txt} menggunakan
 redirection yang dipelajari di Bab~3, sekaligus tampilkan ke terminal
 dengan \cmd{tee}.
 \end{challengebox}
@@ -484,18 +487,19 @@ dengan perintah \cmd{source} atau \cmd{.} (titik). Pola ini mirip dengan
 \cmd{import} di bahasa pemrograman lain: kamu mendefinisikan fungsi sekali
 di satu tempat dan menggunakannya di banyak skrip.
 
-\subsection*{Praktikum 9.4: Refaktor Skrip Menggunakan Fungsi}
+\subsection*{Praktek 7.4: Refaktor Skrip Menggunakan Fungsi}
 
-Tujuan praktikum ini adalah memisahkan logika ke dalam fungsi dan
+Tujuan praktek ini adalah memisahkan logika ke dalam fungsi dan
 membuat file library yang bisa digunakan bersama.
 
 \begin{enumerate}
     \item Buat file library dengan fungsi-fungsi utilitas umum:
 \begin{longlisting}[language=bash, caption={Membuat file library.sh}]
-cat <<'EOF' > ~/lab-os/week09-scripting/lib/library.sh
+nano ~/lab-os/chapter07-scripting/lib/library.sh
+# Tulis isi berkas berikut
 #!/bin/bash
 # library.sh: Kumpulan fungsi utilitas untuk skrip sistem
-# Cara pakai: source ~/lab-os/week09-scripting/lib/library.sh
+# Cara pakai: source ~/lab-os/chapter07-scripting/lib/library.sh
 
 # Tampilkan pesan log dengan timestamp
 log_info() {
@@ -546,16 +550,16 @@ pastikan_dir() {
         mkdir -p "$1" && log_info "Direktori dibuat: $1"
     fi
 }
-EOF
 \end{longlisting}
 
     \item Buat skrip utama yang menggunakan library:
 \begin{longlisting}[language=bash, caption={Membuat skrip laporan-disk.sh yang menggunakan library}]
-cat <<'EOF' > ~/lab-os/week09-scripting/skrip/laporan-disk.sh
+nano ~/lab-os/chapter07-scripting/skrip/laporan-disk.sh
+# Tulis isi berkas berikut
 #!/bin/bash
 # laporan-disk.sh: Laporan penggunaan disk menggunakan library
 
-LIB_PATH="$HOME/lab-os/week09-scripting/lib/library.sh"
+LIB_PATH="$HOME/lab-os/chapter07-scripting/lib/library.sh"
 
 if [ ! -f "$LIB_PATH" ]; then
     echo "Library tidak ditemukan: $LIB_PATH"
@@ -564,7 +568,7 @@ fi
 
 source "$LIB_PATH"
 
-OUTPUT_DIR="$HOME/lab-os/week09-scripting/logs"
+OUTPUT_DIR="$HOME/lab-os/chapter07-scripting/logs"
 pastikan_dir "$OUTPUT_DIR"
 
 OUTPUT_FILE="$OUTPUT_DIR/laporan-disk-$(date '+%F').txt"
@@ -585,9 +589,8 @@ geneate_laporan() {
 }
 
 geneate_laporan | tee "$OUTPUT_FILE"
-EOF
 
-chmod +x ~/lab-os/week09-scripting/skrip/laporan-disk.sh
+chmod +x ~/lab-os/chapter07-scripting/skrip/laporan-disk.sh
 ./laporan-disk.sh
 \end{longlisting}
     \textit{Amati:} skrip \cmd{laporan-disk.sh} tidak mendefinisikan
@@ -598,7 +601,7 @@ chmod +x ~/lab-os/week09-scripting/skrip/laporan-disk.sh
 
     \item Verifikasi bahwa fungsi library bisa dipanggil dari skrip lain:
 \begin{lstlisting}[language=bash, caption={Menguji fungsi library secara langsung}]
-source ~/lab-os/week09-scripting/lib/library.sh
+source ~/lab-os/chapter07-scripting/lib/library.sh
 
 log_info "Pengujian library berhasil"
 log_warn "Ini pesan peringatan"
@@ -611,7 +614,7 @@ bytes_ke_human 3221225472
 \end{enumerate}
 
 \begin{challengebox}
-Pisahkan semua fungsi dari skrip \cmd{cek-disk.sh} di Praktikum 9.3
+Pisahkan semua fungsi dari skrip \cmd{cek-disk.sh} di Praktek 7.3
 ke dalam file library terpisah bernama \file{lib/library-disk.sh}. Buat
 minimal tiga fungsi: \cmd{dapatkan\_persen\_disk()}, \cmd{status\_disk()}
 yang mengembalikan teks ``PENUH''/``SEDANG''/``AMAN'' berdasarkan
@@ -668,16 +671,17 @@ melaporkan kesalahan umum, quoting yang salah, dan praktik yang tidak
 dianjurkan. Pasang dengan \texttt{sudo apt install shellcheck} dan
 jalankan dengan \texttt{shellcheck skrip.sh}.
 
-\subsection*{Praktikum 9.5: Debug Skrip Bermasalah}
+\subsection*{Praktek 7.5: Debug Skrip Bermasalah}
 
-Tujuan praktikum ini adalah menggunakan teknik debugging untuk
+Tujuan praktek ini adalah menggunakan teknik debugging untuk
 menganalisis dan memperbaiki skrip, serta menambahkan mekanisme
 keamanan ke skrip yang sudah ada.
 
 \begin{enumerate}
     \item Buat skrip yang sengaja bermasalah untuk dianalisis:
 \begin{lstlisting}[language=bash, caption={Membuat skrip bermasalah untuk latihan debug}]
-cat <<'EOF' > ~/lab-os/week09-scripting/skrip/proses-log-bermasalah.sh
+nano ~/lab-os/chapter07-scripting/skrip/proses-log-bermasalah.sh
+# Tulis isi berkas berikut
 #!/bin/bash
 # proses-log-bermasalah.sh: Skrip dengan bug tersembunyi
 
@@ -693,14 +697,14 @@ cat $FILE_TEMP
     \item Jalankan dengan \cmd{bash -x} untuk melihat setiap langkah
           eksekusi:
 \begin{lstlisting}[language=bash, caption={Menggunakan mode trace untuk debugging}]
-chmod +x ~/lab-os/week09-scripting/skrip/proses-log-bermasalah.sh
+chmod +x ~/lab-os/chapter07-scripting/skrip/proses-log-bermasalah.sh
 
 # Tanpa argumen (bug pertama)
-bash -x ~/lab-os/week09-scripting/skrip/proses-log-bermasalah.sh
+bash -x ~/lab-os/chapter07-scripting/skrip/proses-log-bermasalah.sh
 
 # Dengan direktori yang ada
-bash -x ~/lab-os/week09-scripting/skrip/proses-log-bermasalah.sh \
-  ~/lab-os/week09-scripting/logs
+bash -x ~/lab-os/chapter07-scripting/skrip/proses-log-bermasalah.sh \
+  ~/lab-os/chapter07-scripting/logs
 \end{lstlisting}
     \textit{Amati:} mode \texttt{-x} menampilkan setiap perintah sebelum
     dijalankan. Kamu bisa melihat nilai aktual variabel yang digunakan,
@@ -709,7 +713,8 @@ bash -x ~/lab-os/week09-scripting/skrip/proses-log-bermasalah.sh \
     \item Buat versi yang sudah diperbaiki dengan \texttt{set -euo pipefail}
           dan \cmd{trap}:
 \begin{longlisting}[language=bash, caption={Skrip yang sudah diperbaiki dengan mekanisme keamanan}]
-cat <<'EOF' > ~/lab-os/week09-scripting/skrip/proses-log-aman.sh
+nano ~/lab-os/chapter07-scripting/skrip/proses-log-aman.sh
+# Tulis isi berkas berikut
 #!/bin/bash
 set -euo pipefail
 
@@ -753,17 +758,16 @@ find "$DIREKTORI" -maxdepth 1 -name "*.log" -exec cat {} + > "$FILE_TEMP"
 echo "Total baris dari semua log: $(wc -l < "$FILE_TEMP")"
 echo "5 baris pertama:"
 head -5 "$FILE_TEMP"
-EOF
 
-chmod +x ~/lab-os/week09-scripting/skrip/proses-log-aman.sh
+chmod +x ~/lab-os/chapter07-scripting/skrip/proses-log-aman.sh
 
 # Buat beberapa file log untuk pengujian
 echo -e "INFO: skrip mulai\nWARN: disk 75%\nINFO: selesai" \
-    > ~/lab-os/week09-scripting/logs/test-a.log
+    > ~/lab-os/chapter07-scripting/logs/test-a.log
 echo -e "ERROR: koneksi gagal\nINFO: retry" \
-    > ~/lab-os/week09-scripting/logs/test-b.log
+    > ~/lab-os/chapter07-scripting/logs/test-b.log
 
-./proses-log-aman.sh ~/lab-os/week09-scripting/logs
+./proses-log-aman.sh ~/lab-os/chapter07-scripting/logs
 \end{longlisting}
     \textit{Amati:} meski skrip berhasil berjalan, pesan dari \cmd{cleanup}
     tetap muncul karena \cmd{trap ... EXIT} selalu dijalankan saat skrip
@@ -787,7 +791,7 @@ echo "Exit code: $?"
 \end{enumerate}
 
 \begin{challengebox}
-Ambil skrip \cmd{cek-disk.sh} dari Praktikum 9.3 dan tingkatkan dengan
+Ambil skrip \cmd{cek-disk.sh} dari Praktek 7.3 dan tingkatkan dengan
 tambahan berikut. Pertama, tambahkan \texttt{set -euo pipefail} di baris
 kedua setelah shebang. Kedua, tambahkan \texttt{trap} yang membuat file
 sementara \texttt{/tmp/cek-disk-\$\$.tmp} di awal skrip dan menghapusnya
@@ -796,7 +800,7 @@ saat exit. Ketiga, gunakan file sementara tersebut untuk menyimpan output
 Keempat, tambahkan opsi \texttt{-v} (verbose) menggunakan \cmd{getopts}
 yang jika aktif menampilkan nama perangkat lengkap di samping setiap baris
 status. Ini adalah pendekatan yang mirip dengan skrip \cmd{monitor-memori.sh}
-yang akan kamu temukan di Bab~10.
+yang akan kamu temukan di Bab~8.
 \end{challengebox}
 
 %% ------------------------------------------------------------------------
@@ -833,16 +837,16 @@ Dalam bab ini, kamu telah mempelajari:
 \end{itemize}
 
 %% ------------------------------------------------------------------------
-\section{Tugas Praktikum}
-\label{sec:tugas-praktikum-bash-prog}
+\section{Latihan}
+\label{sec:latihan-bash-prog}
 
-\textbf{Instruksi Umum}: kerjakan seluruh tugas di
-\dir{~/lab-os/week09-scripting/}. Simpan skrip di \dir{skrip/}, library
-di \dir{lib/}, dan semua output di \dir{logs/}. Setiap skrip harus
+\textbf{Instruksi Umum}: kerjakan seluruh latihan di
+\dir{~/lab-os/chapter07-scripting}. Simpan skrip di \dir{skrip}, library
+di \dir{lib}, dan semua output di \dir{logs}. Setiap skrip harus
 menyertakan shebang, komentar deskripsi, dan penanganan argumen yang
 benar.
 
-\begin{exercisebox}[9.1 Skrip Absensi dengan Laporan]
+\subsubsection*{Latihan 7.1 Skrip Absensi dengan Laporan}
 Buat skrip \cmd{absensi.sh} yang mencatat kehadiran dari command line.
 Skrip menerima dua argumen: nama peserta dan status (\texttt{hadir},
 \texttt{izin}, atau \texttt{alpha}). Setiap entri disimpan ke file
@@ -853,9 +857,9 @@ hari ini. Tambahkan opsi \texttt{-h} untuk menampilkan bantuan penggunaan.
 Gunakan \cmd{getopts} untuk memproses opsi. Rekam minimal 6 entri dengan
 status berbeda dan jalankan opsi \texttt{-r} untuk menampilkan
 rekapitulasinya.
-\end{exercisebox}
 
-\begin{exercisebox}[9.2 Library dan Skrip Backup]
+
+\subsubsection*{Latihan 7.2 Library dan Skrip Backup}
 Buat file \file{lib/library-backup.sh} yang berisi minimal empat fungsi:
 \cmd{buat\_nama\_arsip()} yang menghasilkan nama file dengan timestamp,
 \cmd{validasi\_sumber()} yang memeriksa apakah direktori sumber ada,
@@ -867,9 +871,9 @@ library tersebut dan mendukung opsi \texttt{-s <sumber>}, \texttt{-t
 \cmd{getopts}. Skrip harus menggunakan \texttt{set -euo pipefail} dan
 \cmd{trap} untuk cleanup file sementara. Uji dengan minimal dua skenario:
 backup berhasil dan backup gagal karena sumber tidak ada.
-\end{exercisebox}
 
-\begin{exercisebox}[9.3 Skrip Monitor Sistem dengan Debug]
+
+\subsubsection*{Latihan 7.3 Skrip Monitor Sistem dengan Debug}
 Buat skrip \cmd{monitor-sistem.sh} menggunakan template profesional
 berikut: shebang, \texttt{set -euo pipefail}, \cmd{trap} cleanup,
 \cmd{getopts} untuk opsi \texttt{-i <interval-detik>}, \texttt{-n
@@ -881,7 +885,7 @@ Tambahkan mode debug: jika variabel lingkungan \var{DEBUG} bernilai
 \texttt{1}, aktifkan \cmd{set -x} secara otomatis. Uji skrip dengan
 \texttt{DEBUG=1 ./monitor-sistem.sh -i 2 -n 3} dan amati output trace
 untuk memahami alur eksekusi.
-\end{exercisebox}
+
 
 %% ------------------------------------------------------------------------
 \section{Referensi}

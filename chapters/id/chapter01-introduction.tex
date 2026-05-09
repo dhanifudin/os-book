@@ -5,6 +5,8 @@
 \chapter{Pengenalan Sistem Operasi dan Instalasi Linux}
 \label{ch:introduction}
 
+\chapterhero{blue}{Pahami fondasi sistem operasi, pilihan distribusi Linux, proses instalasi, dan verifikasi awal agar sistem siap dipakai sebagai lingkungan belajar.}{konsep dasar}{instalasi}{verifikasi}
+
 Setiap kali komputer dinyalakan, ada satu program yang bekerja bahkan sebelum aplikasi
 lain dapat terbuka. Program tersebut mengatur seluruh perangkat keras, membagi waktu
 prosesor di antara banyak tugas, dan memastikan setiap aplikasi mendapat ruang memori
@@ -340,13 +342,13 @@ target penggunanya.
 \section{Instalasi Ubuntu Server di VirtualBox}
 \label{sec:installation}
 
-Praktikum pada bab ini menggunakan \textbf{mesin virtual} (virtual machine). Mesin
+Praktek pada bab ini menggunakan \textbf{mesin virtual} (virtual machine). Mesin
 virtual adalah komputer yang disimulasikan di dalam komputer fisik menggunakan perangkat
 lunak. Pendekatan ini aman untuk belajar: jika terjadi kesalahan konfigurasi, mesin
 virtual dapat dikembalikan ke kondisi semula tanpa memengaruhi sistem utama sama sekali.
 
 \begin{notebox}
-Seluruh praktikum pada bab ini dijalankan dari antarmuka teks (command line) Ubuntu
+Seluruh praktek pada bab ini dijalankan dari antarmuka teks (command line) Ubuntu
 Server. Tidak ada antarmuka grafis. Ini adalah kondisi normal untuk server produksi.
 \end{notebox}
 
@@ -364,7 +366,7 @@ perbaikan bug selama lima tahun sejak rilis. Untuk server, selalu gunakan versi 
 agar sistem tetap stabil dalam jangka panjang.
 \end{tipbox}
 
-\subsection*{Praktikum 1.1 Membuat Mesin Virtual}
+\subsection*{Praktek 1.1 Membuat Mesin Virtual}
 
 Buat sebuah mesin virtual baru di VirtualBox untuk menginstalasi Ubuntu Server.
 
@@ -392,7 +394,7 @@ Buat sebuah mesin virtual baru di VirtualBox untuk menginstalasi Ubuntu Server.
     instalasi bootable.
 \end{enumerate}
 
-\subsection*{Praktikum 1.2 Proses Instalasi Ubuntu Server}
+\subsection*{Praktek 1.2 Proses Instalasi Ubuntu Server}
 
 Ikuti langkah-langkah berikut setelah menu instalasi terbuka:
 
@@ -420,7 +422,7 @@ Password: [gunakan kata sandi yang kuat]
     drive virtual saat sistem melakukan restart.
 \end{enumerate}
 
-\subsection*{Praktikum 1.3 Login Pertama dan Verifikasi Sistem}
+\subsection*{Praktek 1.3 Login Pertama dan Verifikasi Sistem}
 
 Setelah sistem restart, lakukan login pertama dan verifikasi bahwa instalasi berhasil.
 
@@ -455,9 +457,9 @@ tanpa harus menginstalasi ulang dari awal.
 \label{sec:post-installation}
 
 Setelah sistem berhasil diinstalasi, ada beberapa langkah konfigurasi awal yang harus
-dilakukan sebelum sistem siap digunakan untuk praktikum selanjutnya.
+dilakukan sebelum sistem siap digunakan untuk praktek selanjutnya.
 
-\subsection*{Praktikum 1.4 Memperbarui Sistem}
+\subsection*{Praktek 1.4 Memperbarui Sistem}
 
 Pembaruan sistem memastikan semua paket yang terinstalasi berada pada versi terbaru
 dengan tambalan keamanan yang tersedia.
@@ -477,9 +479,9 @@ sudo apt autoremove -y
 hanya memperbarui daftar paket yang tersedia dari server repositori. Perintah
 \cmd{apt upgrade} baru melakukan instalasi berdasarkan daftar yang sudah diperbarui.
 
-\subsection*{Praktikum 1.5 Instalasi Utilitas Dasar}
+\subsection*{Praktek 1.5 Instalasi Utilitas Dasar}
 
-Instalasi beberapa utilitas yang akan sering digunakan sepanjang praktikum di buku ini:
+Instalasi beberapa utilitas yang akan sering digunakan sepanjang praktek di buku ini:
 
 \begin{lstlisting}[language=bash, caption={Instalasi utilitas dasar}]
 sudo apt install -y \
@@ -503,7 +505,7 @@ neofetch
 kernel, CPU, RAM, dan disk dalam satu tampilan ringkas. Perhatikan kolom memori: berapa
 persen RAM yang sudah terpakai oleh sistem dasar Ubuntu Server tanpa aplikasi tambahan.
 
-\subsection*{Praktikum 1.6 Verifikasi Koneksi dan Sumber Daya Sistem}
+\subsection*{Praktek 1.6 Verifikasi Koneksi dan Sumber Daya Sistem}
 
 \begin{lstlisting}[language=bash, caption={Pemeriksaan jaringan dan sumber daya}]
 # Uji konektivitas internet dengan mengirim 4 paket ke DNS Google
@@ -562,7 +564,7 @@ Instalasi Ubuntu Server 24.04 LTS pada sistem modern menggunakan GPT secara otom
 
 \subsection{Tata Letak Partisi Linux}
 
-Saat memilih \textit{Use an entire disk} pada Praktikum 1.2, Ubuntu membuat tata letak
+Saat memilih \textit{Use an entire disk} pada Praktek 1.2, Ubuntu membuat tata letak
 partisi berikut secara otomatis:
 
 \begin{description}[noitemsep,topsep=2pt,parsep=0pt]
@@ -603,7 +605,7 @@ Tipe sistem berkas yang lebih canggih seperti XFS dan Btrfs dibahas pada Minggu 
 bersama dengan topik manajemen berkas tingkat lanjut.
 \end{notebox}
 
-\subsection*{Praktikum 1.7 Memeriksa Partisi dan Sistem Berkas}
+\subsection*{Praktek 1.7 Memeriksa Partisi dan Sistem Berkas}
 
 Setelah sistem terinstalasi, periksa tata letak partisi yang dibuat secara otomatis.
 
@@ -647,28 +649,28 @@ Dalam bab ini, kamu telah mempelajari:
     partisi root, FAT32 untuk EFI, dan area swap sebagai memori virtual.
     \item \textbf{Konfigurasi awal}: pembaruan sistem dengan \cmd{apt update} dan
     \cmd{apt upgrade}, instalasi utilitas dasar, serta verifikasi partisi dengan
-    \cmd{lsblk} memastikan sistem siap untuk praktikum selanjutnya.
+    \cmd{lsblk} memastikan sistem siap untuk praktek selanjutnya.
 \end{itemize}
 
-\section{Tugas Praktikum}
+\section{Latihan}
 \label{sec:tugas}
 
-\textbf{Instruksi Umum}: Kerjakan seluruh tugas secara mandiri dan dokumentasikan setiap
-langkah dengan tangkapan layar (screenshot). Simpan dokumentasi dalam format PDF dan
-kumpulkan sesuai ketentuan yang diberikan dosen.
+\textbf{Instruksi Umum}: Kerjakan seluruh latihan secara mandiri. Catat langkah
+penting, simpan tangkapan layar bila diperlukan, lalu rangkum hasilnya sebagai
+dokumentasi pribadi.
 
-\begin{exercisebox}[1.1 Instalasi dan Verifikasi Sistem]
+\subsubsection*{Latihan 1.1 Instalasi dan Verifikasi Sistem}
 Lakukan instalasi Ubuntu Server 24.04 LTS di VirtualBox sesuai langkah pada
-Praktikum 1.1 hingga 1.3. Setelah instalasi selesai:
+Praktek 1.1 hingga 1.3. Setelah instalasi selesai:
 \begin{enumerate}
     \item Jalankan \cmd{uname -r} dan catat versi kernel yang ditampilkan.
     \item Jalankan \cmd{cat /etc/os-release} dan catat nama serta versi distribusi.
     \item Jalankan \cmd{ip addr show} dan catat alamat IP yang diperoleh.
     \item Ambil screenshot dari output setiap perintah di atas.
 \end{enumerate}
-\end{exercisebox}
 
-\begin{exercisebox}[1.2 Konfigurasi Awal dan Verifikasi]
+
+\subsubsection*{Latihan 1.2 Konfigurasi Awal dan Verifikasi}
 Setelah sistem terinstalasi, lakukan langkah-langkah konfigurasi awal berikut:
 \begin{enumerate}
     \item Perbarui sistem dengan \cmd{sudo apt update} diikuti \cmd{sudo apt upgrade -y}.
@@ -678,9 +680,9 @@ Setelah sistem terinstalasi, lakukan langkah-langkah konfigurasi awal berikut:
     \item Buat snapshot di VirtualBox dengan nama \textit{Fresh Install} setelah semua
     langkah selesai.
 \end{enumerate}
-\end{exercisebox}
 
-\begin{exercisebox}[1.3 Analisis Konsep Sistem Operasi]
+
+\subsubsection*{Latihan 1.3 Analisis Konsep Sistem Operasi}
 Jawab pertanyaan berikut berdasarkan materi yang telah dipelajari pada bab ini:
 \begin{enumerate}
     \item Sebuah perusahaan membutuhkan sistem operasi untuk tiga keperluan: server web,
@@ -695,7 +697,7 @@ Jawab pertanyaan berikut berdasarkan materi yang telah dipelajari pada bab ini:
     Identifikasi partisi mana yang merupakan root (\texttt{/}), partisi EFI, dan area
     swap. Sertakan output perintah sebagai screenshot.
 \end{enumerate}
-\end{exercisebox}
+
 
 \section{Referensi}
 \label{sec:referensi}

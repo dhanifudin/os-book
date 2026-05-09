@@ -1,10 +1,12 @@
 %% ========================================================================
-%% week05-directory-structure.tex
+%% chapter04-directory-structure.tex
 %% Struktur Direktori dan Operasi File
 %% ========================================================================
 
 \chapter{Struktur Direktori dan Operasi File}
 \label{ch:filesystem-ops}
+
+\chapterhero{orange}{Jelajahi struktur sistem berkas Linux, pahami jenis file dan tautan, lalu kuasai pencarian serta pengarsipan untuk pekerjaan harian.}{FHS}{tautan}{arsip}
 
 Bayangkan kamu baru pindah ke rumah kontrakan baru. Ada dapur untuk menyimpan bahan makanan,
 kamar tidur untuk barang pribadi, gudang untuk alat-alat, dan teras untuk barang sementara
@@ -28,7 +30,7 @@ rapi, dan bekerja dengan sistem Linux secara lebih percaya diri.
 Setelah menyelesaikan bab ini, kamu akan mampu:
 
 \begin{enumerate}
-    \item menjelaskan fungsi direktori-direktori utama dalam hierarki sistem file Linux (FHS);
+    \item menjelaskan fungsi direktori-direktori utama dalam hierarki sistem file Linux;
     \item membedakan jenis-jenis berkas di Linux berdasarkan karakter pertama output \cmd{ls -l};
     \item menjelaskan perbedaan hard link dan symbolic link serta membuatnya dengan perintah yang tepat;
     \item mencari berkas berdasarkan nama, tipe, ukuran, dan waktu modifikasi menggunakan \cmd{find} dan \cmd{locate};
@@ -36,16 +38,16 @@ Setelah menyelesaikan bab ini, kamu akan mampu:
 \end{enumerate}
 
 \begin{notebox}
-Seluruh praktikum pada bab ini dijalankan pada direktori \dir{~/lab-os/week05-files/}.
+Seluruh praktek pada bab ini dijalankan pada direktori \dir{~/lab-os/chapter04-files/}.
 Buat direktori ini sebelum memulai:
 \begin{lstlisting}[language=bash]
-mkdir -p ~/lab-os/week05-files
-cd ~/lab-os/week05-files
+mkdir -p ~/lab-os/chapter04-files
+cd ~/lab-os/chapter04-files
 \end{lstlisting}
 \end{notebox}
 
 % ------------------------------------------------------------------------
-\section{Standar Hierarki Sistem File (FHS)}
+\section{Standar Hierarki Sistem File}
 \label{sec:fhs}
 
 Linux mengatur semua berkas dalam satu pohon direktori tunggal yang dimulai dari akar,
@@ -64,7 +66,7 @@ Berikut direktori-direktori utama yang perlu kamu kenal. Setiap administrator Li
 menghafalkan ini secara alami seiring penggunaan sehari-hari.
 
 \begin{itemize}
-    \item \dir{/} : titik awal seluruh hierarki. Semua direktori lain berasal dari sini.
+    \item \dir{} : titik awal seluruh hierarki. Semua direktori lain berasal dari sini.
     \item \dir{/bin/} : program esensial yang dibutuhkan semua pengguna, seperti \cmd{ls}, \cmd{cp}, \cmd{mv}, dan \cmd{bash}.
     \item \dir{/sbin/} : program administrasi sistem, seperti \cmd{fdisk} dan \cmd{iptables}. Umumnya memerlukan \cmd{sudo}.
     \item \dir{/etc/} : semua file konfigurasi sistem. Berformat teks sehingga bisa dibaca dengan editor biasa.
@@ -80,9 +82,9 @@ menghafalkan ini secara alami seiring penggunaan sehari-hari.
     \item \dir{/mnt/} dan \dir{/media/} : titik pemasangan untuk perangkat eksternal seperti USB atau partisi tambahan.
 \end{itemize}
 
-\subsection*{Praktikum 5.1 Jelajahi Direktori-Direktori Utama}
+\subsection*{Praktek 4.1 Jelajahi Direktori-Direktori Utama}
 
-Tujuan praktikum ini adalah membiasakan mata dengan isi direktori standar Linux dan
+Tujuan praktek ini adalah membiasakan mata dengan isi direktori standar Linux dan
 menemukan file-file konfigurasi penting secara langsung.
 
 \begin{enumerate}
@@ -147,15 +149,15 @@ Perintah \cmd{file} menebak tipe konten sebuah berkas berdasarkan isinya, bukan 
 Ini berguna ketika kamu menemukan berkas tanpa ekstensi dan ingin tahu apakah itu teks,
 binary, atau sesuatu yang lain.
 
-\subsection*{Praktikum 5.2 Identifikasi Berbagai Jenis Berkas}
+\subsection*{Praktek 4.2 Identifikasi Berbagai Jenis Berkas}
 
-Tujuan praktikum ini adalah membedakan jenis berkas berdasarkan output \cmd{ls -l} dan
+Tujuan praktek ini adalah membedakan jenis berkas berdasarkan output \cmd{ls -l} dan
 memahami cara membaca metadata berkas secara menyeluruh.
 
 \begin{enumerate}
     \item Buat beberapa berkas dengan jenis berbeda di direktori kerja:
 \begin{lstlisting}[language=bash, caption={Membuat berkas reguler dan direktori}]
-cd ~/lab-os/week05-files
+cd ~/lab-os/chapter04-files
 mkdir -p latihan-jenis
 echo "isi berkas teks" > latihan-jenis/catatan.txt
 mkdir latihan-jenis/subfolder
@@ -186,7 +188,7 @@ ls -lah /dev/sd* 2>/dev/null | head -5
 \end{enumerate}
 
 \begin{challengebox}
-Buat sebuah tautan simbolis bernama \file{home-link} di direktori \dir{~/lab-os/week05-files/}
+Buat sebuah tautan simbolis bernama \file{home-link} di direktori \dir{~/lab-os/chapter04-files/}
 yang menunjuk ke direktori home kamu (\dir{~/}). Verifikasi bahwa tautan tersebut bekerja
 dengan menjalankan \cmd{ls -la home-link/} dan membandingkan hasilnya dengan \cmd{ls -la ~/}.
 Kemudian gunakan \cmd{stat} untuk memeriksa apakah inode \file{home-link} dan \dir{~/}
@@ -218,15 +220,15 @@ Perintah \cmd{ln sumber target} membuat hard link, sedangkan \cmd{ln -s sumber t
 membuat symbolic link. Gunakan \cmd{ls -li} untuk melihat nomor inode dan memverifikasi
 apakah dua nama berbagi inode yang sama.
 
-\subsection*{Praktikum 5.3 Bandingkan Hard Link dan Symbolic Link}
+\subsection*{Praktek 4.3 Bandingkan Hard Link dan Symbolic Link}
 
-Tujuan praktikum ini adalah memahami perbedaan hard link dan symbolic link melalui inode,
+Tujuan praktek ini adalah memahami perbedaan hard link dan symbolic link melalui inode,
 perubahan isi berkas, dan perilaku saat target asli dihapus.
 
 \begin{enumerate}
     \item Siapkan satu berkas sumber dan buat dua jenis link:
 \begin{lstlisting}[language=bash, caption={Membuat hard link dan symbolic link}]
-cd ~/lab-os/week05-files
+cd ~/lab-os/chapter04-files
 mkdir -p latihan-link
 echo "versi awal" > latihan-link/catatan.txt
 ln latihan-link/catatan.txt latihan-link/catatan-hard.txt
@@ -289,15 +291,15 @@ Dua perintah tambahan yang berguna untuk mencari program: \cmd{which} menampilka
 lengkap sebuah program yang ada di \var{PATH}, dan \cmd{whereis} menampilkan lokasi binary,
 halaman manual, dan kode sumber sebuah program.
 
-\subsection*{Praktikum 5.4 Cari Berkas dengan Kriteria Tertentu}
+\subsection*{Praktek 4.4 Cari Berkas dengan Kriteria Tertentu}
 
-Tujuan praktikum ini adalah menggunakan \cmd{find} dengan berbagai kriteria untuk menemukan
+Tujuan praktek ini adalah menggunakan \cmd{find} dengan berbagai kriteria untuk menemukan
 berkas secara efisien dan menggabungkannya dengan teknik redirection dari Bab~3.
 
 \begin{enumerate}
     \item Buat beberapa berkas uji dengan nama dan ukuran yang berbeda:
 \begin{lstlisting}[language=bash, caption={Membuat berkas uji untuk pencarian}]
-cd ~/lab-os/week05-files
+cd ~/lab-os/chapter04-files
 mkdir -p data-cari/logs data-cari/config data-cari/scripts
 echo "isi log kecil" > data-cari/logs/app.log
 echo "isi log besar" > data-cari/logs/error.log
@@ -321,8 +323,8 @@ find data-cari -type f -size +10k
     dan simpan daftar hasilnya ke sebuah berkas menggunakan redirection:
 \begin{lstlisting}[language=bash, caption={Mencari log besar dan menyimpan hasil}]
 find /var/log -type f -name "*.log" -size +1M 2>/dev/null \
-    > ~/lab-os/week05-files/log-besar.txt
-cat ~/lab-os/week05-files/log-besar.txt
+    > ~/lab-os/chapter04-files/log-besar.txt
+cat ~/lab-os/chapter04-files/log-besar.txt
 \end{lstlisting}
     \textit{Amati:} Pola \texttt{2>/dev/null} membuang pesan error ``Permission denied'' yang muncul ketika \cmd{find} mencoba masuk ke direktori yang tidak bisa diaksesnya. Teknik redirection ini sudah kamu pelajari di Bab~3.
 
@@ -342,7 +344,7 @@ whereis grep
 \begin{challengebox}
 Gunakan \cmd{find} untuk mencari semua berkas \file{.log} di \dir{/var/log/} yang lebih
 besar dari 1 MB. Arahkan hasilnya ke sebuah berkas bernama \file{laporan-log.txt}
-di direktori \dir{~/lab-os/week05-files/}. Pastikan pesan error permission diabaikan
+di direktori \dir{~/lab-os/chapter04-files/}. Pastikan pesan error permission diabaikan
 menggunakan \texttt{2>/dev/null}. Kemudian gunakan \cmd{grep} (dari Bab~2) dan \cmd{wc -l}
 untuk menghitung berapa banyak berkas log besar yang ditemukan. Tuliskan jumlahnya sebagai
 komentar di bawah perintahmu.
@@ -385,15 +387,15 @@ macOS, karena format \texttt{.zip} didukung secara native oleh semua sistem oper
 Gunakan \cmd{zip -r} untuk mengarsipkan direktori secara rekursif, dan \cmd{unzip -l}
 untuk melihat isi arsip tanpa mengekstraknya.
 
-\subsection*{Praktikum 5.5 Buat dan Ekstrak Arsip}
+\subsection*{Praktek 4.5 Buat dan Ekstrak Arsip}
 
-Tujuan praktikum ini adalah membuat arsip terkompresi, memeriksa isinya, dan mengekstraknya
+Tujuan praktek ini adalah membuat arsip terkompresi, memeriksa isinya, dan mengekstraknya
 ke lokasi yang berbeda.
 
 \begin{enumerate}
     \item Buat struktur direktori berisi beberapa berkas untuk diarsipkan:
 \begin{lstlisting}[language=bash, caption={Menyiapkan direktori yang akan diarsipkan}]
-cd ~/lab-os/week05-files
+cd ~/lab-os/chapter04-files
 mkdir -p proyek/src proyek/config proyek/docs
 echo "# Kode utama" > proyek/src/main.sh
 echo "PORT=8080" > proyek/config/app.conf
@@ -437,8 +439,8 @@ unzip -l proyek.zip | head -15
 \end{enumerate}
 
 \begin{challengebox}
-Arsipkan seluruh direktori \dir{~/lab-os/week05-files/} menjadi sebuah berkas bernama
-\file{week05-backup.tar.gz} yang disimpan di \dir{~/lab-os/}. Setelah selesai, gunakan
+Arsipkan seluruh direktori \dir{~/lab-os/chapter04-files/} menjadi sebuah berkas bernama
+\file{chapter04-backup.tar.gz} yang disimpan di \dir{~/lab-os/}. Setelah selesai, gunakan
 \cmd{tar -tzvf} untuk memverifikasi isi arsip dan pastikan semua subdirektori dan berkas
 masuk ke dalam arsip. Kemudian gunakan pipa (\texttt{|}) untuk menghitung berapa banyak
 berkas yang ada di dalam arsip tersebut menggunakan \cmd{wc -l}. Teknik pipa ini sudah
@@ -460,21 +462,20 @@ Dalam bab ini, kamu telah mempelajari:
 \end{itemize}
 
 % ------------------------------------------------------------------------
-\section{Tugas Praktikum}
+\section{Latihan}
 \label{sec:exercises-filesystem}
 
-\textbf{Instruksi Umum}: Kerjakan seluruh tugas secara mandiri. Dokumentasikan setiap
-langkah dengan tangkapan layar dan kumpulkan dalam format PDF.
+\textbf{Instruksi Umum}: Kerjakan seluruh latihan secara mandiri. Catat langkah penting, simpan tangkapan layar bila diperlukan, lalu rangkum hasilnya sebagai dokumentasi pribadi.
 
-\begin{exercisebox}[5.1 Pemetaan Sistem File]
+\subsubsection*{Latihan 4.1 Pemetaan Sistem File}
 Jalankan \cmd{ls -lah /} dan pilih delapan direktori dari hasilnya. Untuk setiap direktori,
 tuliskan fungsinya dalam satu kalimat dan berikan contoh satu berkas nyata yang ada di
 dalamnya (verifikasi dengan \cmd{ls}). Sertakan bukti tangkapan layar untuk setiap
 direktori yang kamu pilih.
-\end{exercisebox}
 
-\begin{exercisebox}[5.2 Hard Link dan Symbolic Link]
-Buat satu berkas \file{sumber.txt} di \dir{~/lab-os/week05-tugas/}. Setelah itu:
+
+\subsubsection*{Latihan 4.2 Hard Link dan Symbolic Link}
+Buat satu berkas \file{sumber.txt} di \dir{~/lab-os/chapter04-tugas/}. Setelah itu:
 \begin{enumerate}
     \item buat satu hard link bernama \file{sumber-hard.txt};
     \item buat satu symbolic link bernama \file{sumber-soft.txt};
@@ -483,21 +484,21 @@ Buat satu berkas \file{sumber.txt} di \dir{~/lab-os/week05-tugas/}. Setelah itu:
     \item hapus \file{sumber.txt} dan jelaskan keadaan kedua link yang tersisa.
 \end{enumerate}
 Sertakan semua perintah dan ringkasan pengamatanmu.
-\end{exercisebox}
 
-\begin{exercisebox}[5.3 Pencarian dan Pengarsipan]
+
+\subsubsection*{Latihan 4.3 Pencarian dan Pengarsipan}
 Lakukan langkah-langkah berikut secara berurutan dan dokumentasikan hasilnya:
 \begin{enumerate}
     \item Gunakan \cmd{find} untuk mencari semua berkas \file{.conf} di \dir{/etc/} yang
     berukuran kurang dari 5 KB. Arahkan hasilnya ke \file{config-kecil.txt}, buang
     error permission.
     \item Hitung berapa banyak berkas yang ditemukan menggunakan \cmd{wc -l}.
-    \item Arsipkan seluruh direktori \dir{~/lab-os/week05-tugas/} menjadi
-    \file{week05-tugas.tar.gz}.
+    \item Arsipkan seluruh direktori \dir{~/lab-os/chapter04-tugas/} menjadi
+    \file{chapter04-tugas.tar.gz}.
     \item Verifikasi isi arsip dengan \cmd{tar -tzvf} dan hitung jumlah berkas di
     dalamnya menggunakan pipa ke \cmd{wc -l}.
 \end{enumerate}
-\end{exercisebox}
+
 
 % ------------------------------------------------------------------------
 \section{Referensi}

@@ -5,6 +5,8 @@
 \chapter{Dasar Input/Output (I/O)}
 \label{ch:basic-io}
 
+\chapterhero{violet}{Pelajari bagaimana aliran data bekerja di shell melalui file descriptor, redirection, pipeline, dan teknik pemrosesan input-output yang efisien.}{stdin/stdout}{pipeline}{redirect}
+
 Bayangkan kamu bekerja di warung fotokopi. Ada tiga jalur kerja: jalur masuk untuk menerima dokumen dari pelanggan, jalur keluar untuk menyerahkan hasil fotokopi, dan jalur khusus untuk laporan kesalahan jika mesin rusak. Linux menggunakan prinsip yang sama untuk setiap program: ada saluran khusus untuk input, output biasa, dan pesan kesalahan. Inilah konsep dasar I/O di Linux.
 
 Filosofi Unix menyatakan bahwa setiap program hanya melakukan satu hal dengan baik, dan program-program kecil itu bisa digabungkan untuk menyelesaikan tugas yang kompleks. Penggabungan ini dimungkinkan karena semua program berbagi antarmuka I/O yang seragam. Output dari satu program bisa langsung menjadi input program berikutnya, seperti jalur produksi di pabrik.
@@ -24,11 +26,11 @@ Setelah menyelesaikan bab ini, kamu akan mampu:
 \end{enumerate}
 
 \begin{notebox}
-Seluruh praktikum pada bab ini dijalankan pada direktori \dir{~/lab-os/week03-io/}.
-Buat direktori ini sebelum memulai praktikum pertama:
+Seluruh praktek pada bab ini dijalankan pada direktori \dir{~/lab-os/chapter03-io/}.
+Buat direktori ini sebelum memulai praktek pertama:
 \begin{lstlisting}[language=bash]
-mkdir -p ~/lab-os/week03-io
-cd ~/lab-os/week03-io
+mkdir -p ~/lab-os/chapter03-io
+cd ~/lab-os/chapter03-io
 \end{lstlisting}
 \end{notebox}
 
@@ -44,14 +46,14 @@ Pemisahan antara stdout dan stderr bukan sekadar konvensi. Ketika kamu membangun
 
 Linux menyimpan informasi tentang file descriptor yang terbuka oleh setiap proses di direktori \dir{/proc/PID/fd}. Di sini, variabel shell \texttt{\$\$} merujuk ke PID proses shell yang sedang berjalan.
 
-\subsection*{Praktikum 3.1: Amati File Descriptor Proses Aktif}
+\subsection*{Praktek 3.1: Amati File Descriptor Proses Aktif}
 
-Tujuan praktikum ini adalah melihat file descriptor yang dimiliki proses shell dan memahami kemana masing-masing mengarah.
+Tujuan praktek ini adalah melihat file descriptor yang dimiliki proses shell dan memahami kemana masing-masing mengarah.
 
 \begin{enumerate}
     \item Masuk ke direktori kerja:
 \begin{lstlisting}[language=bash, caption={Masuk ke direktori kerja}]
-cd ~/lab-os/week03-io
+cd ~/lab-os/chapter03-io
 \end{lstlisting}
 
     \item Lihat file descriptor yang dimiliki shell saat ini:
@@ -95,9 +97,9 @@ Untuk stderr, gunakan \texttt{2>} (overwrite) atau \texttt{2>>} (tambah). Angka 
 
 Berkas khusus \file{/dev/null} berfungsi sebagai tempat sampah. Semua yang ditulis ke sana langsung lenyap. Gunakan ini untuk membuang output yang tidak perlu, seperti pesan "Permission denied" yang tidak relevan saat mencari berkas di seluruh sistem.
 
-\subsection*{Praktikum 3.2: Simpan Output Perintah ke Berkas}
+\subsection*{Praktek 3.2: Simpan Output Perintah ke Berkas}
 
-Tujuan praktikum ini adalah berlatih menggunakan operator \texttt{>}, \texttt{>>}, \texttt{2>}, dan \texttt{2>\&1} dalam situasi nyata.
+Tujuan praktek ini adalah berlatih menggunakan operator \texttt{>}, \texttt{>>}, \texttt{2>}, dan \texttt{2>\&1} dalam situasi nyata.
 
 \begin{enumerate}
     \item Simpan daftar berkas di direktori kerja ke berkas:
@@ -153,9 +155,9 @@ Seperti yang sudah dipelajari di Bab~2 dengan \cmd{grep} dan \cmd{awk}, kemampua
 
 Pipeline panjang bisa dibagi ke beberapa baris menggunakan backslash \texttt{\textbackslash} di akhir baris untuk keterbacaan.
 
-\subsection*{Praktikum 3.3: Bangun Pipeline Bertingkat}
+\subsection*{Praktek 3.3: Bangun Pipeline Bertingkat}
 
-Tujuan praktikum ini adalah membangun pipeline langkah demi langkah untuk menganalisis data sistem.
+Tujuan praktek ini adalah membangun pipeline langkah demi langkah untuk menganalisis data sistem.
 
 \begin{enumerate}
     \item Mulai dengan perintah sederhana, lalu tambahkan tahap satu per satu:
@@ -209,9 +211,9 @@ Here-document (\texttt{<<EOF}) adalah cara memberi input multi-baris ke perintah
 
 Here-document sangat berguna untuk membuat berkas konfigurasi dalam skrip, menulis pesan multi-baris, atau memberikan input ke perintah seperti \cmd{cat} dan \cmd{tee}.
 
-\subsection*{Praktikum 3.4: Output ke Berkas dan Terminal Sekaligus}
+\subsection*{Praktek 3.4: Output ke Berkas dan Terminal Sekaligus}
 
-Tujuan praktikum ini adalah menggunakan \cmd{tee} dalam pipeline dan membuat berkas dengan here-document.
+Tujuan praktek ini adalah menggunakan \cmd{tee} dalam pipeline dan membuat berkas dengan here-document.
 
 \begin{enumerate}
     \item Gunakan \cmd{tee} untuk melihat sekaligus menyimpan output:
@@ -295,21 +297,21 @@ Dalam bab ini, kamu telah mempelajari:
 \end{itemize}
 
 %% ------------------------------------------------------------------------
-\section{Tugas Praktikum}
+\section{Latihan}
 
-\textbf{Instruksi Umum}: Kerjakan seluruh tugas secara mandiri. Dokumentasikan setiap langkah dengan tangkapan layar dan kumpulkan dalam format PDF.
+\textbf{Instruksi Umum}: Kerjakan seluruh latihan secara mandiri. Catat langkah penting, simpan tangkapan layar bila diperlukan, lalu rangkum hasilnya sebagai dokumentasi pribadi.
 
-\begin{exercisebox}[3.1 Pengalihan dan Pemisahan I/O]
+\subsubsection*{Latihan 3.1 Pengalihan dan Pemisahan I/O}
 Jalankan perintah \cmd{find /usr -name "*.so" -size +1M} yang akan menghasilkan dua jenis output: path berkas yang ditemukan (stdout) dan pesan "Permission denied" (stderr). Lakukan tiga hal: (a) simpan stdout ke \file{library-besar.txt} dan stderr ke \file{akses-error.txt} dengan satu perintah, (b) hitung jumlah baris masing-masing berkas menggunakan \cmd{wc -l}, (c) ulangi perintah tapi kali ini buang stderr ke \file{/dev/null} dan simpan hanya stdout. Sertakan tangkapan layar dan jelaskan perbedaan hasil.
-\end{exercisebox}
 
-\begin{exercisebox}[3.2 Pipeline Analisis Sistem]
+
+\subsubsection*{Latihan 3.2 Pipeline Analisis Sistem}
 Bangun pipeline untuk menjawab dua pertanyaan tentang sistem: (a) shell mana yang paling banyak digunakan oleh akun di sistem? Gunakan \file{/etc/passwd} sebagai sumber data, ekstrak kolom terakhir dengan \cmd{awk -F: '\{print \$NF\}'}, lalu hitung dengan \cmd{sort | uniq -c | sort -rn}. (b) Berapa jumlah proses aktif untuk setiap pengguna? Gunakan \cmd{ps aux}, lewatkan baris header, ekstrak nama pengguna, dan hitung kemunculannya. Simpan kedua hasil ke berkas terpisah menggunakan operator \texttt{>}.
-\end{exercisebox}
 
-\begin{exercisebox}[3.3 Membuat Log Sistem Otomatis]
+
+\subsubsection*{Latihan 3.3 Membuat Log Sistem Otomatis}
 Buat skrip log sederhana langsung dari terminal menggunakan teknik yang dipelajari. Gunakan blok \texttt{\{ ... \}} yang berisi beberapa perintah: timestamp dengan \cmd{date}, penggunaan disk dengan \cmd{df -h}, penggunaan memori dengan \cmd{free -h}, dan lima proses dengan CPU tertinggi menggunakan \cmd{ps aux | sort -k3 -rn | head -5}. Alirkan seluruh blok ke \cmd{tee -a laporan-sistem.log} agar output tampil di terminal sekaligus tersimpan. Jalankan dua kali dan verifikasi bahwa berkas log berisi dua entri berurutan, bukan ditimpa.
-\end{exercisebox}
+
 
 %% ------------------------------------------------------------------------
 \section{Referensi}

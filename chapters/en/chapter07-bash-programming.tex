@@ -111,8 +111,8 @@ Objective: create, save, and run your first Bash script.
 \begin{enumerate}
   \item Create the lab workspace:
 \begin{lstlisting}[language=bash, caption={Preparing the workspace}]
-mkdir -p ~/lab-os/week09/{scripts,logs,data}
-cd ~/lab-os/week09/scripts
+mkdir -p ~/lab-os/chapter07/{scripts,logs,data}
+cd ~/lab-os/chapter07/scripts
 \end{lstlisting}
 
   \item Create a script with nano:
@@ -146,7 +146,7 @@ chmod +x system-report.sh
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[Exercise 9.1]
+\begin{exercisebox}[Exercise 7.1]
 Modify \texttt{system-report.sh} so that it saves the output to a file named
 \texttt{report-YYYY-MM-DD.txt} while also displaying it in the terminal.
 Hint: use \texttt{tee}, which was introduced in the previous chapter.
@@ -235,7 +235,7 @@ and default values.
 \begin{enumerate}
   \item Create the script:
 \begin{lstlisting}[language=bash, caption={Creating system-info.sh}]
-nano ~/lab-os/week09/scripts/system-info.sh
+nano ~/lab-os/chapter07/scripts/system-info.sh
 \end{lstlisting}
 
   \item Type the following contents:
@@ -264,14 +264,14 @@ fi
   \item Save it, grant permission, and test it with different argument
     combinations:
 \begin{lstlisting}[language=bash, caption={Testing the script}]
-chmod +x ~/lab-os/week09/scripts/system-info.sh
+chmod +x ~/lab-os/chapter07/scripts/system-info.sh
 ./system-info.sh
 ./system-info.sh "Dian" 50
 ./system-info.sh "Dian" 10
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[Exercise 9.2]
+\begin{exercisebox}[Exercise 7.2]
 Create a script named \texttt{calculator.sh} that accepts three arguments:
 \texttt{<number1> <operator> <number2>} where the operator is one of
 \texttt{+}, \texttt{-}, \texttt{*}, or \texttt{/}. Example:
@@ -326,7 +326,7 @@ for ((I=1; I<=5; I++)); do
 done
 
 # loop over files
-for FILE in ~/lab-os/week09/scripts/*.sh; do
+for FILE in ~/lab-os/chapter07/scripts/*.sh; do
     echo "Script: $(basename "$FILE")"
 done
 
@@ -358,7 +358,7 @@ Objective: combine \texttt{if}, \texttt{for}, \texttt{while}, and
 \begin{enumerate}
   \item Create a grading script (using \texttt{if} and \texttt{for}):
 \begin{lstlisting}[language=bash, caption={Creating batch-grading.sh}]
-nano ~/lab-os/week09/scripts/batch-grading.sh
+nano ~/lab-os/chapter07/scripts/batch-grading.sh
 \end{lstlisting}
 
   \item Type the following contents:
@@ -393,13 +393,13 @@ echo "======================="
 
   \item Save it, grant permission, and run it:
 \begin{lstlisting}[language=bash, caption={Running the grading script}]
-chmod +x ~/lab-os/week09/scripts/batch-grading.sh
+chmod +x ~/lab-os/chapter07/scripts/batch-grading.sh
 ./batch-grading.sh
 \end{lstlisting}
 
   \item Create an interactive menu script (\texttt{while} + \texttt{case}):
 \begin{lstlisting}[language=bash, caption={Creating system-menu.sh}]
-nano ~/lab-os/week09/scripts/system-menu.sh
+nano ~/lab-os/chapter07/scripts/system-menu.sh
 \end{lstlisting}
 
   \item Type the following contents:
@@ -429,12 +429,12 @@ done
 
   \item Grant permission and run it, trying each option:
 \begin{lstlisting}[language=bash, caption={Running the menu}]
-chmod +x ~/lab-os/week09/scripts/system-menu.sh
+chmod +x ~/lab-os/chapter07/scripts/system-menu.sh
 ./system-menu.sh
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[Exercise 9.3]
+\begin{exercisebox}[Exercise 7.3]
 Add a summary section to the bottom of \texttt{batch-grading.sh} that shows
 the number of students in each grade (A, B, C, D, E) using a second
 \texttt{for} loop that iterates over the \texttt{STUDENTS} array.
@@ -510,7 +510,7 @@ Objective: create a function library file that can be loaded
 \begin{enumerate}
   \item Create the library file:
 \begin{lstlisting}[language=bash, caption={Creating lib-validation.sh}]
-nano ~/lab-os/week09/scripts/lib-validation.sh
+nano ~/lab-os/chapter07/scripts/lib-validation.sh
 \end{lstlisting}
 
   \item Type the following contents:
@@ -537,14 +537,14 @@ success() { echo "[OK]   $1"; }
 
   \item Create a script that uses the library:
 \begin{lstlisting}[language=bash, caption={Creating use-library.sh}]
-nano ~/lab-os/week09/scripts/use-library.sh
+nano ~/lab-os/chapter07/scripts/use-library.sh
 \end{lstlisting}
 
   \item Type the following contents:
 \begin{lstlisting}[language=bash, caption={Contents of use-library.sh}]
 #!/bin/bash
 # Load the library (similar to import in Java)
-source ~/lab-os/week09/scripts/lib-validation.sh
+source ~/lab-os/chapter07/scripts/lib-validation.sh
 
 NUMBER=$1
 FILE=$2
@@ -568,7 +568,7 @@ fi
 
   \item Grant permission and test every scenario:
 \begin{lstlisting}[language=bash, caption={Testing all scenarios}]
-chmod +x ~/lab-os/week09/scripts/use-library.sh
+chmod +x ~/lab-os/chapter07/scripts/use-library.sh
 ./use-library.sh 42 /etc/hostname
 ./use-library.sh abc /etc/hostname
 ./use-library.sh 42 /does-not-exist.txt
@@ -576,7 +576,7 @@ chmod +x ~/lab-os/week09/scripts/use-library.sh
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[Exercise 9.4]
+\begin{exercisebox}[Exercise 7.4]
 Add a \texttt{confirm()} function to \texttt{lib-validation.sh}. This
 function should display a question, read Y/N input from the user, return
 \texttt{0} for Y and \texttt{1} for N. Create a demo script that calls this
@@ -623,7 +623,7 @@ integrates all the earlier concepts.
 \begin{enumerate}
   \item Create the script:
 \begin{lstlisting}[language=bash, caption={Creating backup-data.sh}]
-nano ~/lab-os/week09/scripts/backup-data.sh
+nano ~/lab-os/chapter07/scripts/backup-data.sh
 \end{lstlisting}
 
   \item Type the following contents:
@@ -676,15 +676,15 @@ fi
 
   \item Grant permission and test it:
 \begin{lstlisting}[language=bash, caption={Testing the backup script}]
-chmod +x ~/lab-os/week09/scripts/backup-data.sh
-cd ~/lab-os/week09/scripts
+chmod +x ~/lab-os/chapter07/scripts/backup-data.sh
+cd ~/lab-os/chapter07/scripts
 
 # Without options
-./backup-data.sh ~/lab-os/week09/data ~/lab-os/week09/logs
+./backup-data.sh ~/lab-os/chapter07/data ~/lab-os/chapter07/logs
 
 # With verbose and compression + logging to file
 ./backup-data.sh -v -c -l ../logs/backup.log \
-  ~/lab-os/week09/data ~/lab-os/week09/logs
+  ~/lab-os/chapter07/data ~/lab-os/chapter07/logs
 
 cat ../logs/backup.log
 \end{lstlisting}
@@ -739,7 +739,7 @@ Objective: use debugging techniques to analyze and fix a script.
 \begin{enumerate}
   \item Create the script to analyze:
 \begin{lstlisting}[language=bash, caption={Creating debug-practice.sh}]
-nano ~/lab-os/week09/scripts/debug-practice.sh
+nano ~/lab-os/chapter07/scripts/debug-practice.sh
 \end{lstlisting}
 
   \item Type the following contents:
@@ -772,7 +772,7 @@ fi
 
   \item Check the syntax, then run it with tracing:
 \begin{lstlisting}[language=bash, caption={Analyzing the script with debugging}]
-chmod +x ~/lab-os/week09/scripts/debug-practice.sh
+chmod +x ~/lab-os/chapter07/scripts/debug-practice.sh
 bash -n debug-practice.sh && echo "Syntax OK"
 bash -x debug-practice.sh /etc 10
 ./debug-practice.sh /var 50
@@ -780,7 +780,7 @@ bash -x debug-practice.sh /etc 10
 \end{lstlisting}
 \end{enumerate}
 
-\begin{exercisebox}[Exercise 9.5]
+\begin{exercisebox}[Exercise 7.5]
 The script \texttt{debug-practice.sh} does not handle missing directories.
 Fix it by adding:
 \begin{itemize}
@@ -865,7 +865,7 @@ log "Done."
 \label{sec:lab-assignment-bash-prog}
 
 \begin{warningbox}
-Do the assignments in \texttt{\$HOME/lab-os/week09/}. Put scripts in
+Do the assignments in \texttt{\$HOME/lab-os/chapter07/}. Put scripts in
 \texttt{scripts/} and output files in \texttt{logs/}.
 \end{warningbox}
 

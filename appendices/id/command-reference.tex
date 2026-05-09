@@ -5,50 +5,372 @@
 \chapter{Referensi Perintah Linux}
 \label{app:command-reference}
 
-Lampiran ini berisi daftar perintah Linux yang sering digunakan beserta penjelasan
-singkat dan contoh penggunaannya.
+Lampiran ini merangkum perintah Linux yang paling sering digunakan sepanjang buku.
+Gunakan lampiran ini sebagai panduan cepat, lalu baca \cmd{man nama-perintah}
+atau \cmd{nama-perintah --help} ketika kamu memerlukan penjelasan yang lebih rinci.
 
 %% ------------------------------------------------------------------------
 \section{Perintah Sistem File}
 
-\subsection{ls - List Directory Contents}
+\paragraph*{ls --- Menampilkan Isi Direktori}
+\cmd{ls} menampilkan isi direktori dalam berbagai format.
 \begin{lstlisting}[language=bash]
-ls -la          # List semua file dengan detail
-ls -lh          # List dengan ukuran human-readable
-ls -lt          # Sort berdasarkan waktu modifikasi
+ls -la
+ls -lh
+ls -lt
 \end{lstlisting}
 
-\subsection{cd - Change Directory}
+\paragraph*{cd --- Berpindah Direktori}
+\cmd{cd} digunakan untuk berpindah dari satu direktori ke direktori lain.
 \begin{lstlisting}[language=bash]
-cd /path/to/dir # Pindah ke direktori
-cd ..           # Pindah ke parent directory
-cd ~            # Pindah ke home directory
-cd -            # Pindah ke direktori sebelumnya
+cd /etc
+cd ..
+cd ~
+cd -
 \end{lstlisting}
 
-\subsection{pwd - Print Working Directory}
+\paragraph*{pwd --- Menampilkan Direktori Saat Ini}
+\cmd{pwd} menampilkan path direktori kerja saat ini.
 \begin{lstlisting}[language=bash]
-pwd             # Tampilkan direktori saat ini
+pwd
 \end{lstlisting}
 
-%% [Tambahkan lebih banyak perintah di sini]
+\paragraph*{tree --- Menampilkan Struktur Direktori}
+\cmd{tree} menampilkan isi direktori dalam bentuk pohon.
+\begin{lstlisting}[language=bash]
+tree
+tree -L 2
+tree ~/lab-os
+\end{lstlisting}
+
+\paragraph*{stat --- Menampilkan Metadata Berkas}
+\cmd{stat} menampilkan ukuran, inode, permission, dan waktu berkas.
+\begin{lstlisting}[language=bash]
+stat laporan.txt
+stat /etc/passwd
+\end{lstlisting}
 
 %% ------------------------------------------------------------------------
 \section{Perintah Manajemen File}
 
-%% [Konten akan diisi di sini]
+\paragraph*{cp --- Menyalin File dan Direktori}
+\cmd{cp} digunakan untuk menyalin file atau direktori.
+\begin{lstlisting}[language=bash]
+cp file1.txt salinan.txt
+cp laporan.txt ~/arsip/
+cp -r proyek/ backup-proyek/
+\end{lstlisting}
+
+\paragraph*{mv --- Memindahkan dan Mengganti Nama}
+\cmd{mv} memindahkan file atau mengganti namanya.
+\begin{lstlisting}[language=bash]
+mv draft.txt final.txt
+mv laporan.txt ~/arsip/
+mv gambar/ ~/backup/
+\end{lstlisting}
+
+\paragraph*{rm --- Menghapus File dan Direktori}
+\cmd{rm} menghapus file, dan dengan opsi tertentu juga direktori.
+\begin{lstlisting}[language=bash]
+rm catatan.txt
+rm -r folder-lama/
+rm -rf cache-sementara/
+\end{lstlisting}
+
+\paragraph*{mkdir --- Membuat Direktori}
+\cmd{mkdir} membuat satu atau lebih direktori baru.
+\begin{lstlisting}[language=bash]
+mkdir arsip
+mkdir -p proyek/{dokumen,skrip,output}
+mkdir -p ~/lab-os/chapter04-files
+\end{lstlisting}
+
+\paragraph*{touch --- Membuat Berkas Kosong dan Mengubah Timestamp}
+\cmd{touch} membuat file kosong atau memperbarui timestamp file yang ada.
+\begin{lstlisting}[language=bash]
+touch catatan.txt
+touch file1.txt file2.txt
+touch -t 202605091030 laporan.txt
+\end{lstlisting}
+
+\paragraph*{ln --- Membuat Hard Link dan Symbolic Link}
+\cmd{ln} membuat hard link atau symbolic link.
+\begin{lstlisting}[language=bash]
+ln sumber.txt salinan-hard.txt
+ln -s /var/log/syslog log-sistem
+ln -s ~/lab-os/chapter04-files proyek-link
+\end{lstlisting}
+
+\paragraph*{find --- Mencari File}
+\cmd{find} mencari file berdasarkan nama, tipe, ukuran, atau waktu.
+\begin{lstlisting}[language=bash]
+find . -name "*.txt"
+find ~/lab-os -type d
+find /var/log -mtime -1
+\end{lstlisting}
+
+\paragraph*{locate --- Mencari File dari Basis Data}
+\cmd{locate} mencari file dengan cepat dari basis data yang sudah diindeks.
+\begin{lstlisting}[language=bash]
+locate bashrc
+locate nginx.conf
+sudo updatedb
+\end{lstlisting}
+
+\paragraph*{tar --- Membuat dan Mengekstrak Arsip}
+\cmd{tar} dipakai untuk membuat, melihat, dan mengekstrak arsip.
+\begin{lstlisting}[language=bash]
+tar -czf backup.tar.gz data-sumber/
+tar -xzf backup.tar.gz
+tar -tf backup.tar.gz
+\end{lstlisting}
+
+\paragraph*{gzip --- Mengompresi File}
+\cmd{gzip} mengompresi file tunggal menggunakan format gzip.
+\begin{lstlisting}[language=bash]
+gzip laporan.log
+gzip -k laporan.log
+gunzip laporan.log.gz
+\end{lstlisting}
+
+\paragraph*{zip --- Membuat Arsip ZIP}
+\cmd{zip} membuat arsip dalam format ZIP.
+\begin{lstlisting}[language=bash]
+zip arsip.zip laporan.txt
+zip -r proyek.zip proyek/
+zip -9 hasil.zip data.csv
+\end{lstlisting}
+
+\paragraph*{unzip --- Mengekstrak Arsip ZIP}
+\cmd{unzip} mengekstrak isi arsip ZIP.
+\begin{lstlisting}[language=bash]
+unzip arsip.zip
+unzip arsip.zip -d hasil-ekstrak/
+unzip -l arsip.zip
+\end{lstlisting}
 
 %% ------------------------------------------------------------------------
 \section{Perintah Manajemen Proses}
 
-%% [Konten akan diisi di sini]
+\paragraph*{ps --- Menampilkan Proses}
+\cmd{ps} menampilkan snapshot proses yang sedang berjalan.
+\begin{lstlisting}[language=bash]
+ps
+ps aux
+ps aux | grep ssh
+\end{lstlisting}
+
+\paragraph*{top --- Memantau Proses Secara Real-Time}
+\cmd{top} memantau penggunaan CPU, memori, dan proses aktif.
+\begin{lstlisting}[language=bash]
+top
+top -b -n 1
+top -u namauser
+\end{lstlisting}
+
+\paragraph*{htop --- Pemantauan Proses Interaktif}
+\cmd{htop} menyediakan tampilan proses yang lebih interaktif dari \cmd{top}.
+\begin{lstlisting}[language=bash]
+htop
+htop -u namauser
+\end{lstlisting}
+
+\paragraph*{kill --- Mengirim Sinyal ke Proses}
+\cmd{kill} mengirim sinyal ke proses berdasarkan PID.
+\begin{lstlisting}[language=bash]
+kill 1234
+kill -TERM 1234
+kill -9 1234
+\end{lstlisting}
+
+\paragraph*{pkill --- Menghentikan Proses Berdasarkan Nama}
+\cmd{pkill} mengirim sinyal ke proses berdasarkan nama proses.
+\begin{lstlisting}[language=bash]
+pkill firefox
+pkill -f "python3 -m http.server"
+pkill -u namauser bash
+\end{lstlisting}
+
+\paragraph*{jobs --- Menampilkan Job Shell}
+\cmd{jobs} menampilkan job yang sedang dikelola oleh shell saat ini.
+\begin{lstlisting}[language=bash]
+jobs
+jobs -l
+\end{lstlisting}
+
+\paragraph*{bg --- Menjalankan Job di Latar Belakang}
+\cmd{bg} melanjutkan job yang berhenti ke mode background.
+\begin{lstlisting}[language=bash]
+bg
+bg %1
+\end{lstlisting}
+
+\paragraph*{fg --- Membawa Job ke Foreground}
+\cmd{fg} memindahkan job background ke foreground.
+\begin{lstlisting}[language=bash]
+fg
+fg %1
+\end{lstlisting}
+
+\paragraph*{nice --- Menjalankan Proses dengan Prioritas Tertentu}
+\cmd{nice} menjalankan proses dengan nilai prioritas CPU tertentu.
+\begin{lstlisting}[language=bash]
+nice -n 10 ./proses-berat.sh
+nice -n -5 python3 analisis.py
+\end{lstlisting}
+
+\paragraph*{renice --- Mengubah Prioritas Proses}
+\cmd{renice} mengubah nilai prioritas proses yang sudah berjalan.
+\begin{lstlisting}[language=bash]
+renice 5 -p 1234
+sudo renice -10 -p 1234
+\end{lstlisting}
 
 %% ------------------------------------------------------------------------
 \section{Perintah Jaringan}
 
-%% [Konten akan diisi di sini]
+\paragraph*{ip --- Menampilkan dan Mengatur Jaringan}
+\cmd{ip} digunakan untuk melihat interface, alamat, dan route jaringan.
+\begin{lstlisting}[language=bash]
+ip addr show
+ip link show
+ip route
+\end{lstlisting}
+
+\paragraph*{ss --- Menampilkan Socket dan Port}
+\cmd{ss} menampilkan koneksi jaringan dan port yang aktif.
+\begin{lstlisting}[language=bash]
+ss -tlnp
+ss -an
+ss -tulpn | grep :22
+\end{lstlisting}
+
+\paragraph*{ping --- Menguji Konektivitas}
+\cmd{ping} menguji apakah host lain dapat dijangkau melalui jaringan.
+\begin{lstlisting}[language=bash]
+ping 8.8.8.8
+ping -c 4 google.com
+ping -c 2 localhost
+\end{lstlisting}
+
+\paragraph*{curl --- Mengambil Data dari URL}
+\cmd{curl} mengambil data dari URL dan sering dipakai untuk menguji API.
+\begin{lstlisting}[language=bash]
+curl https://example.com
+curl -I https://example.com
+curl -O https://example.com/file.txt
+\end{lstlisting}
+
+\paragraph*{wget --- Mengunduh File}
+\cmd{wget} digunakan untuk mengunduh file dari web atau FTP.
+\begin{lstlisting}[language=bash]
+wget https://example.com/file.iso
+wget -c https://example.com/file.iso
+wget -O salinan.html https://example.com
+\end{lstlisting}
+
+\paragraph*{dig --- Memeriksa DNS}
+\cmd{dig} memeriksa resolusi DNS dan catatan domain.
+\begin{lstlisting}[language=bash]
+dig example.com
+dig example.com MX
+dig @8.8.8.8 example.com
+\end{lstlisting}
+
+\paragraph*{scp --- Menyalin File lewat SSH}
+\cmd{scp} menyalin file antarhost melalui koneksi SSH.
+\begin{lstlisting}[language=bash]
+scp file.txt user@server:/home/user/
+scp user@server:/var/log/syslog .
+scp -r proyek/ user@server:/home/user/
+\end{lstlisting}
+
+\paragraph*{ssh --- Mengakses Host Jarak Jauh}
+\cmd{ssh} membuka sesi shell aman ke host lain.
+\begin{lstlisting}[language=bash]
+ssh user@server
+ssh -p 2222 user@server
+ssh -i ~/.ssh/id_ed25519 user@server
+\end{lstlisting}
 
 %% ------------------------------------------------------------------------
 \section{Perintah Sistem}
 
-%% [Konten akan diisi di sini]
+\paragraph*{uname --- Menampilkan Informasi Kernel}
+\cmd{uname} menampilkan informasi kernel dan arsitektur sistem.
+\begin{lstlisting}[language=bash]
+uname -a
+uname -r
+uname -m
+\end{lstlisting}
+
+\paragraph*{df --- Menampilkan Kapasitas Filesystem}
+\cmd{df} menampilkan kapasitas dan penggunaan filesystem yang ter-mount.
+\begin{lstlisting}[language=bash]
+df -h
+df -T
+df -h /home
+\end{lstlisting}
+
+\paragraph*{du --- Menampilkan Ukuran Direktori}
+\cmd{du} menghitung ukuran file atau direktori.
+\begin{lstlisting}[language=bash]
+du -sh ~/lab-os
+du -h --max-depth=1 /var/log
+du -sh *
+\end{lstlisting}
+
+\paragraph*{free --- Menampilkan Penggunaan Memori}
+\cmd{free} menampilkan penggunaan RAM dan swap.
+\begin{lstlisting}[language=bash]
+free -h
+free -m
+watch -n 1 free -h
+\end{lstlisting}
+
+\paragraph*{uptime --- Menampilkan Lama Sistem Menyala}
+\cmd{uptime} menampilkan lama sistem aktif dan beban rata-rata.
+\begin{lstlisting}[language=bash]
+uptime
+uptime -p
+uptime -s
+\end{lstlisting}
+
+\paragraph*{journalctl --- Membaca Log systemd}
+\cmd{journalctl} membaca log yang dikelola oleh systemd journal.
+\begin{lstlisting}[language=bash]
+journalctl -b
+journalctl -u ssh
+journalctl -u nginx -n 50
+\end{lstlisting}
+
+\paragraph*{systemctl --- Mengelola Layanan}
+\cmd{systemctl} mengelola layanan dan unit systemd.
+\begin{lstlisting}[language=bash]
+systemctl status ssh
+sudo systemctl restart nginx
+systemctl list-units --type=service
+\end{lstlisting}
+
+\paragraph*{lsblk --- Menampilkan Perangkat Blok}
+\cmd{lsblk} menampilkan disk, partisi, dan mount point.
+\begin{lstlisting}[language=bash]
+lsblk
+lsblk -f
+lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINT
+\end{lstlisting}
+
+\paragraph*{mount --- Me-mount Filesystem}
+\cmd{mount} memasang filesystem ke sebuah mount point.
+\begin{lstlisting}[language=bash]
+mount | grep /dev/sdb1
+sudo mount /dev/sdb1 /mnt/data
+sudo mount -o ro /dev/sdb1 /mnt/data
+\end{lstlisting}
+
+\paragraph*{umount --- Melepas Mount Filesystem}
+\cmd{umount} melepaskan filesystem dari mount point.
+\begin{lstlisting}[language=bash]
+sudo umount /mnt/data
+sudo umount /dev/sdb1
+\end{lstlisting}
