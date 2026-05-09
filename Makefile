@@ -7,6 +7,10 @@
 MAIN_ID = main-id
 MAIN_EN = main-en
 
+# Guide documents
+GUIDE_ID = docs/id-guide
+GUIDE_EN = docs/en-guide
+
 # PDF Viewer
 VIEWER = zathura
 
@@ -32,7 +36,8 @@ CHAPTERS = week01-introduction \
 # Target Utama
 # ========================================================================
 
-.PHONY: all id en both clean cleanall view view-id view-en watch watch-id watch-en \
+.PHONY: all id en both guides guide-id guide-en \
+        clean cleanall view view-id view-en watch watch-id watch-en \
         quick quick-id quick-en checkerrors checkref wordcount help check-deps \
         chapters chapters-id chapters-en
 
@@ -47,6 +52,29 @@ en: $(MAIN_EN).pdf
 
 # Build both versions
 both: id en
+
+# ========================================================================
+# Guide Documents
+# ========================================================================
+
+# Build both guides
+guides: guide-id guide-en
+
+# Build Indonesian guide
+guide-id: $(GUIDE_ID).pdf
+
+# Build English guide
+guide-en: $(GUIDE_EN).pdf
+
+$(GUIDE_ID).pdf: $(GUIDE_ID).tex
+	@echo "Kompilasi panduan Indonesia..."
+	$(LATEXMK) -pdf -interaction=nonstopmode -output-directory=docs $(GUIDE_ID).tex
+	@echo "Selesai: $(GUIDE_ID).pdf"
+
+$(GUIDE_EN).pdf: $(GUIDE_EN).tex
+	@echo "Compiling English guide..."
+	$(LATEXMK) -pdf -interaction=nonstopmode -output-directory=docs $(GUIDE_EN).tex
+	@echo "Done: $(GUIDE_EN).pdf"
 
 # Kompilasi Indonesian PDF
 $(MAIN_ID).pdf: $(MAIN_ID).tex preamble.tex references.bib
@@ -134,6 +162,8 @@ clean:
 	rm -f chapters/id/*.aux chapters/en/*.aux
 	rm -f frontmatter/id/*.aux frontmatter/en/*.aux
 	rm -f appendices/id/*.aux appendices/en/*.aux
+	$(LATEXMK) -c -output-directory=docs $(GUIDE_ID).tex $(GUIDE_EN).tex
+	rm -f docs/*.aux docs/*.log docs/*.out docs/*.toc docs/*.fdb_latexmk docs/*.fls
 	@echo "File temporary telah dibersihkan."
 
 # Bersihkan semua file termasuk PDF
@@ -145,6 +175,8 @@ cleanall:
 	rm -f chapters/id/*.aux chapters/en/*.aux
 	rm -f frontmatter/id/*.aux frontmatter/en/*.aux
 	rm -f appendices/id/*.aux appendices/en/*.aux
+	$(LATEXMK) -C -output-directory=docs $(GUIDE_ID).tex $(GUIDE_EN).tex
+	rm -f docs/*.aux docs/*.log docs/*.out docs/*.toc docs/*.fdb_latexmk docs/*.fls
 	rm -rf output/
 	@echo "Semua file output telah dihapus."
 
@@ -236,7 +268,12 @@ help:
 	@echo "  make quick-en         - Kompilasi cepat English"
 	@echo "  make watch-id         - Watch mode Indonesia"
 	@echo "  make watch-en         - Watch mode English"
-	@echo "  make clean            - Hapus file temporary"
+	@echo ""
+	@echo "  make guides           - Kompilasi semua panduan (ID & EN)"
+	@echo "  make guide-id         - Kompilasi panduan Indonesia (docs/id-guide.pdf)"
+	@echo "  make guide-en         - Kompilasi panduan English (docs/en-guide.pdf)"
+	@echo ""
+	@echo "  make clean            - Hapus file temporary (termasuk docs/)"
 	@echo "  make cleanall         - Hapus semua file termasuk PDF"
 	@echo "  make view-id          - Buka PDF Indonesia"
 	@echo "  make view-en          - Buka PDF English"
@@ -252,10 +289,13 @@ help:
 	@echo ""
 	@echo "Contoh penggunaan:"
 	@echo "  make both             # Kompilasi Indonesia & English"
+	@echo "  make guides           # Kompilasi semua panduan"
 	@echo "  make view-en          # Kompilasi dan buka PDF English"
 	@echo "  make watch-id         # Watch mode untuk development Indonesia"
 	@echo ""
 	@echo "Output files:"
 	@echo "  $(MAIN_ID).pdf        - Versi Indonesia"
 	@echo "  $(MAIN_EN).pdf        - Versi English"
+	@echo "  $(GUIDE_ID).pdf       - Panduan Indonesia"
+	@echo "  $(GUIDE_EN).pdf       - Panduan English"
 	@echo ""

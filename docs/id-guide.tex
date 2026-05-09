@@ -1,0 +1,735 @@
+%% ============================================================
+%% Panduan GitHub Classroom - Versi Bahasa Indonesia
+%% Pengumpulan Tugas dengan Autograding via GitHub Actions
+%% ============================================================
+\documentclass[
+    a4paper,
+    11pt,
+    parskip=half
+]{scrartcl}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage[scaled=1.05]{inconsolata}
+\usepackage{microtype}
+\usepackage[english]{babel}
+\babelprovide[import]{indonesian}
+\selectlanguage{indonesian}
+\usepackage{geometry}
+\geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=3cm}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!70!black}
+\usepackage{scrlayer-scrpage}
+\usepackage{fontawesome5}
+
+%% Warna
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+
+%% Style listing
+\lstdefinestyle{bashstyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta}\bfseries,
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    captionpos=b,
+    numbers=none,
+    frame=single,
+    rulecolor=\color{black!25},
+    xleftmargin=1em,
+    framexleftmargin=0.5em,
+    aboveskip=6pt,
+    belowskip=6pt
+}
+\lstset{style=bashstyle}
+
+%% Box environments
+\tcbuselibrary{skins,breakable}
+
+\newtcolorbox{notebox}{
+    colback=blue!5!white, colframe=blue!60!black,
+    title={\faInfoCircle\quad Catatan}, fonttitle=\bfseries\small,
+    top=4pt, bottom=4pt, toptitle=3pt, bottomtitle=3pt
+}
+\newtcolorbox{warningbox}{
+    colback=red!5!white, colframe=red!60!black,
+    title={\faExclamationTriangle\quad Perhatian}, fonttitle=\bfseries\small,
+    top=4pt, bottom=4pt, toptitle=3pt, bottomtitle=3pt
+}
+\newtcolorbox{tipbox}{
+    colback=green!5!white, colframe=green!60!black,
+    title={\faLightbulb\quad Tips}, fonttitle=\bfseries\small,
+    top=4pt, bottom=4pt, toptitle=3pt, bottomtitle=3pt
+}
+\newtcolorbox{stepbox}[1]{
+    colback=orange!5!white, colframe=orange!60!black,
+    title={\faCheckSquare\quad #1}, fonttitle=\bfseries\small,
+    top=4pt, bottom=4pt, toptitle=3pt, bottomtitle=3pt
+}
+
+%% List spacing
+\setlist{topsep=3pt, parsep=0pt, itemsep=3pt}
+
+%% Header/footer
+\clearpairofpagestyles
+\ohead{\small Panduan GitHub Classroom}
+\ofoot[\pagemark]{\pagemark}
+\pagestyle{scrheadings}
+
+%% ============================================================
+\begin{document}
+
+\begin{center}
+    {\LARGE\bfseries Panduan Pengumpulan Tugas}\\[0.4em]
+    {\large GitHub Classroom dengan Autograding}\\[0.3em]
+    {\normalsize Jurusan Teknologi Informasi --- Polinema}\\[0.2em]
+    {\small\color{gray} Panduan untuk Pemula}
+\end{center}
+
+\vspace{0.5em}
+\hrule
+\vspace{1em}
+
+\tableofcontents
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+%% ============================================================
+\section{Pendahuluan}
+
+Panduan ini menjelaskan langkah-langkah yang perlu dilakukan untuk mengumpulkan tugas menggunakan \textbf{GitHub Classroom}. Sistem ini menggunakan \textbf{GitHub Actions} untuk memeriksa jawaban Anda secara otomatis (autograding), sehingga Anda dapat langsung mengetahui apakah solusi Anda sudah benar.
+
+\begin{notebox}
+Jika Anda belum pernah menggunakan GitHub sebelumnya, jangan khawatir. Panduan ini dirancang khusus untuk pemula dan akan membimbing Anda dari awal hingga akhir.
+\end{notebox}
+
+\subsection{Yang Akan Anda Pelajari}
+
+\begin{itemize}
+    \item Membuat akun GitHub
+    \item Menyiapkan SSH Key agar komputer Anda dapat terhubung ke GitHub dengan aman
+    \item Menerima dan mengkloning tugas dari GitHub Classroom
+    \item Mengerjakan dan mengumpulkan tugas melalui \texttt{git push}
+    \item Melihat hasil autograding
+\end{itemize}
+
+\subsection{Prasyarat}
+
+\begin{itemize}
+    \item Komputer dengan akses internet
+    \item Terminal/Command Prompt (sudah tersedia di semua sistem operasi)
+    \item Git sudah terinstal (jika belum, lihat Bagian~\ref{sec:install-git})
+\end{itemize}
+
+%% ============================================================
+\section{Membuat Akun GitHub}
+\label{sec:github-account}
+
+Jika Anda sudah memiliki akun GitHub, lewati bagian ini dan lanjut ke Bagian~\ref{sec:install-git}.
+
+\begin{stepbox}{Langkah: Mendaftar GitHub}
+\begin{enumerate}
+    \item Buka browser dan kunjungi \url{https://github.com}
+    \item Klik tombol \textbf{Sign up} di pojok kanan atas
+    \item Masukkan \textbf{alamat email} Anda (gunakan email yang aktif)
+    \item Buat \textbf{password} yang kuat (minimal 8 karakter, kombinasi huruf dan angka)
+    \item Pilih \textbf{username} yang unik. Username ini akan menjadi identitas Anda di GitHub.
+          Contoh: \texttt{budi-santoso} atau \texttt{anisa2024}
+    \item Selesaikan verifikasi CAPTCHA yang muncul
+    \item Buka email Anda dan klik tautan verifikasi yang dikirim GitHub
+\end{enumerate}
+\end{stepbox}
+
+\begin{tipbox}
+Gunakan email kampus Anda (\texttt{nim@student.polinema.ac.id}) untuk mendaftar. Mahasiswa berhak mendapatkan \textbf{GitHub Education Pack} yang memberikan fitur premium secara gratis.
+\end{tipbox}
+
+%% ============================================================
+\section{Instalasi Git}
+\label{sec:install-git}
+
+Git adalah perangkat lunak yang digunakan untuk mengelola versi kode. GitHub Classroom menggunakan Git untuk menerima tugas Anda.
+
+\subsection*{Cek apakah Git sudah terinstal}
+
+Buka terminal dan ketik:
+
+\begin{lstlisting}[language=bash]
+git --version
+\end{lstlisting}
+
+Jika muncul pesan seperti \texttt{git version 2.x.x}, berarti Git sudah terinstal. Lanjut ke Bagian~\ref{sec:ssh-key}.
+
+\subsection*{Instalasi Git di Ubuntu/Debian Linux}
+
+\begin{lstlisting}[language=bash]
+sudo apt update
+sudo apt install git -y
+\end{lstlisting}
+
+\subsection*{Instalasi Git di Windows}
+
+Unduh installer dari \url{https://git-scm.com/download/win} dan jalankan. Gunakan pengaturan default (klik Next terus hingga selesai).
+
+\subsection*{Konfigurasi identitas Git}
+
+Setelah Git terinstal, konfigurasikan nama dan email Anda. Perintah ini hanya perlu dijalankan sekali:
+
+\begin{lstlisting}[language=bash]
+git config --global user.name "Nama Lengkap Anda"
+git config --global user.email "email@example.com"
+\end{lstlisting}
+
+\begin{notebox}
+Ganti \texttt{"Nama Lengkap Anda"} dengan nama Anda yang sebenarnya, dan \texttt{"email@example.com"} dengan email yang sama seperti yang digunakan saat mendaftar GitHub.
+\end{notebox}
+
+%% ============================================================
+\section{Menyiapkan SSH Key}
+\label{sec:ssh-key}
+
+\subsection{Apa itu SSH Key?}
+
+SSH Key adalah sepasang kunci digital yang digunakan untuk memverifikasi identitas Anda secara otomatis saat terhubung ke GitHub. Bayangkan seperti kartu akses: Anda menyimpan satu kunci di komputer Anda (kunci privat) dan mendaftarkan kunci pasangannya ke GitHub (kunci publik). Setiap kali Anda mengirim data ke GitHub, sistem secara otomatis mencocokkan kedua kunci tersebut tanpa perlu memasukkan password setiap saat.
+
+\begin{warningbox}
+\textbf{Jangan pernah membagikan kunci privat} (\texttt{id\_ed25519}) kepada siapapun. Yang boleh dibagikan hanya kunci publik (\texttt{id\_ed25519.pub}).
+\end{warningbox}
+
+\subsection{Membuat SSH Key}
+\label{sec:generate-key}
+
+\begin{stepbox}{Langkah: Membuat SSH Key Baru}
+\begin{enumerate}
+    \item Buka terminal
+    \item Jalankan perintah berikut. Ganti \texttt{email@example.com} dengan email GitHub Anda:
+
+\begin{lstlisting}[language=bash]
+ssh-keygen -t ed25519 -C "email@example.com"
+\end{lstlisting}
+
+    \item Anda akan diminta memilih lokasi penyimpanan. Tekan \textbf{Enter} untuk menggunakan lokasi default:
+\begin{lstlisting}
+Enter file in which to save the key (/home/user/.ssh/id_ed25519):
+\end{lstlisting}
+
+    \item Anda akan diminta membuat \textit{passphrase} (kata sandi tambahan). Anda boleh mengisi atau mengosongkannya. Jika diisi, Anda akan diminta memasukkannya setiap kali menggunakan kunci ini:
+\begin{lstlisting}
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+\end{lstlisting}
+
+    \item Jika berhasil, akan muncul output seperti ini:
+\begin{lstlisting}
+Your identification has been saved in /home/user/.ssh/id_ed25519
+Your public key has been saved in /home/user/.ssh/id_ed25519.pub
+The key fingerprint is:
+SHA256:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx email@example.com
+\end{lstlisting}
+\end{enumerate}
+\end{stepbox}
+
+\begin{notebox}
+Jika sistem Anda sangat lama dan tidak mendukung Ed25519, gunakan perintah RSA berikut sebagai alternatif:
+\begin{lstlisting}[language=bash]
+ssh-keygen -t rsa -b 4096 -C "email@example.com"
+\end{lstlisting}
+Dalam kasus ini, file kunci akan bernama \texttt{id\_rsa} dan \texttt{id\_rsa.pub}.
+\end{notebox}
+
+\subsection{Menambahkan SSH Key ke ssh-agent}
+\label{sec:ssh-agent}
+
+\textit{ssh-agent} adalah program yang menyimpan kunci SSH di memori sehingga Anda tidak perlu memasukkan passphrase berulang kali. Perintahnya sama untuk Ubuntu VM maupun WSL.
+
+\begin{stepbox}{Langkah: Mengaktifkan ssh-agent (Ubuntu VM)}
+\begin{enumerate}
+    \item Jalankan ssh-agent:
+\begin{lstlisting}[language=bash]
+eval "$(ssh-agent -s)"
+\end{lstlisting}
+    Output yang diharapkan: \texttt{Agent pid 12345} (angkanya bisa berbeda)
+
+    \item Tambahkan kunci privat ke agent:
+\begin{lstlisting}[language=bash]
+ssh-add ~/.ssh/id_ed25519
+\end{lstlisting}
+    Output yang diharapkan: \texttt{Identity added: /home/user/.ssh/id\_ed25519}
+\end{enumerate}
+\end{stepbox}
+
+\begin{stepbox}{Langkah: Mengaktifkan ssh-agent (WSL)}
+Perintahnya identik dengan Ubuntu VM, namun harus dijalankan ulang \textbf{setiap kali} membuka terminal WSL baru.
+\begin{enumerate}
+    \item Buka WSL: tekan \textbf{Windows + S}, ketik \texttt{Ubuntu} atau \texttt{wsl}, lalu tekan Enter
+    \item Jalankan ssh-agent:
+\begin{lstlisting}[language=bash]
+eval "$(ssh-agent -s)"
+\end{lstlisting}
+    \item Tambahkan kunci privat:
+\begin{lstlisting}[language=bash]
+ssh-add ~/.ssh/id_ed25519
+\end{lstlisting}
+\end{enumerate}
+\end{stepbox}
+
+\begin{tipbox}
+Agar ssh-agent di WSL aktif otomatis setiap membuka terminal, tambahkan baris berikut ke \texttt{\textasciitilde/.bashrc} dengan cara menjalankan perintah ini sekali saja:
+\begin{lstlisting}[language=bash]
+echo 'eval "$(ssh-agent -s)" > /dev/null' >> ~/.bashrc
+echo 'ssh-add ~/.ssh/id_ed25519 > /dev/null 2>&1' >> ~/.bashrc
+source ~/.bashrc
+\end{lstlisting}
+\end{tipbox}
+
+\subsection{Menyalin Kunci Publik ke GitHub}
+\label{sec:add-to-github}
+
+SSH key Anda dibuat di dalam Ubuntu (baik di VM maupun WSL). Karena itu, Anda perlu memindahkan isi kunci publik ke halaman GitHub. Pilih metode sesuai lingkungan yang Anda gunakan.
+
+\begin{notebox}
+\textbf{Jika menggunakan WSL}: langsung gunakan \textbf{Metode D} --- paling mudah, hanya satu perintah.\\
+\textbf{Jika menggunakan Ubuntu VM}: gunakan \textbf{Metode A} (buka browser di dalam VM) atau Metode B/C jika tidak ada browser di VM.
+\end{notebox}
+
+\subsubsection*{Metode A: Buka GitHub Langsung dari Browser di Ubuntu VM (Direkomendasikan)}
+
+Cara termudah adalah membuka GitHub langsung dari browser \textbf{di dalam Ubuntu VM} (misalnya Firefox). Dengan cara ini, Anda bisa langsung salin-tempel tanpa perlu memikirkan clipboard antar sistem.
+
+\begin{stepbox}{Langkah: Salin Kunci dan Daftarkan via Browser Ubuntu}
+\begin{enumerate}
+    \item Di terminal Ubuntu, tampilkan isi kunci publik:
+\begin{lstlisting}[language=bash]
+cat ~/.ssh/id_ed25519.pub
+\end{lstlisting}
+    Akan muncul satu baris teks panjang seperti:
+\begin{lstlisting}
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... email@example.com
+\end{lstlisting}
+
+    \item Blok seluruh teks tersebut dengan mouse, lalu tekan \textbf{Ctrl+Shift+C} untuk menyalin (di sebagian besar emulator terminal Linux, ini adalah pintasan salin)
+
+    \item Buka \textbf{Firefox} (atau browser lain) di dalam Ubuntu VM. Jika belum ada, instal dulu:
+\begin{lstlisting}[language=bash]
+sudo apt install firefox -y
+\end{lstlisting}
+
+    \item Di Firefox, buka \url{https://github.com} dan masuk ke akun Anda
+
+    \item Klik foto profil di pojok kanan atas, pilih \textbf{Settings}
+
+    \item Di menu kiri, klik \textbf{SSH and GPG keys}, lalu klik \textbf{New SSH key}
+
+    \item Isi formulir:
+        \begin{itemize}
+            \item \textbf{Title}: misalnya \texttt{Ubuntu VM Lab}
+            \item \textbf{Key}: klik di kolom Key, lalu tekan \textbf{Ctrl+Shift+V} untuk menempel
+        \end{itemize}
+
+    \item Klik \textbf{Add SSH key}
+\end{enumerate}
+\end{stepbox}
+
+\subsubsection*{Metode B: Aktifkan Shared Clipboard VirtualBox (Untuk Pengguna Browser Windows)}
+
+Jika Anda ingin menggunakan browser di Windows (host) untuk mendaftarkan kunci, aktifkan fitur \textit{shared clipboard} VirtualBox agar clipboard Ubuntu dan Windows dapat saling berbagi.
+
+\begin{stepbox}{Langkah 1: Instal VirtualBox Guest Additions di Ubuntu VM}
+\begin{enumerate}
+    \item Di menu VirtualBox, klik \textbf{Devices} (Perangkat), pilih \textbf{Insert Guest Additions CD image\ldots}
+
+    \item Di terminal Ubuntu, jalankan:
+\begin{lstlisting}[language=bash]
+sudo apt install build-essential dkms -y
+sudo mount /dev/cdrom /mnt
+sudo /mnt/VBoxLinuxAdditions.run
+\end{lstlisting}
+
+    \item Setelah selesai, \textbf{restart} Ubuntu VM:
+\begin{lstlisting}[language=bash]
+sudo reboot
+\end{lstlisting}
+\end{enumerate}
+\end{stepbox}
+
+\begin{stepbox}{Langkah 2: Aktifkan Shared Clipboard}
+\begin{enumerate}
+    \item Matikan Ubuntu VM terlebih dahulu (\textbf{Machine} $\to$ \textbf{ACPI Shutdown})
+    \item Di jendela VirtualBox Manager, pilih VM Anda, klik \textbf{Settings}
+    \item Buka tab \textbf{General} $\to$ \textbf{Advanced}
+    \item Ubah \textbf{Shared Clipboard} menjadi \textbf{Bidirectional}
+    \item Klik \textbf{OK}, lalu nyalakan kembali Ubuntu VM
+\end{enumerate}
+\end{stepbox}
+
+\begin{stepbox}{Langkah 3: Salin Kunci dari Ubuntu ke Windows}
+\begin{enumerate}
+    \item Di terminal Ubuntu, tampilkan kunci publik:
+\begin{lstlisting}[language=bash]
+cat ~/.ssh/id_ed25519.pub
+\end{lstlisting}
+
+    \item Blok seluruh teks output dengan mouse, lalu tekan \textbf{Ctrl+Shift+C}
+
+    \item Beralih ke Windows. Buka browser dan masuk ke \url{https://github.com}
+
+    \item Ikuti langkah pendaftaran kunci di GitHub (Settings $\to$ SSH and GPG keys $\to$ New SSH key), lalu tempel dengan \textbf{Ctrl+V} di kolom Key
+
+    \item Klik \textbf{Add SSH key}
+\end{enumerate}
+\end{stepbox}
+
+\subsubsection*{Metode C: xclip (Alternatif Tanpa Guest Additions)}
+
+Jika Metode B tidak berhasil, gunakan \texttt{xclip} untuk menyalin kunci ke clipboard Ubuntu, kemudian akses GitHub dari browser di Ubuntu VM.
+
+\begin{stepbox}{Langkah: Salin Kunci dengan xclip}
+\begin{enumerate}
+    \item Instal xclip:
+\begin{lstlisting}[language=bash]
+sudo apt install xclip -y
+\end{lstlisting}
+
+    \item Salin isi kunci publik langsung ke clipboard:
+\begin{lstlisting}[language=bash]
+xclip -selection clipboard < ~/.ssh/id_ed25519.pub
+\end{lstlisting}
+    Perintah ini tidak menghasilkan output, namun kunci sudah tersimpan di clipboard.
+
+    \item Buka Firefox di Ubuntu VM, masuk ke \url{https://github.com}
+
+    \item Ikuti langkah pendaftaran: Settings $\to$ SSH and GPG keys $\to$ New SSH key
+
+    \item Di kolom \textbf{Key}, tekan \textbf{Ctrl+V} untuk menempelkan kunci
+
+    \item Klik \textbf{Add SSH key}
+\end{enumerate}
+\end{stepbox}
+
+\begin{warningbox}
+\texttt{xclip} hanya bekerja jika Ubuntu VM berjalan dalam mode \textbf{GUI (Desktop)}. Jika Ubuntu berjalan dalam mode \textit{server} (tanpa tampilan grafis), gunakan Metode A atau B.
+\end{warningbox}
+
+\subsubsection*{Metode D: WSL (Windows Subsystem for Linux)}
+
+Jika Anda menggunakan \textbf{WSL}, proses ini jauh lebih mudah dibanding Ubuntu VM karena WSL punya akses langsung ke clipboard Windows melalui \texttt{clip.exe} --- tidak perlu Guest Additions, tidak perlu xclip, tidak perlu buka browser di dalam Linux.
+
+\begin{stepbox}{Langkah: Salin Kunci dari WSL ke GitHub via Windows}
+\begin{enumerate}
+    \item Di terminal WSL, jalankan satu perintah ini untuk menyalin kunci publik langsung ke clipboard Windows:
+\begin{lstlisting}[language=bash]
+cat ~/.ssh/id_ed25519.pub | clip.exe
+\end{lstlisting}
+    Perintah ini tidak menghasilkan output. Kunci sudah tersalin ke clipboard Windows.
+
+    \item Buka browser \textbf{di Windows} (Chrome, Edge, Firefox --- browser biasa, bukan di dalam WSL)
+
+    \item Masuk ke \url{https://github.com}, klik foto profil, pilih \textbf{Settings}
+
+    \item Di menu kiri klik \textbf{SSH and GPG keys}, lalu klik \textbf{New SSH key}
+
+    \item Isi formulir:
+        \begin{itemize}
+            \item \textbf{Title}: misalnya \texttt{WSL Ubuntu}
+            \item \textbf{Key}: klik di kolom Key, lalu tekan \textbf{Ctrl+V} untuk menempel
+        \end{itemize}
+
+    \item Klik \textbf{Add SSH key}
+\end{enumerate}
+\end{stepbox}
+
+\begin{tipbox}
+Verifikasi bahwa isi clipboard sudah benar sebelum menempel ke GitHub: buka Notepad di Windows, tekan \textbf{Ctrl+V}. Anda seharusnya melihat satu baris teks yang dimulai dengan \texttt{ssh-ed25519} dan diakhiri dengan email Anda.
+\end{tipbox}
+
+\subsection{Menguji Koneksi SSH}
+
+Verifikasi bahwa kunci SSH sudah terdaftar dengan benar:
+
+\begin{lstlisting}[language=bash]
+ssh -T git@github.com
+\end{lstlisting}
+
+Saat pertama kali terhubung, muncul pertanyaan seperti ini:
+\begin{lstlisting}
+The authenticity of host 'github.com (140.82.121.4)' can't be established.
+...
+Are you sure you want to continue connecting (yes/no/[fingerprint])?
+\end{lstlisting}
+
+Ketik \texttt{yes} lalu tekan Enter. Jika berhasil, akan muncul:
+\begin{lstlisting}
+Hi username! You've successfully authenticated, but GitHub does not
+provide shell access.
+\end{lstlisting}
+
+\begin{tipbox}
+Jika muncul pesan error seperti \texttt{Permission denied (publickey)}, kemungkinan kunci belum terdaftar dengan benar. Ulangi langkah pada Bagian~\ref{sec:add-to-github} dan pastikan Anda menempel seluruh isi kunci publik tanpa ada baris yang terpotong.
+\end{tipbox}
+
+%% ============================================================
+\section{Menerima Tugas di GitHub Classroom}
+\label{sec:accept-assignment}
+
+Dosen Anda akan membagikan \textbf{tautan undangan} (invitation link) untuk setiap tugas. Tautan ini biasanya dibagikan melalui LMS atau grup kelas.
+
+\begin{stepbox}{Langkah: Menerima Tugas}
+\begin{enumerate}
+    \item Klik tautan undangan yang dibagikan dosen
+    \item Jika belum login ke GitHub, login terlebih dahulu
+    \item Halaman GitHub Classroom akan muncul. Klik tombol \textbf{Accept this assignment}
+    \item Tunggu beberapa detik. GitHub akan membuat \textit{repository} (tempat penyimpanan kode) khusus untuk Anda
+    \item Setelah selesai, akan muncul tautan ke repository Anda. Klik tautan tersebut untuk membukanya
+\end{enumerate}
+\end{stepbox}
+
+\begin{notebox}
+Repository Anda biasanya diberi nama seperti \texttt{nama-tugas-username-anda}. Repository ini bersifat \textbf{privat} (hanya Anda dan dosen yang bisa melihatnya).
+\end{notebox}
+
+%% ============================================================
+\section{Mengkloning Repository ke Komputer}
+\label{sec:clone}
+
+Setelah menerima tugas, Anda perlu mengunduh (\textit{clone}) repository tersebut ke komputer Anda.
+
+\begin{stepbox}{Langkah: Mendapatkan URL SSH Repository}
+\begin{enumerate}
+    \item Buka halaman repository tugas Anda di GitHub
+    \item Klik tombol hijau \textbf{Code}
+    \item Pastikan tab \textbf{SSH} yang dipilih (bukan HTTPS)
+    \item Salin URL yang dimulai dengan \texttt{git@github.com:...}
+\end{enumerate}
+\end{stepbox}
+
+\begin{warningbox}
+Pastikan Anda memilih tab \textbf{SSH}, bukan HTTPS. Jika menggunakan HTTPS, Anda akan diminta memasukkan password setiap kali push.
+\end{warningbox}
+
+\begin{stepbox}{Langkah: Kloning Repository}
+\begin{enumerate}
+    \item Buka terminal dan pindah ke folder tempat Anda ingin menyimpan tugas, misalnya:
+\begin{lstlisting}[language=bash]
+cd ~/Documents/kuliah/os
+\end{lstlisting}
+    \item Jalankan perintah clone dengan URL yang sudah disalin:
+\begin{lstlisting}[language=bash]
+git clone git@github.com:nama-org/nama-tugas-username.git
+\end{lstlisting}
+    \item Masuk ke folder tugas yang baru dibuat:
+\begin{lstlisting}[language=bash]
+cd nama-tugas-username
+\end{lstlisting}
+    \item Lihat isi folder:
+\begin{lstlisting}[language=bash]
+ls -la
+\end{lstlisting}
+\end{enumerate}
+\end{stepbox}
+
+%% ============================================================
+\section{Mengerjakan dan Mengumpulkan Tugas}
+\label{sec:submit}
+
+\subsection{Memahami Struktur Tugas}
+
+Setiap tugas biasanya berisi:
+\begin{itemize}
+    \item \texttt{README.md}: Instruksi dan deskripsi tugas
+    \item File template atau starter code yang perlu Anda lengkapi
+    \item Folder \texttt{.github/workflows/}: Berisi konfigurasi autograding (jangan ubah isi folder ini)
+\end{itemize}
+
+Baca file \texttt{README.md} terlebih dahulu sebelum mulai mengerjakan:
+\begin{lstlisting}[language=bash]
+cat README.md
+\end{lstlisting}
+
+\subsection{Alur Pengerjaan dan Pengumpulan}
+
+Setelah mengerjakan tugas, gunakan tiga perintah Git berikut untuk mengumpulkan:
+
+\begin{stepbox}{Langkah: Mengumpulkan Tugas (git add, commit, push)}
+\begin{enumerate}
+    \item \textbf{Tandai file yang ingin dikumpulkan} (\texttt{git add}):
+\begin{lstlisting}[language=bash]
+git add nama-file.sh
+\end{lstlisting}
+    Atau untuk menambahkan semua perubahan sekaligus:
+\begin{lstlisting}[language=bash]
+git add .
+\end{lstlisting}
+
+    \item \textbf{Buat rekaman perubahan} (\texttt{git commit}):
+\begin{lstlisting}[language=bash]
+git commit -m "Selesai mengerjakan tugas 1"
+\end{lstlisting}
+    Isi pesan dalam tanda kutip dengan deskripsi singkat yang menjelaskan apa yang Anda kerjakan.
+
+    \item \textbf{Kirim ke GitHub} (\texttt{git push}):
+\begin{lstlisting}[language=bash]
+git push
+\end{lstlisting}
+
+    \item Jika berhasil, output yang muncul kira-kira seperti ini:
+\begin{lstlisting}
+Enumerating objects: 5, done.
+Counting objects: 100% (5/5), done.
+Writing objects: 100% (3/3), 312 bytes | 312.00 KiB/s, done.
+To git@github.com:nama-org/nama-tugas-username.git
+   a1b2c3d..e4f5g6h  main -> main
+\end{lstlisting}
+\end{enumerate}
+\end{stepbox}
+
+\begin{tipbox}
+Anda dapat mengumpulkan tugas berkali-kali. Setiap kali Anda \texttt{push}, autograding akan berjalan ulang secara otomatis. Manfaatkan ini untuk memperbaiki jawaban jika hasilnya belum sempurna.
+\end{tipbox}
+
+\subsection{Memastikan Tugas Berhasil Dikirim}
+
+Setelah \texttt{git push}, buka halaman repository Anda di GitHub. Anda akan melihat ikon warna di sebelah commit terakhir:
+
+\begin{itemize}
+    \item \textcolor{orange}{\textbf{Lingkaran kuning}}: Autograding sedang berjalan, tunggu beberapa menit
+    \item \textcolor{green!50!black}{\textbf{Tanda centang hijau}}: Semua tes lulus, tugas berhasil!
+    \item \textcolor{red}{\textbf{Tanda silang merah}}: Ada tes yang gagal, lihat detailnya
+\end{itemize}
+
+%% ============================================================
+\section{Melihat Hasil Autograding}
+\label{sec:autograding}
+
+\subsection{Apa itu Autograding?}
+
+Autograding adalah sistem penilaian otomatis yang berjalan di \textbf{GitHub Actions}. Setiap kali Anda melakukan \texttt{git push}, GitHub secara otomatis menjalankan serangkaian tes untuk memeriksa apakah jawaban Anda sudah benar.
+
+\subsection{Cara Melihat Hasil}
+
+\begin{stepbox}{Langkah: Membuka Hasil Autograding}
+\begin{enumerate}
+    \item Buka halaman repository tugas Anda di GitHub
+    \item Klik tab \textbf{Actions} di bagian atas halaman
+    \item Anda akan melihat daftar \textit{workflow runs}. Klik pada run terbaru (paling atas)
+    \item Klik pada nama job (biasanya \textbf{Autograding} atau \textbf{run-autograding-tests})
+    \item Anda dapat melihat detail setiap langkah pengujian
+    \item Gulir ke bawah untuk melihat bagian \textbf{Run education/autograding} yang menampilkan skor dan detail tes
+\end{enumerate}
+\end{stepbox}
+
+\subsection{Memahami Hasil Tes}
+
+Setiap tes akan menampilkan:
+\begin{itemize}
+    \item \textbf{Nama tes}: Apa yang diuji
+    \item \textbf{Status}: \textcolor{green!50!black}{passed} (lulus) atau \textcolor{red}{failed} (gagal)
+    \item \textbf{Output}: Pesan yang membantu Anda memahami mengapa tes gagal
+    \item \textbf{Poin}: Nilai yang diperoleh untuk tes tersebut
+\end{itemize}
+
+\begin{tipbox}
+Jika ada tes yang gagal, baca pesan outputnya dengan teliti. Pesan error biasanya menjelaskan apa yang diharapkan dan apa yang Anda berikan. Perbaiki kode Anda dan lakukan \texttt{git add}, \texttt{git commit}, \texttt{git push} lagi.
+\end{tipbox}
+
+%% ============================================================
+\section{Perintah Git yang Sering Digunakan}
+\label{sec:git-reference}
+
+\begin{center}
+\begin{tabular}{ll}
+\hline
+\textbf{Perintah} & \textbf{Fungsi} \\
+\hline
+\texttt{git status} & Melihat file apa saja yang berubah \\
+\texttt{git add .} & Menandai semua perubahan untuk dikumpulkan \\
+\texttt{git add nama-file} & Menandai satu file untuk dikumpulkan \\
+\texttt{git commit -m "pesan"} & Membuat rekaman perubahan \\
+\texttt{git push} & Mengirim perubahan ke GitHub \\
+\texttt{git pull} & Mengunduh perubahan terbaru dari GitHub \\
+\texttt{git log --oneline} & Melihat riwayat commit \\
+\hline
+\end{tabular}
+\end{center}
+
+%% ============================================================
+\section{Troubleshooting --- Masalah yang Sering Terjadi}
+\label{sec:troubleshoot}
+
+\subsection*{Masalah: \texttt{Permission denied (publickey)}}
+
+\textbf{Penyebab}: SSH key belum terdaftar di GitHub atau ssh-agent belum berjalan.
+
+\textbf{Solusi}:
+\begin{enumerate}
+    \item Jalankan ulang ssh-agent: \texttt{eval "\$(ssh-agent -s)"}
+    \item Tambahkan kunci: \texttt{ssh-add \textasciitilde/.ssh/id\_ed25519}
+    \item Uji koneksi: \texttt{ssh -T git@github.com}
+    \item Jika masih gagal, ulangi langkah pendaftaran kunci di Bagian~\ref{sec:add-to-github}
+\end{enumerate}
+
+\subsection*{Masalah: \texttt{git push} gagal dengan pesan \textit{rejected}}
+
+\textbf{Penyebab}: Ada perubahan di GitHub yang belum ada di komputer Anda.
+
+\textbf{Solusi}: Jalankan \texttt{git pull} terlebih dahulu, kemudian \texttt{git push} lagi.
+
+\subsection*{Masalah: Autograding tidak berjalan setelah \texttt{push}}
+
+\textbf{Penyebab}: Quota GitHub Actions habis atau ada masalah jaringan.
+
+\textbf{Solusi}: Tunggu beberapa menit, kemudian refresh halaman Actions di GitHub. Jika masih tidak muncul, hubungi dosen.
+
+\subsection*{Masalah: Tidak bisa menemukan file \texttt{id\_ed25519}}
+
+\textbf{Penyebab}: SSH key belum pernah dibuat atau disimpan di lokasi yang berbeda.
+
+\textbf{Solusi}: Ulangi proses pembuatan SSH key dari Bagian~\ref{sec:generate-key}.
+
+%% ============================================================
+\section{Alur Lengkap (Ringkasan)}
+\label{sec:summary}
+
+Berikut adalah ringkasan alur kerja dari awal hingga akhir:
+
+\begin{enumerate}
+    \item \textbf{Sekali saja} (persiapan awal):
+    \begin{itemize}
+        \item Buat akun GitHub
+        \item Instal Git dan konfigurasikan nama/email
+        \item Buat SSH key dan daftarkan ke GitHub
+    \end{itemize}
+
+    \item \textbf{Setiap menerima tugas baru}:
+    \begin{itemize}
+        \item Klik tautan undangan dari dosen
+        \item Klik "Accept this assignment"
+        \item Clone repository: \texttt{git clone git@github.com:...}
+    \end{itemize}
+
+    \item \textbf{Saat mengerjakan dan mengumpulkan}:
+    \begin{itemize}
+        \item Kerjakan tugas di dalam folder repository
+        \item \texttt{git add .}
+        \item \texttt{git commit -m "pesan"}
+        \item \texttt{git push}
+        \item Cek hasil autograding di tab Actions
+    \end{itemize}
+\end{enumerate}
+
+\begin{notebox}
+Jika mengalami kesulitan yang tidak tercantum dalam panduan ini, segera hubungi dosen pengampu. Sertakan pesan error yang muncul agar masalah dapat diselesaikan lebih cepat.
+\end{notebox}
+
+\end{document}
