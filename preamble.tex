@@ -250,34 +250,24 @@
 %% Box dan Environment Khusus
 %% ------------------------------------------------------------------------
 \usepackage[most]{tcolorbox}     % Colored boxes
+\usepackage{fontawesome5}        % Icons for box titles
 
 %% Define box titles based on language
 \ifIndonesian
-    \def\noteboxTitle{\boxicon{blue!70!black}{i}~Catatan}
-    \def\warningboxTitle{\boxicon{red!75!black}{!}~Peringatan}
-    \def\tipboxTitle{\boxicon{green!60!black}{+}~Tips}
-    \def\exampleboxPrefix{\boxicon{orange!80!black}{C}~Contoh: }
+    \def\noteboxTitle{\faInfoCircle\quad Catatan}
+    \def\warningboxTitle{\faExclamationTriangle\quad Peringatan}
+    \def\tipboxTitle{\faLightbulb\quad Tips}
+    \def\exampleboxPrefix{\faBookOpen\quad Contoh: }
     \def\exerciseboxPrefix{Latihan }
-    \def\challengeboxTitle{\boxicon{teal!75!black}{*}~Tantangan}
+    \def\challengeboxTitle{\faChevronCircleRight\quad Tantangan}
 \else
-    \def\noteboxTitle{\boxicon{blue!70!black}{i}~Note}
-    \def\warningboxTitle{\boxicon{red!75!black}{!}~Warning}
-    \def\tipboxTitle{\boxicon{green!60!black}{+}~Tip}
-    \def\exampleboxPrefix{\boxicon{orange!80!black}{E}~Example: }
+    \def\noteboxTitle{\faInfoCircle\quad Note}
+    \def\warningboxTitle{\faExclamationTriangle\quad Warning}
+    \def\tipboxTitle{\faLightbulb\quad Tip}
+    \def\exampleboxPrefix{\faBookOpen\quad Example: }
     \def\exerciseboxPrefix{Exercise }
-    \def\challengeboxTitle{\boxicon{teal!75!black}{*}~Challenge}
+    \def\challengeboxTitle{\faChevronCircleRight\quad Challenge}
 \fi
-
-\newcommand{\boxicon}[2]{%
-    \tikz[baseline=(icon.base)]\node[
-        circle,
-        fill=#1,
-        text=white,
-        minimum size=1.55em,
-        inner sep=0pt,
-        font=\sffamily\bfseries\scriptsize
-    ] (icon) {#2};%
-}
 
 % Box untuk catatan / note
 \newtcolorbox{notebox}{
