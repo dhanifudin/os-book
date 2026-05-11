@@ -6,74 +6,210 @@
 \label{app:glossary}
 
 Lampiran ini berisi definisi istilah-istilah teknis yang digunakan dalam buku ini.
+Istilah utama dipertahankan dalam bahasa aslinya dan ditulis miring saat muncul
+di dalam bab.
 
 %% ------------------------------------------------------------------------
 \section*{A}
 
 \begin{description}
-    \item[ACL (Access Control List)] Mekanisme kontrol akses yang lebih granular
-          dibanding permission Unix tradisional, memungkinkan pengaturan hak akses
-          untuk multiple user dan group.
+    \gitem{ACL (Access Control List)}{Mekanisme kontrol akses yang lebih granular
+          dibanding \term{permission} Unix tradisional, sehingga hak akses dapat
+          diatur untuk banyak pengguna dan grup.}
 
-    \item[API (Application Programming Interface)] Sekumpulan definisi dan protokol
-          untuk membangun dan mengintegrasikan software aplikasi.
+    \gitem{API (Application Programming Interface)}{Sekumpulan definisi dan protokol
+          untuk membangun dan mengintegrasikan software aplikasi.}
 \end{description}
 
 %% ------------------------------------------------------------------------
 \section*{B}
 
 \begin{description}
-    \item[Bash (Bourne Again Shell)] Shell dan bahasa pemrograman command-line
-          yang merupakan default di kebanyakan distribusi Linux.
+    \gitem{Bash (Bourne Again Shell)}{\term{Shell} dan bahasa pemrograman
+          \term{command-line} yang menjadi default di banyak distribusi Linux.}
 
-    \item[Bootloader] Program yang memuat sistem operasi ke memori saat komputer
-          dinyalakan. Contoh: GRUB, LILO.
+    \gitem{Bootloader}{Program yang memuat sistem operasi ke memori saat komputer
+          dinyalakan. Contoh umum: GRUB dan LILO.}
 \end{description}
 
 %% ------------------------------------------------------------------------
 \section*{C}
 
 \begin{description}
-    \item[CLI (Command Line Interface)] Interface berbasis teks untuk berinteraksi
-          dengan sistem operasi menggunakan perintah-perintah.
+    \gitem{Cache}{Penyimpanan sementara berkecepatan tinggi yang menyimpan data atau
+          instruksi yang sering diakses agar proses berikutnya lebih cepat.}
 
-    \item[Cron] Daemon untuk menjadwalkan eksekusi perintah atau script pada
-          waktu tertentu.
+    \gitem{CLI (Command Line Interface)}{Antarmuka berbasis teks untuk berinteraksi
+          dengan sistem operasi menggunakan perintah.}
+
+    \gitem{Container}{Lingkungan eksekusi terisolasi di tingkat sistem operasi yang
+          berbagi kernel host, tetapi memiliki proses, filesystem, dan konfigurasi
+          sendiri.}
+
+    \gitem{Cron}{\term{Daemon} untuk menjadwalkan eksekusi perintah atau skrip pada
+          waktu tertentu.}
 \end{description}
 
 %% ------------------------------------------------------------------------
 \section*{D}
 
 \begin{description}
-    \item[Daemon] Program yang berjalan di background dan tidak memiliki
-          interface langsung dengan pengguna.
+    \gitem{Daemon}{Program yang berjalan di latar belakang dan biasanya tidak memiliki
+          antarmuka langsung dengan pengguna.}
 
-    \item[Distro (Distribution)] Varian Linux yang dikemas dengan kernel,
-          utilities, dan software aplikasi tertentu.
+    \gitem{Distro (Distribution)}{Varian Linux yang dikemas dengan kernel,
+          utilitas, dan software aplikasi tertentu.}
+
+    \gitem{Dockerfile}{Berkas resep yang berisi langkah-langkah untuk membangun
+          sebuah \term{image} container.}
 \end{description}
 
-%% [Lanjutkan untuk huruf E-Z...]
+%% ------------------------------------------------------------------------
+\section*{F}
+
+\begin{description}
+    \gitem{File descriptor}{Nomor identitas kecil yang dipakai kernel untuk
+          mewakili berkas, pipe, socket, atau aliran input-output lain yang sedang
+          dibuka proses.}
+
+    \gitem{Filesystem}{Struktur dan aturan yang dipakai sistem operasi untuk
+          menyimpan, menamai, dan mengatur berkas di media penyimpanan.}
+
+    \gitem{Firmware}{Perangkat lunak tingkat rendah yang tertanam di perangkat keras
+          untuk menjalankan fungsi dasar sebelum sistem operasi aktif penuh.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{G}
+
+\begin{description}
+    \gitem{Group}{Kumpulan akun pengguna yang dipakai Linux untuk mengatur hak akses
+          bersama terhadap berkas dan sumber daya sistem.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{I}
+
+\begin{description}
+    \gitem{Image}{Cetakan dasar yang bersifat statis untuk membuat satu atau lebih
+          \term{container}. Dalam Docker, image dibangun berlapis dari instruksi di
+          \term{Dockerfile}.}
+
+    \gitem{Init system}{Sistem pertama yang berjalan di \term{user space} setelah
+          kernel selesai melakukan boot. Tugasnya memulai dan mengelola layanan lain.}
+
+    \gitem{Interrupt}{Sinyal dari perangkat keras atau software yang meminta CPU
+          menghentikan sementara tugas saat ini untuk menangani kejadian tertentu.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{J}
+
+\begin{description}
+    \gitem{Journal}{Sistem pencatatan log terstruktur, biasanya merujuk pada log yang
+          dikelola oleh \term{systemd-journald}.}
+\end{description}
 
 %% ------------------------------------------------------------------------
 \section*{K}
 
 \begin{description}
-    \item[Kernel] Inti dari sistem operasi yang mengelola hardware dan
-          menyediakan layanan dasar untuk software lainnya.
+    \gitem{Kernel}{Inti dari sistem operasi yang mengelola hardware dan menyediakan
+          layanan dasar untuk software lain.}
+
+    \gitem{Kernel space}{Wilayah eksekusi dengan hak istimewa penuh tempat kernel dan
+          sebagian komponen inti sistem berjalan. Akses ke hardware dikendalikan dari sini.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{L}
+
+\begin{description}
+    \gitem{Latency}{Waktu tunda antara permintaan dan respons. Dalam sistem operasi,
+          latency sering dipakai untuk menilai seberapa cepat sistem bereaksi.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{P}
+
+\begin{description}
+    \gitem{Package manager}{Perangkat lunak untuk memasang, memperbarui, menghapus,
+          dan melacak dependensi paket aplikasi. Contoh: \cmd{apt} dan \cmd{dpkg}.}
+
+    \gitem{Page fault}{Kejadian ketika proses mengakses halaman memori virtual yang
+          belum tersedia di RAM, sehingga kernel harus memetakan atau memuatnya lebih dulu.}
+
+    \gitem{Paging}{Teknik manajemen memori yang membagi memori virtual dan fisik ke
+          dalam blok-blok kecil bernama page agar pemetaan lebih fleksibel.}
+
+    \gitem{Permission}{Aturan hak akses baca, tulis, dan eksekusi pada berkas atau
+          direktori di Linux.}
+
+    \gitem{PID (Process ID)}{Nomor identitas unik yang diberikan sistem operasi kepada
+          setiap proses yang sedang berjalan.}
+
+    \gitem{Pipeline}{Teknik menghubungkan output satu perintah ke input perintah lain
+          menggunakan operator \texttt{|}.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{R}
+
+\begin{description}
+    \gitem{Redirection}{Teknik mengalihkan input atau output perintah ke berkas,
+          perangkat, atau perintah lain menggunakan operator seperti \texttt{>},
+          \texttt{>>}, dan \texttt{<}.}
+
+    \gitem{Repository}{Sumber paket software yang menyimpan metadata dan berkas yang
+          diperlukan \term{package manager} untuk instalasi dan pembaruan.}
 \end{description}
 
 %% ------------------------------------------------------------------------
 \section*{S}
 
 \begin{description}
-    \item[Shell] Program yang menyediakan interface untuk pengguna berinteraksi
-          dengan sistem operasi.
+    \gitem{Scheduler}{Bagian kernel yang menentukan proses atau thread mana yang
+          mendapat giliran memakai CPU, kapan dijalankan, dan berapa lama.}
 
-    \item[System Call] Interface pemrograman untuk layanan yang disediakan
-          oleh kernel sistem operasi.
+    \gitem{Service}{Program yang berjalan di latar belakang untuk menyediakan fungsi
+          tertentu, misalnya server web, SSH, atau database.}
 
-    \item[Systemd] Sistem init modern yang digunakan untuk bootstrap user space
-          dan mengelola layanan sistem.
+    \gitem{Shell}{Program yang menyediakan antarmuka bagi pengguna untuk berinteraksi
+          dengan sistem operasi, baik melalui perintah teks maupun skrip.}
+
+    \gitem{Swap}{Ruang di disk yang dipakai sebagai perluasan RAM ketika memori fisik
+          tidak cukup untuk menampung seluruh kebutuhan proses aktif.}
+
+    \gitem{System call}{Antarmuka resmi yang dipakai program di \term{user space}
+          untuk meminta layanan dari kernel sistem operasi.}
+
+    \gitem{Systemd}{\term{Init system} modern yang digunakan untuk melakukan bootstrap
+          \term{user space} dan mengelola layanan sistem.}
 \end{description}
 
-%% [Tambahkan istilah lainnya...]
+%% ------------------------------------------------------------------------
+\section*{T}
+
+\begin{description}
+    \gitem{Throughput}{Jumlah pekerjaan yang bisa diselesaikan sistem dalam satu satuan
+          waktu, misalnya jumlah request per detik atau proses per menit.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{U}
+
+\begin{description}
+    \gitem{Unit}{Objek konfigurasi yang dikelola \term{systemd}, seperti
+          \texttt{.service}, \texttt{.socket}, \texttt{.mount}, dan \texttt{.target}.}
+
+    \gitem{User space}{Wilayah eksekusi tempat aplikasi biasa berjalan dengan hak akses
+          terbatas. Program di sini harus memakai \term{system call} untuk meminta layanan kernel.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{V}
+
+\begin{description}
+    \gitem{Virtual memory}{Lapisan abstraksi memori yang membuat setiap proses seolah-olah
+          memiliki ruang alamatnya sendiri, terpisah dari proses lain dan dari memori fisik.}
+\end{description}

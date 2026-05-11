@@ -119,15 +119,16 @@ terbesar. Tulis analisis singkat: apakah server kemungkinan kekurangan memori?
 
 Bayangkan sebuah perpustakaan besar. Kamu hanya bisa meletakkan beberapa buku di
 meja baca (RAM), sementara sisanya di rak (disk/swap). Saat butuh buku dari rak,
-kamu ambil dan kembalikan buku lain. Itulah cara kerja \textit{memori virtual}
-dan \textit{paging}.
+kamu ambil dan kembalikan buku lain. Itulah cara kerja \term{virtual memory}
+dan \term{paging}.
 
 Data dibagi dalam blok berukuran tetap yang disebut \textbf{page}. Kernel secara
 otomatis memindahkan page yang tidak aktif ke swap (\textit{swap out}) dan memuatnya
 kembali saat dibutuhkan (\textit{swap in}), seperti digambarkan pada
-\cref{fig:virtual-memory}. Perintah \texttt{vmstat 1 5} menampilkan statistik memori
+\cref{fig:virtual-memory}. Perintah \texttt{vmstat 1 5} menampilkan statistik
+\term{virtual memory}
 virtual setiap 1 detik selama 5 sampel --- kolom \texttt{si} (swap in) dan \texttt{so}
-(swap out) adalah indikator utama aktivitas paging.
+(swap out) adalah indikator utama aktivitas \term{paging}.
 
 \begin{figure}[H]
 \centering
@@ -335,9 +336,9 @@ untuk memasak sendiri --- kamu harus memesan melalui pramusaji (system call).
 Pramusaji meneruskan pesanan ke dapur, memastikan pesanan valid, dan membawa hasilnya
 kembali ke meja kamu.
 
-Itulah cara kerja system call: mekanisme bagi program di \textit{user space} untuk
+Itulah cara kerja \term{system call}: mekanisme bagi program di \term{user space} untuk
 meminta layanan dari kernel. Program tidak dapat langsung mengakses hardware,
-filesystem, atau sumber daya kernel --- semua permintaan harus melalui system call.
+filesystem, atau sumber daya kernel --- semua permintaan harus melalui \term{system call}.
 Alur lengkapnya ditunjukkan pada \cref{fig:syscall-flow}.
 
 \begin{figure}[H]
@@ -370,13 +371,13 @@ antarmuka yang terkontrol, bukan langsung ke hardware.}
 \label{fig:syscall-flow}
 \end{figure}
 
-System call dikelompokkan berdasarkan fungsinya: \textbf{Manajemen Proses}
+\term{System call} dikelompokkan berdasarkan fungsinya: \textbf{Manajemen Proses}
 (\texttt{fork}, \texttt{exec}, \texttt{exit}), \textbf{Manajemen File}
 (\texttt{open}, \texttt{read}, \texttt{write}, \texttt{close}),
 \textbf{Manajemen Memori} (\texttt{mmap}, \texttt{brk}), \textbf{Komunikasi}
 (\texttt{pipe}, \texttt{socket}), dan \textbf{Informasi Sistem}
 (\texttt{getpid}, \texttt{uname}). Perintah \texttt{strace} memungkinkan kita
-melihat setiap system call yang dipanggil suatu perintah, beserta argumen dan
+melihat setiap \term{system call} yang dipanggil suatu perintah, beserta argumen dan
 nilai kembaliannya.
 
 \subsection*{Praktek 8.5 Mengamati System Call dengan strace}
@@ -391,11 +392,11 @@ chmod 000 app.conf
 cat app.conf
 \end{lstlisting}
 
-Output \texttt{cat: app.conf: Permission denied} terjadi karena system call
+Output \texttt{cat: app.conf: Permission denied} terjadi karena \term{system call}
 \texttt{openat()} gagal --- kernel menolak permintaan membuka file karena tidak ada
 bit izin baca (\texttt{r}). Kembalikan permission dengan \texttt{chmod 644 app.conf}.
 
-\textbf{Langkah 2}: Amati semua system call dari perintah \texttt{ls}.
+\textbf{Langkah 2}: Amati semua \term{system call} dari perintah \texttt{ls}.
 
 \begin{lstlisting}[caption={Detail dan ringkasan system call}]
 strace ls 2>&1 | head -n 30
@@ -407,13 +408,13 @@ Contoh: \texttt{openat(AT\_FDCWD, "/etc/ld.so.cache", O\_RDONLY) = 3} artinya
 membuka file untuk dibaca, berhasil (file descriptor = 3). Nilai \texttt{-1 ENOENT}
 berarti gagal karena file tidak ditemukan.
 
-\textit{Amati:} Dari ringkasan \texttt{strace -c}, system call mana yang paling
+\textit{Amati:} Dari ringkasan \texttt{strace -c}, \term{system call} mana yang paling
 sering dipanggil? Apakah ada baris dengan \texttt{errors} lebih dari 0? Apakah
 program tetap berjalan normal meskipun ada kegagalan tersebut?
 
 \begin{tipbox}
 Gunakan \texttt{strace -c} untuk gambaran umum cepat. Gunakan \texttt{strace} tanpa
-\texttt{-c} untuk melihat urutan dan argumen lengkap setiap system call saat
+\texttt{-c} untuk melihat urutan dan argumen lengkap setiap \term{system call} saat
 mendiagnosis masalah konkret.
 \end{tipbox}
 

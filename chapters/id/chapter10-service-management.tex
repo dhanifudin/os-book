@@ -7,9 +7,9 @@
 
 \chapterhero{magenta}{Pahami alur hidup layanan Linux modern, dari unit systemd dan ketergantungan hingga logging dan hardening layanan jaringan.}{systemd}{unit}{journal}
 
-Bayangkan sebuah kantor besar yang buka 24 jam. Di sana ada resepsionis yang selalu siap menerima tamu, petugas keamanan yang berjaga di pintu, teknisi jaringan yang memantau koneksi, dan sistem CCTV yang terus merekam. Mereka semua bekerja di latar belakang, tidak perlu diinstruksikan setiap kali ada tamu datang. Di Linux, program-program yang bekerja seperti itu disebut \textit{layanan} atau \textit{service} — proses yang berjalan di latar belakang, menunggu permintaan, dan merespons secara otomatis.
+Bayangkan sebuah kantor besar yang buka 24 jam. Di sana ada resepsionis yang selalu siap menerima tamu, petugas keamanan yang berjaga di pintu, teknisi jaringan yang memantau koneksi, dan sistem CCTV yang terus merekam. Mereka semua bekerja di latar belakang, tidak perlu diinstruksikan setiap kali ada tamu datang. Di Linux, program-program yang bekerja seperti itu disebut \term{service}, yaitu proses yang berjalan di latar belakang, menunggu permintaan, dan merespons secara otomatis.
 
-Setiap kali kamu menghubungkan laptop ke server via SSH, ada layanan bernama \texttt{sshd} yang mendengarkan koneksi dan menjawab. Setiap kali halaman web terbuka, ada layanan web server yang memprosesnya. Layanan-layanan ini dikelola oleh sebuah sistem khusus yang disebut \textit{init system}. Pada Linux modern termasuk Ubuntu 22.04, init system yang digunakan adalah \textbf{systemd}.
+Setiap kali kamu menghubungkan laptop ke server via SSH, ada layanan bernama \texttt{sshd} yang mendengarkan koneksi dan menjawab. Setiap kali halaman web terbuka, ada layanan web server yang memprosesnya. Layanan-layanan ini dikelola oleh sebuah sistem khusus yang disebut \term{init system}. Pada Linux modern termasuk Ubuntu 22.04, \term{init system} yang digunakan adalah \textbf{systemd}.
 
 Mengelola layanan adalah salah satu tugas paling dasar seorang administrator sistem. Memulai, menghentikan, mengaktifkan saat boot, memeriksa status, membaca log ketika ada masalah: semua itu dilakukan melalui satu perintah utama bernama \cmd{systemctl}. Bab ini membahas cara menguasai perintah itu dan memahami struktur di baliknya.
 
@@ -39,7 +39,7 @@ cd ~/lab-os/chapter10-services
 \label{sec:init-system}
 %% ========================================================================
 
-Setelah kernel Linux selesai memuat dirinya sendiri, ia menjalankan proses pertama di ruang pengguna. Proses ini mendapat nomor proses (PID) 1 dan bertanggung jawab memulai semua layanan berikutnya: jaringan, logging, printer, server web, database, dan seterusnya. Proses dengan PID 1 inilah yang disebut \textit{init system}.
+Setelah kernel Linux selesai memuat dirinya sendiri, ia menjalankan proses pertama di ruang pengguna. Proses ini mendapat nomor proses (PID) 1 dan bertanggung jawab memulai semua layanan berikutnya: jaringan, logging, printer, server web, database, dan seterusnya. Proses dengan PID 1 inilah yang disebut \term{init system}.
 
 Secara historis, Linux menggunakan \textbf{SysV init} yang berbasis skrip shell berurutan di direktori \dir{/etc/init.d/}. Setiap layanan diwakili oleh sebuah skrip yang bisa dipanggil dengan argumen \texttt{start}, \texttt{stop}, atau \texttt{restart}. Pendekatannya sederhana dan mudah dipahami, tetapi lambat karena layanan dijalankan satu per satu secara berurutan.
 
@@ -64,7 +64,7 @@ systemd-analyze blame | head -20
 systemd-analyze critical-chain
 \end{lstlisting}
 
-Dalam systemd, semua yang dikelola disebut \textit{unit}. Ada beberapa tipe unit, tetapi yang paling sering ditemui adalah:
+Dalam systemd, semua yang dikelola disebut \term{unit}. Ada beberapa tipe \term{unit}, tetapi yang paling sering ditemui adalah:
 
 \begin{itemize}
     \item \texttt{.service}: layanan yang berjalan sebagai proses latar belakang
@@ -376,7 +376,7 @@ Modifikasi berkas unit \texttt{demo-web.service} sebelum menghapusnya: tambahkan
 \label{sec:service-logging}
 %% ========================================================================
 
-Pada sistem dengan SysV init, log layanan tersebar di berbagai berkas di \dir{/var/log/}: \file{syslog}, \file{auth.log}, \file{kern.log}, dan berkas khusus tiap aplikasi. Mencari satu peristiwa yang melibatkan beberapa layanan berarti membuka banyak berkas sekaligus. Systemd menggabungkan semua log ke dalam \textit{journal} yang dikelola oleh \texttt{systemd-journald}. Satu perintah, \cmd{journalctl}, bisa mengakses semua log itu dengan berbagai filter.
+Pada sistem dengan SysV init, log layanan tersebar di berbagai berkas di \dir{/var/log/}: \file{syslog}, \file{auth.log}, \file{kern.log}, dan berkas khusus tiap aplikasi. Mencari satu peristiwa yang melibatkan beberapa layanan berarti membuka banyak berkas sekaligus. Systemd menggabungkan semua log ke dalam \term{journal} yang dikelola oleh \texttt{systemd-journald}. Satu perintah, \cmd{journalctl}, bisa mengakses semua log itu dengan berbagai filter.
 
 Log journal disimpan secara biner (bukan teks biasa), sehingga lebih efisien dan mendukung berbagai metadata seperti nama unit, PID, UID, prioritas, dan timestamp presisi tinggi. Ketika menjalankan \cmd{journalctl}, ia membaca dan menampilkan log dalam format teks yang mudah dibaca.
 

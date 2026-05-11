@@ -486,20 +486,20 @@ lokasi instalasi bisa diubah dari command line dengan \cmd{make install PREFIX=\
 \label{sec:docker-containers}
 %% ========================================================================
 
-Container adalah cara menjalankan aplikasi dalam lingkungan yang terisolasi.
-Bayangkan container seperti kabin hotel: setiap tamu mendapat kamar sendiri
+\term{Container} adalah cara menjalankan aplikasi dalam lingkungan yang terisolasi.
+Bayangkan \term{container} seperti kabin hotel: setiap tamu mendapat kamar sendiri
 dengan pintu yang bisa dikunci, namun semua kabin berbagi fondasi gedung yang
-sama. Berbeda dengan Virtual Machine (VM) yang seperti membangun gedung baru
-untuk setiap tamu lengkap dengan fondasi tersendiri, container jauh lebih
+ sama. Berbeda dengan Virtual Machine (VM) yang seperti membangun gedung baru
+untuk setiap tamu lengkap dengan fondasi tersendiri, \term{container} jauh lebih
 efisien karena berbagi kernel sistem operasi host.
 
 Beberapa konsep dasar perlu dipahami sebelum mulai menggunakan Docker.
-\emph{Image} adalah cetakan beku yang berisi sistem file, aplikasi, dan semua
-dependensinya. Image bersifat read-only dan tidak berubah setelah dibuat.
-\emph{Container} adalah instance yang berjalan dari sebuah image: seperti
-mencetak fotokopi dari master dokumen. Satu image bisa menghasilkan banyak
-container yang berjalan sekaligus. \emph{Dockerfile} adalah resep yang
-mendefinisikan cara membangun image langkah demi langkah.
+\term{Image} adalah cetakan beku yang berisi sistem file, aplikasi, dan semua
+dependensinya. \term{Image} bersifat \term{read-only} dan tidak berubah setelah dibuat.
+\term{Container} adalah instance yang berjalan dari sebuah \term{image}: seperti
+mencetak fotokopi dari master dokumen. Satu \term{image} bisa menghasilkan banyak
+\term{container} yang berjalan sekaligus. \term{Dockerfile} adalah resep yang
+mendefinisikan cara membangun \term{image} langkah demi langkah.
 
 Instalasi Docker mengikuti pola repositori pihak ketiga yang sudah dibahas di
 seksi sebelumnya.
@@ -735,7 +735,7 @@ untuk nama proses. Kombinasi \cmd{ss -tlnp} adalah cara cepat melihat semua
 port yang sedang aktif beserta program yang memegangnya.
 
 Untuk kasus diagnosis mendalam, \cmd{strace} memungkinkan kamu melihat setiap
-\emph{system call} yang dipanggil sebuah proses. Ini berguna ketika sebuah program
+\term{system call} yang dipanggil sebuah proses. Ini berguna ketika sebuah program
 gagal tanpa pesan error yang jelas.
 
 \begin{lstlisting}[language=bash, caption={Analisis mendalam dengan strace dan ldd}]
@@ -746,7 +746,7 @@ ldd /usr/bin/ls
 ldd /usr/bin/ls | grep "not found"
 \end{lstlisting}
 
-\cmd{strace -c} merangkum frekuensi setiap system call tanpa menampilkan detailnya,
+\cmd{strace -c} merangkum frekuensi setiap \term{system call} tanpa menampilkan detailnya,
 berguna untuk profiling cepat. \cmd{ldd} menampilkan semua shared library yang
 dibutuhkan sebuah binary. Output \texttt{not found} menunjukkan library yang
 hilang, penyebab umum program gagal berjalan meski sudah terinstal.

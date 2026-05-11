@@ -123,16 +123,16 @@ keras. Semua bagian lain dari sistem operasi, termasuk antarmuka pengguna dan ut
 berada di luar kernel dan harus meminta layanan kepada kernel untuk mengakses perangkat
 keras.
 
-\subsection{Ruang Kernel dan Ruang Pengguna}
+\subsection{\term{Kernel space} dan \term{User space}}
 
 Sistem operasi modern membagi memori menjadi dua wilayah yang terpisah secara ketat:
 
 \begin{description}[noitemsep,topsep=2pt,parsep=0pt]
-    \item[Ruang Kernel (Ring 0)] Wilayah dengan hak akses tertinggi. Hanya kode kernel
-    yang berjalan di sini. Kode di ruang kernel dapat membaca dan menulis ke semua
+    \item[\term{Kernel space} (Ring 0)] Wilayah dengan hak akses tertinggi. Hanya kode kernel
+    yang berjalan di sini. Kode di \term{kernel space} dapat membaca dan menulis ke semua
     alamat memori, serta berbicara langsung ke perangkat keras.
 
-    \item[Ruang Pengguna (Ring 3)] Wilayah tempat aplikasi biasa berjalan. Akses ke
+    \item[\term{User space} (Ring 3)] Wilayah tempat aplikasi biasa berjalan. Akses ke
     perangkat keras dibatasi sepenuhnya. Aplikasi harus melewati mekanisme yang disebut
     \textbf{system call} untuk meminta layanan dari kernel.
 \end{description}
@@ -142,7 +142,7 @@ Sistem operasi modern membagi memori menjadi dua wilayah yang terpisah secara ke
     \begin{tikzpicture}[node distance=1.2cm, scale=0.95]
         \node[draw, rectangle, minimum width=11cm, minimum height=1.4cm,
               fill=blue!10, align=center] (user) {
-            \textbf{Ruang Pengguna (Ring 3)}\\[0.2em]
+            \textbf{User Space (Ring 3)}\\[0.2em]
             \small Browser, Editor Teks, Media Player, Terminal
         };
         \node[draw, rectangle, minimum width=11cm, minimum height=0.8cm,
@@ -151,7 +151,7 @@ Sistem operasi modern membagi memori menjadi dua wilayah yang terpisah secara ke
         };
         \node[draw, rectangle, minimum width=11cm, minimum height=1.8cm,
               below=1cm of syscall, fill=red!10, align=center] (kernel) {
-            \textbf{Ruang Kernel (Ring 0)}\\[0.2em]
+            \textbf{Kernel Space (Ring 0)}\\[0.2em]
             \small Penjadwal Proses, Manajemen Memori, Sistem Berkas, Driver Perangkat
         };
         \node[draw, rectangle, minimum width=11cm, minimum height=1.2cm,
@@ -192,8 +192,8 @@ Ada tiga pendekatan utama dalam merancang kernel sistem operasi:
     }
         Aspek & Monolitik & Mikrokernel & Hibrida \\
         Deskripsi &
-            Semua layanan berjalan di ruang kernel dalam satu binary besar &
-            Hanya layanan esensial di kernel; sisanya berjalan di ruang pengguna &
+            Semua layanan berjalan di \term{kernel space} dalam satu binary besar &
+            Hanya layanan esensial di kernel; sisanya berjalan di \term{user space} &
             Menggabungkan pendekatan monolitik dan mikrokernel \\
         Kinerja & Sangat tinggi & Lebih rendah karena overhead komunikasi & Tinggi \\
         Keandalan &
@@ -244,8 +244,8 @@ driver dapat ditambahkan tanpa harus mengompilasi ulang seluruh kernel.
             font=\small] {Windows, macOS};
     \end{tikzpicture}%
     }
-    \caption{Perbandingan arsitektur kernel: area merah menunjukkan layanan di ruang
-    kernel, area biru di ruang pengguna}
+    \caption{Perbandingan arsitektur kernel: area merah menunjukkan layanan di
+    \term{kernel space}, area biru di \term{user space}}
     \label{fig:kernel-comparison}
 \end{figure}
 
@@ -630,8 +630,8 @@ Dalam bab ini, kamu telah mempelajari:
     \item \textbf{Fungsi dan jenis sistem operasi}: sistem operasi mengelola proses,
     memori, berkas, I/O, dan keamanan; terdapat lima kategori OS berdasarkan platform,
     mulai dari desktop dan server hingga mobile, real-time, dan embedded.
-    \item \textbf{Arsitektur kernel}: kernel berjalan di ruang kernel dengan hak akses
-    penuh; aplikasi di ruang pengguna berkomunikasi melalui system call; tiga arsitektur
+    \item \textbf{Arsitektur kernel}: kernel berjalan di \term{kernel space} dengan hak akses
+    penuh; aplikasi di \term{user space} berkomunikasi melalui system call; tiga arsitektur
     utama adalah monolitik (Linux), mikrokernel (QNX), dan hibrida (Windows, macOS).
     \item \textbf{Evolusi sistem operasi}: Unix (1969) menjadi fondasi sistem operasi
     modern; Linux (1991) diturunkan dari filosofi Unix dan kini mendominasi server serta
@@ -683,7 +683,7 @@ Jawab pertanyaan berikut berdasarkan materi yang telah dipelajari pada bab ini:
     \item Sebuah perusahaan membutuhkan sistem operasi untuk tiga keperluan: server web,
     perangkat medis dengan respons waktu ketat, dan laptop karyawan. Kategori OS apa
     yang paling sesuai untuk masing-masing keperluan tersebut? Jelaskan alasannya.
-    \item Jelaskan perbedaan antara ruang kernel dan ruang pengguna. Mengapa aplikasi
+    \item Jelaskan perbedaan antara \term{kernel space} dan \term{user space}. Mengapa aplikasi
     tidak diizinkan mengakses perangkat keras secara langsung?
     \item Unix lahir pada 1969 dan Linux pada 1991. Jelaskan hubungan antara keduanya
     dan mengapa filosofi Unix masih relevan hingga era cloud computing saat ini.
