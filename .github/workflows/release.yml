@@ -71,18 +71,18 @@ jobs:
       matrix:
         lang: [id, en]
         chapter:
-          - week01-introduction
-          - week02-hardware-and-basic-commands
-          - week03-basic-io
-          - week05-directory-structure
-          - week06-process-management
-          - week07-bash-shell
-          - week09-bash-programming
-          - week10-memory-and-syscalls
-          - week11-file-and-user-management
-          - week12-service-management
-          - week13-application-management
-          - week14-backup-and-recovery
+          - chapter01-introduction
+          - chapter02-hardware-and-basic-commands
+          - chapter03-basic-io
+          - chapter04-directory-structure
+          - chapter05-process-management
+          - chapter06-bash-shell
+          - chapter07-bash-programming
+          - chapter08-memory-and-syscalls
+          - chapter09-file-and-user-management
+          - chapter10-service-management
+          - chapter11-application-management
+          - chapter12-backup-and-recovery
 
     steps:
     - name: Checkout repository

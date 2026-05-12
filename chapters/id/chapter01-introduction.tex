@@ -442,10 +442,8 @@ Setelah sistem restart, lakukan login pertama dan verifikasi bahwa instalasi ber
     \begin{lstlisting}[language=bash, caption={Verifikasi informasi sistem}]
 # Tampilkan versi kernel yang berjalan
 uname -r
-
 # Tampilkan informasi distribusi Linux
 cat /etc/os-release
-
 # Tampilkan alamat IP yang diperoleh dari DHCP
 ip addr show
     \end{lstlisting}
@@ -476,10 +474,8 @@ dengan tambalan keamanan yang tersedia.
 \begin{lstlisting}[language=bash, caption={Memperbarui paket sistem}]
 # Unduh informasi paket terbaru dari repository
 sudo apt update
-
 # Perbarui semua paket ke versi terbaru
 sudo apt upgrade -y
-
 # Hapus paket yang tidak lagi dibutuhkan
 sudo apt autoremove -y
 \end{lstlisting}
@@ -517,16 +513,13 @@ persen RAM yang sudah terpakai oleh sistem dasar Ubuntu Server tanpa aplikasi ta
 \subsection*{Praktek 1.6 Verifikasi Koneksi dan Sumber Daya Sistem}
 
 \begin{lstlisting}[language=bash, caption={Pemeriksaan jaringan dan sumber daya}]
-# Uji konektivitas internet dengan mengirim 4 paket ke DNS Google
+# Uji koneksi internet dengan mengirim 4 paket ke DNS Google
 ping -c 4 8.8.8.8
-
 # Tampilkan penggunaan disk dalam format mudah dibaca
 df -h
-
 # Tampilkan penggunaan memori dan swap
 free -h
-
-# Tampilkan proses yang sedang berjalan secara interaktif
+# Tampilkan daftar proses secara interaktif
 htop
 \end{lstlisting}
 
@@ -618,10 +611,8 @@ Setelah sistem terinstalasi, periksa \term{partition layout} yang dibuat secara 
 \begin{lstlisting}[language=bash, caption={Memeriksa partisi dan filesystem}]
 # Tampilkan disk layout dan partisi dalam bentuk pohon
 lsblk
-
 # Tampilkan detail partisi termasuk ukuran dan tipe
 sudo fdisk -l
-
 # Tampilkan tipe filesystem setiap partisi
 lsblk -f
 \end{lstlisting}
