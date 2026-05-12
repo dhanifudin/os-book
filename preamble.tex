@@ -111,11 +111,15 @@
 \usepackage{tabularx}            % Tabel dengan lebar kolom fleksibel
 \usepackage{multirow}            % Sel tabel multi-baris
 \usepackage{array}               % Enhanced array and tabular
+% tabularray hooks into xcolor to load ninecolors, which uses rgb:Hsb color
+% expressions. xcolor 2.x (Ubuntu's TeX Live) doesn't register the Hsb model
+% by default, so ninecolors fails. We don't use ninecolors palettes, so stub
+% it out before tabularray loads. xcolor is already loaded transitively by
+% tikz/pgfplots above, so tabularray's hook fires immediately at registration.
+\makeatletter
+\@namedef{ver@ninecolors.sty}{9999/01/01 stubbed}
+\makeatother
 \usepackage{tabularray}           % Tabels dengan tblr environment
-% tabularray registers a hook to load ninecolors after xcolor.
-% ninecolors uses rgb:Hsb which requires xcolor 3.x (not available on Ubuntu's TeX Live).
-% We don't use ninecolors colors, so remove the hook before xcolor loads.
-\RemoveFromHook{package/xcolor/after}[tabularray]
 
 %% ------------------------------------------------------------------------
 %% Warna
