@@ -353,6 +353,12 @@ Write prose that reflects how a knowledgeable instructor explains material in a 
 - **Avoid redundant summaries.** Do not end a concept paragraph by restating what was just said. Move directly to the next idea or to the practice steps.
 - **Prefer active voice.** Write `Linux memetakan alamat virtual ke alamat fisik` rather than `alamat virtual dipetakan oleh Linux ke alamat fisik.`
 - **Ground analogies in the local context.** Use everyday analogies that are culturally familiar to Indonesian readers: a physical desk, a file cabinet, a toll gate, a library card catalog.
+- **Limit "Bayangkan" to once per chapter.** Never open a chapter's first paragraph with "Bayangkan". It is a useful device inside a section, but overused across chapters it becomes a fingerprint. Five out of ten chapters opening with "Bayangkan" is a detection signal.
+- **Do not open paragraphs with "Setiap kali X, Y."** This construction is natural inside prose but sounds formulaic when used as an opener repeatedly. It appears in Chapter 1, 2, 3, 6, and 10 openers — that frequency is the problem. Reserve it for mid-paragraph use.
+- **Vary the structure when explaining parallel items.** When describing three items of the same type (e.g., stdin/stdout/stderr, or three flags), do not repeat the same sentence template verbatim with only values swapped. Describe the first two in parallel, then break the pattern for the third: use a clause that notes what is different or surprising about it.
+- **Vary "Amati:" observation prompts.** Do not label every observation prompt with "Amati:". Rotate through: "Perhatikan...", "Apa yang kamu lihat?", "Coba bandingkan output ini dengan...", or weave the observation directly into the step text without a label. A chapter where every lab step ends with the same "Amati:" label reads as generated.
+- **Use occasional authorial asides.** One or two per chapter, at genuinely tricky moments: "Bagian ini sering membingungkan pertama kali." or "Perhatikan bahwa ini kebalikan dari yang mungkin kamu asumsikan." These break mechanical consistency and signal a human voice.
+- **Do not reuse analogy domains across adjacent chapters.** If Chapter 9 uses an office/filing-cabinet analogy, Chapter 10 must not also open with a kantor analogy. Track: Ch3 = warung fotokopi, Ch4 = rumah kontrakan, Ch6 = restoran/dapur, Ch9 = kantor lemari arsip. Avoid these domains in neighboring chapters.
 
 ## Content Organization
 

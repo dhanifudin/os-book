@@ -8,7 +8,7 @@
   - Arsitektur kernel Linux
   - Variasi dan karakteristik distribusi Linux
   - Proses instalasi Linux
-  - Partisi disk dan sistem file di Linux
+  - Partisi disk dan sistem file di Linux (konteks instalasi: tipe partisi, mount point, swap)
   - Konfigurasi awal pasca instalasi
 
 ## Bab 2: Manajemen Perangkat Keras dan Perintah Dasar
@@ -30,7 +30,7 @@
 
 ## Bab 4: Struktur Direktori dan Operasi File
 - **Materi**:
-  - Standar Hierarki Sistem File (FHS) di Linux
+  - Standar Hierarki Sistem File (FHS) di Linux (sistem yang berjalan — bukan partisi instalasi, lihat Bab 1)
   - Sistem file Linux dan peran `/dev`
   - Jenis file di Linux (reguler, direktori, symlink, perangkat)
   - Eksplorasi struktur direktori Linux melalui command line
@@ -45,7 +45,7 @@
   - Penjadwalan proses dan prioritas
   - Sinyal proses dan penanganannya
   - Manajemen job (foreground dan background)
-  - Pemantauan proses dengan `ps`, `top`, `htop`, dan `atop`
+  - Pemantauan proses dengan `ps`, `top`, `htop`, dan `atop` (perspektif proses)
   - Penggunaan `nice` dan `renice` untuk prioritas proses
 
 ## Bab 6: Bash Shell
@@ -53,7 +53,7 @@
   - Pengenalan Bash sebagai shell default di Linux
   - Konfigurasi Bash (`.bashrc`, `.bash_profile`)
   - Variabel lingkungan dan PATH
-  - Membuat alias dan fungsi shell
+  - Membuat alias shell (fungsi shell dibahas di Bab 7)
   - Penyelesaian dan history Bash
   - Wildcards dan ekspansi nama file
   - Quoting dan escaping di Bash
@@ -61,7 +61,7 @@
 ## Bab 7: Pemrograman Bash
 - **Materi**:
   - Dasar-dasar scripting Bash
-  - Variabel dan parameter posisional
+  - Variabel lokal skrip dan parameter posisional (bukan variabel lingkungan — lihat Bab 6)
   - Struktur kontrol (if, for, while, case)
   - Fungsi dalam shell script
   - Pengolahan argumen command line
@@ -73,7 +73,7 @@
   - Arsitektur memori di Linux
   - Manajemen memori virtual
   - Konfigurasi swap space
-  - Pemantauan penggunaan memori (`free`, `vmstat`, `top`)
+  - Pemantauan penggunaan memori (`free`, `vmstat`, `/proc/meminfo`) — `top` dibahas di Bab 5
   - Pengenalan system call di Linux
   - Jenis-jenis system call umum
   - Interaksi antara user space dan kernel space
@@ -111,7 +111,7 @@
 ## Bab 12: Backup dan Pemulihan Sistem
 - **Materi**:
   - Strategi backup di lingkungan Linux
-  - Penggunaan tools backup (`rsync`, `tar`, `dd`)
+  - Penggunaan tools backup (`rsync`, `dd`, dan penggunaan lanjutan `tar` — sintaks dasar `tar` dibahas di Bab 4)
   - Implementasi backup terjadwal
   - Pemulihan sistem dari backup
   - Perencanaan pemulihan bencana untuk sistem Linux

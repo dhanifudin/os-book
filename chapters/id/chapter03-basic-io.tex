@@ -40,7 +40,12 @@ cd ~/lab-os/chapter03-io
 
 Setiap kali program membuka berkas, kernel memberikan angka bulat yang disebut \textit{file descriptor} (FD) sebagai pegangan untuk operasi baca-tulis. Angka ini ringan dan efisien: program cukup menyebut angkanya, dan kernel tahu berkas mana yang dimaksud.
 
-Tiga file descriptor pertama sudah tersedia otomatis untuk setiap proses saat pertama kali dijalankan. File descriptor 0 adalah \textit{stdin} (standard input), yaitu saluran untuk membaca input. Secara default stdin terhubung ke keyboard. File descriptor 1 adalah \textit{stdout} (standard output), yaitu saluran untuk menulis output normal. Secara default stdout terhubung ke layar terminal. File descriptor 2 adalah \textit{stderr} (standard error), yaitu saluran khusus untuk pesan kesalahan. Stderr juga terhubung ke layar secara default, tapi bisa dialihkan secara terpisah dari stdout.
+Tiga file descriptor pertama sudah tersedia untuk setiap proses sejak dijalankan. FD~0
+adalah \textit{stdin} (standard input): saluran untuk membaca input, secara default
+terhubung ke keyboard. FD~1 adalah \textit{stdout} (standard output): saluran untuk
+output normal, secara default mengarah ke layar terminal. Yang ketiga berbeda sedikit:
+FD~2 atau \textit{stderr} khusus untuk pesan kesalahan dan bisa dialihkan secara
+terpisah dari stdout, bahkan ketika keduanya sama-sama mengarah ke layar.
 
 Pemisahan antara stdout dan stderr bukan sekadar konvensi. Ketika kamu membangun pipeline seperti \texttt{perintah1 | perintah2}, hanya stdout dari \texttt{perintah1} yang mengalir ke stdin \texttt{perintah2}. Pesan kesalahan dari \texttt{perintah1} tidak ikut mengalir sehingga tidak mencemari data yang diproses \texttt{perintah2}.
 

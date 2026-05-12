@@ -7,7 +7,12 @@
 
 \chapterhero{teal}{Kenali cara Linux mendeteksi perangkat keras, memuat driver, dan menyediakan perintah terminal dasar untuk mulai bekerja dengan percaya diri.}{\faMicrochip\quad hardware}{\faCogs\quad driver}{\faTerminal\quad terminal}
 
-Bayangkan kamu baru membeli laptop baru dan menyalakannya untuk pertama kali. Sistem operasi perlu tahu apa saja komponen di dalamnya: jenis prosesor, kapasitas RAM, kartu grafis, dan disk. Di Windows, informasi ini tersedia di Device Manager. Di Linux, kamu mendapatkan akses yang jauh lebih dalam lewat terminal.
+Linux tidak menerima keberadaan perangkat keras begitu saja. Saat komputer menyala,
+kernel memeriksa setiap bus yang tersedia, mengenali perangkat yang terpasang, dan
+memuat \term{driver} yang sesuai. Prosesor, RAM, kartu jaringan, disk, semua harus
+dikenali sebelum sistem bisa dipakai. Di Windows, ringkasan ini tersedia di Device
+Manager. Di Linux, seluruh jejaknya bisa kamu baca langsung dari terminal, dengan
+tingkat detail yang jauh lebih dalam.
 
 Linux mendeteksi perangkat keras melalui proses bertahap. Saat komputer dinyalakan, kernel melakukan pemindaian terhadap semua bus seperti PCI dan USB, lalu mencocokkan perangkat yang ditemukan dengan modul kernel yang sesuai. Hasil deteksi ini bisa ditelusuri melalui perintah seperti \cmd{lscpu}, \cmd{lspci}, \cmd{lsusb}, dan \cmd{dmesg}. Prosesnya berlangsung otomatis, tetapi jejaknya tetap bisa kamu audit dari terminal.
 

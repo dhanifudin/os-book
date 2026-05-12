@@ -7,13 +7,11 @@
 
 \chapterhero{brown}{Kelola perangkat lunak dari repository, kompilasi sumber, hingga container agar instalasi dan pemeliharaan aplikasi lebih terstruktur.}{\faBoxOpen\quad package}{\faWarehouse\quad repository}{\faCubes\quad container}
 
-Bayangkan kamu baru pindah ke kota baru dan ingin melengkapi dapur apartemenmu.
-Ada dua cara: pergi ke toko swalayan yang sudah mengatur semua kebutuhan di rak
-yang berlabel rapi, atau berkeliling dari toko ke toko secara manual mencari
-barang satu per satu. Di Linux, \cmd{apt} berperan seperti swalayan modern itu.
-Kamu cukup menyebut nama aplikasi, dan \cmd{apt} akan mengunduh, memeriksa
-keaslian, memasang semua bagian yang dibutuhkan, dan mendaftarkan semuanya agar
-mudah dihapus kapan saja.
+Menginstal perangkat lunak di Linux tidak berarti mengunduh file dari situs, mengklik
+dua kali, dan mengikuti wizard. Ada cara yang lebih terstruktur: package manager.
+Perintah \cmd{apt} cukup menyebut nama aplikasi, mengunduh paket dari repository yang
+sudah diverifikasi, memeriksa keasliannya, memasang semua komponen yang dibutuhkan,
+dan mendaftarkan semuanya agar mudah dihapus kapan saja. Tidak perlu mencari ke mana-mana.
 
 Di balik layanan \cmd{apt} yang nyaman itu, ada lapisan yang lebih mendasar bernama
 \cmd{dpkg}. Jika \cmd{apt} adalah kasir swalayan yang mengurus segalanya, maka

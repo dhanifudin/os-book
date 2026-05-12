@@ -7,9 +7,16 @@
 
 \chapterhero{magenta}{Pahami alur hidup service Linux modern, dari unit systemd dan ketergantungan hingga logging dan hardening service jaringan.}{\faCogs\quad systemd}{\faCube\quad unit}{\faBook\quad journal}
 
-Bayangkan sebuah kantor besar yang buka 24 jam. Di sana ada resepsionis yang selalu siap menerima tamu, petugas keamanan yang berjaga di pintu, teknisi jaringan yang memantau koneksi, dan sistem CCTV yang terus merekam. Mereka semua bekerja di latar belakang, tidak perlu diinstruksikan setiap kali ada tamu datang. Di Linux, program-program yang bekerja seperti itu disebut \term{service}, yaitu proses yang berjalan di latar belakang, menunggu permintaan, dan merespons secara otomatis.
+Server yang kamu kelola tidak berhenti bekerja saat terminal ditutup. Ada program yang
+terus berjalan di latar belakang: menerima koneksi SSH, melayani permintaan web, mencatat
+aktivitas sistem ke log. Program-program ini disebut \term{service}, yaitu proses yang
+hidup terus sampai dihentikan secara eksplisit atau sistem dimatikan.
 
-Setiap kali kamu menghubungkan laptop ke server via SSH, ada \term{service} bernama \texttt{sshd} yang mendengarkan koneksi dan menjawab. Setiap kali halaman web terbuka, ada \term{service} web server yang memprosesnya. Service semacam ini dikelola oleh sebuah sistem khusus yang disebut \term{init system}. Pada Linux modern termasuk Ubuntu 22.04, \term{init system} yang digunakan adalah \textbf{systemd}.
+Koneksi SSH yang kamu buka ke server diproses oleh \term{service} bernama \texttt{sshd}
+yang sudah mendengarkan di port 22 jauh sebelum kamu terhubung. Halaman web yang muncul
+di browser berasal dari \term{service} web server yang siap menjawab sejak sistem menyala.
+Service semacam ini dikelola oleh \term{init system}. Pada Ubuntu 22.04 dan distribusi
+Linux modern lainnya, \term{init system} yang digunakan adalah \textbf{systemd}.
 
 Mengelola \term{service} adalah salah satu tugas paling dasar seorang administrator sistem. Memulai, menghentikan, mengaktifkan saat boot, memeriksa status, membaca log ketika ada masalah: semua itu dilakukan melalui satu perintah utama bernama \cmd{systemctl}. Bab ini membahas cara menguasai perintah itu dan memahami struktur di baliknya.
 

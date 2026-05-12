@@ -7,7 +7,12 @@
 
 \chapterhero{green}{Kendalikan izin akses, kepemilikan, akun pengguna, grup, dan sudo agar sistem tetap aman sekaligus mudah dikelola.}{\faLock\quad permission}{\faUserShield\quad ACL}{\faUserCog\quad sudo}
 
-Bayangkan sebuah kantor dengan lemari arsip besar. Setiap dokumen punya label nama pemilik dan label divisi. Tidak semua karyawan boleh membuka semua laci: ada yang hanya bisa membaca, ada yang bisa menulis, dan hanya manajer yang bisa menghapus berkas. Di Linux, sistem yang mengatur siapa boleh membaca, menulis, atau menjalankan berkas disebut \textit{kontrol akses}. Setiap berkas dan direktori memiliki tiga identitas: pengguna pemilik (\textit{owner}), grup terkait, dan semua pengguna lain.
+Ketika kamu membuat akun baru di Ubuntu, sistem langsung memberi akun itu kepemilikan
+penuh atas direktori home-nya. Akun lain tidak bisa membaca isinya kecuali diberi izin
+secara eksplisit. Ini bukan fitur tambahan, melainkan desain dasar Linux sebagai sistem
+multi-pengguna: setiap berkas dan direktori memiliki tiga identitas, yaitu pengguna
+pemilik (\textit{owner}), grup terkait, dan semua pengguna lain, dan akses diatur
+terpisah untuk masing-masing kelompok.
 
 Bab ini menggabungkan pengelolaan izin berkas dan administrasi identitas pengguna. Pembahasannya dimulai dari model izin standar \texttt{rwx} beserta perintah \cmd{chmod}, \cmd{chown}, dan \cmd{chgrp}, lalu berlanjut ke izin khusus seperti \textit{setuid}, \textit{setgid}, dan \textit{sticky bit}, kemudian Access Control List (ACL), manajemen akun pengguna dan grup, pendelegasian hak administratif lewat \cmd{sudo}, serta pembatasan ruang disk dengan quota.
 

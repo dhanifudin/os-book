@@ -7,11 +7,11 @@
 
 \chapterhero{cyan}{Bangun kebiasaan kerja terminal yang efisien lewat konfigurasi shell, PATH, alias, fungsi, dan teknik interaksi Bash yang lebih produktif.}{\faTerminal\quad shell}{\faRoute\quad PATH}{\faTags\quad alias}
 
-Setiap kali kamu membuka terminal di Linux, ada program yang langsung
-aktif menunggu perintahmu. Program itu bukan aplikasi biasa, melainkan
-\term{shell}, yaitu penerjemah antara perintah yang kamu ketik dan
-sistem operasi yang menjalankannya. Shell membaca baris teks yang kamu
-tulis, memprosesnya, lalu menyuruh kernel Linux melakukan sesuatu.
+Terminal yang kamu buka tidak langsung terhubung ke kernel Linux. Di antaranya ada
+satu lapisan perangkat lunak yang membaca setiap baris yang kamu ketik, menafsirkannya,
+lalu meminta kernel melakukan sesuatu. Lapisan itu disebut \term{shell}. Tanpa shell,
+kamu harus berbicara langsung dengan kernel dalam format yang jauh lebih rendah dan
+tidak ramah manusia.
 
 Bash, singkatan dari \textit{Bourne Again Shell}, adalah shell paling
 umum di Linux. Hampir semua distribusi Linux menjadikan Bash sebagai
@@ -21,14 +21,10 @@ merupakan penerus \cmd{sh} (Bourne Shell) yang lahir di era Unix tahun
 tetapi Bash tetap menjadi pilihan utama untuk administrasi sistem dan
 penulisan skrip karena tersedia hampir di semua sistem Linux.
 
-Bayangkan Bash seperti dapur di sebuah restoran. Kamu sebagai
-administrator adalah kepala koki. Sistem operasi adalah dapur beserta
-semua peralatannya. Bash adalah commis chef yang menerima instruksimu,
-mengambil bahan dari lemari yang tepat (direktori), menggunakan alat
-yang sesuai (program), dan menyajikan hasilnya. Tanpa shell, kamu harus
-berbicara langsung dengan kernel dalam bahasa yang jauh lebih rendah.
-Dengan Bash, kamu cukup mengetik perintah dalam bahasa manusia yang
-terstruktur.
+Bash bukan sekadar cara mengetik perintah satu per satu. Ia punya variabel, bisa
+menjalankan skrip, menyimpan riwayat perintah, dan menyelesaikan nama file secara
+otomatis. Bab ini membahas cara mengonfigurasi dan memanfaatkan semua kemampuan itu
+sehingga pekerjaan di terminal menjadi lebih cepat dan lebih aman.
 
 \textbf{Yang Akan Kamu Pelajari}
 

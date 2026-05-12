@@ -6,14 +6,17 @@
 
 \chapterhero{blue}{Hubungkan konsep RAM, swap, dan tekanan memori dengan cara program berbicara ke kernel melalui system call dan alat diagnosis Linux.}{\faMemory\quad memory}{\faHdd\quad swap}{\faSearch\quad strace}
 
-Bayangkan meja kerja kamu. Di atas meja tersimpan dokumen yang sedang aktif digunakan
---- inilah yang diibaratkan sebagai \textbf{RAM}. Saat meja mulai penuh, beberapa
-dokumen dipindahkan ke laci agar ada ruang baru --- inilah yang diibaratkan sebagai
-\textbf{swap}. Jika semua dokumen tersimpan di laci dan kamu terus bolak-balik
-mengambilnya, pekerjaan menjadi lambat. Itulah gambaran sederhana bagaimana Linux
-mengelola memori. Di bab ini kita juga akan mempelajari \textbf{system call} ---
- mekanisme yang digunakan program untuk meminta layanan dari kernel, dan memanfaatkan
- keterampilan Bash dari Bab~7 untuk membangun skrip pemantauan yang nyata.
+Setiap program yang berjalan di Linux membutuhkan memori: bukan hanya untuk data,
+tapi juga untuk kode program itu sendiri, tumpukan pemanggilan fungsi, dan semua
+variabel yang dipakai. Linux mengelola semua kebutuhan ini melalui \textit{virtual
+memory}, sebuah lapisan abstraksi yang membuat setiap program seolah-olah memiliki
+RAM sendiri, sementara kernel yang mengurus pemetaan ke memori fisik yang sesungguhnya.
+Ketika RAM tidak cukup, halaman yang jarang diakses dipindahkan ke disk, ke area
+yang disebut \textit{swap}. Ada harganya: membaca dari disk jauh lebih lambat dari
+membaca dari RAM. Di bab ini kamu akan mengamati kapan swap aktif, cara mengaturnya,
+dan cara menggunakan \textbf{system call} untuk melihat langsung apa yang terjadi di
+dalam kernel saat program berjalan. Keterampilan Bash dari Bab~7 dipakai di sini
+untuk membangun skrip pemantauan yang nyata.
 
 \textbf{Yang Akan Kamu Pelajari}
 
@@ -40,7 +43,7 @@ mkdir -p ~/lab-os/chapter08-memory
 
 Setiap program yang berjalan di Linux mendapatkan \textit{ruang alamat virtual}
 sendiri. Artinya, setiap program seolah-olah memiliki memori pribadi yang tidak dapat
-diganggu program lain --- kernel yang mengatur pemetaan antara alamat virtual tersebut
+diganggu program lain: kernel yang mengatur pemetaan antara alamat virtual tersebut
 dengan memori fisik (RAM). Ruang alamat virtual sebuah proses dibagi menjadi beberapa
 area seperti terlihat pada \cref{fig:memory-layout}: \textbf{Text Segment} menyimpan
 instruksi kode (read-only), \textbf{Data Segment} menyimpan variabel global, \textbf{Heap}
@@ -79,7 +82,7 @@ virtual sendiri yang diisolasi dari proses lain.}
 
 \begin{notebox}
 Isolasi antar proses menjamin stabilitas sistem. Jika satu program crash, kerusakan
-hanya berdampak pada proses tersebut --- proses lain tetap berjalan normal.
+hanya berdampak pada proses tersebut, sementara proses lain tetap berjalan normal.
 \end{notebox}
 
 \subsection*{Praktek 8.1 Melihat Penggunaan Memori}
@@ -94,7 +97,7 @@ cat /proc/meminfo | head -n 20
 
 Output \texttt{free -h} menampilkan baris \texttt{Mem} (RAM) dan \texttt{Swap}.
 Kolom kunci: \texttt{total} (total RAM), \texttt{used} (terpakai), \texttt{free}
-(benar-benar kosong), \texttt{available} (tersedia untuk aplikasi baru --- gunakan
+(benar-benar kosong), \texttt{available} (tersedia untuk aplikasi baru; gunakan
 nilai ini, bukan \texttt{free}), dan \texttt{buff/cache} (cache file yang dibebaskan
 otomatis jika dibutuhkan).
 
@@ -127,7 +130,7 @@ otomatis memindahkan page yang tidak aktif ke swap (\textit{swap out}) dan memua
 kembali saat dibutuhkan (\textit{swap in}), seperti digambarkan pada
 \cref{fig:virtual-memory}. Perintah \texttt{vmstat 1 5} menampilkan statistik
 \term{virtual memory}
-virtual setiap 1 detik selama 5 sampel --- kolom \texttt{si} (swap in) dan \texttt{so}
+virtual setiap 1 detik selama 5 sampel: kolom \texttt{si} (swap in) dan \texttt{so}
 (swap out) adalah indikator utama aktivitas \term{paging}.
 
 \begin{figure}[H]
@@ -166,7 +169,7 @@ Temukan kolom \texttt{swap}: sub-kolom \texttt{si} (KB/detik dari disk ke RAM) d
 
 \textit{Amati:} Pada sistem normal dengan RAM cukup, \texttt{si} dan \texttt{so}
 selalu 0. Jika keduanya terus-menerus lebih dari 0, sistem dalam kondisi
-\textit{memory pressure} serius --- akses disk jauh lebih lambat dari RAM sehingga
+\textit{memory pressure} serius. Akses disk jauh lebih lambat dari RAM sehingga
 performa turun drastis.
 
 \begin{warningbox}
@@ -245,7 +248,7 @@ sudo rm /swapfile-chapter08
 
 \begin{challengebox}
 Buat swap file kedua berukuran 128~MB, aktifkan, lalu coba tiga nilai swappiness
-berbeda (1, 60, 100) --- catat perbedaan yang terlihat di \texttt{swapon --show}
+berbeda (1, 60, 100), lalu catat perbedaan yang terlihat di \texttt{swapon --show}
 dan \texttt{free -h} setiap kali. Jelaskan: kapan nilai swappiness 1 lebih baik
 daripada 100 untuk sebuah web server? Bersihkan kedua swap file setelah selesai.
 \end{challengebox}
@@ -316,7 +319,7 @@ bash monitor-memori.sh
 \textit{Amati:} Perintah \texttt{awk '/Mem/ \{printf "\%d", \$7/\$2*100\}'} mengambil
 kolom ke-7 (available) dibagi kolom ke-2 (total) dari baris \texttt{Mem}, lalu dikali
 100 menjadi persentase bilangan bulat. Ubah \texttt{THRESHOLD} ke \texttt{90} dan
-jalankan ulang --- apakah output berubah? Mengapa?
+jalankan ulang. Apakah output berubah? Mengapa?
 
 \begin{challengebox}
 Kembangkan \texttt{monitor-memori.sh} agar setiap kali dijalankan menyimpan log
@@ -332,13 +335,13 @@ Jalankan dua kali dan verifikasi dua file log terpisah terbuat.
 \section{System Call dan Interaksi User-Kernel}
 
 Bayangkan sebuah restoran. Kamu (program) tidak bisa langsung masuk ke dapur (kernel)
-untuk memasak sendiri --- kamu harus memesan melalui pramusaji (system call).
+untuk memasak sendiri: kamu harus memesan melalui pramusaji (system call).
 Pramusaji meneruskan pesanan ke dapur, memastikan pesanan valid, dan membawa hasilnya
 kembali ke meja kamu.
 
 Itulah cara kerja \term{system call}: mekanisme bagi program di \term{user space} untuk
 meminta layanan dari kernel. Program tidak dapat langsung mengakses hardware,
-filesystem, atau sumber daya kernel --- semua permintaan harus melalui \term{system call}.
+filesystem, atau sumber daya kernel: semua permintaan harus melalui \term{system call}.
 Alur lengkapnya ditunjukkan pada \cref{fig:syscall-flow}.
 
 \begin{figure}[H]
@@ -393,7 +396,7 @@ cat app.conf
 \end{lstlisting}
 
 Output \texttt{cat: app.conf: Permission denied} terjadi karena \term{system call}
-\texttt{openat()} gagal --- kernel menolak permintaan membuka file karena tidak ada
+\texttt{openat()} gagal: kernel menolak permintaan membuka file karena tidak ada
 bit izin baca (\texttt{r}). Kembalikan permission dengan \texttt{chmod 644 app.conf}.
 
 \textbf{Langkah 2}: Amati semua \term{system call} dari perintah \texttt{ls}.
@@ -444,8 +447,8 @@ Dalam bab ini, kamu telah mempelajari:
     \item \textbf{Pemantauan memori}: \cmd{free -h}, \cmd{top}/\cmd{htop}, dan
           \cmd{/proc/meminfo} memberi laporan penggunaan RAM dan swap dari berbagai sudut;
           skrip Bash dapat mengotomatiskan pemantauan berkala.
-    \item \textbf{Skrip pemantauan}: teknik Bash dari Bab~7 --- fungsi, loop, dan
-          \cmd{tee} --- digabungkan untuk membangun \texttt{monitor-memori.sh} yang
+    \item \textbf{Skrip pemantauan}: teknik Bash dari Bab~7 (fungsi, loop, dan
+          \cmd{tee}) digabungkan untuk membangun \texttt{monitor-memori.sh} yang
           mencatat log bertanggal secara otomatis.
     \item \textbf{System call}: program berinteraksi dengan kernel melalui system call;
           \cmd{strace} memperlihatkan urutan panggilan tersebut sehingga kamu dapat
