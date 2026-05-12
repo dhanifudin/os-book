@@ -5,7 +5,7 @@
 \chapter{Pengenalan Sistem Operasi dan Instalasi Linux}
 \label{ch:introduction}
 
-\chapterhero{blue}{Pahami fondasi sistem operasi, pilihan distribusi Linux, proses instalasi, dan verifikasi awal agar sistem siap dipakai sebagai lingkungan belajar.}{konsep dasar}{instalasi}{verifikasi}
+\chapterhero{blue}{Pahami fondasi sistem operasi, pilihan distribusi Linux, proses instalasi, dan verifikasi awal agar sistem siap dipakai sebagai lingkungan belajar.}{\faDesktop\quad operating system}{installation}{verification}
 
 Setiap kali komputer dinyalakan, ada satu program yang bekerja bahkan sebelum aplikasi
 lain dapat terbuka. Program tersebut mengatur seluruh perangkat keras, membagi waktu
@@ -27,8 +27,8 @@ Setelah menyelesaikan bab ini, kamu akan mampu:
     \item menjelaskan definisi dan fungsi utama sistem operasi;
     \item membedakan jenis-jenis sistem operasi dan arsitektur kernel beserta contohnya;
     \item menelusuri garis besar evolusi sistem operasi dari era awal hingga saat ini;
-    \item menginstalasi Ubuntu Server 24.04 LTS di mesin virtual VirtualBox;
-    \item menjelaskan konsep partisi disk dan tipe sistem berkas di Linux;
+    \item menginstalasi Ubuntu Server 24.04 LTS di \term{virtual machine} VirtualBox;
+    \item menjelaskan konsep partisi disk dan tipe \term{filesystem} di Linux;
     \item melakukan konfigurasi awal dan memverifikasi hasil instalasi.
 \end{enumerate}
 
@@ -59,7 +59,7 @@ Sistem operasi memiliki lima fungsi utama:
 
     \item[Manajemen I/O] Perangkat seperti keyboard, printer, dan kartu jaringan
     bekerja dengan cara yang sangat berbeda satu sama lain. Sistem operasi menyediakan
-    lapisan abstraksi melalui driver sehingga program tidak perlu memahami cara kerja
+    lapisan abstraksi melalui \term{driver} sehingga program tidak perlu memahami cara kerja
     internal setiap perangkat.
 
     \item[Keamanan dan Proteksi] Sistem operasi memverifikasi identitas pengguna saat
@@ -68,7 +68,7 @@ Sistem operasi memiliki lima fungsi utama:
 \end{description}
 
 \begin{notebox}
-Tanpa sistem operasi, setiap program harus dilengkapi driver sendiri untuk setiap
+Tanpa sistem operasi, setiap program harus dilengkapi \term{driver} sendiri untuk setiap
 perangkat keras yang ada. Bayangkan harus menulis ulang kode pengendali layar setiap
 kali membuat aplikasi baru. Sistem operasi menghilangkan pekerjaan berulang ini.
 \end{notebox}
@@ -79,7 +79,7 @@ kali membuat aplikasi baru. Sistem operasi menghilangkan pekerjaan berulang ini.
 Sistem operasi dikembangkan untuk berbagai jenis perangkat dengan kebutuhan yang berbeda.
 Tabel~\ref{tab:os-categories} merangkum kategori utama yang beredar saat ini.
 
-\begin{table}[htbp]
+\begin{table}[tbp]
     \centering
     \caption{Kategori sistem operasi berdasarkan platform}
     \label{tab:os-categories}
@@ -123,9 +123,14 @@ keras. Semua bagian lain dari sistem operasi, termasuk antarmuka pengguna dan ut
 berada di luar kernel dan harus meminta layanan kepada kernel untuk mengakses perangkat
 keras.
 
-\subsection{\term{Kernel space} dan \term{User space}}
+\subsection{Kernel Space and User Space}
 
 Sistem operasi modern membagi memori menjadi dua wilayah yang terpisah secara ketat:
+Pemisahan hubungan antarwilayah ini diringkas pada \cref{fig:os-layers}.
+Istilah \textit{ring} berasal dari tingkat hak akses prosesor pada arsitektur CPU.
+Semakin kecil nomornya, semakin tinggi hak aksesnya. Pada praktik sistem operasi modern,
+dua tingkat yang paling penting adalah \textbf{Ring 0} untuk kernel dan \textbf{Ring 3}
+untuk aplikasi biasa.
 
 \begin{description}[noitemsep,topsep=2pt,parsep=0pt]
     \item[\term{Kernel space} (Ring 0)] Wilayah dengan hak akses tertinggi. Hanya kode kernel
@@ -137,7 +142,7 @@ Sistem operasi modern membagi memori menjadi dua wilayah yang terpisah secara ke
     \textbf{system call} untuk meminta layanan dari kernel.
 \end{description}
 
-\begin{figure}[H]
+\begin{figure}[tbp]
     \centering
     \begin{tikzpicture}[node distance=1.2cm, scale=0.95]
         \node[draw, rectangle, minimum width=11cm, minimum height=1.4cm,
@@ -171,14 +176,16 @@ Sistem operasi modern membagi memori menjadi dua wilayah yang terpisah secara ke
 
 System call adalah mekanisme resmi satu-satunya yang digunakan aplikasi untuk meminta
 layanan kernel. Saat sebuah program membuka berkas, misalnya, ia memanggil system call
-\texttt{open()}. Kernel kemudian memvalidasi izin, berinteraksi dengan driver disk, dan
+\texttt{open()}. Kernel kemudian memvalidasi izin, berinteraksi dengan \term{driver} disk, dan
 mengembalikan hasilnya kepada program yang memanggil.
 
 \subsection{Jenis Arsitektur Kernel}
 
-Ada tiga pendekatan utama dalam merancang kernel sistem operasi:
+Ada tiga pendekatan utama dalam merancang kernel sistem operasi. Perbandingan
+karakteristik utamanya dirangkum pada \cref{tab:kernel-types}, sedangkan gambaran
+letak komponen layanannya ditunjukkan pada \cref{fig:kernel-comparison}.
 
-\begin{table}[htbp]
+\begin{table}[tbp]
     \centering
     \caption{Perbandingan jenis arsitektur kernel}
     \label{tab:kernel-types}
@@ -192,7 +199,7 @@ Ada tiga pendekatan utama dalam merancang kernel sistem operasi:
     }
         Aspek & Monolitik & Mikrokernel & Hibrida \\
         Deskripsi &
-            Semua layanan berjalan di \term{kernel space} dalam satu binary besar &
+            Semua layanan berjalan di \term{kernel space} dalam satu \term{binary} besar &
             Hanya layanan esensial di kernel; sisanya berjalan di \term{user space} &
             Menggabungkan pendekatan monolitik dan mikrokernel \\
         Kinerja & Sangat tinggi & Lebih rendah karena overhead komunikasi & Tinggi \\
@@ -206,11 +213,11 @@ Ada tiga pendekatan utama dalam merancang kernel sistem operasi:
 
 Linux menggunakan arsitektur monolitik dengan dukungan modul yang dapat dimuat secara
 dinamis. Pendekatan ini memberi Linux kinerja tinggi sekaligus fleksibilitas karena
-driver dapat ditambahkan tanpa harus mengompilasi ulang seluruh kernel.
+\term{driver} dapat ditambahkan tanpa harus mengompilasi ulang seluruh kernel.
 
-\begin{figure}[H]
+\begin{figure}[tbp]
     \centering
-    \resizebox{0.85\textwidth}{!}{%
+    \resizebox{0.78\textwidth}{!}{%
     \begin{tikzpicture}
         % Monolitik
         \node[draw, rectangle, minimum width=3.5cm, minimum height=5cm]
@@ -244,8 +251,9 @@ driver dapat ditambahkan tanpa harus mengompilasi ulang seluruh kernel.
             font=\small] {Windows, macOS};
     \end{tikzpicture}%
     }
-    \caption{Perbandingan arsitektur kernel: area merah menunjukkan layanan di
-    \term{kernel space}, area biru di \term{user space}}
+    \caption{Perbandingan arsitektur kernel: blok inti menunjukkan layanan di
+    \term{kernel space}, sedangkan blok terpisah di bagian atas menunjukkan layanan di
+    \term{user space}}
     \label{fig:kernel-comparison}
 \end{figure}
 
@@ -254,9 +262,9 @@ driver dapat ditambahkan tanpa harus mengompilasi ulang seluruh kernel.
 
 Sistem operasi berkembang seiring kemajuan perangkat keras dan kebutuhan pengguna.
 Memahami garis besar sejarahnya menjelaskan mengapa sistem operasi modern dirancang
-seperti yang ada sekarang.
+seperti yang ada sekarang. Tonggak utamanya diringkas pada \cref{tab:os-history}.
 
-\begin{table}[htbp]
+\begin{table}[tbp]
     \centering
     \caption{Garis besar evolusi sistem operasi}
     \label{tab:os-history}
@@ -335,17 +343,17 @@ digunakan di lingkungan cloud komersial.
 \begin{notebox}
 Linux bukan satu sistem operasi tunggal. Linux adalah nama kernel. Berbagai distribusi
 seperti Ubuntu, Debian, Fedora, dan Arch Linux semuanya menggunakan kernel Linux yang
-sama, tetapi berbeda dalam pengelola paket perangkat lunak, konfigurasi bawaan, dan
+sama, tetapi berbeda dalam \term{package manager}, konfigurasi bawaan, dan
 target penggunanya.
 \end{notebox}
 
 \section{Instalasi Ubuntu Server di VirtualBox}
 \label{sec:installation}
 
-Praktek pada bab ini menggunakan \textbf{mesin virtual} (virtual machine). Mesin
-virtual adalah komputer yang disimulasikan di dalam komputer fisik menggunakan perangkat
-lunak. Pendekatan ini aman untuk belajar: jika terjadi kesalahan konfigurasi, mesin
-virtual dapat dikembalikan ke kondisi semula tanpa memengaruhi sistem utama sama sekali.
+Praktek pada bab ini menggunakan \textbf{\term{virtual machine}}. \term{Virtual machine}
+adalah komputer yang disimulasikan di dalam komputer fisik menggunakan perangkat
+lunak. Pendekatan ini aman untuk belajar: jika terjadi kesalahan konfigurasi, \term{virtual machine}
+dapat dikembalikan ke kondisi semula tanpa memengaruhi sistem utama sama sekali.
 
 \begin{notebox}
 Seluruh praktek pada bab ini dijalankan dari antarmuka teks (command line) Ubuntu
@@ -368,7 +376,7 @@ agar sistem tetap stabil dalam jangka panjang.
 
 \subsection*{Praktek 1.1 Membuat Mesin Virtual}
 
-Buat sebuah mesin virtual baru di VirtualBox untuk menginstalasi Ubuntu Server.
+Buat sebuah \term{virtual machine} baru di VirtualBox untuk menginstalasi Ubuntu Server.
 
 \begin{enumerate}
     \item Buka VirtualBox, lalu klik tombol \textbf{New} di bagian atas jendela.
@@ -381,13 +389,13 @@ Buat sebuah mesin virtual baru di VirtualBox untuk menginstalasi Ubuntu Server.
     \item Tetapkan memori (RAM) sebesar \textbf{2048 MB} (2 GB).
     \item Buat hard disk virtual baru dengan ukuran \textbf{25 GB}, tipe VDI, dan
     alokasi dinamis.
-    \item Setelah mesin virtual terbentuk, buka \textbf{Settings} lalu navigasi ke
+    \item Setelah \term{virtual machine} terbentuk, buka \textbf{Settings} lalu navigasi ke
     \textbf{Storage}.
     \item Pada Controller: IDE, tambahkan optical drive dan pilih berkas ISO Ubuntu
     Server yang sudah diunduh.
-    \item Pastikan tab \textbf{Network} menggunakan mode \textbf{NAT} agar mesin virtual
+    \item Pastikan tab \textbf{Network} menggunakan mode \textbf{NAT} agar \term{virtual machine}
     dapat mengakses internet.
-    \item Klik \textbf{Start} untuk menyalakan mesin virtual.
+    \item Klik \textbf{Start} untuk menyalakan \term{virtual machine}.
 
     \textit{Amati:} Mesin virtual melakukan boot dari ISO Ubuntu Server dan menampilkan
     menu instalasi. Proses ini identik dengan menyalakan komputer fisik dari media
@@ -447,7 +455,7 @@ ip addr show
 \end{enumerate}
 
 \begin{tipbox}
-Setelah instalasi berhasil, segera buat snapshot di VirtualBox. Matikan mesin virtual,
+Setelah instalasi berhasil, segera buat snapshot di VirtualBox. Matikan \term{virtual machine},
 buka menu \textbf{Snapshots}, klik \textbf{Take}, lalu beri nama \textit{Fresh Install}.
 Snapshot ini memungkinkan pemulihan ke kondisi instalasi bersih kapan pun diperlukan
 tanpa harus menginstalasi ulang dari awal.
@@ -465,7 +473,7 @@ Pembaruan sistem memastikan semua paket yang terinstalasi berada pada versi terb
 dengan tambalan keamanan yang tersedia.
 
 \begin{lstlisting}[language=bash, caption={Memperbarui paket sistem}]
-# Unduh informasi paket terbaru dari repositori
+# Unduh informasi paket terbaru dari repository
 sudo apt update
 
 # Perbarui semua paket ke versi terbaru
@@ -476,7 +484,7 @@ sudo apt autoremove -y
 \end{lstlisting}
 
 \textit{Amati:} Perintah \cmd{apt update} tidak menginstalasi apa pun. Perintah ini
-hanya memperbarui daftar paket yang tersedia dari server repositori. Perintah
+hanya memperbarui daftar paket yang tersedia dari server \term{repository}. Perintah
 \cmd{apt upgrade} baru melakukan instalasi berdasarkan daftar yang sudah diperbarui.
 
 \subsection*{Praktek 1.5 Instalasi Utilitas Dasar}
@@ -527,20 +535,21 @@ koneksi internet berfungsi dengan baik. Perintah \cmd{df -h} menampilkan penggun
 setiap partisi dalam satuan GB atau MB yang mudah dibaca. Tekan \keystroke{q} untuk
 keluar dari \cmd{htop}.
 
-\section{Partisi Disk dan Sistem Berkas}
+\section{Partisi Disk dan Filesystem}
 \label{sec:disk-partitioning}
 
 Sebuah disk dapat dibagi menjadi beberapa bagian yang disebut \textbf{partisi}. Bayangkan
 sebuah lemari arsip dengan laci-laci terpisah: satu laci untuk dokumen kerja, satu untuk
 dokumen pribadi, dan satu untuk arsip lama. Partisi bekerja dengan cara yang sama. Setiap
-partisi bersifat independen, dapat menggunakan sistem berkas yang berbeda, dan dapat
+partisi bersifat independen, dapat menggunakan \term{filesystem} yang berbeda, dan dapat
 diproteksi secara terpisah.
 
 \subsection{Tabel Partisi: MBR dan GPT}
 
-Ada dua standar tabel partisi yang digunakan saat ini:
+Ada dua standar tabel partisi yang digunakan saat ini. Perbedaannya diringkas pada
+\cref{tab:mbr-gpt}.
 
-\begin{table}[htbp]
+\begin{table}[tbp]
     \centering
     \caption{Perbandingan MBR dan GPT}
     \label{tab:mbr-gpt}
@@ -562,10 +571,10 @@ Ada dua standar tabel partisi yang digunakan saat ini:
 
 Instalasi Ubuntu Server 24.04 LTS pada sistem modern menggunakan GPT secara otomatis.
 
-\subsection{Tata Letak Partisi Linux}
+\subsection{Linux Partition Layout}
 
-Saat memilih \textit{Use an entire disk} pada Praktek 1.2, Ubuntu membuat tata letak
-partisi berikut secara otomatis:
+Saat memilih \textit{Use an entire disk} pada Praktek 1.2, Ubuntu membuat
+\term{partition layout} berikut secara otomatis:
 
 \begin{description}[noitemsep,topsep=2pt,parsep=0pt]
     \item[\texttt{/boot/efi}] Partisi EFI berukuran kecil (512 MB) untuk menyimpan
@@ -576,14 +585,15 @@ partisi berikut secara otomatis:
     data yang tidak aktif dipindahkan ke swap untuk memberi ruang bagi proses yang aktif.
 \end{description}
 
-\subsection{Tipe Sistem Berkas}
+\subsection{Tipe Filesystem}
 
-Setiap partisi diformat dengan sistem berkas tertentu yang menentukan bagaimana data
-disimpan dan diorganisasikan:
+Setiap partisi diformat dengan \term{filesystem} tertentu yang menentukan bagaimana data
+disimpan dan diorganisasikan. Contoh yang paling umum pada instalasi Linux diringkas pada
+\cref{tab:filesystems}.
 
-\begin{table}[htbp]
+\begin{table}[tbp]
     \centering
-    \caption{Tipe sistem berkas umum di Linux}
+    \caption{Tipe filesystem umum di Linux}
     \label{tab:filesystems}
     \begin{tblr}{
         colspec = {lX[l]l},
@@ -593,32 +603,32 @@ disimpan dan diorganisasikan:
         row{1} = {font=\bfseries},
         cells = {font=\small}
     }
-        Sistem Berkas & Karakteristik & Digunakan untuk \\
+        Filesystem & Karakteristik & Digunakan untuk \\
         ext4 & Stabil, matang, mendukung journaling & Partisi root (\texttt{/}) dan data \\
-        swap & Area memori virtual di disk & Partisi swap \\
+        swap & Area virtual memory di disk & Partisi swap \\
         FAT32 / vfat & Kompatibel dengan semua firmware & Partisi \texttt{/boot/efi} \\
     \end{tblr}
 \end{table}
 
-\subsection*{Praktek 1.7 Memeriksa Partisi dan Sistem Berkas}
+\subsection*{Praktek 1.7 Memeriksa Partisi dan Filesystem}
 
-Setelah sistem terinstalasi, periksa tata letak partisi yang dibuat secara otomatis.
+Setelah sistem terinstalasi, periksa \term{partition layout} yang dibuat secara otomatis.
 
-\begin{lstlisting}[language=bash, caption={Memeriksa partisi dan sistem berkas}]
-# Tampilkan tata letak disk dan partisi dalam bentuk pohon
+\begin{lstlisting}[language=bash, caption={Memeriksa partisi dan filesystem}]
+# Tampilkan disk layout dan partisi dalam bentuk pohon
 lsblk
 
 # Tampilkan detail partisi termasuk ukuran dan tipe
 sudo fdisk -l
 
-# Tampilkan tipe sistem berkas setiap partisi
+# Tampilkan tipe filesystem setiap partisi
 lsblk -f
 \end{lstlisting}
 
 \textit{Amati:} Perintah \cmd{lsblk} menampilkan semua disk dan partisi dalam struktur
 pohon. Perhatikan nama perangkat seperti \texttt{sda1}, \texttt{sda2}, dan seterusnya,
 serta ukuran masing-masing. Perintah \cmd{lsblk -f} menambahkan kolom FSTYPE yang
-menunjukkan sistem berkas setiap partisi, misalnya \texttt{ext4} untuk partisi root
+menunjukkan \term{filesystem} setiap partisi, misalnya \texttt{ext4} untuk partisi root
 dan \texttt{vfat} untuk partisi EFI.
 
 \section{Rangkuman}
@@ -636,12 +646,12 @@ Dalam bab ini, kamu telah mempelajari:
     \item \textbf{Evolusi sistem operasi}: Unix (1969) menjadi fondasi sistem operasi
     modern; Linux (1991) diturunkan dari filosofi Unix dan kini mendominasi server serta
     infrastruktur cloud global.
-    \item \textbf{Instalasi Ubuntu Server}: mesin virtual di VirtualBox menyediakan
+    \item \textbf{Instalasi Ubuntu Server}: \term{virtual machine} di VirtualBox menyediakan
     lingkungan pembelajaran yang aman; instalasi mencakup pembuatan VM, pemasangan OS,
     dan verifikasi sistem melalui perintah \cmd{uname -r} dan \cmd{ip addr show}.
-    \item \textbf{Partisi dan sistem berkas}: disk dibagi menjadi partisi-partisi
+    \item \textbf{Partisi dan filesystem}: disk dibagi menjadi partisi-partisi
     independen; GPT menggantikan MBR pada sistem modern; Linux menggunakan ext4 untuk
-    partisi root, FAT32 untuk EFI, dan area swap sebagai memori virtual.
+    partisi root, FAT32 untuk EFI, dan area swap sebagai \term{virtual memory}.
     \item \textbf{Konfigurasi awal}: pembaruan sistem dengan \cmd{apt update} dan
     \cmd{apt upgrade}, instalasi utilitas dasar, serta verifikasi partisi dengan
     \cmd{lsblk} memastikan sistem siap untuk praktek selanjutnya.
@@ -688,7 +698,7 @@ Jawab pertanyaan berikut berdasarkan materi yang telah dipelajari pada bab ini:
     \item Unix lahir pada 1969 dan Linux pada 1991. Jelaskan hubungan antara keduanya
     dan mengapa filosofi Unix masih relevan hingga era cloud computing saat ini.
     \item Jalankan perintah \cmd{lsblk -f} pada sistem Ubuntu Server yang sudah
-    terinstalasi. Catat nama partisi, tipe sistem berkas, dan ukuran setiap partisi.
+    terinstalasi. Catat nama partisi, tipe \term{filesystem}, dan ukuran setiap partisi.
     Identifikasi partisi mana yang merupakan root (\texttt{/}), partisi EFI, dan area
     swap. Sertakan output perintah sebagai screenshot.
 \end{enumerate}

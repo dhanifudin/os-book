@@ -6,14 +6,14 @@
 \chapter{Struktur Direktori dan Operasi File}
 \label{ch:filesystem-ops}
 
-\chapterhero{orange}{Jelajahi struktur sistem berkas Linux, pahami jenis file dan tautan, lalu kuasai pencarian serta pengarsipan untuk pekerjaan harian.}{FHS}{tautan}{arsip}
+\chapterhero{orange}{Jelajahi struktur filesystem Linux, pahami jenis file dan tautan, lalu kuasai pencarian serta pengarsipan untuk pekerjaan harian.}{\faFolderOpen\quad FHS}{\faLink\quad symbolic link}{\faArchive\quad archive}
 
 Bayangkan kamu baru pindah ke rumah kontrakan baru. Ada dapur untuk menyimpan bahan makanan,
 kamar tidur untuk barang pribadi, gudang untuk alat-alat, dan teras untuk barang sementara
 yang akan segera dipindah. Setiap ruangan punya fungsi khusus dan semua orang di rumah itu
 tahu ke mana harus pergi ketika butuh sesuatu. Linux bekerja dengan prinsip yang sama.
 
-Sistem file Linux bukan tumpukan berkas yang diletakkan sembarangan. Setiap direktori punya
+\term{Filesystem} Linux bukan tumpukan berkas yang diletakkan sembarangan. Setiap direktori punya
 peran yang sudah ditetapkan. File konfigurasi aplikasi tinggal di \dir{/etc/}, catatan
 aktivitas sistem tersimpan di \dir{/var/log/}, dan program yang bisa dijalankan oleh semua
 pengguna ada di \dir{/bin/}. Ketika kamu tahu aturan ini, mencari file di Linux menjadi
@@ -47,12 +47,12 @@ cd ~/lab-os/chapter04-files
 \end{notebox}
 
 % ------------------------------------------------------------------------
-\section{Standar Hierarki Sistem File}
+\section{Standar Hierarki Filesystem}
 \label{sec:fhs}
 
 Linux mengatur semua berkas dalam satu pohon direktori tunggal yang dimulai dari akar,
 yaitu \dir{/}. Tidak ada konsep ``drive C'' atau ``drive D'' seperti di Windows. Semua
-perangkat penyimpanan, partisi, bahkan filesystem jaringan, dipasang (\textit{mount}) ke
+perangkat penyimpanan, partisi, bahkan \term{filesystem} jaringan, dipasang (\term{mount}) ke
 dalam satu pohon yang sama. Standar yang mengatur tata letak ini disebut
 \textit{Filesystem Hierarchy Standard} (FHS).
 
@@ -74,11 +74,11 @@ menghafalkan ini secara alami seiring penggunaan sehari-hari.
     \item \dir{/root/} : direktori pribadi pengguna \texttt{root}. Dipisah dari \dir{/home/} untuk keamanan.
     \item \dir{/var/} : data yang terus berubah selama sistem berjalan. Subdirektori paling penting adalah \dir{/var/log/} yang menyimpan log sistem.
     \item \dir{/tmp/} : berkas sementara. Biasanya dikosongkan otomatis saat sistem dinyalakan ulang.
-    \item \dir{/usr/} : program dan library untuk pengguna. \dir{/usr/bin/} berisi sebagian besar aplikasi yang kamu instal.
+    \item \dir{/usr/} : program dan \term{shared library} untuk pengguna. \dir{/usr/bin/} berisi sebagian besar aplikasi yang kamu instal.
     \item \dir{/opt/} : aplikasi pihak ketiga yang dipasang secara mandiri di luar manajer paket.
     \item \dir{/dev/} : berkas perangkat. \file{/dev/sda} adalah hard disk pertama, \file{/dev/tty} adalah terminal.
     \item \dir{/proc/} : filesystem virtual dari kernel. Membacanya memberikan informasi tentang proses dan konfigurasi kernel saat ini.
-    \item \dir{/sys/} : filesystem virtual lain dari kernel, berisi informasi perangkat keras dan driver.
+    \item \dir{/sys/} : \term{filesystem} virtual lain dari kernel, berisi informasi perangkat keras dan \term{driver}.
     \item \dir{/mnt/} dan \dir{/media/} : titik pemasangan untuk perangkat eksternal seperti USB atau partisi tambahan.
 \end{itemize}
 
@@ -133,7 +133,7 @@ penting untuk membedakannya karena perilaku sistem terhadap masing-masing jenis 
 Berikut karakter penanda jenis berkas yang akan sering kamu temui:
 
 \begin{itemize}
-    \item \texttt{-} : berkas reguler. Dokumen teks, gambar, binary program, semua masuk kategori ini.
+    \item \texttt{-} : berkas reguler. Dokumen teks, gambar, \term{binary} program, semua masuk kategori ini.
     \item \texttt{d} : direktori. Sebuah kontainer yang bisa berisi berkas dan direktori lain.
     \item \texttt{l} : tautan simbolis (\textit{symbolic link}). Sebuah pintasan yang menunjuk ke berkas atau direktori lain.
     \item \texttt{b} : berkas perangkat blok (\textit{block device}). Contohnya adalah partisi hard disk seperti \file{/dev/sda1}.
@@ -147,7 +147,7 @@ Selain \cmd{ls -l}, dua perintah lain sangat berguna untuk menginspeksi berkas. 
 waktu akses terakhir, waktu modifikasi, dan permission dalam notasi oktal maupun simbolis.
 Perintah \cmd{file} menebak tipe konten sebuah berkas berdasarkan isinya, bukan ekstensinya.
 Ini berguna ketika kamu menemukan berkas tanpa ekstensi dan ingin tahu apakah itu teks,
-binary, atau sesuatu yang lain.
+\term{binary}, atau sesuatu yang lain.
 
 \subsection*{Praktek 4.2 Identifikasi Berbagai Jenis Berkas}
 
@@ -288,7 +288,7 @@ database terakhir diperbarui, \cmd{locate} tidak akan menemukannya. Gunakan \cmd
 ketika kamu butuh jawaban cepat dan berkas yang dicari bukan yang baru saja dibuat.
 
 Dua perintah tambahan yang berguna untuk mencari program: \cmd{which} menampilkan lokasi
-lengkap sebuah program yang ada di \var{PATH}, dan \cmd{whereis} menampilkan lokasi binary,
+lengkap sebuah program yang ada di \var{PATH}, dan \cmd{whereis} menampilkan lokasi \term{binary},
 halaman manual, dan kode sumber sebuah program.
 
 \subsection*{Praktek 4.4 Cari Berkas dengan Kriteria Tertentu}

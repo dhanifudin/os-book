@@ -1,17 +1,17 @@
 %% ========================================================================
-%% Chapter 12: Manajemen Layanan (Services)
+%% Chapter 12: Manajemen Service
 %% ========================================================================
 
-\chapter{Manajemen Layanan (Services)}
+\chapter{Manajemen Service}
 \label{ch:service-management}
 
-\chapterhero{magenta}{Pahami alur hidup layanan Linux modern, dari unit systemd dan ketergantungan hingga logging dan hardening layanan jaringan.}{systemd}{unit}{journal}
+\chapterhero{magenta}{Pahami alur hidup service Linux modern, dari unit systemd dan ketergantungan hingga logging dan hardening service jaringan.}{\faCogs\quad systemd}{\faCube\quad unit}{\faBook\quad journal}
 
 Bayangkan sebuah kantor besar yang buka 24 jam. Di sana ada resepsionis yang selalu siap menerima tamu, petugas keamanan yang berjaga di pintu, teknisi jaringan yang memantau koneksi, dan sistem CCTV yang terus merekam. Mereka semua bekerja di latar belakang, tidak perlu diinstruksikan setiap kali ada tamu datang. Di Linux, program-program yang bekerja seperti itu disebut \term{service}, yaitu proses yang berjalan di latar belakang, menunggu permintaan, dan merespons secara otomatis.
 
-Setiap kali kamu menghubungkan laptop ke server via SSH, ada layanan bernama \texttt{sshd} yang mendengarkan koneksi dan menjawab. Setiap kali halaman web terbuka, ada layanan web server yang memprosesnya. Layanan-layanan ini dikelola oleh sebuah sistem khusus yang disebut \term{init system}. Pada Linux modern termasuk Ubuntu 22.04, \term{init system} yang digunakan adalah \textbf{systemd}.
+Setiap kali kamu menghubungkan laptop ke server via SSH, ada \term{service} bernama \texttt{sshd} yang mendengarkan koneksi dan menjawab. Setiap kali halaman web terbuka, ada \term{service} web server yang memprosesnya. Service semacam ini dikelola oleh sebuah sistem khusus yang disebut \term{init system}. Pada Linux modern termasuk Ubuntu 22.04, \term{init system} yang digunakan adalah \textbf{systemd}.
 
-Mengelola layanan adalah salah satu tugas paling dasar seorang administrator sistem. Memulai, menghentikan, mengaktifkan saat boot, memeriksa status, membaca log ketika ada masalah: semua itu dilakukan melalui satu perintah utama bernama \cmd{systemctl}. Bab ini membahas cara menguasai perintah itu dan memahami struktur di baliknya.
+Mengelola \term{service} adalah salah satu tugas paling dasar seorang administrator sistem. Memulai, menghentikan, mengaktifkan saat boot, memeriksa status, membaca log ketika ada masalah: semua itu dilakukan melalui satu perintah utama bernama \cmd{systemctl}. Bab ini membahas cara menguasai perintah itu dan memahami struktur di baliknya.
 
 \textbf{Yang Akan Kamu Pelajari}
 
@@ -39,7 +39,7 @@ cd ~/lab-os/chapter10-services
 \label{sec:init-system}
 %% ========================================================================
 
-Setelah kernel Linux selesai memuat dirinya sendiri, ia menjalankan proses pertama di ruang pengguna. Proses ini mendapat nomor proses (PID) 1 dan bertanggung jawab memulai semua layanan berikutnya: jaringan, logging, printer, server web, database, dan seterusnya. Proses dengan PID 1 inilah yang disebut \term{init system}.
+Setelah kernel Linux selesai memuat dirinya sendiri, ia menjalankan proses pertama di \term{user space}. Proses ini mendapat nomor proses (PID) 1 dan bertanggung jawab memulai semua layanan berikutnya: jaringan, logging, printer, server web, database, dan seterusnya. Proses dengan PID 1 inilah yang disebut \term{init system}.
 
 Secara historis, Linux menggunakan \textbf{SysV init} yang berbasis skrip shell berurutan di direktori \dir{/etc/init.d/}. Setiap layanan diwakili oleh sebuah skrip yang bisa dipanggil dengan argumen \texttt{start}, \texttt{stop}, atau \texttt{restart}. Pendekatannya sederhana dan mudah dipahami, tetapi lambat karena layanan dijalankan satu per satu secara berurutan.
 
@@ -68,17 +68,17 @@ Dalam systemd, semua yang dikelola disebut \term{unit}. Ada beberapa tipe \term{
 
 \begin{itemize}
     \item \texttt{.service}: layanan yang berjalan sebagai proses latar belakang
-    \item \texttt{.socket}: endpoint jaringan atau IPC; layanan terkait baru dijalankan saat ada koneksi masuk
+    \item \texttt{.socket}: \term{endpoint} jaringan atau IPC; layanan terkait baru dijalankan saat ada koneksi masuk
     \item \texttt{.timer}: tugas terjadwal, alternatif modern untuk cron
-    \item \texttt{.target}: pengelompokan unit, menggantikan konsep runlevel lama
-    \item \texttt{.mount}: titik mount filesystem yang dikelola systemd
+    \item \texttt{.target}: pengelompokan unit, menggantikan konsep \term{runlevel} lama
+    \item \texttt{.mount}: titik \term{mount} \term{filesystem} yang dikelola systemd
 \end{itemize}
 
 Berkas unit disimpan di beberapa lokasi dengan prioritas berbeda:
 
 \begin{itemize}
     \item \file{/lib/systemd/system/} atau \file{/usr/lib/systemd/system/}: unit bawaan paket, jangan diedit langsung
-    \item \file{/etc/systemd/system/}: unit kustom dan override lokal, tempat kamu bekerja
+    \item \file{/etc/systemd/system/}: unit kustom dan \term{override} lokal, tempat kamu bekerja
     \item \file{~/.config/systemd/user/}: unit tingkat pengguna, tidak perlu hak root
 \end{itemize}
 
@@ -96,7 +96,7 @@ systemctl list-units --type=service --state=running
     \textit{Amati:} Setiap baris menampilkan nama unit, status aktif/tidaknya, status dari sudut pandang systemd, dan deskripsi singkat.
 
     \item Lihat semua unit service yang ada (aktif maupun tidak).
-\begin{lstlisting}[language=bash, caption={Melihat semua unit service}]
+\begin{lstlisting}[language=bash, caption={Melihat Semua Unit Service}]
 systemctl list-unit-files --type=service | head -30
 # enabled = akan start otomatis saat boot
 # disabled = tidak start otomatis, bisa dijalankan manual

@@ -6,7 +6,7 @@
 \chapter{Manajemen Proses}
 \label{ch:process-management}
 
-\chapterhero{red}{Amati bagaimana proses dibuat, dijadwalkan, diprioritaskan, dan dihentikan agar kamu bisa mengendalikan beban kerja sistem dengan tepat.}{proses}{sinyal}{prioritas}
+\chapterhero{red}{Amati bagaimana proses dibuat, dijadwalkan, diprioritaskan, dan dihentikan agar kamu bisa mengendalikan beban kerja sistem dengan tepat.}{\faTasks\quad process}{\faBell\quad signal}{\faSortAmountDown\quad priority}
 
 Saat kamu membuka aplikasi musik di ponsel sambil membaca pesan dan men-download foto,
 ponsel itu menjalankan beberapa program sekaligus. Tidak ada yang terasa lambat karena
@@ -143,11 +143,13 @@ selama hidupnya. Kondisi ini menggambarkan apa yang sedang dilakukan proses ters
 suatu saat. Kamu bisa melihat kondisi setiap proses pada kolom \texttt{STAT} di output
 \cmd{ps aux}.
 
-Berikut kondisi-kondisi proses yang akan sering kamu temui:
+Berikut kondisi-kondisi proses yang akan sering kamu temui. Ringkasannya dapat dilihat
+pada \cref{tab:process-states}:
 
 \begin{table}[htbp]
     \centering
     \caption{Kondisi proses di Linux dan artinya}
+    \label{tab:process-states}
     \begin{tabular}{lll}
         \hline
         \textbf{Kode} & \textbf{Nama} & \textbf{Keterangan} \\
@@ -316,21 +318,22 @@ Bandingkan kolom \texttt{NI} dan \texttt{PR} (priority) ketiga proses: apakah ni
 \end{challengebox}
 
 % ------------------------------------------------------------------------
-\section{Sinyal Proses}
+\section{Process Signal}
 \label{sec:process-signals}
 
 Bagaimana cara berkomunikasi dengan proses yang sedang berjalan? Kamu tidak bisa mengetik
 langsung ke dalamnya jika proses itu berjalan di latar belakang tanpa antarmuka interaktif.
-Jawabannya adalah \textbf{sinyal}. Sinyal adalah notifikasi singkat yang dikirim ke sebuah
+Jawabannya adalah \textbf{\term{signal}}. \term{Signal} adalah notifikasi singkat yang dikirim ke sebuah
 proses untuk memintanya melakukan sesuatu: berhenti, dijeda, memuat ulang konfigurasi,
 atau tindakan lainnya.
 
-Setiap sinyal punya nama dan nomor. Kamu bisa menggunakan keduanya secara bergantian.
-Berikut sinyal-sinyal yang paling sering digunakan:
+Setiap \term{signal} punya nama dan nomor. Kamu bisa menggunakan keduanya secara bergantian.
+Signal yang paling sering digunakan diringkas pada \cref{tab:important-signals}:
 
 \begin{table}[htbp]
     \centering
-    \caption{Sinyal-sinyal penting di Linux}
+    \caption{Signal penting di Linux}
+    \label{tab:important-signals}
     \begin{tabular}{llll}
         \hline
         \textbf{Nama} & \textbf{No.} & \textbf{Shortcut} & \textbf{Keterangan} \\
@@ -346,9 +349,9 @@ Berikut sinyal-sinyal yang paling sering digunakan:
 \end{table}
 
 Perbedaan terpenting adalah antara \textbf{SIGTERM} dan \textbf{SIGKILL}. SIGTERM adalah
-permintaan sopan kepada proses untuk berhenti. Proses bisa menangkap sinyal ini, menyimpan
+permintaan sopan kepada proses untuk berhenti. Proses bisa menangkap \term{signal} ini, menyimpan
 data yang belum tersimpan, menutup koneksi yang terbuka, lalu berhenti dengan bersih.
-SIGKILL adalah perintah paksa dari kernel: proses tidak bisa menolak atau menangkap sinyal
+SIGKILL adalah perintah paksa dari kernel: proses tidak bisa menolak atau menangkap \term{signal}
 ini. Kernel langsung mengakhiri proses tanpa memberi kesempatan cleanup. Selalu coba
 SIGTERM terlebih dahulu; gunakan SIGKILL hanya jika proses tidak merespons SIGTERM setelah
 beberapa detik.
@@ -450,11 +453,13 @@ Jika sebuah proses sudah terlanjur berjalan di foreground dan ternyata butuh wak
 kamu bisa menekan \keystroke{Ctrl+Z} untuk menjeda dan memindahkannya ke background
 menggunakan \cmd{bg}.
 
-Berikut perintah-perintah manajemen job yang perlu kamu kuasai:
+Berikut perintah-perintah manajemen job yang perlu kamu kuasai. Ringkasannya dapat
+dilihat pada \cref{tab:job-management-commands}:
 
 \begin{table}[htbp]
     \centering
     \caption{Perintah manajemen job di shell}
+    \label{tab:job-management-commands}
     \begin{tabular}{ll}
         \hline
         \textbf{Perintah} & \textbf{Fungsi} \\

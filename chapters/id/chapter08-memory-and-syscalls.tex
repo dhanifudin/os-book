@@ -4,7 +4,7 @@
 \chapter{Manajemen Memori dan System Call}
 \label{ch:memory-and-syscalls}
 
-\chapterhero{blue}{Hubungkan konsep RAM, swap, dan tekanan memori dengan cara program berbicara ke kernel melalui system call dan alat diagnosis Linux.}{memori}{swap}{strace}
+\chapterhero{blue}{Hubungkan konsep RAM, swap, dan tekanan memori dengan cara program berbicara ke kernel melalui system call dan alat diagnosis Linux.}{\faMemory\quad memory}{\faHdd\quad swap}{\faSearch\quad strace}
 
 Bayangkan meja kerja kamu. Di atas meja tersimpan dokumen yang sedang aktif digunakan
 --- inilah yang diibaratkan sebagai \textbf{RAM}. Saat meja mulai penuh, beberapa
@@ -20,7 +20,7 @@ mengelola memori. Di bab ini kita juga akan mempelajari \textbf{system call} ---
 Setelah menyelesaikan bab ini, kamu akan mampu:
 
 \begin{enumerate}
-    \item memahami arsitektur memori virtual sebuah proses Linux;
+    \item memahami arsitektur \term{virtual memory} sebuah proses Linux;
     \item mengamati dan menginterpretasi aktivitas paging dengan \texttt{vmstat};
     \item membuat dan mengonfigurasi swap space beserta parameter swappiness;
     \item mengidentifikasi proses dengan penggunaan memori terbesar;
@@ -72,7 +72,7 @@ dapat diakses kernel.
     \draw[thick] (-0.2,0.4) -- (-0.5,0.4) -- (-0.5,5.0) -- (-0.2,5.0);
     \node[font=\footnotesize, rotate=90, anchor=south] at (-0.8, 2.7) {User Space};
 \end{tikzpicture}
-\caption{Peta memori virtual sebuah proses Linux. Setiap proses memiliki ruang alamat
+\caption{Peta virtual memory sebuah proses Linux. Setiap proses memiliki address space
 virtual sendiri yang diisolasi dari proses lain.}
 \label{fig:memory-layout}
 \end{figure}
@@ -157,7 +157,7 @@ dan memuatnya kembali (\texttt{si}/\texttt{so} pada \texttt{vmstat}) saat dibutu
 
 \subsection*{Praktek 8.2 Mengamati Aktivitas Paging}
 
-\begin{lstlisting}[caption={Statistik memori virtual}]
+\begin{lstlisting}[caption={Statistik Virtual Memory}]
 vmstat 1 5
 \end{lstlisting}
 
@@ -257,7 +257,7 @@ dua pendekatan: \textbf{real-time} dengan \texttt{top} (perubahan dinamis saat i
 dan \textbf{snapshot} dengan \texttt{ps aux} (daftar proses pada satu titik waktu,
 cocok untuk laporan). Kolom penting pada \texttt{ps aux}: \texttt{\%MEM} (persentase
 RAM), \texttt{RSS} (RAM fisik benar-benar terpakai saat ini dalam KB), dan
-\texttt{VSZ} (total memori virtual yang dialokasikan, selalu lebih besar dari RSS).
+\texttt{VSZ} (total \term{virtual memory} yang dialokasikan, selalu lebih besar dari RSS).
 
 \subsection*{Praktek 8.4 Monitor Memori dengan Skrip}
 
@@ -366,7 +366,7 @@ Alur lengkapnya ditunjukkan pada \cref{fig:syscall-flow}.
     \draw[->, thick, blue!60!black] (ret) -- (fin)
         node[midway, above, font=\footnotesize] {nilai kembali};
 \end{tikzpicture}
-\caption{Alur system call \texttt{printf}: program user meminta layanan kernel melalui
+\caption{Alur System Call \texttt{printf}: program user meminta layanan kernel melalui
 antarmuka yang terkontrol, bukan langsung ke hardware.}
 \label{fig:syscall-flow}
 \end{figure}
@@ -398,7 +398,7 @@ bit izin baca (\texttt{r}). Kembalikan permission dengan \texttt{chmod 644 app.c
 
 \textbf{Langkah 2}: Amati semua \term{system call} dari perintah \texttt{ls}.
 
-\begin{lstlisting}[caption={Detail dan ringkasan system call}]
+\begin{lstlisting}[caption={Detail dan Ringkasan System Call}]
 strace ls 2>&1 | head -n 30
 strace -c ls
 \end{lstlisting}
@@ -434,8 +434,8 @@ dari satu file hanya untuk menampilkan \texttt{/etc/hostname}?
 Dalam bab ini, kamu telah mempelajari:
 
 \begin{itemize}
-    \item \textbf{Arsitektur memori virtual}: setiap proses memiliki ruang alamat virtual
-          sendiri yang dipetakan kernel ke RAM fisik melalui page table.
+    \item \textbf{Arsitektur virtual memory}: setiap proses memiliki ruang alamat virtual
+          sendiri yang dipetakan kernel ke RAM fisik melalui \term{page table}.
     \item \textbf{Aktivitas paging}: \cmd{vmstat} menampilkan kolom \texttt{si}/\texttt{so}
           untuk swap-in dan swap-out; angka tinggi menandakan tekanan memori.
     \item \textbf{Konfigurasi swap}: swap file dibuat dengan \cmd{fallocate}, diformat
@@ -537,7 +537,7 @@ permission \texttt{600} penting?
 
 \subsubsection{Latihan 8.4 Analisis System Call dengan strace}
 
-\begin{lstlisting}[caption={Simpan ringkasan dan detail system call}]
+\begin{lstlisting}[caption={Simpan Ringkasan dan Detail System Call}]
 strace -c ls 2> strace-summary.txt
 strace ls /etc 2> strace-ls-etc.txt
 cat strace-summary.txt

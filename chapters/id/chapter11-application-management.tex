@@ -5,7 +5,7 @@
 \chapter{Manajemen Aplikasi}
 \label{ch:application-management}
 
-\chapterhero{brown}{Kelola perangkat lunak dari repositori, kompilasi sumber, hingga container agar instalasi dan pemeliharaan aplikasi lebih terstruktur.}{paket}{repositori}{container}
+\chapterhero{brown}{Kelola perangkat lunak dari repository, kompilasi sumber, hingga container agar instalasi dan pemeliharaan aplikasi lebih terstruktur.}{\faBoxOpen\quad package}{\faWarehouse\quad repository}{\faCubes\quad container}
 
 Bayangkan kamu baru pindah ke kota baru dan ingin melengkapi dapur apartemenmu.
 Ada dua cara: pergi ke toko swalayan yang sudah mengatur semua kebutuhan di rak
@@ -23,7 +23,7 @@ saat menginstal file \texttt{.deb} yang kamu unduh sendiri dari situs vendor.
 
 Bab ini juga membahas situasi ketika aplikasi yang kamu butuhkan belum tersedia
 di toko mana pun. Dalam kasus itu, kamu perlu merakit sendiri dari bahan mentah,
-yang di Linux berarti mengompilasi dari \emph{source code}. Dan untuk aplikasi
+yang di Linux berarti mengompilasi dari \term{source code}. Dan untuk aplikasi
  yang membutuhkan lingkungan terisolasi agar tidak bertabrakan dengan sistem,
  teknologi container seperti Docker dan Podman menawarkan cara membungkus
  aplikasi beserta semua perlengkapannya.
@@ -35,8 +35,8 @@ Setelah menyelesaikan bab ini, kamu akan mampu:
 \begin{enumerate}
     \item menginstal, memperbarui, dan menghapus paket menggunakan \cmd{apt} dan
         \cmd{dpkg} secara tepat;
-    \item menambahkan repositori pihak ketiga dengan metode GPG key yang aman;
-    \item mengompilasi program sederhana dari source code menggunakan pola
+    \item menambahkan \term{repository} pihak ketiga dengan metode GPG key yang aman;
+    \item mengompilasi program sederhana dari \term{source code} menggunakan pola
         \cmd{./configure}, \cmd{make}, dan \cmd{make install};
     \item membangun dan menjalankan aplikasi di dalam container, dengan Docker
         sebagai contoh utama dan Podman sebagai alternatif yang sepadan;
@@ -64,7 +64,7 @@ dan memasang file \texttt{.deb} ke tempatnya masing-masing di filesystem. Namun
 pemasangan dilakukan.
 
 \cmd{apt} mengisi celah itu. Sebelum memasang paket apa pun, \cmd{apt}
-membaca daftar paket dari server repositori, memeriksa semua dependensi yang
+membaca daftar paket dari server \term{repository}, memeriksa semua dependensi yang
 dibutuhkan, mengunduh semuanya dalam urutan yang benar, kemudian menyerahkan
 pekerjaan pemasangan fisik ke \cmd{dpkg}. Dalam praktik sehari-hari, kamu
 hampir selalu berinteraksi dengan \cmd{apt}. \cmd{dpkg} baru digunakan
@@ -73,7 +73,7 @@ saat mengaudit apa yang sudah terinstal.
 
 Sebelum menginstal atau memperbarui apa pun, \cmd{apt} perlu menyegarkan
 daftar paket yang dimilikinya. Daftar ini adalah katalog yang berisi versi
-terbaru setiap paket dari semua repositori yang dikonfigurasi. Tanpa pembaruan
+terbaru setiap paket dari semua \term{repository} yang dikonfigurasi. Tanpa pembaruan
 daftar, \cmd{apt} mungkin masih merujuk ke informasi yang sudah usang.
 
 \begin{lstlisting}[language=bash, caption={Memperbarui daftar paket dan sistem}]
@@ -82,7 +82,7 @@ sudo apt upgrade
 sudo apt full-upgrade
 \end{lstlisting}
 
-Perintah \cmd{apt update} mengunduh metadata terbaru dari semua repositori,
+Perintah \cmd{apt update} mengunduh metadata terbaru dari semua \term{repository},
 bukan aplikasinya. \cmd{apt upgrade} kemudian memperbarui semua paket yang
 sudah terinstal ke versi terbaru, tetapi tidak akan menghapus paket mana pun
 dalam prosesnya. \cmd{apt full-upgrade} lebih agresif: ia boleh menghapus
@@ -101,7 +101,7 @@ sudo apt autoremove
 \end{lstlisting}
 
 Perbedaan antara \cmd{remove} dan \cmd{purge} penting untuk dipahami.
-\cmd{remove} menghapus binary dan file program, tetapi menyisakan file
+\cmd{remove} menghapus \term{binary} dan file program, tetapi menyisakan file
 konfigurasi di \dir{/etc/}. Ini berguna jika kamu ingin menginstal ulang
 nanti dengan konfigurasi yang sama. \cmd{purge} menghapus semuanya termasuk
 konfigurasi. Gunakan \cmd{purge} saat kamu benar-benar ingin memulai bersih.
@@ -161,7 +161,7 @@ tree ~/lab-os/
     \textit{Amati:} perhatikan kolom status pada output \cmd{dpkg -l}. Apa arti
     awalan \texttt{ii}?
 
-    \item Gunakan \cmd{dpkg -S} untuk menyelidiki beberapa binary sistem:
+    \item Gunakan \cmd{dpkg -S} untuk menyelidiki beberapa \term{binary} sistem:
 \begin{lstlisting}[language=bash, caption={Mencari paket pemilik file}]
 dpkg -S /bin/ls
 dpkg -S /usr/bin/ssh
@@ -188,22 +188,22 @@ paket Python yang terinstal.
 \end{challengebox}
 
 %% ========================================================================
-\section{Manajemen Repositori}
+\section{Manajemen Repository}
 \label{sec:repository-management}
 %% ========================================================================
 
-Repositori adalah server yang menyimpan koleksi paket beserta metadata-nya.
-Bayangkan repositori seperti jaringan toko waralaba: ada toko resmi Ubuntu yang
+\term{Repository} adalah server yang menyimpan koleksi paket beserta metadata-nya.
+Bayangkan \term{repository} seperti jaringan toko waralaba: ada toko resmi Ubuntu yang
 menjamin kualitas barangnya, dan ada toko pihak ketiga yang menjual produk
 spesifik yang belum tersedia di toko resmi. Kamu bisa menambahkan toko pihak
 ketiga ke daftar belanjamu, tetapi kamu perlu memverifikasi bahwa toko itu
 terpercaya terlebih dahulu.
 
-Konfigurasi repositori disimpan di dua lokasi. File utama adalah
+Konfigurasi \term{repository} disimpan di dua lokasi. File utama adalah
 \file{/etc/apt/sources.list}, dan direktori \dir{/etc/apt/sources.list.d/}
-berisi file konfigurasi tambahan untuk setiap repositori pihak ketiga. Memisahkan
-setiap repositori ke file tersendiri memudahkan pengelolaan karena kamu bisa
-menghapus satu repositori cukup dengan menghapus satu file.
+berisi file konfigurasi tambahan untuk setiap \term{repository} pihak ketiga. Memisahkan
+setiap \term{repository} ke file tersendiri memudahkan pengelolaan karena kamu bisa
+menghapus satu \term{repository} cukup dengan menghapus satu file.
 
 Format setiap baris di \file{sources.list} mengikuti pola yang konsisten.
 
@@ -213,23 +213,23 @@ deb http://archive.ubuntu.com/ubuntu jammy main restricted
 deb http://archive.ubuntu.com/ubuntu jammy universe multiverse
 deb http://archive.ubuntu.com/ubuntu jammy-security main restricted
 
-# Contoh repositori pihak ketiga dengan signed-by modern
+# Contoh repository pihak ketiga dengan signed-by modern
 deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
     http://nginx.org/packages/ubuntu jammy nginx
 \end{lstlisting}
 
-Kolom \texttt{deb} menunjukkan paket binary. URI adalah alamat server repositori.
+Kolom \texttt{deb} menunjukkan paket \term{binary}. URI adalah alamat server \term{repository}.
 \texttt{jammy} adalah kode nama Ubuntu 22.04. Komponen \texttt{main} berisi
-software open-source yang didukung resmi, \texttt{restricted} berisi driver
+software open-source yang didukung resmi, \texttt{restricted} berisi \term{driver}
 proprietari seperti NVIDIA, \texttt{universe} berisi paket open-source yang
 dipelihara komunitas, dan \texttt{multiverse} berisi software yang tidak
 sepenuhnya bebas.
 
-Menambahkan repositori pihak ketiga memerlukan dua langkah penting: menyimpan
-kunci GPG repositori itu secara lokal, lalu mendaftarkan repositorinya dengan
+Menambahkan \term{repository} pihak ketiga memerlukan dua langkah penting: menyimpan
+kunci GPG \term{repository} itu secara lokal, lalu mendaftarkan \term{repository}-nya dengan
 referensi ke kunci tersebut.
 
-\begin{lstlisting}[language=bash, caption={Menambahkan repositori pihak ketiga dengan metode modern}]
+\begin{lstlisting}[language=bash, caption={Menambahkan Repository Pihak Ketiga dengan Metode Modern}]
 sudo apt install -y curl gnupg2
 
 curl -fsSL https://nginx.org/keys/nginx_signing.key | \
@@ -245,12 +245,12 @@ apt-cache policy nginx
 
 \begin{notebox}
 Metode lama menggunakan \cmd{apt-key add} sudah \emph{deprecated} sejak Ubuntu
-22.04. Kunci yang ditambahkan dengan cara lama berlaku untuk semua repositori,
+22.04. Kunci yang ditambahkan dengan cara lama berlaku untuk semua \term{repository},
 bukan hanya satu. Metode \texttt{signed-by} modern membatasi kepercayaan kunci
-hanya untuk repositori yang bersangkutan, sehingga lebih aman.
+hanya untuk \term{repository} yang bersangkutan, sehingga lebih aman.
 \end{notebox}
 
-Untuk repositori yang berasal dari Launchpad Ubuntu (dikenal sebagai PPA atau
+Untuk \term{repository} yang berasal dari Launchpad Ubuntu (dikenal sebagai PPA atau
 \emph{Personal Package Archive}), ada perintah yang lebih praktis.
 
 \begin{lstlisting}[language=bash, caption={Mengelola PPA dengan add-apt-repository}]
@@ -269,17 +269,17 @@ sumber aktif beserta prioritasnya.
 
 \subsection*{Praktek 11.2: Tambahkan Repositori Pihak Ketiga}
 
-Tujuan praktek ini adalah menambahkan repositori PPA, mengamati perubahan
+Tujuan praktek ini adalah menambahkan \term{repository} PPA, mengamati perubahan
 yang terjadi, lalu membersihkan kembali.
 
 \begin{enumerate}
-    \item Periksa konfigurasi repositori yang sedang aktif:
-\begin{lstlisting}[language=bash, caption={Memeriksa repositori aktif}]
+    \item Periksa konfigurasi \term{repository} yang sedang aktif:
+\begin{lstlisting}[language=bash, caption={Memeriksa Repository Aktif}]
 cat /etc/apt/sources.list
 ls -la /etc/apt/sources.list.d/
 apt-cache policy | head -20
 \end{lstlisting}
-    \textit{Amati:} berapa banyak sumber repositori yang terdaftar saat ini?
+    \textit{Amati:} berapa banyak sumber \term{repository} yang terdaftar saat ini?
 
     \item Tambahkan PPA git-core dan amati perubahannya:
 \begin{lstlisting}[language=bash, caption={Menambahkan PPA dan memeriksa hasilnya}]
@@ -312,10 +312,10 @@ apt-cache policy git
 
 \begin{challengebox}
 Buat skrip Bash (merujuk ke Bab~7) bernama \file{cek-repo.sh} di direktori lab
-yang menerima satu argumen berupa string URL repositori. Skrip memeriksa apakah
+yang menerima satu argumen berupa string URL \term{repository}. Skrip memeriksa apakah
 string tersebut sudah ada di file mana pun di dalam \dir{/etc/apt/sources.list}
 atau \dir{/etc/apt/sources.list.d/}. Jika sudah ada, skrip mencetak pesan
-peringatan dan keluar. Jika belum, skrip mencetak pesan bahwa repositori aman
+peringatan dan keluar. Jika belum, skrip mencetak pesan bahwa \term{repository} aman
 untuk ditambahkan.
 \end{challengebox}
 
@@ -324,13 +324,13 @@ untuk ditambahkan.
 \label{sec:compile-from-source}
 %% ========================================================================
 
-Ada situasi di mana paket yang kamu butuhkan tidak tersedia di repositori mana
+Ada situasi di mana paket yang kamu butuhkan tidak tersedia di \term{repository} mana
 pun: versinya terlalu baru, kamu perlu mengaktifkan fitur tertentu yang tidak
 disertakan di build standar, atau kamu sedang mengembangkan program sendiri.
 Dalam kasus itu, kompilasi dari kode sumber adalah jalannya.
 
 Analogi yang tepat adalah memasak dari bahan mentah. Package manager seperti
-memesan makanan jadi dari restoran, kompilasi dari source seperti memasak sendiri
+memesan makanan jadi dari restoran, kompilasi dari \term{source code} seperti memasak sendiri
 dari bahan-bahan yang kamu pilih sendiri. Hasilnya bisa dikustomisasi, tetapi
 prosesnya lebih panjang.
 
@@ -362,7 +362,7 @@ sudo make install
 sudo make uninstall
 \end{lstlisting}
 
-Langkah kedua adalah \cmd{make}, yang mengompilasi kode menjadi binary. Opsi
+Langkah kedua adalah \cmd{make}, yang mengompilasi kode menjadi \term{binary}. Opsi
 \texttt{-j\$(nproc)} menjalankan kompilasi secara paralel menggunakan semua
 core CPU yang tersedia, mempercepat proses secara signifikan. \texttt{\$(nproc)}
 adalah substitusi perintah yang mengembalikan jumlah core.
@@ -381,7 +381,7 @@ dihapus rapi dengan \cmd{apt remove}, berbeda dari file yang tersebar di
 
 \subsection*{Praktek 11.3: Kompilasi Program Sederhana dari Source}
 
-Tujuan praktek ini adalah memahami setiap langkah kompilasi dari source
+Tujuan praktek ini adalah memahami setiap langkah kompilasi dari \term{source code}
 dengan mengompilasi program C sederhana menggunakan Makefile buatan sendiri.
 
 \begin{enumerate}
@@ -396,7 +396,7 @@ cd src-compile
 \end{lstlisting}
 
     \item Buat program C sederhana:
-\begin{lstlisting}[language=bash, caption={Membuat source code program C}]
+\begin{lstlisting}[language=bash, caption={Membuat Source Code Program C}]
 cat > salam.c << 'EOF'
 #include <stdio.h>
 #include <stdlib.h>
@@ -473,10 +473,10 @@ rm -rf src-compile
 \end{enumerate}
 
 \begin{challengebox}
-Buat Makefile minimal untuk program C sederhana yang punya dua file source:
+Buat Makefile minimal untuk program C sederhana yang punya dua file \term{source code}:
 \file{main.c} dan \file{utils.c}. Makefile harus memiliki target \texttt{all},
 \texttt{install}, \texttt{uninstall}, dan \texttt{clean}. Target \texttt{all}
-harus mengompilasi kedua file dan menghubungkannya menjadi satu binary.
+harus mengompilasi kedua file dan menghubungkannya menjadi satu \term{binary}.
 Gunakan variabel \texttt{PREFIX} dengan nilai default \dir{/usr/local} sehingga
 lokasi instalasi bisa diubah dari command line dengan \cmd{make install PREFIX=\$HOME/.local}.
 \end{challengebox}
@@ -501,7 +501,7 @@ mencetak fotokopi dari master dokumen. Satu \term{image} bisa menghasilkan banya
 \term{container} yang berjalan sekaligus. \term{Dockerfile} adalah resep yang
 mendefinisikan cara membangun \term{image} langkah demi langkah.
 
-Instalasi Docker mengikuti pola repositori pihak ketiga yang sudah dibahas di
+Instalasi Docker mengikuti pola \term{repository} pihak ketiga yang sudah dibahas di
 seksi sebelumnya.
 
 \begin{lstlisting}[language=bash, caption={Instalasi Docker Engine di Ubuntu}]
@@ -747,8 +747,8 @@ ldd /usr/bin/ls | grep "not found"
 \end{lstlisting}
 
 \cmd{strace -c} merangkum frekuensi setiap \term{system call} tanpa menampilkan detailnya,
-berguna untuk profiling cepat. \cmd{ldd} menampilkan semua shared library yang
-dibutuhkan sebuah binary. Output \texttt{not found} menunjukkan library yang
+berguna untuk profiling cepat. \cmd{ldd} menampilkan semua \term{shared library} yang
+dibutuhkan sebuah \term{binary}. Output \texttt{not found} menunjukkan \term{shared library} yang
 hilang, penyebab umum program gagal berjalan meski sudah terinstal.
 
 \begin{warningbox}
@@ -772,10 +772,10 @@ Dalam bab ini, kamu telah mempelajari:
     \item \textbf{Siklus paket}: alur instalasi (\cmd{apt install}), verifikasi
         (\cmd{dpkg -l}, \cmd{dpkg -L}), pembaruan (\cmd{apt upgrade}), dan
         penghapusan bersih (\cmd{apt purge} diikuti \cmd{autoremove}).
-    \item \textbf{Repositori}: konfigurasi di \file{/etc/apt/sources.list} dan
-        \dir{sources.list.d/}, serta cara menambahkan repositori pihak ketiga
+    \item \textbf{Repository}: konfigurasi di \file{/etc/apt/sources.list} dan
+        \dir{sources.list.d/}, serta cara menambahkan \term{repository} pihak ketiga
         menggunakan metode \texttt{signed-by} yang aman.
-    \item \textbf{Kompilasi dari source}: pola tiga langkah autotools
+    \item \textbf{Kompilasi dari source code}: pola tiga langkah autotools
         (\cmd{./configure}, \cmd{make}, \cmd{make install}) dan pembuatan
         Makefile untuk mengotomatisasi proses build.
     \item \textbf{Docker}: konsep image dan container, pembuatan image dengan
@@ -807,14 +807,14 @@ Lakukan audit menyeluruh terhadap kondisi paket di sistem Ubuntu kamu.
 \end{enumerate}
 
 \subsubsection*{Latihan 11.2 Kompilasi dan Containerisasi}
-Gabungkan dua keterampilan dari bab ini: kompilasi dari source dan Docker.
+Gabungkan dua keterampilan dari bab ini: kompilasi dari \term{source code} dan Docker.
 \begin{enumerate}
-    \item Buat program C sederhana yang mencetak informasi sistem: nama host,
+    \item Buat program C sederhana yang mencetak informasi sistem: nama \term{host},
         tanggal saat ini, dan pesan selamat datang. Kompilasi menggunakan Makefile.
-    \item Buat Dockerfile yang menggunakan \texttt{ubuntu:22.04} sebagai base
-        image, menginstal \texttt{build-essential}, menyalin source code ke
+    \item Buat Dockerfile yang menggunakan \texttt{ubuntu:22.04} sebagai \term{base image},
+        menginstal \texttt{build-essential}, menyalin \term{source code} ke
         dalam image, mengompilasi di dalam container saat build, dan menjalankan
-        binary sebagai \texttt{CMD}.
+        \term{binary} sebagai \texttt{CMD}.
     \item Build image tersebut dan jalankan container. Verifikasi output program
         muncul di terminal.
 \item Periksa ukuran image yang dihasilkan dengan \cmd{docker images}.

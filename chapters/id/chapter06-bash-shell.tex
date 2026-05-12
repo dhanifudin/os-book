@@ -5,7 +5,7 @@
 \chapter{Bash Shell}
 \label{ch:bash-shell-basic}
 
-\chapterhero{cyan}{Bangun kebiasaan kerja terminal yang efisien lewat konfigurasi shell, PATH, alias, fungsi, dan teknik interaksi Bash yang lebih produktif.}{shell}{PATH}{alias}
+\chapterhero{cyan}{Bangun kebiasaan kerja terminal yang efisien lewat konfigurasi shell, PATH, alias, fungsi, dan teknik interaksi Bash yang lebih produktif.}{\faTerminal\quad shell}{\faRoute\quad PATH}{\faTags\quad alias}
 
 Setiap kali kamu membuka terminal di Linux, ada program yang langsung
 aktif menunggu perintahmu. Program itu bukan aplikasi biasa, melainkan
@@ -167,12 +167,12 @@ fi
 \begin{challengebox}
 Tambahkan informasi direktori aktif dan waktu sekarang ke prompt secara
 lebih informatif. Ubah \var{PS1} sehingga direktori aktif ditampilkan
-dengan warna biru dan waktu dengan warna hijau menggunakan kode warna ANSI:
-\texttt{\textbackslash[\textbackslash 033[34m\textbackslash]} untuk biru
+dengan penanda visual ANSI yang berbeda untuk tiap bagian:
+\texttt{\textbackslash[\textbackslash 033[34m\textbackslash]} untuk direktori aktif
 dan \texttt{\textbackslash[\textbackslash 033[32m\textbackslash]} untuk
-hijau. Gunakan perintah \cmd{echo} dari Bab~2 untuk menguji apakah
-terminal mendukung warna dengan \cmd{echo -e \textbackslash
-033[32mHijau\textbackslash033[0m}. Pastikan prompt kembali ke warna normal
+waktu. Gunakan perintah \cmd{echo} dari Bab~2 untuk menguji apakah
+terminal mendukung escape sequence ANSI dengan \cmd{echo -e \textbackslash
+033[32mTes\textbackslash033[0m}. Pastikan prompt kembali ke tampilan normal
 dengan kode reset \texttt{\textbackslash[\textbackslash033[0m\textbackslash]}
 di akhir.
 \end{challengebox}
@@ -305,7 +305,7 @@ direktori \dir{/tmp} tanpa path lengkap.
 \end{challengebox}
 
 %% ------------------------------------------------------------------------
-\section{Alias dan Fungsi Shell}
+\section{Alias dan Shell Function}
 \label{sec:alias-fungsi-shell}
 
 Alias adalah nama pendek untuk perintah panjang yang sering kamu gunakan.
@@ -318,12 +318,12 @@ alias yang aktif, ketik \cmd{alias} tanpa argumen. Untuk menghapus alias,
 gunakan \cmd{unalias nama}. Alias yang didefinisikan di terminal hanya
 bertahan selama sesi itu. Agar permanen, tambahkan ke \file{~/.bashrc}.
 
-Fungsi shell adalah langkah berikutnya. Fungsi bisa menerima argumen,
+\term{Shell function} adalah langkah berikutnya. \term{Function} bisa menerima argumen,
 menjalankan beberapa perintah, menggunakan variabel lokal, dan mengembalikan
-nilai. Gunakan fungsi saat logika yang kamu butuhkan lebih dari sekadar
-singkatan perintah. Dua cara mendefinisikan fungsi yang keduanya valid:
+nilai. Gunakan \term{function} saat logika yang kamu butuhkan lebih dari sekadar
+singkatan perintah. Dua cara mendefinisikan function yang keduanya valid:
 
-\begin{lstlisting}[language=bash, caption={Dua cara mendefinisikan fungsi shell}]
+\begin{lstlisting}[language=bash, caption={Dua cara mendefinisikan shell function}]
 # Cara 1: sintaks tradisional
 nama_fungsi() {
     perintah
@@ -335,18 +335,18 @@ function nama_fungsi {
 }
 \end{lstlisting}
 
-Di dalam fungsi, \texttt{\$1}, \texttt{\$2}, dan seterusnya adalah
-argumen yang diberikan saat fungsi dipanggil. Gunakan \cmd{local} untuk
-mendeklarasikan variabel yang hanya hidup di dalam fungsi. Tanpa \cmd{local},
-variabel di dalam fungsi akan mengubah variabel global dengan nama yang sama.
+Di dalam function, \texttt{\$1}, \texttt{\$2}, dan seterusnya adalah
+argumen yang diberikan saat function dipanggil. Gunakan \cmd{local} untuk
+mendeklarasikan variabel yang hanya hidup di dalam function. Tanpa \cmd{local},
+variabel di dalam function akan mengubah variabel global dengan nama yang sama.
 
 Perintah \cmd{type} sangat berguna untuk memverifikasi apakah sebuah nama
-adalah alias, fungsi, perintah builtin Bash, atau program eksternal. Cukup
+adalah alias, function, perintah builtin Bash, atau program eksternal. Cukup
 ketik \texttt{type nama} untuk melihat jenisnya.
 
 \subsection*{Praktek 6.3: Buat Alias dan Fungsi Produktivitas}
 
-Tujuan praktek ini adalah membuat alias dan fungsi yang berguna untuk
+Tujuan praktek ini adalah membuat alias dan function yang berguna untuk
 pekerjaan sehari-hari di terminal.
 
 \begin{enumerate}
@@ -741,7 +741,7 @@ Output skrip mencakup: tanggal dan waktu, nama pengguna dan host, uptime,
 penggunaan memori, penggunaan disk setiap filesystem. Simpan log ke
 \file{output/health-TANGGAL.log} dengan tanggal otomatis dari
 command substitution. Tambahkan penanganan sederhana: jika penggunaan
-disk lebih dari 80\%, tampilkan teks ``PERINGATAN'' berwarna merah
+disk lebih dari 80\%, tampilkan teks ``PERINGATAN'' dengan penekanan visual
 menggunakan kode ANSI.
 
 

@@ -17,6 +17,10 @@ di dalam bab.
           dibanding \term{permission} Unix tradisional, sehingga hak akses dapat
           diatur untuk banyak pengguna dan grup.}
 
+    \gitem{Address space}{Ruang alamat yang terlihat oleh sebuah proses. Dalam
+          \term{virtual memory}, setiap proses memiliki address space sendiri yang
+          terisolasi dari proses lain.}
+
     \gitem{API (Application Programming Interface)}{Sekumpulan definisi dan protokol
           untuk membangun dan mengintegrasikan software aplikasi.}
 \end{description}
@@ -27,6 +31,12 @@ di dalam bab.
 \begin{description}
     \gitem{Bash (Bourne Again Shell)}{\term{Shell} dan bahasa pemrograman
           \term{command-line} yang menjadi default di banyak distribusi Linux.}
+
+    \gitem{Base image}{Image dasar yang dipakai sebagai fondasi untuk membangun
+          image container lain.}
+
+    \gitem{Binary}{Berkas program hasil kompilasi yang siap dijalankan sistem operasi.
+          Isinya sudah berbentuk kode mesin, bukan \term{source code}.}
 
     \gitem{Bootloader}{Program yang memuat sistem operasi ke memori saat komputer
           dinyalakan. Contoh umum: GRUB dan LILO.}
@@ -57,23 +67,44 @@ di dalam bab.
     \gitem{Daemon}{Program yang berjalan di latar belakang dan biasanya tidak memiliki
           antarmuka langsung dengan pengguna.}
 
+    \gitem{Disk layout}{Susunan partisi, \term{filesystem}, dan area penting lain pada
+          sebuah disk atau perangkat penyimpanan.}
+
+    \gitem{Driver}{Komponen software yang memungkinkan sistem operasi berkomunikasi
+          dengan perangkat keras tertentu melalui antarmuka yang terstandar.}
+
     \gitem{Distro (Distribution)}{Varian Linux yang dikemas dengan kernel,
           utilitas, dan software aplikasi tertentu.}
 
-    \gitem{Dockerfile}{Berkas resep yang berisi langkah-langkah untuk membangun
+\gitem{Dockerfile}{Berkas resep yang berisi langkah-langkah untuk membangun
           sebuah \term{image} container.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{E}
+
+\begin{description}
+    \gitem{Endpoint}{Titik akhir komunikasi tempat data dikirim atau diterima.
+          Dalam konteks jaringan atau IPC, endpoint sering diwujudkan sebagai
+          \term{socket}.}
 \end{description}
 
 %% ------------------------------------------------------------------------
 \section*{F}
 
 \begin{description}
+    \gitem{File}{Unit data bernama yang disimpan di \term{filesystem}. Di Linux,
+          file bisa berupa dokumen biasa, konfigurasi, perangkat, atau bentuk khusus lain.}
+
     \gitem{File descriptor}{Nomor identitas kecil yang dipakai kernel untuk
           mewakili berkas, pipe, socket, atau aliran input-output lain yang sedang
           dibuka proses.}
 
     \gitem{Filesystem}{Struktur dan aturan yang dipakai sistem operasi untuk
           menyimpan, menamai, dan mengatur berkas di media penyimpanan.}
+
+    \gitem{Function}{Blok perintah atau kode yang diberi nama agar dapat dipanggil
+          berulang kali untuk menjalankan tugas tertentu.}
 
     \gitem{Firmware}{Perangkat lunak tingkat rendah yang tertanam di perangkat keras
           untuk menjalankan fungsi dasar sebelum sistem operasi aktif penuh.}
@@ -85,6 +116,15 @@ di dalam bab.
 \begin{description}
     \gitem{Group}{Kumpulan akun pengguna yang dipakai Linux untuk mengatur hak akses
           bersama terhadap berkas dan sumber daya sistem.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{H}
+
+\begin{description}
+    \gitem{Host}{Sistem utama tempat program, \term{virtual machine}, atau
+          \term{container} dijalankan. Dalam jaringan, host juga dapat berarti mesin
+          yang memiliki identitas alamat tersendiri.}
 \end{description}
 
 %% ------------------------------------------------------------------------
@@ -130,6 +170,23 @@ di dalam bab.
 \end{description}
 
 %% ------------------------------------------------------------------------
+\section*{M}
+
+\begin{description}
+    \gitem{Mount}{Proses menghubungkan \term{filesystem}, partisi, atau perangkat
+          penyimpanan ke satu titik direktori agar isinya bisa diakses dari pohon direktori Linux.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{O}
+
+\begin{description}
+    \gitem{Override}{Konfigurasi yang menimpa atau mengganti nilai bawaan tanpa
+          mengubah berkas asli sumbernya. Dalam \term{systemd}, override lokal biasanya
+          disimpan terpisah dari unit bawaan paket.}
+\end{description}
+
+%% ------------------------------------------------------------------------
 \section*{P}
 
 \begin{description}
@@ -138,6 +195,12 @@ di dalam bab.
 
     \gitem{Page fault}{Kejadian ketika proses mengakses halaman memori virtual yang
           belum tersedia di RAM, sehingga kernel harus memetakan atau memuatnya lebih dulu.}
+
+    \gitem{Page table}{Struktur data yang dipakai kernel untuk memetakan alamat
+          \term{virtual memory} ke alamat memori fisik.}
+
+    \gitem{Partition layout}{Susunan partisi pada sebuah disk, termasuk urutan,
+          ukuran, dan fungsi setiap partisi.}
 
     \gitem{Paging}{Teknik manajemen memori yang membagi memori virtual dan fisik ke
           dalam blok-blok kecil bernama page agar pemetaan lebih fleksibel.}
@@ -162,6 +225,10 @@ di dalam bab.
 
     \gitem{Repository}{Sumber paket software yang menyimpan metadata dan berkas yang
           diperlukan \term{package manager} untuk instalasi dan pembaruan.}
+
+    \gitem{Runlevel}{Konsep lama pada sistem init tradisional untuk menyatakan mode
+          operasi sistem, misalnya mode multi-user atau mode pemeliharaan. Dalam
+          \term{systemd}, konsep ini banyak digantikan oleh \term{target}.}
 \end{description}
 
 %% ------------------------------------------------------------------------
@@ -174,8 +241,20 @@ di dalam bab.
     \gitem{Service}{Program yang berjalan di latar belakang untuk menyediakan fungsi
           tertentu, misalnya server web, SSH, atau database.}
 
+    \gitem{Shared library}{Pustaka biner yang dapat dipakai bersama oleh banyak program
+          saat berjalan, sehingga kode umum tidak perlu disalin ke setiap \term{binary}.}
+
     \gitem{Shell}{Program yang menyediakan antarmuka bagi pengguna untuk berinteraksi
           dengan sistem operasi, baik melalui perintah teks maupun skrip.}
+
+    \gitem{Signal}{Pesan singkat yang dikirim kernel atau proses lain untuk memberi tahu
+          sebuah proses agar berhenti, dijeda, dilanjutkan, atau menangani kejadian tertentu.}
+
+    \gitem{Socket}{Titik komunikasi yang dipakai proses untuk bertukar data, baik
+          melalui jaringan maupun komunikasi lokal antarproses.}
+
+    \gitem{Source code}{Kode program yang ditulis manusia dalam bahasa pemrograman dan
+          harus diproses lebih dulu sebelum menjadi \term{binary} yang bisa dijalankan.}
 
     \gitem{Swap}{Ruang di disk yang dipakai sebagai perluasan RAM ketika memori fisik
           tidak cukup untuk menampung seluruh kebutuhan proses aktif.}
@@ -212,4 +291,10 @@ di dalam bab.
 \begin{description}
     \gitem{Virtual memory}{Lapisan abstraksi memori yang membuat setiap proses seolah-olah
           memiliki ruang alamatnya sendiri, terpisah dari proses lain dan dari memori fisik.}
+
+    \gitem{Virtual machine}{Komputer virtual yang disimulasikan di dalam komputer fisik.
+          Ia memiliki sistem operasi, memori, disk, dan perangkat virtualnya sendiri.}
+
+    \gitem{Volume}{Mekanisme penyimpanan data persisten pada container yang dapat
+          dipasang dari \term{host} atau dikelola langsung oleh runtime container.}
 \end{description}

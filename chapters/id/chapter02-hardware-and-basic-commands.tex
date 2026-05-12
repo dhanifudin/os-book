@@ -5,7 +5,7 @@
 \chapter{Manajemen Perangkat Keras dan Perintah Dasar}
 \label{ch:hardware-and-basic-commands}
 
-\chapterhero{teal}{Kenali cara Linux mendeteksi perangkat keras, memuat driver, dan menyediakan perintah terminal dasar untuk mulai bekerja dengan percaya diri.}{hardware}{driver}{terminal}
+\chapterhero{teal}{Kenali cara Linux mendeteksi perangkat keras, memuat driver, dan menyediakan perintah terminal dasar untuk mulai bekerja dengan percaya diri.}{\faMicrochip\quad hardware}{\faCogs\quad driver}{\faTerminal\quad terminal}
 
 Bayangkan kamu baru membeli laptop baru dan menyalakannya untuk pertama kali. Sistem operasi perlu tahu apa saja komponen di dalamnya: jenis prosesor, kapasitas RAM, kartu grafis, dan disk. Di Windows, informasi ini tersedia di Device Manager. Di Linux, kamu mendapatkan akses yang jauh lebih dalam lewat terminal.
 
@@ -41,7 +41,7 @@ cd ~/lab-os/chapter02-hardware
 
 Setiap kali Linux menyala, kernel memeriksa semua perangkat yang terpasang. Hasilnya tersimpan dan bisa kamu baca kapan saja. Perintah \cmd{lscpu} menampilkan arsitektur prosesor, jumlah inti fisik, jumlah thread, dan fitur virtualisasi. Perintah \cmd{lspci} memperlihatkan semua perangkat di bus PCI, termasuk kartu jaringan, kartu grafis, dan pengendali penyimpanan. Untuk perangkat USB, gunakan \cmd{lsusb}. Jika kamu ingin laporan perangkat keras yang lebih lengkap dalam satu perintah, \cmd{lshw} adalah pilihan yang tepat meski memerlukan hak akses superuser.
 
-Pesan kernel yang dihasilkan saat boot tersimpan dalam buffer cincin yang bisa dibaca dengan \cmd{dmesg}. Di sana kamu bisa melihat catatan deteksi perangkat: kapan disk ditemukan, driver apa yang dimuat, dan apakah ada perangkat yang gagal diinisialisasi. Tambahkan flag \texttt{-T} untuk menampilkan waktu dalam format yang bisa dibaca manusia.
+Pesan kernel yang dihasilkan saat boot tersimpan dalam buffer cincin yang bisa dibaca dengan \cmd{dmesg}. Di sana kamu bisa melihat catatan deteksi perangkat: kapan disk ditemukan, \term{driver} apa yang dimuat, dan apakah ada perangkat yang gagal diinisialisasi. Tambahkan flag \texttt{-T} untuk menampilkan waktu dalam format yang bisa dibaca manusia.
 
 \begin{tipbox}
 Beberapa perintah deteksi perangkat keras mungkin belum terpasang di instalasi minimal. Pasang paket yang diperlukan dengan:
@@ -53,7 +53,7 @@ sudo apt install -y pciutils usbutils lshw
 
 \subsection*{Praktek 2.1: Identifikasi Komponen Perangkat Keras VM}
 
-Tujuan praktek ini adalah membaca spesifikasi prosesor, memori, dan perangkat PCI dari mesin virtual.
+Tujuan praktek ini adalah membaca spesifikasi prosesor, memori, dan perangkat PCI dari \term{virtual machine}.
 
 \begin{enumerate}
     \item Tampilkan informasi prosesor:
@@ -66,9 +66,9 @@ lscpu
 \begin{lstlisting}[language=bash, caption={Daftar perangkat PCI beserta driver aktif}]
 lspci -nnk
 \end{lstlisting}
-    \textit{Amati:} Setiap entri menampilkan ID vendor dan perangkat dalam tanda kurung, diikuti baris \texttt{Kernel driver in use} yang menunjukkan nama modul driver aktif.
+    \textit{Amati:} Setiap entri menampilkan ID vendor dan perangkat dalam tanda kurung, diikuti baris \texttt{Kernel driver in use} yang menunjukkan nama modul \term{driver} aktif.
 
-    \item Cari kartu jaringan dan driver yang menanganinya:
+    \item Cari kartu jaringan dan \term{driver} yang menanganinya:
 \begin{lstlisting}[language=bash, caption={Filter informasi kartu jaringan}]
 lspci -nnk | grep -A3 -i ethernet
 \end{lstlisting}
@@ -93,14 +93,14 @@ Pilih satu modul kernel yang aktif dari output \cmd{lsmod}. Gunakan \cmd{modinfo
 \section{Modul Kernel dan Driver Perangkat}
 \label{sec:kernel-modules}
 
-Kernel Linux tidak memuat semua kode driver sekaligus. Sebaliknya, driver tersedia sebagai \textit{modul kernel}, yaitu berkas kode yang bisa dimuat saat dibutuhkan dan dilepas ketika tidak lagi diperlukan. Prinsip ini sama dengan menancapkan steker alat listrik hanya saat akan digunakan, bukan membiarkannya terus terpasang. Modul tersimpan di \dir{/lib/modules/\$(uname -r)/} dan biasanya memiliki ekstensi \texttt{.ko}.
+Kernel Linux tidak memuat semua kode \term{driver} sekaligus. Sebaliknya, \term{driver} tersedia sebagai \textit{modul kernel}, yaitu berkas kode yang bisa dimuat saat dibutuhkan dan dilepas ketika tidak lagi diperlukan. Prinsip ini sama dengan menancapkan steker alat listrik hanya saat akan digunakan, bukan membiarkannya terus terpasang. Modul tersimpan di \dir{/lib/modules/\$(uname -r)/} dan biasanya memiliki ekstensi \texttt{.ko}.
 
 Perintah \cmd{lsmod} memperlihatkan semua modul yang sedang aktif bersama ukuran dan jumlah proses yang menggunakannya. Untuk melihat detail satu modul, gunakan \cmd{modinfo nama-modul}: kamu akan melihat deskripsi, parameter yang tersedia, nama penulis, lisensi, dan path file modulnya. Perintah \cmd{modprobe nama-modul} memuat modul beserta semua dependensinya secara otomatis.
 
-Saat kernel berhasil memuat modul, hasilnya biasanya terlihat di pesan \cmd{dmesg}, di daftar perangkat PCI/USB, atau pada kemampuan baru yang tersedia di sistem. Karena itu, tiga alat yang paling sering dipakai bersama adalah \cmd{lsmod} untuk melihat apa yang aktif, \cmd{modinfo} untuk memahami modul tertentu, dan \cmd{dmesg} untuk menelusuri kapan driver tersebut dipakai atau menimbulkan error.
+Saat kernel berhasil memuat modul, hasilnya biasanya terlihat di pesan \cmd{dmesg}, di daftar perangkat PCI/USB, atau pada kemampuan baru yang tersedia di sistem. Karena itu, tiga alat yang paling sering dipakai bersama adalah \cmd{lsmod} untuk melihat apa yang aktif, \cmd{modinfo} untuk memahami modul tertentu, dan \cmd{dmesg} untuk menelusuri kapan \term{driver} tersebut dipakai atau menimbulkan error.
 
 \begin{warningbox}
-Jangan melepas modul yang sedang digunakan oleh sistem aktif. Melepas driver disk atau modul jaringan dapat menyebabkan sistem tidak responsif atau koneksi SSH terputus.
+Jangan melepas modul yang sedang digunakan oleh sistem aktif. Melepas \term{driver} disk atau modul jaringan dapat menyebabkan sistem tidak responsif atau koneksi SSH terputus.
 \end{warningbox}
 
 \subsection*{Praktek 2.2: Eksplorasi Modul Aktif dan Driver Perangkat}
@@ -144,7 +144,7 @@ dmesg -T | grep -Ei "virtio|nvme|usb|ethernet" | tail -20
 \end{enumerate}
 
 \begin{challengebox}
-Pilih satu perangkat dari output \cmd{lspci -nnk}. Catat nama perangkat dan driver aktifnya. Lalu gunakan \cmd{modinfo} untuk mencari deskripsi modul tersebut, kemudian verifikasi dengan \cmd{dmesg} apakah ada pesan boot yang menyebut perangkat atau driver yang sama.
+Pilih satu perangkat dari output \cmd{lspci -nnk}. Catat nama perangkat dan \term{driver} aktifnya. Lalu gunakan \cmd{modinfo} untuk mencari deskripsi modul tersebut, kemudian verifikasi dengan \cmd{dmesg} apakah ada pesan boot yang menyebut perangkat atau \term{driver} yang sama.
 \end{challengebox}
 
 %% ------------------------------------------------------------------------
@@ -359,7 +359,7 @@ Dalam bab ini, kamu telah mempelajari:
 \textbf{Instruksi Umum}: Kerjakan seluruh latihan secara mandiri. Catat langkah penting, simpan tangkapan layar bila diperlukan, lalu rangkum hasilnya sebagai dokumentasi pribadi.
 
 \subsubsection*{Latihan 2.1 Profil Perangkat Keras VM}
-Jalankan \cmd{lspci -nnk} dan pilih satu perangkat PCI. Catat: (a) nama perangkat, (b) ID vendor dan perangkat dalam format heksadesimal, (c) nama driver kernel aktif. Kemudian jalankan \cmd{modinfo} untuk driver tersebut dan tuliskan deskripsi singkat serta nama penulis modulnya.
+Jalankan \cmd{lspci -nnk} dan pilih satu perangkat PCI. Catat: (a) nama perangkat, (b) ID vendor dan perangkat dalam format heksadesimal, (c) nama \term{driver} kernel aktif. Kemudian jalankan \cmd{modinfo} untuk \term{driver} tersebut dan tuliskan deskripsi singkat serta nama penulis modulnya.
 
 
 \subsubsection*{Latihan 2.2 Dokumentasi dan Modul Kernel}
