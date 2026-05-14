@@ -205,7 +205,7 @@ Bangun pipeline yang menggabungkan teknik dari Bab~2 (grep dan awk) dengan sort 
 \end{challengebox}
 
 %% ------------------------------------------------------------------------
-\section{tee dan Teknik Lanjutan}
+\section{Perintah tee dan Teknik Lanjutan}
 \label{sec:tee-advanced}
 
 Ketika kamu mengalihkan output ke berkas dengan \texttt{>}, output tidak lagi tampil di terminal. Ini bermasalah saat menjalankan perintah panjang yang ingin dipantau secara langsung sekaligus disimpan. Perintah \cmd{tee} memecahkan masalah ini: ia membaca dari stdin dan menulis ke stdout sekaligus ke berkas. Namanya diambil dari bentuk huruf T yang menggambarkan aliran data bercabang dua.
@@ -318,12 +318,4 @@ Bangun pipeline untuk menjawab dua pertanyaan tentang sistem: (a) shell mana yan
 Buat skrip log sederhana langsung dari terminal menggunakan teknik yang dipelajari. Gunakan blok \texttt{\{ ... \}} yang berisi beberapa perintah: timestamp dengan \cmd{date}, penggunaan disk dengan \cmd{df -h}, penggunaan memori dengan \cmd{free -h}, dan lima proses dengan CPU tertinggi menggunakan \cmd{ps aux | sort -k3 -rn | head -5}. Alirkan seluruh blok ke \cmd{tee -a laporan-sistem.log} agar output tampil di terminal sekaligus tersimpan. Jalankan dua kali dan verifikasi bahwa berkas log berisi dua entri berurutan, bukan ditimpa.
 
 
-%% ------------------------------------------------------------------------
-\section{Referensi}
-
-\begin{itemize}
-    \item Shotts, W. \textit{The Linux Command Line}, edisi ke-2. No Starch Press, 2019.
-    \item Cooper, M. \textit{Advanced Bash-Scripting Guide}. The Linux Documentation Project, 2014.
-    \item Ward, B. \textit{How Linux Works}, edisi ke-3. No Starch Press, 2021.
-    \item Nemeth, E., Snyder, G., Hein, T. R. \textit{UNIX and Linux System Administration Handbook}, edisi ke-5. Pearson, 2017.
-\end{itemize}
+%

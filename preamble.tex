@@ -136,6 +136,7 @@
 %% Listing Kode
 %% ------------------------------------------------------------------------
 \usepackage{listings}            % Syntax highlighting untuk kode
+\usepackage{needspace}           % Reserve vertical space to avoid bad breaks
 
 %% Konfigurasi nama caption untuk listing - language-aware
 \ifIndonesian
@@ -163,7 +164,7 @@
     keywordstyle=\color{black}\bfseries,
     numberstyle=\tiny\color{codegray},
     stringstyle=\color{codepurple},
-    basicstyle=\ttfamily\footnotesize,
+    basicstyle=\ttfamily\scriptsize,
     breakatwhitespace=false,
     breaklines=true,
     captionpos=b,
@@ -192,6 +193,11 @@
     abovecaptionskip=2pt,
     belowcaptionskip=0pt
 }
+
+%% Reserve 10 lines of vertical space before each lstlisting. Listings of
+%% fewer than 10 lines start on a new page if needed and stay together;
+%% longer listings break naturally past the reserved space.
+\AddToHook{env/lstlisting/before}{\Needspace{10\baselineskip}}
 
 %% For very long code that MUST be allowed to break, use this environment
 \lstnewenvironment{longlisting}[1][]{%
@@ -407,18 +413,39 @@
 \newcommand{\dir}[1]{\texttt{#1}}
 \newcommand{\var}[1]{\texttt{\$#1}}
 \newcommand{\keystroke}[1]{\framebox{\texttt{#1}}}
-\newcommand{\term}[1]{\textit{#1}}
-\newcommand{\gitem}[2]{\item[\term{#1}]\index{#1} #2}
+%% \indexterm{X} writes an index entry that:
+%%   - sorts under the lowercased form of X (so chapter uses of \term{driver}
+%%     merge with glossary uses of \gitem{Driver} under a single entry),
+%%   - displays X with its first character forced to uppercase, so the index
+%%     reads "Driver" / "ACL" / "Kernel space" regardless of how the source
+%%     wrote it.
+\makeatletter
+\newcommand{\indexterm}[1]{%
+    \begingroup
+        \lowercase{\edef\@@idxkey{#1}}%
+        \@@idxcapfirst#1\@nil
+        \protected@edef\@@idxentry
+            {\noexpand\index{\@@idxkey @\@@idxdisp}}%
+        \@@idxentry
+    \endgroup
+}
+\def\@@idxcapfirst#1#2\@nil{%
+    \uppercase{\def\@@idxfirst{#1}}%
+    \edef\@@idxdisp{\@@idxfirst#2}%
+}
+\makeatother
+\newcommand{\term}[1]{\textit{#1}\protect\indexterm{#1}}
+\newcommand{\gitem}[2]{\item[\textit{#1}]\indexterm{#1} #2}
 
 \newcommand{\chaptertag}[1]{%
     \tikz[baseline=(tag.base)]\node[
-        fill=white,
-        fill opacity=0.15,
+        fill=black,
+        fill opacity=0.08,
         text opacity=1,
         rounded corners=3pt,
         inner xsep=6pt,
         inner ysep=3pt,
-        text=white,
+        text=black!75,
         font=\sffamily\scriptsize\bfseries
     ] (tag) {#1};%
 }
@@ -429,40 +456,41 @@
         boxrule=0pt,
         arc=2pt,
         outer arc=2pt,
-        left=10pt,
-        right=10pt,
+        left=14pt,
+        right=12pt,
         top=10pt,
         bottom=10pt,
         before skip=2pt,
         after skip=10pt,
-        colframe=white,
-        colback=black,
-        interior style={left color=#1!88!black, right color=#1!60!black},
-        overlay={
-            \fill[white, opacity=0.07] ([xshift=-1.6cm,yshift=-0.1cm]frame.north east) circle (1.7cm);
-            \fill[white, opacity=0.05] ([xshift=-0.8cm,yshift=-1.1cm]frame.north east) circle (0.7cm);
-            \draw[white, opacity=0.10, line width=0.5pt] ([xshift=-3.2cm,yshift=-0.8cm]frame.north east) rectangle ([xshift=-0.7cm,yshift=-2.3cm]frame.north east);
-            \draw[white, opacity=0.10, line width=0.5pt] ([xshift=-2.8cm,yshift=-0.4cm]frame.north east) -- ([xshift=-1.8cm,yshift=-1.1cm]frame.north east) -- ([xshift=-1.0cm,yshift=-0.6cm]frame.north east);
-            \fill[white, opacity=0.16] ([xshift=-2.8cm,yshift=-0.4cm]frame.north east) circle (2.4pt);
-            \fill[white, opacity=0.16] ([xshift=-1.8cm,yshift=-1.1cm]frame.north east) circle (2.4pt);
-            \fill[white, opacity=0.16] ([xshift=-1.0cm,yshift=-0.6cm]frame.north east) circle (2.4pt);
-            \draw[white, opacity=0.08, line width=0.4pt] ([xshift=0.4cm,yshift=-0.5cm]frame.north west) -- ([xshift=4.2cm,yshift=-0.5cm]frame.north west);
-            \draw[white, opacity=0.08, line width=0.4pt] ([xshift=0.4cm,yshift=-0.9cm]frame.north west) -- ([xshift=3.6cm,yshift=-0.9cm]frame.north west);
-        }
+        colframe=#1!15!white,
+        colback=#1!8!white,
+        borderline west={3pt}{0pt}{#1!55!black},
     ]
-    {\color{white}\sffamily\bfseries\small Fokus Bab}\par
+    {\color{#1!55!black}\sffamily\bfseries\small Fokus Bab}\par
     \vspace{3pt}
-    {\color{white}\fontsize{11}{14}\selectfont #2}\par
+    {\color{black!85}\fontsize{11}{14}\selectfont #2}\par
     \vspace{8pt}
     \chaptertag{#3}\hspace{6pt}\chaptertag{#4}\hspace{6pt}\chaptertag{#5}
     \end{tcolorbox}%
 }
 
 %% ------------------------------------------------------------------------
-%% Indeks
+%% Indeks - imakeidx with two columns, dotted leaders, alphabetic group headers
 %% ------------------------------------------------------------------------
-\usepackage{makeidx}
-\makeindex
+\newcommand{\indexgroup}[1]{%
+    \par\addvspace{12pt}\nopagebreak
+    {\noindent\sffamily\bfseries\large\color{black!70} #1}\par\nopagebreak
+    \vspace{1pt}\hrule height 0.4pt\relax
+    \par\nopagebreak\vspace{4pt}%
+}
+\usepackage{imakeidx}
+\ifIndonesian
+    \makeindex[title=Indeks, intoc, columns=2, columnsep=18pt,
+        options={-s indexstyle.ist}]
+\else
+    \makeindex[title=Index, intoc, columns=2, columnsep=18pt,
+        options={-s indexstyle.ist}]
+\fi
 
 %% ------------------------------------------------------------------------
 %% Teorema dan Definisi - language-aware

@@ -85,7 +85,7 @@ Tabel~\ref{tab:os-categories} merangkum kategori utama yang beredar saat ini.
     \caption{Kategori sistem operasi berdasarkan platform}
     \label{tab:os-categories}
     \begin{tblr}{
-        colspec = {lX[l]l},
+        colspec = {lX[1.6,l]X[1,l]},
         width = \linewidth,
         hlines,
         vlines,
@@ -145,23 +145,24 @@ untuk aplikasi biasa.
 
 \begin{figure}[tbp]
     \centering
-    \begin{tikzpicture}[node distance=1.2cm, scale=0.95]
-        \node[draw, rectangle, minimum width=11cm, minimum height=1.4cm,
+    \resizebox{0.65\textwidth}{!}{%
+    \begin{tikzpicture}[node distance=0.8cm]
+        \node[draw, rectangle, minimum width=10cm, minimum height=1.2cm,
               fill=blue!10, align=center] (user) {
             \textbf{User Space (Ring 3)}\\[0.2em]
             \small Browser, Editor Teks, Media Player, Terminal
         };
-        \node[draw, rectangle, minimum width=11cm, minimum height=0.8cm,
-              below=1cm of user, fill=yellow!20] (syscall) {
+        \node[draw, rectangle, minimum width=10cm, minimum height=0.7cm,
+              below=0.8cm of user, fill=yellow!20] (syscall) {
             \textbf{Antarmuka System Call}
         };
-        \node[draw, rectangle, minimum width=11cm, minimum height=1.8cm,
-              below=1cm of syscall, fill=red!10, align=center] (kernel) {
+        \node[draw, rectangle, minimum width=10cm, minimum height=1.6cm,
+              below=0.8cm of syscall, fill=red!10, align=center] (kernel) {
             \textbf{Kernel Space (Ring 0)}\\[0.2em]
             \small Penjadwal Proses, Manajemen Memori, Sistem Berkas, Driver Perangkat
         };
-        \node[draw, rectangle, minimum width=11cm, minimum height=1.2cm,
-              below=1cm of kernel, fill=gray!20, align=center] (hw) {
+        \node[draw, rectangle, minimum width=10cm, minimum height=1.1cm,
+              below=0.8cm of kernel, fill=gray!20, align=center] (hw) {
             \textbf{Perangkat Keras}\\[0.2em]
             \small CPU, RAM, Disk, Kartu Jaringan, GPU
         };
@@ -170,7 +171,8 @@ untuk aplikasi biasa.
         \draw[->, thick] (syscall.south) -- (kernel.north);
         \draw[->, thick] (kernel.south) -- (hw.north)
             node[midway, right, font=\small] {Akses Langsung};
-    \end{tikzpicture}
+    \end{tikzpicture}%
+    }
     \caption{Lapisan arsitektur sistem operasi}
     \label{fig:os-layers}
 \end{figure}
@@ -694,23 +696,3 @@ Jawab pertanyaan berikut berdasarkan materi yang telah dipelajari pada bab ini:
     Identifikasi partisi mana yang merupakan root (\texttt{/}), partisi EFI, dan area
     swap. Sertakan output perintah sebagai screenshot.
 \end{enumerate}
-
-
-\section{Referensi}
-\label{sec:referensi}
-
-\begin{itemize}
-    \item Silberschatz, A., Galvin, P. B., Gagne, G. (2018). \textit{Operating System
-    Concepts} (10th ed.). Wiley.
-
-    \item Tanenbaum, A. S., Bos, H. (2014). \textit{Modern Operating Systems} (4th
-    ed.). Pearson.
-
-    \item Ward, B. (2021). \textit{How Linux Works} (3rd ed.). No Starch Press.
-
-    \item Canonical Ltd. (2024). \textit{Ubuntu Server Documentation}.
-    \url{https://ubuntu.com/server/docs}
-
-    \item The Linux Kernel Organization. (2024). \textit{The Linux Kernel Archives}.
-    \url{https://www.kernel.org}
-\end{itemize}

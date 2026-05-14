@@ -150,17 +150,22 @@ pada \cref{tab:process-states}:
     \centering
     \caption{Kondisi proses di Linux dan artinya}
     \label{tab:process-states}
-    \begin{tabular}{lll}
-        \hline
-        \textbf{Kode} & \textbf{Nama} & \textbf{Keterangan} \\
-        \hline
-        R & Running/Runnable  & Sedang dieksekusi CPU atau antri untuk dieksekusi \\
-        S & Sleeping          & Menunggu event; bisa diinterupsi sinyal \\
-        D & Uninterruptible   & Menunggu I/O disk; tidak bisa diinterupsi sinyal \\
-        T & Stopped           & Dijeda oleh sinyal SIGSTOP atau debugger \\
-        Z & Zombie            & Selesai tapi belum dibersihkan proses induknya \\
-        \hline
-    \end{tabular}
+    \begin{tblr}{
+        colspec = {llX[l]},
+        width = \linewidth,
+        hlines,
+        vlines,
+        rowsep = 2pt,
+        row{1} = {font=\bfseries},
+        cells = {font=\footnotesize}
+    }
+        Kode & Nama & Keterangan \\
+        R & Running/Runnable & Sedang dieksekusi CPU atau antri untuk dieksekusi \\
+        S & Sleeping         & Menunggu event; bisa diinterupsi sinyal \\
+        D & Uninterruptible  & Menunggu I/O disk; tidak bisa diinterupsi sinyal \\
+        T & Stopped          & Dijeda oleh sinyal SIGSTOP atau debugger \\
+        Z & Zombie           & Selesai tapi belum dibersihkan proses induknya \\
+    \end{tblr}
 \end{table}
 
 Kondisi yang paling normal adalah \texttt{S} (sleeping). Sebagian besar proses di sistem
@@ -334,18 +339,23 @@ Signal yang paling sering digunakan diringkas pada \cref{tab:important-signals}:
     \centering
     \caption{Signal penting di Linux}
     \label{tab:important-signals}
-    \begin{tabular}{llll}
-        \hline
-        \textbf{Nama} & \textbf{No.} & \textbf{Shortcut} & \textbf{Keterangan} \\
-        \hline
+    \begin{tblr}{
+        colspec = {lclX[l]},
+        width = \linewidth,
+        hlines,
+        vlines,
+        rowsep = 2pt,
+        row{1} = {font=\bfseries},
+        cells = {font=\footnotesize}
+    }
+        Nama & No. & Shortcut & Keterangan \\
         SIGHUP  & 1  &                    & Hangup: minta reload konfigurasi \\
         SIGINT  & 2  & \keystroke{Ctrl+C} & Interupsi dari keyboard \\
         SIGKILL & 9  &                    & Paksa berhenti, tidak bisa ditangkap \\
         SIGTERM & 15 &                    & Minta berhenti dengan bersih (default) \\
         SIGSTOP & 19 & \keystroke{Ctrl+Z} & Jeda proses, tidak bisa ditangkap \\
         SIGCONT & 18 &                    & Lanjutkan proses yang dijeda \\
-        \hline
-    \end{tabular}
+    \end{tblr}
 \end{table}
 
 Perbedaan terpenting adalah antara \textbf{SIGTERM} dan \textbf{SIGKILL}. SIGTERM adalah
@@ -460,10 +470,16 @@ dilihat pada \cref{tab:job-management-commands}:
     \centering
     \caption{Perintah manajemen job di shell}
     \label{tab:job-management-commands}
-    \begin{tabular}{ll}
-        \hline
-        \textbf{Perintah} & \textbf{Fungsi} \\
-        \hline
+    \begin{tblr}{
+        colspec = {lX[l]},
+        width = \linewidth,
+        hlines,
+        vlines,
+        rowsep = 2pt,
+        row{1} = {font=\bfseries},
+        cells = {font=\footnotesize}
+    }
+        Perintah & Fungsi \\
         \texttt{perintah \&}    & Jalankan di background sejak awal \\
         \cmd{jobs}              & Tampilkan semua job aktif di shell ini \\
         \cmd{fg \%N}            & Bawa job nomor N ke foreground \\
@@ -471,8 +487,7 @@ dilihat pada \cref{tab:job-management-commands}:
         \keystroke{Ctrl+Z}      & Jeda dan pindahkan job foreground ke background \\
         \keystroke{Ctrl+C}      & Hentikan job foreground \\
         \cmd{kill \%N}          & Hentikan job nomor N \\
-        \hline
-    \end{tabular}
+    \end{tblr}
 \end{table}
 
 Ada satu masalah dengan job biasa: ketika kamu menutup terminal (atau logout dari SSH),
@@ -489,10 +504,8 @@ menerima SIGHUP saat shell ditutup.
 \begin{lstlisting}[language=bash, caption={Menjalankan proses tahan logout}]
 # Jalankan program dengan nohup, output ke nohup.out
 nohup perintah &
-
 # Jalankan dengan output khusus
 nohup perintah > output.log 2>&1 &
-
 # Lepas job yang sudah ada dari shell
 disown %1
 \end{lstlisting}
@@ -604,15 +617,3 @@ proses pertama menjadi +10 menggunakan \cmd{renice}. Setelah diubah, proses mana
 sekarang lebih diprioritaskan? (3) Kirim SIGSTOP ke salah satu proses, verifikasi kondisi
 \texttt{T}-nya di output \cmd{ps}, lalu kirim SIGCONT. (4) Akhiri semua proses percobaan
 dengan \cmd{pkill sleep}. Sertakan semua perintah dan tangkapan layar.
-
-
-% ------------------------------------------------------------------------
-\section{Referensi}
-\label{sec:referensi-proses}
-
-\begin{itemize}
-    \item Kerrisk, M. \textit{The Linux Programming Interface} (1st ed.). No Starch Press, 2010.
-    \item Ward, B. \textit{How Linux Works} (3rd ed.). No Starch Press, 2021.
-    \item Barrett, D., Silverman, R., Byrnes, R. \textit{Linux Pocket Guide} (3rd ed.). O'Reilly Media, 2016.
-    \item Halaman manual: \texttt{man ps}, \texttt{man top}, \texttt{man 7 signal}, \texttt{man nice}, \texttt{man renice}, \texttt{man kill}, \texttt{man pkill}, \texttt{man nohup}, \texttt{man pgrep}.
-\end{itemize}

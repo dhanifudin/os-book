@@ -67,7 +67,7 @@ Berikut direktori-direktori utama yang perlu kamu kenal. Setiap administrator Li
 menghafalkan ini secara alami seiring penggunaan sehari-hari.
 
 \begin{itemize}
-    \item \dir{} : titik awal seluruh hierarki. Semua direktori lain berasal dari sini.
+    \item \dir{/} : titik awal seluruh hierarki. Semua direktori lain berasal dari sini.
     \item \dir{/bin/} : program esensial yang dibutuhkan semua pengguna, seperti \cmd{ls}, \cmd{cp}, \cmd{mv}, dan \cmd{bash}.
     \item \dir{/sbin/} : program administrasi sistem, seperti \cmd{fdisk} dan \cmd{iptables}. Umumnya memerlukan \cmd{sudo}.
     \item \dir{/etc/} : semua file konfigurasi sistem. Berformat teks sehingga bisa dibaca dengan editor biasa.
@@ -499,15 +499,3 @@ Lakukan langkah-langkah berikut secara berurutan dan dokumentasikan hasilnya:
     \item Verifikasi isi arsip dengan \cmd{tar -tzvf} dan hitung jumlah berkas di
     dalamnya menggunakan pipa ke \cmd{wc -l}.
 \end{enumerate}
-
-
-% ------------------------------------------------------------------------
-\section{Referensi}
-\label{sec:ref-filesystem}
-
-\begin{itemize}
-    \item Kerrisk, M. \textit{The Linux Programming Interface} (1st ed.). No Starch Press, 2010.
-    \item Barrett, D., Silverman, R., Byrnes, R. \textit{Linux Pocket Guide} (3rd ed.). O'Reilly Media, 2016.
-    \item Ward, B. \textit{How Linux Works} (3rd ed.). No Starch Press, 2021.
-    \item Halaman manual: \texttt{man hier}, \texttt{man ls}, \texttt{man stat}, \texttt{man ln}, \texttt{man find}, \texttt{man tar}, \texttt{man gzip}.
-\end{itemize}

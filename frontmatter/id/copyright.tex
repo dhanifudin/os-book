@@ -1,60 +1,159 @@
 %% ========================================================================
-%% Halaman Hak Cipta
+%% Halaman Hak Cipta (Halaman Kolofon / Imprint Page)
+%% Memuat data Katalog Dalam Terbitan (KDT) sesuai standar Perpustakaan
+%% Nasional Republik Indonesia serta nomor ISBN sesuai standar ISO~2108.
 %% ========================================================================
 
+\begin{titlepage}
 \thispagestyle{empty}
 
-\vspace*{10cm}
+\begin{tikzpicture}[remember picture, overlay]
+    \fill[black!4] ([xshift=1.3cm,yshift=-1.3cm]current page.north west) rectangle
+                    ([xshift=-1.3cm,yshift=-4.0cm]current page.north east);
+    \draw[line width=0.9pt, black!55]
+        ([xshift=1.5cm,yshift=1.5cm]current page.south west) rectangle
+        ([xshift=-1.5cm,yshift=-1.5cm]current page.north east);
+\end{tikzpicture}
 
-\noindent
-\textbf{Mastering Linux: Pemahaman Sistem Operasi untuk Pemula}
+\vspace*{1.6cm}
 
-\vspace{1cm}
+{\small\sffamily\bfseries H A K \ \ C I P T A \ \ D A N \ \ I M P R I N T\par}
+\vspace{0.45cm}
+{\Large\bfseries Mastering Linux\par}
+{\normalsize Pemahaman Sistem Operasi untuk Pemula\par}
 
-\noindent
-Copyright \copyright\ \the\year\ Sofyan Noor Arief, Dian Hanifudin Subhi, Muhammad Afif Hendrawan, Irsyad Arif Mashudi, Luqman Affandi. All rights reserved.
+\vspace{0.9cm}
 
-\vspace{0.5cm}
-
-\noindent
-Penerbit: [Nama Penerbit]\\
-Alamat: [Alamat Lengkap Penerbit]\\
-Website: [URL Website]\\
-Email: [Email Kontak]
-
-\vspace{0.5cm}
-
-\noindent
-ISBN: [Nomor ISBN]
-
-\vspace{0.5cm}
-
-\noindent
-\textbf{Hak Cipta Dilindungi Undang-Undang}
-
+\begin{tcolorbox}[
+    enhanced,
+    colback=black!2,
+    colframe=black!45,
+    boxrule=0.6pt,
+    arc=1.5pt,
+    left=8pt,
+    right=8pt,
+    top=8pt,
+    bottom=8pt
+]
+{\bfseries\sffamily Penulis}\par
 \vspace{0.3cm}
+\begin{tabular}{@{}p{0.48\textwidth}p{0.48\textwidth}@{}}
+Sofyan Noor Arief & Irsyad Arif Mashudi \\
+Dian Hanifudin Subhi & Luqman Affandi \\
+Muhammad Afif Hendrawan & \\
+\end{tabular}
+\end{tcolorbox}
 
-\noindent
-Dilarang memperbanyak, mencetak, atau menerbitkan sebagian atau seluruh isi buku ini
-dalam bentuk dan dengan cara apapun juga, baik secara mekanis maupun elektronis,
-termasuk fotokopi, rekaman, atau dengan sistem penyimpanan lainnya, tanpa izin
-tertulis dari penerbit.
+\vspace{0.45cm}
 
-\vspace{0.5cm}
+\begin{tcolorbox}[
+    enhanced,
+    colback=white,
+    colframe=black!45,
+    boxrule=0.5pt,
+    arc=1.5pt,
+    left=8pt,
+    right=8pt,
+    top=8pt,
+    bottom=8pt
+]
+{\bfseries\sffamily Pernyataan Hak Cipta}\par
+\vspace{0.25cm}
+Copyright \copyright\ \the\year\ Sofyan Noor Arief, Dian Hanifudin Subhi,
+Muhammad Afif Hendrawan, Irsyad Arif Mashudi, dan Luqman Affandi. Hak cipta dilindungi undang-undang.
 
-\noindent
-\textbf{Edisi Pertama:} \the\year
+\vspace{0.35cm}
 
-\vspace{0.3cm}
+Dilarang memperbanyak, mencetak, mendistribusikan, atau menerbitkan sebagian maupun seluruh isi buku ini dalam bentuk dan dengan cara apa pun, baik mekanis maupun elektronis, termasuk fotokopi, rekaman, pemindaian, atau sistem penyimpanan dan temu kembali informasi, tanpa izin tertulis dari penerbit, kecuali untuk kutipan singkat dalam penulisan ilmiah, ulasan, atau kepentingan akademik yang wajar.
+\end{tcolorbox}
 
-\noindent
-\textbf{Desain Sampul:} [Nama Designer]\\
-\textbf{Editor:} [Nama Editor]\\
-\textbf{Layout:} [Nama Layout Designer]
+\vspace{0.45cm}
 
-\vspace{1cm}
+\begin{minipage}[t]{0.48\textwidth}
+\begin{tcolorbox}[
+    enhanced,
+    colback=black!2,
+    colframe=black!45,
+    boxrule=0.5pt,
+    arc=1.5pt,
+    left=8pt,
+    right=8pt,
+    top=8pt,
+    bottom=8pt,
+    height=6.25cm
+]
+{\bfseries\sffamily Data Penerbit}\par
+\vspace{0.25cm}
+Polinema Press\\
+Politeknik Negeri Malang\\
+Jalan Soekarno-Hatta No.~9\\
+Malang 65141, Jawa Timur, Indonesia\\[0.2cm]
+Telepon: (0341) 404424\\
+Website: \url{https://www.polinema.ac.id}\\
+Email: info@polinema.ac.id
+\end{tcolorbox}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\begin{tcolorbox}[
+    enhanced,
+    colback=black!2,
+    colframe=black!45,
+    boxrule=0.5pt,
+    arc=1.5pt,
+    left=8pt,
+    right=8pt,
+    top=8pt,
+    bottom=8pt,
+    height=6.25cm
+]
+{\bfseries\sffamily Metadata Penerbitan}\par
+\vspace{0.25cm}
+ISBN: 978-623-XXXX-XX-X\\
+Edisi: I (Pertama)\\
+Cetakan: Ke-1, \the\year\\
+Ukuran Buku: 15{,}5\,cm $\times$ 23\,cm\\
+Jumlah Halaman: xiv + 248 halaman\\
+Desain Sampul: ---\\
+Editor: ---\\
+Tata Letak: ---
+\end{tcolorbox}
+\end{minipage}
 
-\noindent
-Cetakan ke-1, \the\year
+\vspace{0.45cm}
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=white,
+    colframe=black!45,
+    boxrule=0.5pt,
+    arc=1.5pt,
+    left=8pt,
+    right=8pt,
+    top=8pt,
+    bottom=8pt
+]
+{\bfseries\sffamily Katalog Dalam Terbitan (KDT)}\par
+\vspace{0.25cm}
+\begingroup
+\setlength{\parindent}{0pt}
+Arief, Sofyan Noor\\
+\hspace*{1em}Mastering Linux: Pemahaman Sistem Operasi untuk Pemula /
+Sofyan Noor Arief, Dian Hanifudin Subhi, Muhammad Afif Hendrawan,
+Irsyad Arif Mashudi, Luqman Affandi.\\
+\hspace*{1em}--- Edisi I. --- Malang: Politeknik Negeri Malang, \the\year.\\
+\hspace*{1em}xiv, 248 hlm.; 23 cm.\\[0.2cm]
+ISBN 978-623-XXXX-XX-X\\[0.2cm]
+1.~Sistem Operasi.\quad 2.~Linux.\quad 3.~Administrasi Sistem.\\
+I.~Judul.\quad II.~Subhi, Dian Hanifudin.\quad III.~Hendrawan, Muhammad Afif.\\
+IV.~Mashudi, Irsyad Arif.\quad V.~Affandi, Luqman.\hfill 005.43
+\endgroup
+\end{tcolorbox}
+
+\vfill
+
+{\small\itshape Dicetak dan diterbitkan di Indonesia\par}
+
+\end{titlepage}
 
 \cleardoublepage
