@@ -5,78 +5,34 @@
 \chapter*{Kata Pengantar}
 \addcontentsline{toc}{chapter}{Kata Pengantar}
 
-Puji syukur kehadirat Tuhan Yang Maha Esa atas segala rahmat dan karunia-Nya
-sehingga buku \textit{Mastering Linux: Pemahaman Sistem Operasi untuk Pemula}
-ini dapat diselesaikan.
-
-Sistem operasi merupakan fondasi dari semua sistem komputer modern. Memahami
-cara kerja sistem operasi, khususnya Linux, adalah keterampilan esensial bagi
-setiap profesional teknologi informasi. Buku ini dirancang khusus untuk mendukung
-pembelajaran mata kuliah Sistem Operasi dengan pendekatan praktis dan komprehensif.
-
-\section*{Tujuan Buku}
-
-Buku ini bertujuan untuk:
-
-\begin{itemize}
-    \item Memberikan pemahaman mendalam tentang konsep fundamental sistem operasi
-    \item Mengajarkan keterampilan praktis dalam menggunakan dan mengelola sistem Linux
-    \item Mempersiapkan pembaca untuk karir di bidang administrasi sistem dan DevOps
-    \item Menjembatani teori akademis dengan praktik industri
-\end{itemize}
-
-\section*{Struktur Buku}
-
-Buku ini disusun mengikuti rencana pembelajaran 16 minggu yang terstruktur:
-
-\begin{description}
-    \item[Bagian I: Fundamental Sistem Operasi]: Membahas konsep dasar, instalasi,
-          dan perintah dasar Linux.
-    \item[Bagian II: Manajemen File dan Proses]: Menjelaskan struktur direktori,
-          operasi file, dan manajemen proses.
-    \item[Bagian III: Bash Shell dan Scripting]: Mengajarkan penggunaan Bash
-          dan pemrograman shell script.
-    \item[Bagian IV: Manajemen Sistem Lanjutan]: Mencakup manajemen memori, user,
-          layanan, aplikasi, dan backup sistem.
-\end{description}
-
-\section*{Fitur Khusus}
-
-Buku ini dilengkapi dengan berbagai fitur pembelajaran:
-
-\begin{itemize}
-    \item \textbf{Contoh Praktis}: Setiap konsep disertai dengan contoh kode dan
-          skenario nyata
-    \item \textbf{Latihan}: Soal latihan di setiap akhir bab untuk memperdalam
-          pemahaman
-    \item \textbf{Tips dan Catatan}: Informasi tambahan dan best practices dari
-          pengalaman praktisi
-    \item \textbf{Referensi Perintah}: Lampiran berisi referensi lengkap perintah Linux
-\end{itemize}
-
-\section*{Ucapan Terima Kasih}
-
-Penulis mengucapkan terima kasih kepada:
-
-\begin{itemize}
-    \item Keluarga yang telah memberikan dukungan dan kesabaran
-    \item Rekan-rekan dosen dan kolega yang memberikan masukan berharga
-    \item Para pembaca yang telah menjadi inspirasi dalam penulisan buku ini
-    \item Tim penerbit yang telah membantu proses penerbitan
-\end{itemize}
-
-Penulis menyadari bahwa buku ini masih jauh dari sempurna. Kritik dan saran yang
-membangun sangat diharapkan untuk perbaikan di edisi mendatang.
+\noindent
+Sistem operasi merupakan salah satu konsep paling fundamental dalam dunia komputasi. Sebagai system software yang bertindak sebagai perantara antara perangkat keras (\textit{hardware}) dan aplikasi pengguna (\textit{user applications}), sistem operasi menentukan bagaimana seluruh sumber daya komputasi mulai dari prosesor, memori, hingga perangkat penyimpanan -dikelola dan didistribusikan secara efisien. Tanpa pemahaman yang memadai terhadap konsep ini, seorang pengguna, terlebih seorang praktisi teknologi informasi, tidak akan mampu mengoptimalkan pemanfaatan sistem komputasi secara menyeluruh. Memahami sistem operasi bukan sekadar memahami sebuah perangkat lunak, ia adalah memahami fondasi dari seluruh ekosistem komputasi modern.
 
 \vspace{1cm}
 
 \noindent
-Malang, April \the\year
+Buku ini hadir sebagai respon atas kebutuhan akan referensi yang tidak hanya memaparkan teori, tetapi juga menjembataninya dengan praktik nyata. Ulasan terhadap komponen-komponen dasar sistem operasi disajikan secara sistematis dan mudah diikuti, kemudian diperkuat dengan \textit{walkthrough} perintah-perintah Linux yang terstruktur. Pendekatan ini menjadikan buku ini intuitif dan aplikatif. Pembaca tidak hanya memahami mengapa sebuah mekanisme bekerja, tetapi juga bagaimana mengoperasikannya secara langsung di lingkungan nyata. Linux dipilih sebagai medium praktik bukan tanpa alasan. Sistem operasi ini mendominasi infrastruktur \textit{server}, komputasi awan, dan sistem tertanam (\textit{embedded systems}) di seluruh dunia.
 
 \vspace{1cm}
 
 \noindent
-Tim Penulis,
+Penguasaan keterampilan praktis sistem operasi memiliki relevansi yang sangat tinggi, khususnya bagi mahasiswa yang mempersiapkan diri memasuki ranah \textit{System Administrator} maupun \textit{Development Operations} (\textit{DevOps}). Kedua peran tersebut menuntut kemampuan mengelola proses, mengonfigurasi jaringan, mengatur izin akses, hingga mengotomasi tugas-tugas sistem. Semuanya berakar pada pemahaman mendalam tentang cara kerja sistem operasi. Buku ini dapat menjadi bekal awal yang kokoh bagi mereka yang ingin membangun kompetensi di bidang-bidang tersebut, sekaligus menjadi rujukan praktis bagi para profesional yang ingin memperbarui dan mempertajam keterampilan teknisnya.
+
+\vspace{1cm}
+
+\noindent
+Di tengah gelombang penetrasi teknologi Kecerdasan Artifisial Generatif (\textit{Generative AI}) yang semakin masif, mungkin muncul pertanyaan apakah penguasaan keterampilan dasar sistem operasi masih relevan? Jawabannya adalah justru semakin relevan. Alat-alat berbasis \textit{GenAI} memang mampu menghasilkan skrip konfigurasi atau perintah sistem secara otomatis. Namun tanpa landasan pemahaman yang kuat, seorang praktisi tidak akan mampu mengevaluasi, memvalidasi, dan mengontrol kebenaran serta efisiensi dari keluaran yang dihasilkan. Konfigurasi yang keliru akibat minimnya pemahaman mendasar dapat berujung pada kerentanan keamanan, pemborosan sumber daya, hingga kegagalan sistem secara keseluruhan. Oleh karena itu, buku ini hadir bukan hanya sebagai teks akademis, melainkan sebagai investasi kompetensi jangka panjang di era di mana manusia dan kecerdasan buatan harus berkolaborasi secara cerdas dan bertanggung jawab.
+
+\vspace{2cm}
+
+\noindent
+Ibnu Febry Kurniawan, S.Kom., M.Sc., Ph.D.,
+
+\vspace{0.5cm}
+
+\noindent
+Dosen S1 Sains Data & Kasubdit PUI Artificial Intelligence
+Universitas Negeri Surabaya
 
 \vspace{2cm}
 
