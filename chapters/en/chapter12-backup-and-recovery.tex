@@ -1,17 +1,763 @@
 %% ========================================================================
-%% Chapter 14: Backup and System Recovery
+%% Chapter 14: System Backup and Recovery
 %% ========================================================================
 
-\chapter{Backup and System Recovery}
+\chapter{System Backup and Recovery}
 \label{ch:backup-and-recovery}
 
-This chapter discusses backup strategies in Linux, backup tools, scheduled backup
-implementation, and disaster recovery planning.
+\chapterhero{gray}{Design reliable data backups, automate backup schedules, and restore practices so that data loss doesn't turn into a disaster.}{\faSync\quad rsync}{\faClock\quad cron}{\faLifeRing\quad recovery}
 
-\section{Backup Strategies in Linux}
-\section{Backup Tools}
-\section{Scheduled Backup Implementation}
-\section{System Recovery from Backup}
-\section{Disaster Recovery Planning}
+\term{hard disk} failure, accidentally deleted files, ransomware attacks, and power outages at the wrong time: these are all real events experienced by system administrators around the world. It is not a matter of \textit{if} it happens, but \textit{when}. Backup is a safety net that ensures a bad event does not become an unrecoverable disaster.
+
+In the Linux environment, there are three main tools that form the backbone of the backup system. \cmd{rsync} works like document synchronization between two folders: efficient, intelligent, and able to run over a network. \cmd{tar} works like compressing documents into an archival envelope that can be stored in a cupboard: all files are neatly wrapped into one compressed archive. \cmd{dd} works at a more basic level: copying every bit of one disk to another, like cloning an ID card and all its contents on a bit-by-bit basis.
+
+Choosing the right tool depends on what needs to be backed up, how often, and how quickly the restore needs to be possible. This chapter discusses these three tools, how to automatically schedule backups, and recovery procedures when the worst-case scenario does occur.
+
+\textbf{What You'll Learn}
+
+By the end of this chapter, you will be able to:
+
+\begin{enumerate}
+\item explain the differences between full, incremental, and differential backups
+and determine the appropriate strategy for a particular situation;
+\item use \cmd{rsync} for local directory synchronization and create
+hard link-based snapshot backups;
+\item create a backup archive with \cmd{tar} along with appropriate compression
+and incremental options;
+\item schedule an automatic backup script using \cmd{cron} with
+correct crontab syntax;
+\item restore files and directories from backup and verify
+the integrity uses \cmd{md5sum} and \cmd{sha256sum}.
+\end{enumerate}
+
+\begin{notebox}
+All practices in this chapter are executed in the \dir{~/lab-os/chapter12-backup/} directory.
+\begin{lstlisting}[language=bash]
+mkdir -p ~/lab-os/chapter12-backup
+cd ~/lab-os/chapter12-backup
+\end{lstlisting}
+\end{notebox}
+
+%% ========================================================================
+\section{Backup Strategy}
+\label{sec:backup-strategy}
+%% ========================================================================
+
+Before choosing a tool, you need to have a strategy. A good backup strategy answers three questions: what needs to be backed up, how often, and where to store it. Without clear answers to these three questions, your backups may be useless when needed.
+
+There are three commonly used types of backup, each with different characteristics in terms of storage space and recovery speed.
+
+\emph{Full backup} copies all selected data without exception.
+The simplest recovery as it only requires one set of backups. The disadvantages are the large size and long processing time, so it is not practical to use every day for large volumes of data.
+
+\emph{Incremental backup} copies only files that have changed since the backup
+finally, both full and incremental beforehand. It's small and fast, but recovery requires reconstruction from a full backup plus all sequential incrementals.
+
+\emph{Differential backup} copies files that have changed since the full backup
+final. The size is larger than incremental but recovery is simpler: only requires a recent full and differential backup.
+
+The 3-2-1 strategy is the industry standard recommended to ensure backups do not become a \emph{single point of failure}. The numbers are easy to remember: save \textbf{3} copies of the data, on \textbf{2} different media, with
+\textbf{1} copy at a different physical location (offsite). If the office server
+burned, offsite copies in the cloud or other locations remain safe.
+
+Two critical metrics need to be determined before designing a backup system. \emph{RPO} (Recovery Point Objective) is the question: how much data can be lost? If the RPO is 24 hours, the backup should run at least once a day.
+\emph{RTO} (Recovery Time Objective) is a question: how long is the downtime
+tolerable? If the RTO is 2 hours, the restore process must be completed within 2 hours of the failure occurring.
+
+\subsection*{Lab 12.1: Plan a Backup Strategy}
+
+The aim of this practice is to prepare a written backup plan using the heredoc from Chapter~3, then create simulation data that will be used in subsequent practices.
+
+\begin{enumerate}
+\item Create a directory of simulation data structures to be backed up:
+\begin{lstlisting}[language=bash, caption={Prepare directory and simulation data}]
+cd ~/lab-os/chapter12-backup
+mkdir -p data-source/{documents,configuration,log}
+
+echo "financial-report-2026.txt" > data-source/documents/report.txt
+echo "important-notes.txt" >> data-source/documents/report.txt
+echo "app_port=8080" > data-source/configuration/app.conf
+echo "db_host=localhost" >> data-source/configuration/app.conf
+for i in $(seq 1 20); do
+    echo "$(date) - log entry $i" >> data-source/log/app.log
+done
+
+du -sh data-source/*/
+find data-source -type f | wc -l
+\end{lstlisting}
+\textit{Observe:} how many total files are in this simulation directory?
+
+\item Create a backup plan document using heredoc:
+\begin{longlisting}[language=bash, caption={Create a backup plan with heredoc}]
+cat > rencana-backup.txt << 'EOF'
+====================================================
+LINUX LAB SYSTEM BACKUP PLAN
+====================================================
+Date Created   : (enter your date)
+System Name    : Ubuntu Server 22.04 Lab
+====================================================
+
+DATA INVENTORY
+:::::
+data-source/documents/    : reports and notes, CRITICAL
+data-source/configuration/: application configuration, CRITICAL
+data-source/log/        : system logs, NOT CRITICAL
+
+TARGET METRICS
+::::-
+RPO : 24 hours (data loss must not exceed 1 day)
+RTO : 2 hours  (system must recover within 2 hours)
+
+STRATEGI
+::--
+Full backup    : every Sunday night (documents + configuration)
+Incremental    : Monday-Saturday night (documents + configuration)
+Log            : NOT backed up (can be regenerated)
+Storage        : local ~/lab-os/chapter12-backup/archive/
+
+ATURAN 3-2-1
+:::--
+Copy 1 : data-source directory (original data)
+Copy 2 : local archive/ directory (local backup)
+Copy 3 : remote server / cloud storage (offsite)
+====================================================
+EOF
+
+cat rencana-backup.txt
+\end{longlisting}
+
+\item Calculate estimated backup space requirements for 30 days:
+\begin{lstlisting}[language=bash, caption={Estimated backup space requirements}]
+DATA_SIZE=$(du -sb data-source/documents/ data-source/configuration/ \
+    | awk '{sum+=$1} END{print sum}')
+echo "Ukuran data kritis: $DATA_SIZE byte"
+echo "Full backup x4/bulan: $((DATA_SIZE * 4)) byte"
+echo "Incremental est. 10% x24/bulan: $((DATA_SIZE * 24 / 10)) byte"
+echo "Total estimasi 30 hari: $((DATA_SIZE * 4 + DATA_SIZE * 24 / 10)) byte"
+\end{lstlisting}
+\textit{Observe:} what is the ratio of space requirements for the full+incremental strategy
+compared to if a full backup is done every day (full x30)?
+\end{enumerate}
+
+\begin{challengebox}
+Create a text file containing a more complete backup plan using the heredoc technique from Chapter~3. The plan should include: daily and weekly schedules, space estimates for each backup type, storage locations, and test restore procedures. Save to file \file{rencana-lengkap.txt}. Then use the redirection and pipeline techniques from Chapter~3 to count how many lines of plan you wrote.
+\end{challengebox}
+
+%% ========================================================================
+\section{rsync for Synchronization and Backup}
+\label{sec:rsync-backup}
+%% ========================================================================
+
+\cmd{rsync} is a very efficient synchronization tool. The secret lies
+on delta-transfer algorithm: when synchronizing files that already exist at the destination,
+\cmd{rsync} only sends the changed part, not the entire file from the beginning.
+Imagine editing a Word document: instead of resending the entire 10 MB document,
+\cmd{rsync} only sends the paragraphs you changed.
+
+The \texttt{-a} (archive) option is a combination of several options at once:
+\texttt{-r} (recursive), \texttt{-l} (save symlink), \texttt{-p} (save
+permission), \texttt{-t} (save timestamp), \texttt{-g} (save group), and
+\texttt{-o} (save owner). Almost always used with \texttt{-v} (verbose)
+to see progress.
+
+\begin{lstlisting}[language=bash, caption={Basic usage of rsync}]
+rsync -av ~/lab-os/chapter12-backup/data-source/ ~/lab-os/chapter12-backup/rsync-archive/
+rsync -avn ~/lab-os/chapter12-backup/data-source/ ~/lab-os/chapter12-backup/rsync-archive/
+rsync -av --delete ~/lab-os/chapter12-backup/data-source/ ~/lab-os/chapter12-backup/rsync-archive/
+rsync -avz ~/data/ user@server-remote:/backup/data/
+\end{lstlisting}
+
+The \texttt{-n} (dry run) option simulates the process without actually changing anything. Always perform a dry run before using \texttt{--delete}, as that option will delete files in the destination that do not exist in the source.
+
+\begin{warningbox}
+Note the difference in trailing slash in the source path. \cmd{rsync -av /home/user/} (with slash) copies the contents of the directory. \cmd{rsync -av /home/user} (without slash) copies the directory itself, resulting in additional subdirectories at the destination. Trailing slash errors are a very common source of confusion.
+\end{warningbox}
+
+\cmd{rsync}'s most advanced feature for backup is the \texttt{--link-dest} option. With this option, each daily snapshot looks like a complete full backup when browsed, but the unchanged files are just hard links to the previous snapshot file. There is no duplication of data on disk.
+
+\begin{lstlisting}[language=bash, caption={Hard link based snapshot backup}]
+BACKUP_BASE=~/lab-os/chapter12-backup/snapshots
+TODAY=$(date +%F)
+YESTERDAY=$(date -d yesterday +%F)
+
+mkdir -p "$BACKUP_BASE/$TODAY"
+rsync -av --delete \
+    --link-dest="$BACKUP_BASE/$YESTERDAY" \
+    ~/lab-os/chapter12-backup/data-source/ \
+    "$BACKUP_BASE/$TODAY/"
+\end{lstlisting}
+
+The \texttt{--exclude} and \texttt{--exclude-from} options exclude certain files or patterns from synchronization. The \texttt{--log-file} option logs all activity to a file for auditing.
+
+\begin{lstlisting}[language=bash, caption={Frequently used rsync options}]
+rsync -av --exclude='*.log' --exclude='.cache/' sumber/ tujuan/
+rsync -av --exclude-from='/etc/rsync-excludes.txt' sumber/ tujuan/
+rsync -av --log-file=/var/log/rsync.log sumber/ tujuan/
+rsync -av --progress sumber/ tujuan/
+\end{lstlisting}
+
+\subsection*{Lab 12.2: Synchronizing Directories with rsync}
+
+The goal of this practical is to understand the behavior of \cmd{rsync} with various options, including the effect of \texttt{--delete} and the hard link mechanism on snapshots.
+
+\begin{enumerate}
+\item Run the first sync:
+\begin{lstlisting}[language=bash, caption={First sync with rsync}]
+cd ~/lab-os/chapter12-backup
+rsync -avn data-source/ rsync-archive/
+rsync -av data-source/ rsync-archive/
+ls -la rsync-archive/
+\end{lstlisting}
+\textit{Observe:} how the dry run output (\texttt{-n}) differs from the execution
+Actually?
+
+\item Add a new file, delete one file, then observe the effect of \texttt{--delete}:
+\begin{lstlisting}[language=bash, caption={Observing the effect of --delete on rsync}]
+echo "important new file" > data-source/documents/baru.txt
+rm data-source/log/app.log
+
+rsync -av --delete data-source/ rsync-archive/
+ls rsync-archive/documents/
+ls rsync-archive/log/
+\end{lstlisting}
+\textit{Observe:} is \file{app.log} also removed from the destination? Whether
+\file{baru.txt} appears at the destination?
+
+\item Create first and second snapshots using \texttt{--link-dest}:
+\begin{lstlisting}[language=bash, caption={Create two hard link based snapshots}]
+mkdir -p snapshots/snap-1
+rsync -av data-source/ snapshots/snap-1/
+
+echo "isi baru setelah snap-1" > data-source/documents/baru.txt
+
+mkdir -p snapshots/snap-2
+rsync -av --link-dest=snapshots/snap-1 \
+    data-source/ snapshots/snap-2/
+\end{lstlisting}
+
+\item Verify hard links by comparing inodes:
+\begin{lstlisting}[language=bash, caption={Verify hard links between snapshots}]
+ls -lai snapshots/snap-1/documents/
+ls -lai snapshots/snap-2/documents/
+du -sh snapshots/snap-1/ snapshots/snap-2/
+du -sh snapshots/
+\end{lstlisting}
+\textit{Observe:} compare inode numbers (first column) for file \file{report.txt}
+in snap-1 and snap-2. Is it the same? The modified file \file{baru.txt} should have a different inode because its contents changed.
+
+\item Clean up snapshot after practice:
+\begin{lstlisting}[language=bash, caption={Cleaning the snapshot directory}]
+rm -rf rsync-archive/ snapshots/
+\end{lstlisting}
+\end{enumerate}
+
+\begin{challengebox}
+Create a Bash script (refer to Chapter~7) named \file{rsync-backup.sh} in the lab directory that runs \cmd{rsync} from the \dir{data-source/} directory to a directory named after today's date in the format \texttt{YYYY-MM-DD}. Use
+\cmd{tee} from Chapter~3 to write rsync output to the screen as well as to the log file
+named \file{backup-DATE.log}. Make this script executable with
+\cmd{chmod +x} and run to verify the results.
+\end{challengebox}
+
+%% ========================================================================
+\section{Tar and dd commands for Archives}
+\label{sec:tar-dd-backup}
+%% ========================================================================
+
+\cmd{tar} (tape archiver) is the most classic archiving tool in Linux.
+Although its name originates from the magnetic tape era, \cmd{tar} is very commonly used to package multiple files and directories into a single archive file that can be compressed and moved easily.
+
+The \texttt{-c} option creates a new archive, \texttt{-f} determines the output file name, and compression options are selected based on requirements. \texttt{-z} uses gzip: fast, moderate compression, \texttt{.tar.gz} extension. \texttt{-j} uses bzip2: slower, better compression, extension \texttt{.tar.bz2}. \texttt{-J} uses xz:slowest, best compression, extension \texttt{.tar.xz}.
+
+\begin{lstlisting}[language=bash, caption={Create a backup archive with tar}]
+tar -czf backup-$(date +%F).tar.gz data-source/
+tar -cjf backup-$(date +%F).tar.bz2 data-source/
+tar -cJf backup-$(date +%F).tar.xz data-source/
+
+tar -czf backup.tar.gz --exclude='*.log' --exclude='.cache' data-source/
+
+tar -tzf backup-$(date +%F).tar.gz
+tar -tzf backup-$(date +%F).tar.gz | grep "\.conf$"
+
+tar -xzf backup-$(date +%F).tar.gz -C /tmp/restore-test/
+tar -xzf backup-$(date +%F).tar.gz -C /tmp/ data-source/configuration/app.conf
+\end{lstlisting}
+
+The \texttt{-t} option displays a list of archive contents without extracting. The \texttt{-x} option extracts. The \texttt{-C} option specifies the extraction destination directory. Extracting only specific files or directories is done by specifying the relative path at the end of the command.
+
+The \texttt{\$(date +\%F)} construct inserts the date in the format
+\texttt{YYYY-MM-DD} to the file name automatically, so every backup has
+the name is unique and can be identified when it was created.
+
+For incremental backups with \cmd{tar}, use the \texttt{--listed-incremental} option which utilizes snapshot files to track changes.
+
+\begin{lstlisting}[language=bash, caption={Incremental backup with file snapshots}]
+tar -czf full-$(date +%F).tar.gz \
+    --listed-incremental=snapshot.snar \
+    data-source/
+
+tar -czf incr-$(date +%F-%H%M).tar.gz \
+    --listed-incremental=snapshot.snar \
+    data-source/
+
+tar -czf full-paksa-$(date +%F).tar.gz \
+    --listed-incremental=/dev/null \
+    data-source/
+\end{lstlisting}
+
+The first command uses a snapshot file that does not yet exist, so it automatically creates a full backup and initializes the snapshot file. Subsequent commands with the same snapshot file produce incremental backups. Using \texttt{/dev/null} as the snapshot file forces a full backup regardless of whether the snapshot file already exists.
+
+\cmd{dd} works on a different level than \cmd{tar}. Instead of understanding
+file structure, \cmd{dd} copies data byte by byte from source to destination. This makes it suitable for entire disk or partition backups, including MBR and partition structure.
+
+\begin{lstlisting}[language=bash, caption={Use dd for disk backup}]
+sudo dd if=/dev/sda of=/backup/sda-image.img bs=4M status=progress
+
+sudo dd if=/dev/sda bs=4M status=progress | \
+    gzip -9 > /backup/sda-$(date +%F).img.gz
+
+sudo dd if=/backup/sda-image.img of=/dev/sdb bs=4M status=progress
+\end{lstlisting}
+
+The \texttt{if} option is the input file (source), \texttt{of} is the output file (destination), \texttt{bs} is the block size per read-write operation (4M provides good performance), and \texttt{status=progress} displays real-time progress.
+
+\begin{warningbox}
+\cmd{dd} does not ask for confirmation before overwriting data. Swap \texttt{if} and
+\texttt{of} will accidentally destroy the source disk. Always verify
+twice name the device with \cmd{lsblk} before running \cmd{dd} to disk.
+\end{warningbox}
+
+\subsection*{Lab 12.3: Create a backup archive and Verify Its Integrity}
+
+The goal of this practice is to create full and incremental backup archives, then verify the integrity of the archive using checksums.
+
+\begin{enumerate}
+\item Create a full backup archive and save the checksum:
+\begin{lstlisting}[language=bash, caption={Full backup and checksum creation}]
+cd ~/lab-os/chapter12-backup
+mkdir -p tar-archive
+
+tar -czf tar-archive/full-$(date +%F).tar.gz data-source/
+ls -lh tar-archive/
+
+md5sum tar-archive/full-$(date +%F).tar.gz > tar-archive/full-$(date +%F).md5
+sha256sum tar-archive/full-$(date +%F).tar.gz > tar-archive/full-$(date +%F).sha256
+cat tar-archive/full-$(date +%F).md5
+\end{lstlisting}
+\textit{Observe:} what the archive size is compared to the source directory
+(\cmd{du -sh data-source/})?
+
+\item Check the contents of the archive and try extracting one file:
+\begin{lstlisting}[language=bash, caption={Checking the contents of the tar archive}]
+tar -tzf tar-archive/full-$(date +%F).tar.gz
+tar -tzf tar-archive/full-$(date +%F).tar.gz | grep "\.conf"
+mkdir -p /tmp/tar-test
+tar -xzf tar-archive/full-$(date +%F).tar.gz \
+    -C /tmp/tar-test \
+    data-source/configuration/app.conf
+cat /tmp/tar-test/data-source/configuration/app.conf
+rm -rf /tmp/tar-test
+\end{lstlisting}
+
+\item Verify archive integrity using checksum:
+\begin{lstlisting}[language=bash, caption={Verify integrity with checksum}]
+md5sum -c tar-archive/full-$(date +%F).md5
+sha256sum -c tar-archive/full-$(date +%F).sha256
+
+tar -tzf tar-archive/full-$(date +%F).tar.gz > /dev/null && \
+    echo "Arsip VALID" || echo "Arsip RUSAK"
+\end{lstlisting}
+\textit{Observe:} what does the message \texttt{OK} on the output \cmd{md5sum -c} mean?
+
+\item Create an incremental archive after adding new files:
+\begin{lstlisting}[language=bash, caption={Incremental backup with snapshots}]
+tar -czf tar-archive/full-snap-$(date +%F).tar.gz \
+    --listed-incremental=tar-archive/snapshot.snar \
+    data-source/
+
+echo "file added after full backup" > data-source/documents/added.txt
+echo "configuration baru" >> data-source/configuration/app.conf
+
+tar -czf tar-archive/incr-$(date +%F-%H%M).tar.gz \
+    --listed-incremental=tar-archive/snapshot.snar \
+    data-source/
+
+ls -lh tar-archive/*.tar.gz
+\end{lstlisting}
+\textit{Observe:} compare the sizes of full-snap archives and incremental archives.
+How big are the savings from incremental backups?
+\end{enumerate}
+
+\begin{challengebox}
+Create a second session incremental archive. Add some new files to
+\dir{data-source/documents/} and change the contents of \file{app.conf}. Then run it
+\cmd{tar} with the same snapshot file to produce incremental backups
+second. Compare the sizes of the three archives (full, incr-1, incr-2). Then verify the contents of each archive using \cmd{tar -tzf} to ensure each archive only contains files that match its type.
+\end{challengebox}
+
+%% ========================================================================
+\section{Scheduled Backups with cron}
+\label{sec:scheduled-backup}
+%% ========================================================================
+
+Backups performed manually are unreliable. People forget, get busy, or get sick. \cmd{cron} is a Linux scheduling daemon that runs commands or scripts automatically at predetermined times, like an alarm that never forgets to go off.
+
+The cron schedule format uses five fields called \emph{cron expression}. Each field represents a different unit of time.
+
+\begin{lstlisting}[language=bash, caption={Cron expression format and schedule example}]
+# minute hour day-month month day-week command
+# (0-59) (0-23) (1-31) (1-12) (0-7, 0&7=Sunday)
+
+0 2 * * *       /usr/local/bin/backup-harian.sh
+0 2 * * 0       /usr/local/bin/backup-mingguan.sh
+0 1 1 * *       /usr/local/bin/backup-bulanan.sh
+30 22 * * 1-5   /usr/local/bin/backup-hari-kerja.sh
+*/15 * * * *    /usr/local/bin/sync-kritis.sh
+\end{lstlisting}
+
+Star means ``every possible value''. \texttt{*/15} in the minutes field means every 15 minutes. \texttt{1-5} in the day-of-week field means Monday to Friday. The first command runs every day at 02:00. The second command runs every Sunday at 02:00.
+
+To edit the current user's crontab, use \cmd{crontab -e}. To display it, use \cmd{crontab -l}.
+
+\begin{lstlisting}[language=bash, caption={Managing crontabs}]
+crontab -l
+crontab -e
+sudo crontab -e
+ls /etc/cron.daily/ /etc/cron.weekly/ /etc/cron.monthly/
+\end{lstlisting}
+
+Directories \dir{/etc/cron.daily/}, \dir{/etc/cron.weekly/}, and
+\dir{/etc/cron.monthly/} contains a script that runs automatically on a frequency
+which lives up to its name by \cmd{anacron}, which handles systems that don't run 24 hours continuously.
+
+The backup script that cron runs needs to log its activity to a log file. This is important because cron runs without a terminal, so there is no way of seeing the direct output.
+
+\begin{longlisting}[language=bash, caption={Example backup script with logging}]
+# !/bin/bash
+
+BACKUP_DIR="$HOME/lab-os/chapter12-backup/automatic-archive"
+SOURCE="$HOME/lab-os/chapter12-backup/data-source"
+DATE=$(date +%Y-%m-%d-%H%M)
+LOG="$HOME/lab-os/chapter12-backup/backup.log"
+
+mkdir -p "$BACKUP_DIR"
+
+echo "[$(date)] Starting backup $DATE" >> "$LOG"
+
+if rsync -av --delete \
+    --exclude='*.log' \
+    --log-file="$LOG" \
+    "$SOURCE/" \
+    "$BACKUP_DIR/$DATE/"; then
+    echo "[$(date)] Backup succeeded: $BACKUP_DIR/$DATE/" >> "$LOG"
+else
+    echo "[$(date)] FAILED: backup $DATE" >> "$LOG"
+fi
+
+find "$BACKUP_DIR" -maxdepth 1 -type d -mtime +7 \
+    -exec rm -rf {} \; 2>/dev/null
+echo "[$(date)] Finished" >> "$LOG"
+\end{longlisting}
+
+The \cmd{find} line at the end of the script implements automatic retention by deleting backup directories older than 7 days, so disk space doesn't run out over time.
+
+\subsection*{Lab 12.4: Schedule an Automatic backup Script}
+
+The goal of this practice is to create a backup script, test it manually, register it in crontab, and verify its automatic execution.
+
+\begin{enumerate}
+\item Create a backup script that uses rsync with logging:
+\begin{longlisting}[language=bash, caption={Create an automatic backup script}]
+cd ~/lab-os/chapter12-backup
+
+nano backup-otomatis.sh
+# Write the contents of the following file
+# !/bin/bash
+BACKUP_BASE="$HOME/lab-os/chapter12-backup/cron-archive"
+SOURCE="$HOME/lab-os/chapter12-backup/data-source"
+DATE=$(date +%Y-%m-%d-%H%M)
+LOG="$HOME/lab-os/chapter12-backup/cron-backup.log"
+
+mkdir -p "$BACKUP_BASE/$DATE"
+echo "[$(date)] Starting backup to $BACKUP_BASE/$DATE" >> "$LOG"
+
+rsync -av --delete "$SOURCE/" "$BACKUP_BASE/$DATE/" >> "$LOG" 2>&1
+
+if [ $? -eq 0 ]; then
+    UKURAN=$(du -sh "$BACKUP_BASE/$DATE/" | cut -f1)
+    echo "[$(date)] OK: $DATE ($UKURAN)" >> "$LOG"
+else
+    echo "[$(date)] FAILED: backup $DATE" >> "$LOG"
+    rmdir "$BACKUP_BASE/$DATE" 2>/dev/null
+fi
+
+find "$BACKUP_BASE" -maxdepth 1 -type d -mmin +30 -exec rm -rf {} \; 2>/dev/null
+
+chmod +x backup-otomatis.sh
+\end{longlisting}
+
+\item Test the script manually before registering it with cron:
+\begin{lstlisting}[language=bash, caption={Test the manual execution of the backup script}]
+./backup-otomatis.sh
+ls -la cron-archive/
+cat cron-backup.log
+\end{lstlisting}
+\textit{Observe:} does the log record the correct timestamp? Is a directory
+backup created successfully?
+
+\item Register script to crontab to run every 2 minutes (for
+testing requirements):
+\begin{lstlisting}[language=bash, caption={Registering the script to crontab}]
+crontab -l 2>/dev/null > /tmp/temporary-cron
+echo "*/2 * * * * $HOME/lab-os/chapter12-backup/backup-otomatis.sh" \
+    >> /tmp/temporary-cron
+crontab /tmp/temporary-cron
+rm /tmp/temporary-cron
+crontab -l
+\end{lstlisting}
+
+\item Wait a few minutes then verify cron has run the backup:
+\begin{lstlisting}[language=bash, caption={Verify cron automatic execution}]
+ls -lt cron-archive/
+cat cron-backup.log
+grep CRON /var/log/syslog 2>/dev/null | tail -5
+\end{lstlisting}
+\textit{Observe:} how many backup directories have been created? What is timestamp
+on the directory name corresponds to the execution time in the log?
+
+\item Clean crontab and directories:
+\begin{lstlisting}[language=bash, caption={Clean crontab and backup results}]
+crontab -l | grep -v "backup-otomatis" | crontab -
+crontab -l
+rm -rf cron-archive/ tar-archive/ cron-backup.log backup.log
+\end{lstlisting}
+\end{enumerate}
+
+\begin{challengebox}
+Schedule script \file{rsync-backup.sh} from challengebox Lab 12.2 to run every day at 02:00 using crontab. Add to the script so that the rsync output is saved to \file{/var/log/backup.log} using the \cmd{tee} technique from Chapter~3 (so that it is simultaneously printed in the terminal when run manually and saved to the log). Write a proper cron expression and describe each field.
+\end{challengebox}
+
+%% ========================================================================
+\section{System Restore}
+\label{sec:backup-recovery}
+%% ========================================================================
+
+A backup that has never been tested for restore is no more useful than a blank copy. The recovery process needs to be practiced before it is needed in an emergency, because recovering a system while panicking is much more difficult than recovering it in a calm state.
+
+A safe restore flow always extracts to a temporary directory first, not directly to the original location. This protects you if something goes wrong during the restore process: any remaining original data won't be overwritten before you're sure the restore went correctly.
+
+For archive \cmd{tar}, the first step is to verify the integrity of the archive, then identify the files that need to be restored.
+
+\begin{lstlisting}[language=bash, caption={Restore from tar archive with verification}]
+tar -tzf /backup/full-2026-05-09.tar.gz > /dev/null && \
+    echo "Archive VALID" || echo "Archive DAMAGED"
+
+tar -tzf /backup/full-2026-05-09.tar.gz | grep "documents"
+
+mkdir -p /tmp/temporary-restore
+tar -xzf /backup/full-2026-05-09.tar.gz \
+    -C /tmp/temporary-restore \
+    data-source/configuration/app.conf
+
+ls /tmp/temporary-restore/data-source/configuration/
+cp /tmp/temporary-restore/data-source/configuration/app.conf \
+   ~/target-restore/configuration/
+
+rm -rf /tmp/temporary-restore
+\end{lstlisting}
+
+For snapshot \cmd{rsync}, restore is even simpler because each snapshot is a regular directory that can be browsed with \cmd{ls} without the need for an extraction process.
+
+\begin{lstlisting}[language=bash, caption={Restore from rsync snapshot}]
+ls ~/backup/snapshots/
+ls ~/backup/snapshots/2026-05-09/data-source/
+
+cp ~/backup/snapshots/2026-05-09/data-source/documents/report.txt \
+   ~/target-restore/documents/
+
+rsync -av ~/backup/snapshots/2026-05-09/data-source/configuration/ \
+    ~/target-restore/configuration/
+
+diff ~/backup/snapshots/2026-05-08/data-source/app.conf \
+     ~/backup/snapshots/2026-05-09/data-source/app.conf
+\end{lstlisting}
+
+After restore, verify integrity using the checksum stored when the backup was created.
+
+\begin{lstlisting}[language=bash, caption={Verify integrity after restore}]
+md5sum -c /backup/full-2026-05-09.md5
+sha256sum -c /backup/full-2026-05-09.sha256
+
+diff -r /backup/snapshots/2026-05-09/data-source/ ~/target-restore/
+echo "Exit code: $? (0 means identical)"
+\end{lstlisting}
+
+\cmd{diff -r} compares two directories recursively. Exit code 0 means
+no difference: restore worked perfectly.
+
+\subsection*{Lab 12.5: Simulating recovery from backup}
+
+The goal of this practice is to simulate a real data loss scenario, then restore from an existing backup and verify the results.
+
+\begin{enumerate}
+\item Prepare source data and create backups in preparation:
+\begin{lstlisting}[language=bash, caption={Prepare data and make an initial backup}]
+cd ~/lab-os/chapter12-backup
+mkdir -p data-source/{documents,configuration}
+echo "year-end-report" > data-source/documents/report.txt
+echo "meeting-notes" > data-source/documents/notes.txt
+echo "db_host=localhost" > data-source/configuration/app.conf
+echo "cache_ttl=300" >> data-source/configuration/app.conf
+
+mkdir -p recovery-archive recovery-snapshot
+
+tar -czf recovery-archive/full-backup.tar.gz data-source/
+md5sum recovery-archive/full-backup.tar.gz > recovery-archive/full-backup.md5
+rsync -av data-source/ recovery-snapshot/
+
+ls -lhR data-source/
+\end{lstlisting}
+
+\item Save checksums of important files for later verification:
+\begin{lstlisting}[language=bash, caption={Saves the checksum of the source file}]
+md5sum data-source/documents/* data-source/configuration/* > original-checksum.md5
+cat original-checksum.md5
+\end{lstlisting}
+
+\item Simulate data loss: delete some files intentionally:
+\begin{lstlisting}[language=bash, caption={Data loss simulation}]
+rm data-source/documents/report.txt
+rm data-source/configuration/app.conf
+echo "invalid file" > data-source/documents/unknown.txt
+ls -la data-source/documents/
+ls -la data-source/configuration/
+\end{lstlisting}
+\textit{Observe:} current data-source state is inconsistent: file exists
+missing and there are unknown foreign files.
+
+\item Recover lost files from tar archive to temporary directory:
+\begin{lstlisting}[language=bash, caption={Restore from tar archive to temporary directory}]
+md5sum -c recovery-archive/full-backup.md5
+
+mkdir -p /tmp/restore-lap14
+tar -xzf recovery-archive/full-backup.tar.gz \
+    -C /tmp/restore-lap14 \
+    data-source/documents/report.txt
+
+ls /tmp/restore-lap14/data-source/documents/
+cp /tmp/restore-lap14/data-source/documents/report.txt \
+   data-source/documents/
+
+rm -rf /tmp/restore-lap14
+\end{lstlisting}
+
+\item Restore configuration files from rsync snapshot:
+\begin{lstlisting}[language=bash, caption={Restore from rsync snapshot}]
+ls recovery-snapshot/configuration/
+cp recovery-snapshot/configuration/app.conf \
+   data-source/configuration/
+ls -la data-source/configuration/
+\end{lstlisting}
+
+\item Verify integrity after recovery:
+\begin{lstlisting}[language=bash, caption={Checksum verification after recovery}]
+rm data-source/documents/unknown.txt
+
+md5sum -c original-checksum.md5
+echo "Exit code: $? (0 means all files are valid)"
+
+diff -r data-source/ recovery-snapshot/
+echo "Diff exit code: $? (0 means identical to the snapshot)"
+\end{lstlisting}
+\textit{Observe:} do all checksums show OK? Recovered files
+must be identical to the original version.
+
+\item Clean entire lab directory:
+\begin{lstlisting}[language=bash, caption={Cleaning practice directories}]
+rm -rf recovery-archive/ recovery-snapshot/
+rm -f original-checksum.md5 rencana-backup.txt backup-otomatis.sh
+\end{lstlisting}
+\end{enumerate}
+
+\begin{challengebox}
+Extend the recovery scenario: delete the entire \dir{data-source/configuration/} directory at once (not just one file). Then restore those entire directories from the snapshot using \cmd{rsync} with the transfer direction reversed (source is the snapshot, destination is the damaged directory). Verify the recovery results by comparing the checksum of the entire directory contents using \cmd{find} and
+\cmd{md5sum}. Note the time difference between restoring one file and restoring one
+full directory.
+\end{challengebox}
+
+%% ========================================================================
 \section{Summary}
+\label{sec:backup-summary}
+%% ========================================================================
+
+In this chapter, you learned:
+
+\begin{itemize}[noitemsep,topsep=2pt]
+\item \textbf{Backup strategy}: three types of backup (full, incremental,
+differential) with different trade-offs; the 3-2-1 rule as an industry standard; and RPO and RTO as metrics that determine backup frequency and infrastructure.
+\item \textbf{rsync}: efficient delta-transfer based synchronization, option
+\texttt{--delete} for directory mirrors, and \texttt{--link-dest} for
+hard link based snapshot backup that saves disk space.
+\item \textbf{tar}: archiving with gzip, bzip2, and xz compression options;
+incremental backup using the \texttt{--listed-incremental} option; as well as restore individual files from the archive.
+\item \textbf{cron}: automatic scheduling with five cron expression formats
+fields, crontab management, and script output logging techniques to files.
+\item \textbf{Recovery and verification}: safe restore procedures via
+temporary directory, verify integrity with \cmd{md5sum} and
+\cmd{sha256sum}, as well as the importance of testing restore periodically.
+\end{itemize}
+
+%% ========================================================================
 \section{Exercises}
+\label{sec:backup-exercises}
+%% ========================================================================
+
+\textbf{General Instructions}: Do all the exercises independently. Note important steps, save screenshots when necessary, then summarize the results as personal documentation.
+
+\subsubsection*{Exercise 12.1 Implementing a Complete backup System}
+Design and implement a backup system for the simulation directory.
+\begin{enumerate}
+\item Create a simulated directory structure with at least 10 scattered files
+in three subdirectories: \dir{documents/}, \dir{configuration/}, and \dir{media/}.
+\item Create a script \file{backup-harian.sh} that uses \cmd{rsync} with
+\texttt{--link-dest} to create a daily snapshot. The script should log
+log with timestamp to \file{backup-harian.log}.
+\item Create a script \file{backup-mingguan.sh} that uses \cmd{tar -czf}
+to create a compressed archive. The script must create an MD5 checksum of each archive created.
+\item Register both into crontab with different schedules. Run
+each manually and verify the resulting logs and output.
+\item Simulate file loss and restore from both backup types.
+Document the restore steps and time required.
+\end{enumerate}
+
+\subsubsection*{Exercise 12.2 compression and backup Performance Analysis}
+Analyze the trade-off between speed and compression ratio.
+\begin{enumerate}
+\item Create a directory with three types of files: plain text (10 files \texttt{.txt}
+100 lines each), configuration file \texttt{.conf}, and simulation binary files using \cmd{dd if=/dev/urandom of=biner.bin bs=1M count=5}.
+\item Create three archives from the same directory using gzip (\texttt{-z}),
+bzip2 (\texttt{-j}), and xz (\texttt{-J}). Measure the time of each process using \cmd{time}.
+\item Compare the sizes of the three archives with \cmd{ls -lh} and calculate the ratio
+compression of each to the original size.
+\item Create a table in file \file{analisis-kompresi.txt} that summarizes: types
+compression, compression time, throughput size, and compression ratio.
+\item Based on the data, recommend the most appropriate compression
+for: automatic daily backups, long-term archives, and binary file backups. Give reasons for each recommendation.
+\end{enumerate}
+
+\subsubsection*{Exercise 12.3 Disaster recovery Drill}
+Perform a comprehensive disaster recovery simulation.
+\begin{enumerate}
+\item Create a ``production'' directory with the complete structure: configuration files,
+documents, and scripts. Make a full backup using \cmd{tar} and save the checksum.
+\item Document the initial conditions: file list, size, and checksum of all
+files use \cmd{find} and \cmd{md5sum}.
+\item Simulate disaster: delete entire production directory with \cmd{rm -rf}.
+\item Note the restore start time, perform a complete restore from backup, and
+note the end time. Calculate actual RTO.
+\item Verify all recovered files correctly using the checksum
+saved in step 2.
+\item Compare the actual RTO with the target you set. If it's longer,
+identify bottlenecks and propose ways to speed them up.
+\end{enumerate}
+
+%% ========================================================================

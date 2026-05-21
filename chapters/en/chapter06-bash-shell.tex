@@ -1,9 +1,11 @@
 %% ========================================================================
-%% Chapter 7: Bash Shell and Shell Basics
+%% Chapter 6: Bash Shell
 %% ========================================================================
 
-\chapter{Bash Shell and Shell Basics}
+\chapter{Bash Shell}
 \label{ch:bash-shell-basic}
+
+\chapterhero{cyan}{Build efficient terminal work habits through shell configuration, PATH, aliases, functions, and more productive Bash interaction techniques.}{\faTerminal\quad shell}{\faRoute\quad PATH}{\faTags\quad alias}
 
 This chapter covers Bash as the default shell commonly used on Linux, how
 Bash configuration files work, environment variables and \texttt{PATH},
@@ -11,6 +13,18 @@ creating aliases and shell functions, completion and history features,
 wildcards and filename expansion, and quoting and escaping. The focus is on
 everyday lab work and system administration: working faster in the terminal,
 reducing typing mistakes, and building safe working habits.
+
+\textbf{What You'll Learn}
+
+By the end of this chapter, you will be able to:
+
+\begin{enumerate}
+    \item explain the difference between login shells and interactive shells and configure \file{~/.bashrc} and \file{~/.bash\_profile};
+    \item manage environment variables and modify \var{PATH} to run commands from a personal directory;
+    \item create aliases and shell functions to speed up daily administration work;
+    \item use wildcards, brace expansion, and Bash history effectively and safely;
+    \item apply correct quoting and escaping for filenames with spaces and special characters.
+\end{enumerate}
 
 \begin{examplebox}[Bash as the administrator's ``control panel'']
 Imagine managing a server with no graphical interface. No buttons to click,
@@ -22,7 +36,7 @@ Bash accepts the commands you type, runs programs, manages environment
 variables, handles redirection, helps you find past commands through history,
 and even lets you create your own work shortcuts through aliases and
 functions. Understanding Bash is therefore not just about ``being able to
-type commands''---it is about building a workflow that is faster, more
+type commands'' : it is about building a workflow that is faster, more
 consistent, and safer.
 
 Think of Bash like a Swiss Army knife: it looks simple on the outside, but
@@ -65,7 +79,7 @@ different. Always distinguish between \texttt{\$SHELL} (login shell) and
   \item \texttt{mkdir}, \texttt{touch}: prepare the lab workspace.
 \end{itemize}
 
-\subsection*{Lab 7.1 --- Getting to Know Bash and Preparing the Workspace}
+\subsection*{Lab 6.1 : Getting to Know Bash and Preparing the Workspace}
 
 Objective: identify the active shell and prepare a safe working area for all
 labs in this chapter.
@@ -105,7 +119,7 @@ ls -R
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Lab 7.2 --- Creating a Terminal Session Summary}
+\subsection*{Lab 6.2 : Creating a Terminal Session Summary}
 
 Objective: get administrators into the habit of verifying their working
 context before performing maintenance.
@@ -138,7 +152,7 @@ cat session-info.txt
 
 \begin{notebox}
 Small habits like recording the user, host, shell, and active directory can
-prevent fatal mistakes---for example, accidentally running commands on the
+prevent fatal mistakes : for example, accidentally running commands on the
 wrong server or in the wrong directory.
 \end{notebox}
 
@@ -174,7 +188,7 @@ comment.
   \item \texttt{bash -l}: start a new login shell for testing.
 \end{itemize}
 
-\subsection*{Lab 7.3 --- Adding Safe Configuration to \texttt{.bashrc}}
+\subsection*{Lab 6.3 : Adding Safe Configuration to \texttt{.bashrc}}
 
 Objective: understand the role of \texttt{.bashrc} and apply changes safely.
 
@@ -193,10 +207,10 @@ cp ~/.bashrc ~/.bashrc.bak-lab
 \begin{lstlisting}[language=bash, caption={Adding configuration to .bashrc}]
 cat <<'EOF' >> ~/.bashrc
 
-# --- Chapter 6 Bash Lab ---
+# : Chapter 6 Bash Lab :
 export BASH_LAB_DIR="$HOME/lab-os/chapter06-bash"
 export EDITOR=nano
-# --- End Chapter 6 Bash Lab ---
+# : End Chapter 6 Bash Lab :
 
 EOF
 \end{lstlisting}
@@ -209,7 +223,7 @@ echo "$EDITOR"
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Lab 7.4 --- Setting Up \texttt{.bash\_profile} for Login Shell}
+\subsection*{Lab 6.4 : Setting Up \texttt{.bash\_profile} for Login Shell}
 
 Objective: understand the relationship between \texttt{.bash\_profile} and
 \texttt{.bashrc} in a login shell scenario.
@@ -225,14 +239,14 @@ Objective: understand the relationship between \texttt{.bash\_profile} and
 \begin{lstlisting}[language=bash, caption={Adding configuration to .bash\_profile}]
 cat <<'EOF' >> ~/.bash_profile
 
-# --- Chapter 6 Bash Login Shell ---
+# : Chapter 6 Bash Login Shell :
 if [ -f ~/.bashrc ]; then
   . ~/.bashrc
 fi
 
 echo "Bash login at $(date '+%F %T')" \
   >> "$HOME/lab-os/chapter06-bash/login-audit.log"
-# --- End Chapter 6 Bash Login Shell ---
+# : End Chapter 6 Bash Login Shell :
 
 EOF
 \end{lstlisting}
@@ -257,15 +271,15 @@ when you type a command name without a full path.
 
 Understanding \texttt{PATH} is essential. If a script lives in a directory
 that is not in \texttt{PATH}, you cannot call it directly by name. Conversely,
-a poorly configured \texttt{PATH} is also dangerous---placing an untrusted
+a poorly configured \texttt{PATH} is also dangerous : placing an untrusted
 directory at the front of the path, for instance, could run a malicious
 program instead of a system command.
 
 \begin{tipbox}
 Remember the difference:
 \begin{itemize}
-  \item \texttt{VAR=value} --- only available in the current shell.
-  \item \texttt{export VAR=value} --- passed on to child processes.
+  \item \texttt{VAR=value} : only available in the current shell.
+  \item \texttt{export VAR=value} : passed on to child processes.
 \end{itemize}
 \end{tipbox}
 
@@ -280,7 +294,7 @@ Remember the difference:
   \item \texttt{chmod +x}: grant execute permission to a script.
 \end{itemize}
 
-\subsection*{Lab 7.5 --- Distinguishing Shell Variables from Environment Variables}
+\subsection*{Lab 6.5 : Distinguishing Shell Variables from Environment Variables}
 
 Objective: understand the difference between local variables and environment
 variables.
@@ -315,7 +329,7 @@ type ls
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Lab 7.6 --- Adding a Personal Script Directory to \texttt{PATH}}
+\subsection*{Lab 6.6 : Adding a Personal Script Directory to \texttt{PATH}}
 
 Objective: create a simple administration command that can be called from
 anywhere.
@@ -330,9 +344,9 @@ mkdir -p ~/lab-os/chapter06-bash/bin
 \begin{lstlisting}[language=bash, caption={Adding the bin directory to PATH}]
 cat <<'EOF' >> ~/.bashrc
 
-# --- Chapter 6 PATH ---
+# : Chapter 6 PATH :
 export PATH="$HOME/lab-os/chapter06-bash/bin:$PATH"
-# --- End Chapter 6 PATH ---
+# : End Chapter 6 PATH :
 
 EOF
 
@@ -373,13 +387,13 @@ be careful that your script names do not clash with system commands such as
 
 When working in the terminal, some commands are used over and over. Aliases
 help shorten simple, frequently used commands. Shell functions are used when
-the logic is more complex---for example, accepting arguments, running several
+the logic is more complex : for example, accepting arguments, running several
 steps, or including basic validation.
 
 In administration work, aliases are ideal for safe, frequently used shortcuts
 such as \texttt{ll}, \texttt{hist10}, or \texttt{grep --color=auto}. For
-tasks with more ``moving parts''---such as backing up a configuration file
-with a timestamp---a shell function is more appropriate.
+tasks with more ``moving parts'' : such as backing up a configuration file
+with a timestamp : a shell function is more appropriate.
 
 \begin{examplebox}[Alias vs Function analogy]
   \begin{itemize}
@@ -402,7 +416,7 @@ with a timestamp---a shell function is more appropriate.
   \item \texttt{source \textasciitilde/.bashrc}: reload aliases and functions.
 \end{itemize}
 
-\subsection*{Lab 7.7 --- Creating Basic Productivity Aliases}
+\subsection*{Lab 6.7 : Creating Basic Productivity Aliases}
 
 Objective: create shortcuts for frequently used commands.
 
@@ -411,11 +425,11 @@ Objective: create shortcuts for frequently used commands.
 \begin{lstlisting}[language=bash, caption={Adding aliases to .bashrc}]
 cat <<'EOF' >> ~/.bashrc
 
-# --- Chapter 6 Aliases ---
+# : Chapter 6 Aliases :
 alias ll='ls -lah --color=auto'
 alias hist10='history | tail -n 10'
 alias cdlab='cd $HOME/lab-os/chapter06-bash'
-# --- End Chapter 6 Aliases ---
+# : End Chapter 6 Aliases :
 
 EOF
 
@@ -432,7 +446,7 @@ type ll
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Lab 7.8 --- Creating a Configuration Backup Function}
+\subsection*{Lab 6.8 : Creating a Configuration Backup Function}
 
 Objective: create a reusable shell function for backing up configuration
 files.
@@ -448,7 +462,7 @@ cat ~/lab-os/chapter06-bash/sample-app.conf
 \begin{lstlisting}[language=bash, caption={Adding the backup\_conf function to .bashrc}]
 cat <<'EOF' >> ~/.bashrc
 
-# --- Chapter 6 Shell Functions ---
+# : Chapter 6 Shell Functions :
 backup_conf() {
   if [ $# -ne 1 ]; then
     echo "Usage: backup_conf <file>"
@@ -464,10 +478,10 @@ backup_conf() {
   fi
 
   mkdir -p "$dst"
-  cp -- "$src" "$dst/$(basename "$src").$(date +%F-%H%M%S).bak"
+  cp, "$src" "$dst/$(basename "$src").$(date +%F-%H%M%S).bak"
   echo "Backup saved to $dst"
 }
-# --- End Chapter 6 Shell Functions ---
+# : End Chapter 6 Shell Functions :
 
 EOF
 
@@ -491,7 +505,7 @@ Bash helps you type faster through \textit{completion}. When you press
 you are typing. This feature looks simple, but in system administration it
 significantly reduces path typos and wrong command names.
 
-In addition, Bash keeps a \textit{history}---a list of commands you have run
+In addition, Bash keeps a \textit{history} : a list of commands you have run
 before. History is useful for repeating past steps, tracing commands used
 during troubleshooting, and documenting your workflow. Searching history with
 \keystroke{Ctrl+r} is one of the most valuable skills for anyone who spends
@@ -521,7 +535,7 @@ the previous command was destructive (for example, \texttt{rm -rf}).
 Always glance at what the command says before pressing \keystroke{Enter}.
 \end{warningbox}
 
-\subsection*{Lab 7.9 --- Using Basic Completion and Viewing History}
+\subsection*{Lab 6.9 : Using Basic Completion and Viewing History}
 
 Objective: use the \keystroke{Tab} key and history to work faster.
 
@@ -550,7 +564,7 @@ history | tail -n 10
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Lab 7.10 --- Searching Diagnostic Commands with History}
+\subsection*{Lab 6.10 : Searching Diagnostic Commands with History}
 
 Objective: use history to quickly repeat system diagnostic steps.
 
@@ -597,7 +611,7 @@ administrators often need to process a group of log files, backup files, or
 configuration files that share a naming pattern.
 
 Beyond wildcards, Bash also has brace expansion and tilde expansion.
-Understanding the differences helps you work faster and more safely---
+Understanding the differences helps you work faster and more safely:
 especially when a pattern will be used with commands like \texttt{cp},
 \texttt{mv}, or \texttt{rm}.
 
@@ -619,7 +633,7 @@ first seeing exactly which files will be matched.
     in a risky command.
 \end{itemize}
 
-\subsection*{Lab 7.11 --- Trying Basic Wildcards}
+\subsection*{Lab 6.11 : Trying Basic Wildcards}
 
 Objective: understand wildcard patterns and filename expansion.
 
@@ -645,7 +659,7 @@ echo ~/lab-os/chapter06-bash
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Lab 7.12 --- Archiving Multiple Log Files at Once}
+\subsection*{Lab 6.12 : Archiving Multiple Log Files at Once}
 
 Objective: use wildcards safely for routine administration tasks.
 
@@ -691,11 +705,11 @@ is why using quotation marks correctly is so important.
   Imagine telling someone: \textit{``Call my friend John Smith''}.
   \begin{itemize}
     \item Without quotes, the listener might hear three separate things:
-      ``Call'', ``my friend John'', ``Smith''---and get confused about what
+      ``Call'', ``my friend John'', ``Smith'' : and get confused about what
       to do with ``Smith''.
     \item With double quotes, the entire phrase is treated as one unit:
       \textit{``John Smith''} is one person's name.
-    \item With single quotes, absolutely nothing inside is interpreted---it is
+    \item With single quotes, absolutely nothing inside is interpreted : it is
       taken 100\% literally, dollar signs and all.
   \end{itemize}
   Bash works exactly the same way.
@@ -704,7 +718,7 @@ is why using quotation marks correctly is so important.
 In general:
 \begin{itemize}
   \item \textbf{Single quotes} (\texttt{'...'}) keep the content completely
-    literal---no expansion of any kind.
+    literal : no expansion of any kind.
   \item \textbf{Double quotes} (\texttt{"..."}) still allow variable
     expansion and command substitution, but preserve spaces as part of a
     single argument.
@@ -722,7 +736,7 @@ variables.
   \item \texttt{echo '...'}: display literal text.
   \item \texttt{echo "..."}: display text with variable expansion.
   \item \texttt{\textbackslash}: escape a special character.
-  \item \texttt{cp -- "source" "destination"}: copy a file with a complex name.
+  \item \texttt{cp, "source" "destination"}: copy a file with a complex name.
   \item \texttt{printf '\%s\textbackslash n' "\$var"}: safely display a variable value.
 \end{itemize}
 
@@ -732,7 +746,7 @@ represent a path or file name}, for example \texttt{"\$file"}. This prevents
 Bash from splitting the value on spaces.
 \end{tipbox}
 
-\subsection*{Lab 7.13 --- Comparing Single Quotes, Double Quotes, and Escape}
+\subsection*{Lab 6.13 : Comparing Single Quotes, Double Quotes, and Escape}
 
 Objective: understand the effect of different quoting styles on Bash
 expansion.
@@ -756,7 +770,7 @@ cat "server april report.txt"
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Lab 7.14 --- Handling Files with Difficult Names Safely}
+\subsection*{Lab 6.14 : Handling Files with Difficult Names Safely}
 
 Objective: process files containing spaces and special characters without
 errors.
@@ -770,7 +784,7 @@ ls -lah
 
   \item Copy the file with a complex name to the backup folder:
 \begin{lstlisting}[language=bash, caption={Safely copying a file with a complex name}]
-cp -- "backup [weekly] server.conf" \
+cp, "backup [weekly] server.conf" \
   "$HOME/lab-os/chapter06-bash/backup/backup-weekly-server.conf"
 \end{lstlisting}
 
@@ -779,7 +793,7 @@ cp -- "backup [weekly] server.conf" \
 src="$HOME/lab-os/chapter06-bash/named-files/backup [weekly] server.conf"
 dst="$HOME/lab-os/chapter06-bash/backup/backup-weekly-server-v2.conf"
 
-cp -- "$src" "$dst"
+cp, "$src" "$dst"
 ls -lah "$HOME/lab-os/chapter06-bash/backup"
 \end{lstlisting}
 
@@ -808,7 +822,7 @@ to read system files such as \texttt{/etc} or \texttt{/proc}. Do not modify
 important system files directly without a backup.
 \end{warningbox}
 
-\subsection*{Assignment 1 --- Personal Bash Administrator Toolkit}
+\subsection*{Assignment 1 : Personal Bash Administrator Toolkit}
 \textbf{Real-world context:} an administrator often repeats the same commands
 every day. To work more efficiently and consistently, they need a personal
 Bash \textit{toolkit} that activates automatically on every login.
@@ -837,7 +851,7 @@ Bash \textit{toolkit} that activates automatically on every login.
   \item the report file \texttt{toolkit-bash-report.txt}.
 \end{itemize}
 
-\subsection*{Assignment 2 --- Configuration File Audit and Safe Logging}
+\subsection*{Assignment 2 : Configuration File Audit and Safe Logging}
 \textbf{Real-world context:} when troubleshooting, an administrator often
 needs to inventory configuration files and separate normal output from error
 messages.
@@ -873,7 +887,7 @@ messages.
   \item a brief analysis of the audit results.
 \end{itemize}
 
-\subsection*{Assignment 3 --- Daily Server Mini Health Check}
+\subsection*{Assignment 3 : Daily Server Mini Health Check}
 \textbf{Real-world context:} an administrator needs a quick \textit{health
 check} to know the basic condition of a server before and after maintenance.
 
@@ -916,7 +930,7 @@ check} to know the basic condition of a server before and after maintenance.
   \item a brief explanation of what each part of the script does.
 \end{itemize}
 
-\subsection*{Assignment 4 --- Handling Complex Filenames and Safe Archiving}
+\subsection*{Assignment 4 : Handling Complex Filenames and Safe Archiving}
 \textbf{Real-world context:} backup files, exports, and reports often have
 names containing spaces or special characters. Administrators must still be
 able to process these files without targeting the wrong one.
@@ -972,7 +986,7 @@ able to process these files without targeting the wrong one.
     repeatable logic.
   \item Completion and history speed up work and reduce typing errors.
   \item Wildcards and filename expansion make it easy to process many files
-    at once---but always preview with \texttt{echo} before acting on them.
+    at once : but always preview with \texttt{echo} before acting on them.
   \item Quoting and escaping are a critical foundation for ensuring Bash
     handles variables, spaces, and special characters correctly.
 \end{itemize}

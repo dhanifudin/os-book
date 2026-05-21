@@ -27,6 +27,10 @@ $clean_ext = 'aux bbl bcf blg fdb_latexmk fls lof log lot out run.xml synctex.gz
 # Force biber to run
 $biber = 'biber %O %S';
 
+# Use indexstyle.ist so latexmk's makeindex call matches imakeidx's call,
+# preventing oscillation between styled (149 lines) and unstyled (129 lines) index output.
+$makeindex = 'makeindex -s indexstyle.ist %O -o %D %S';
+
 # Maximum number of runs
 $max_repeat = 5;
 

@@ -1,59 +1,159 @@
 %% ========================================================================
-%% Copyright Page
+%% Copyright Page (Colophon / Imprint Page)
+%% Contains Cataloging in Publication data and an ISBN number according to
+%% ISO~2108 standards.
 %% ========================================================================
 
+\begin{titlepage}
 \thispagestyle{empty}
 
-\vspace*{10cm}
+\begin{tikzpicture}[remember picture, overlay]
+    \fill[black!4] ([xshift=1.3cm,yshift=-1.3cm]current page.north west) rectangle
+                    ([xshift=-1.3cm,yshift=-4.0cm]current page.north east);
+    \draw[line width=0.9pt, black!55]
+        ([xshift=1.5cm,yshift=1.5cm]current page.south west) rectangle
+        ([xshift=-1.5cm,yshift=-1.5cm]current page.north east);
+\end{tikzpicture}
 
-\noindent
-\textbf{Linux Operating Systems: A Comprehensive Guide for Students}
+\vspace*{1.6cm}
 
-\vspace{1cm}
+{\small\sffamily\bfseries C O P Y R I G H T \ \ A N D \ \ I M P R I N T\par}
+\vspace{0.45cm}
+{\Large\bfseries Mastering Linux\par}
+{\normalsize Understanding Operating Systems for Beginners\par}
 
-\noindent
-Copyright \copyright\ \the\year\ [Author Name]
+\vspace{0.9cm}
 
-\vspace{0.5cm}
-
-\noindent
-Publisher: [Publisher Name]\\
-Address: [Full Publisher Address]\\
-Website: [Website URL]\\
-Email: [Contact Email]
-
-\vspace{0.5cm}
-
-\noindent
-ISBN: [ISBN Number]
-
-\vspace{0.5cm}
-
-\noindent
-\textbf{All Rights Reserved}
-
+\begin{tcolorbox}[
+    enhanced,
+    colback=black!2,
+    colframe=black!45,
+    boxrule=0.6pt,
+    arc=1.5pt,
+    left=8pt,
+    right=8pt,
+    top=8pt,
+    bottom=8pt
+]
+{\bfseries\sffamily Authors}\par
 \vspace{0.3cm}
+\begin{tabular}{@{}p{0.48\textwidth}p{0.48\textwidth}@{}}
+Sofyan Noor Arief & Irsyad Arif Mashudi \\
+Dian Hanifudin Subhi & Luqman Affandi \\
+Muhammad Afif Hendrawan & \\
+\end{tabular}
+\end{tcolorbox}
 
-\noindent
-No part of this publication may be reproduced, stored in a retrieval system, or transmitted
-in any form or by any means, electronic, mechanical, photocopying, recording, or otherwise,
-without the prior written permission of the publisher.
+\vspace{0.45cm}
 
-\vspace{0.5cm}
+\begin{tcolorbox}[
+    enhanced,
+    colback=white,
+    colframe=black!45,
+    boxrule=0.5pt,
+    arc=1.5pt,
+    left=8pt,
+    right=8pt,
+    top=8pt,
+    bottom=8pt
+]
+{\bfseries\sffamily Copyright Statement}\par
+\vspace{0.25cm}
+Copyright \copyright\ \the\year\ Sofyan Noor Arief, Dian Hanifudin Subhi,
+Muhammad Afif Hendrawan, Irsyad Arif Mashudi, and Luqman Affandi. All rights reserved.
 
-\noindent
-\textbf{First Edition:} \the\year
+\vspace{0.35cm}
 
-\vspace{0.3cm}
+No part of this book may be reproduced, printed, distributed, or published in any form or by any means, mechanical or electronic, including photocopying, recording, scanning, or information storage and retrieval systems, without written permission from the publisher, except for brief quotations in scholarly writing, reviews, or reasonable academic use.
+\end{tcolorbox}
 
-\noindent
-\textbf{Cover Design:} [Designer Name]\\
-\textbf{Editor:} [Editor Name]\\
-\textbf{Layout:} [Layout Designer Name]
+\vspace{0.45cm}
 
-\vspace{1cm}
+\begin{minipage}[t]{0.48\textwidth}
+\begin{tcolorbox}[
+    enhanced,
+    colback=black!2,
+    colframe=black!45,
+    boxrule=0.5pt,
+    arc=1.5pt,
+    left=8pt,
+    right=8pt,
+    top=8pt,
+    bottom=8pt,
+    height=6.25cm
+]
+{\bfseries\sffamily Publisher Information}\par
+\vspace{0.25cm}
+Polinema Press\\
+Politeknik Negeri Malang\\
+Jalan Soekarno-Hatta No.~9\\
+Malang 65141, East Java, Indonesia\\[0.2cm]
+Phone: (0341) 404424\\
+Website: \url{https://www.polinema.ac.id}\\
+Email: info@polinema.ac.id
+\end{tcolorbox}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\begin{tcolorbox}[
+    enhanced,
+    colback=black!2,
+    colframe=black!45,
+    boxrule=0.5pt,
+    arc=1.5pt,
+    left=8pt,
+    right=8pt,
+    top=8pt,
+    bottom=8pt,
+    height=6.25cm
+]
+{\bfseries\sffamily Publication Metadata}\par
+\vspace{0.25cm}
+ISBN: 978-623-XXXX-XX-X\\
+Edition: I (First)\\
+Printing: 1st, \the\year\\
+Book Size: 15{,}5\,cm $\times$ 23\,cm\\
+Page Count: xiv + 248 pages\\
+Cover Design: TBD\\
+Editor: TBD\\
+Layout: TBD
+\end{tcolorbox}
+\end{minipage}
 
-\noindent
-First Printing, \the\year
+\vspace{0.45cm}
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=white,
+    colframe=black!45,
+    boxrule=0.5pt,
+    arc=1.5pt,
+    left=8pt,
+    right=8pt,
+    top=8pt,
+    bottom=8pt
+]
+{\bfseries\sffamily Cataloging in Publication (CIP)}\par
+\vspace{0.25cm}
+\begingroup
+\setlength{\parindent}{0pt}
+Arief, Sofyan Noor\\
+\hspace*{1em}Mastering Linux: Understanding Operating Systems for Beginners /
+Sofyan Noor Arief, Dian Hanifudin Subhi, Muhammad Afif Hendrawan,
+Irsyad Arif Mashudi, Luqman Affandi.\\
+\hspace*{1em}Edition I. Malang: Politeknik Negeri Malang, \the\year.\\
+\hspace*{1em}xiv, 248 pages; 23 cm.\\[0.2cm]
+ISBN 978-623-XXXX-XX-X\\[0.2cm]
+1.~Operating Systems.\quad 2.~Linux.\quad 3.~System Administration.\\
+I.~Title.\quad II.~Subhi, Dian Hanifudin.\quad III.~Hendrawan, Muhammad Afif.\\
+IV.~Mashudi, Irsyad Arif.\quad V.~Affandi, Luqman.\hfill 005.43
+\endgroup
+\end{tcolorbox}
+
+\vfill
+
+{\small\itshape Printed and published in Indonesia\par}
+
+\end{titlepage}
 
 \cleardoublepage

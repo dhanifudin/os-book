@@ -1,1187 +1,658 @@
 %% ========================================================================
-%% Chapter 11: File & User/Group Management
+%% Chapter 9: File, User, and Group Management
 %% ========================================================================
 
-\chapter{File \& User/Group Management}
+\chapter{File, User, and Group Management}
 \label{ch:file-and-user-management}
 
-\begingroup
-\small
-\setstretch{0.85}
-\setlength{\parskip}{0pt}
-\setlist{nosep}
+\chapterhero{green}{Control access permissions, ownership, user accounts, groups, and sudo to keep your system secure and easy to manage.}{\faLock\quad permissions}{\faUserShield\quad ACL}{\faUserCog\quad sudo}
 
-This chapter summarizes the foundations of access administration in Linux: classic Unix
-permissions, ACLs for more granular cases, user and group management, using \cmd{sudo}
-and \cmd{su}, and disk space restrictions with quota. The focus of this chapter is to
-understand Linux's \emph{access control model} as a whole: who owns files, who can
-access them, how administrative rights are delegated, and how resource usage is limited
-in multi-user systems.
+When you create a new account in Ubuntu, the system immediately gives that account full ownership of its home directory. Other accounts cannot read its contents unless given explicit permission. This is not an additional feature, but rather the basic design of Linux as a multi-user system: each file and directory has three identities, namely the owner user (\textit{owner}), the associated group, and all other users, and access is managed separately for each group.
 
-\textbf{Learning Objectives}
+This chapter combines file permission management and user identity administration. The discussion starts from the standard permission model \texttt{rwx} along with the commands \cmd{chmod}, \cmd{chown}, and \cmd{chgrp}, then continues to special permissions such as \textit{setuid}, \textit{setgid}, and \textit{sticky bit}, then Access Control List (ACL), user and group account management, delegation of administrative rights via \cmd{sudo}, and limiting disk space with quotas.
 
-After completing this chapter, readers are expected to be able to:
+In multi-user systems such as campus servers or production machines, proper access control is the foundation of security. Incorrect configuration can make sensitive data unreadable to everyone, or give someone more power than they should.
+
+\textbf{What You'll Learn}
+
+By the end of this chapter, you will be able to:
 
 \begin{enumerate}
-    \item read and modify file/directory permissions;
-    \item distinguish the roles of owner, group, and others;
-    \item use ACLs when standard permissions are insufficient;
-    \item create, modify, and delete users and groups;
-    \item manage administrative rights with \cmd{sudo} securely; and
-    \item enable and check disk quota for users or groups.
+\item set file permissions and ownership using \cmd{chmod}, \cmd{chown}, and \cmd{chgrp};
+\item apply special setuid, setgid, and sticky bit permissions to files and directories;
+\item configure an Access Control List (ACL) to provide granular access per user or group;
+\item create, modify, and delete user accounts and groups with appropriate commands;
+\item manage group membership and understand file structures \file{/etc/passwd}, \file{/etc/shadow}, and \file{/etc/group};
+\item configure limited \cmd{sudo} rights via \file{/etc/sudoers.d/} securely; and
+\item enable and check disk quota for users and groups.
 \end{enumerate}
 
-%% ========================================================================
-\section{Access Control System (Permissions)}
-\label{sec:permissions}
-%% ========================================================================
-
-\textbf{Concept Explanation}
-
-Linux inherits the simple yet powerful Unix access control model. Each file and
-directory always has three access identities:
-
-\begin{description}
-    \item[Owner] the user who owns the file.
-    \item[Group] the group associated with the file.
-    \item[Others] all other users outside the two entities above.
-\end{description}
-
-For each of these entities, three basic permissions are available: read, write, and execute.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Meaning of basic Linux permissions}
-    \label{tab:permissions-type}
-    \begin{tblr}{
-        colspec = {lX[l]X[l]},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \textbf{Symbol} & \textbf{On files} & \textbf{On directories} \\
-    \texttt{r} & Read file contents & List directory contents \\
-    \texttt{w} & Modify file contents & Create or delete entries in directory \\
-    \texttt{x} & Execute file & Enter directory \\
-    \end{tblr}
-\end{table}
-
 \begin{notebox}
-The \texttt{w} right on a file only modifies file contents. Deleting a file is determined
-by permissions on the directory containing the file.
+All practices in this chapter are executed in the \dir{~/lab-os/chapter09-users/} directory.
+\begin{lstlisting}[language=bash]
+mkdir -p ~/lab-os/chapter09-users
+cd ~/lab-os/chapter09-users
+\end{lstlisting}
 \end{notebox}
 
-\textbf{Commands Used}
+%% ========================================================================
+\section{Access Permissions and File Ownership}
+\label{sec:advanced-permissions}
+%% ========================================================================
+
+Every file in Linux has three permission groups: \textit{owner}, \textit{group}, and \textit{others}. Each group has a combination of read (\texttt{r}), write (\texttt{w}), and execute (\texttt{x}) permissions. The \cmd{chmod} command changes these permissions, while \cmd{chown} and \cmd{chgrp} change user and group ownership. On top of the nine standard permission bits, Linux also has three additional bits called \textit{special permission bits}: setuid, setgid, and sticky bit.
+
+\textbf{Setuid (SUID)} makes a program run with the identity of the file owner, not the identity of the user running it. The most obvious example is \cmd{/usr/bin/passwd}: this command needs to write to \file{/etc/shadow} which can only be written by \texttt{root}, but normal users should be able to change the password themselves. The solution is to setuid on \cmd{passwd}, so that whoever runs the command, the process runs as \texttt{root}.
+
+\textbf{Setgid (SGID)} works similarly to setuid, but for groups. In executable files, processes run with the file's GID. On a directory, setgid has a different effect: any new files created in that directory automatically inherit the directory group, not the file's primary group. This is especially useful for team collaboration directories.
+
+The \textbf{Sticky bit} in a directory means that only the file owner can delete the file themselves, even if the directory is writable by multiple users. The \dir{/tmp} directory uses the sticky bit because all users need to create temporary files there, but cannot delete files belonging to other users.
+
+In octal notation, these three special bits occupy the fourth digit in front:
 
 \begin{itemize}
-    \item \texttt{ls -l}: view file type, permissions, owner, and group.
-    \item \texttt{chmod}: change file or directory permissions.
-    \item \texttt{chown}: change owner and/or group of a file.
-    \item \texttt{chgrp}: change group owner of a file.
-    \item \texttt{umask}: view or change default permissions for new files.
+\item \texttt{4xxx} for setuid
+\item \texttt{2xxx} for setgid
+\item \texttt{1xxx} for sticky bits
+\item These three items can be combined. For example, \texttt{6xxx} means setuid and setgid are active at the same time.
 \end{itemize}
 
-\subsection{Reading \texttt{ls -l} Output}
-
-The \cmd{ls -l} output summarizes file type, permissions, owner, group, size, and time.
-
-\begin{lstlisting}[language=bash, caption={Reading permissions with ls -l}]
-$ ls -l /etc/passwd
--rw-r--r-- 1 root root 2847 Jan 15 10:30 /etc/passwd
-\end{lstlisting}
-
-Permission string interpretation:
-
-\begin{itemize}
-    \item first character: file type (\texttt{-}, \texttt{d}, \texttt{l}, etc.)
-    \item next three characters: owner permissions
-    \item next three: group permissions
-    \item last three: others permissions
-\end{itemize}
-
-Example \texttt{-rwxr-x---} means regular file, owner has full rights, group can
-read and execute, others have no access.
-
-\subsection{Symbolic and Octal Notation}
-
-Permissions can be written in two forms:
-
-\begin{itemize}
-    \item \textbf{symbolic}: relative, e.g., \texttt{u+x}, \texttt{go-w}
-    \item \textbf{octal}: absolute, e.g., \texttt{755}, \texttt{640}, \texttt{600}
-\end{itemize}
-
-\begin{table}[htbp]
-    \centering
-    \caption{Permission conversion to octal notation}
-    \label{tab:octal-permissions}
-    \begin{tblr}{
-        colspec = {lccX[l]},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \textbf{Permission} & \textbf{Binary} & \textbf{Octal} & \textbf{Meaning} \\
-    \texttt{---} & 000 & 0 & No permissions \\
-    \texttt{r--} & 100 & 4 & Read only \\
-    \texttt{rw-} & 110 & 6 & Read and write \\
-    \texttt{rwx} & 111 & 7 & Read, write, execute \\
-    \end{tblr}
-\end{table}
-
-Most common patterns:
-
-\begin{itemize}
-    \item \texttt{755}: public directories or programs
-    \item \texttt{644}: regular files
-    \item \texttt{600}: private files like SSH keys
-    \item \texttt{700}: private scripts or directories
-\end{itemize}
-
-\subsection{\cmd{chmod}, \cmd{chown}, and \cmd{chgrp}}
-
-Three core commands for permission management are:
-
-\begin{itemize}
-    \item \cmd{chmod}: change permissions
-    \item \cmd{chown}: change owner and/or group
-    \item \cmd{chgrp}: change group only
-\end{itemize}
-
-\begin{lstlisting}[language=bash, caption={Basic permission and ownership commands}]
-# symbolic chmod
-chmod +x script.sh
-chmod u=rw,g=r,o= file.txt
-chmod go-w file.txt
-
-# octal chmod
-chmod 644 /etc/app.conf
-chmod 755 /usr/local/bin/my-script.sh
-chmod 600 ~/.ssh/id_rsa
-
-# ownership
-sudo chown alice report.txt
-sudo chown alice:developers report.txt
-sudo chgrp developers report.txt
-\end{lstlisting}
-
-Usage principles:
-
-\begin{itemize}
-    \item use symbolic notation for small, incremental changes;
-    \item use octal notation when you want definite results, especially in scripts;
-    \item always verify recursive changes with \cmd{ls -la} on several files.
-\end{itemize}
-
-\begin{warningbox}
-Avoid \texttt{chmod 777} unless you fully understand the risks. This permission
-gives write and execute rights to all users.
-\end{warningbox}
-
-\subsection{Special Permission Bits}
-
-Besides the nine \texttt{rwx} bits, Linux has three special bits:
-
-\begin{description}
-    \item[SUID] program runs with the UID of the file owner. Classic example:
-        \cmd{/usr/bin/passwd} needs to write to \file{/etc/shadow}.
-    \item[SGID] on executable files, the process runs with the file's GID; on directories,
-        new files inherit the directory's group.
-    \item[Sticky bit] on directories, users can only delete their own files even if
-        the directory is writable by many people.
-\end{description}
-
-\begin{lstlisting}[language=bash, caption={Special bits examples}]
-# SUID
+\begin{lstlisting}[language=bash, caption={Observe and set special bits}]
+# observe the SUID in passwd
 ls -l /usr/bin/passwd
-sudo chmod 4755 /usr/local/bin/my-tool
+# output: -rwsr-xr-x 1 root root ... /usr/bin/passwd
+# The letter 's' replaces 'x' in the owner's execute position
 
-# SGID on shared directory
-sudo mkdir /srv/project
-sudo chown root:developers /srv/project
-sudo chmod 2775 /srv/project
-
-# Sticky bit
+# observe the sticky bit on /tmp
 ls -ld /tmp
-sudo chmod 1777 /shared/uploads
+# output: drwxrwxrwt 15 root root ... /tmp
+# The letter 't' replaces 'x' in the execute others position
+
+# create a directory with SGID
+sudo mkdir /srv/projek-bersama
+sudo chown root:developers /srv/projek-bersama
+sudo chmod 2775 /srv/projek-bersama
+ls -ld /srv/projek-bersama
+# output: drwxrwsr-x ... group developers
+
+# add sticky bit to shared directory
+sudo chmod 3775 /srv/projek-bersama
+ls -ld /srv/projek-bersama
+# output: drwxrwsr-t ... (SGID + sticky bit on)
 \end{lstlisting}
 
-\begin{tipbox}
-The combination of SGID + sticky bit is often used for collaborative directories:
-SGID keeps the group consistent, sticky bit prevents mutual file deletion.
-\end{tipbox}
+Apart from bit permissions, Linux also recognizes \textit{extended file attributes} which are managed with \cmd{chattr} and read with \cmd{lsattr}. The most common attribute is \texttt{i} (\textit{immutable}): files with this attribute cannot be modified, deleted, or renamed even by \texttt{root}, unless the attribute is revoked first.
 
-\subsection{umask --- Default New Permission Value}
+\begin{lstlisting}[language=bash, caption={Extended attributes with chattr and lsattr}]
+# create important configuration files
+sudo touch /etc/app-config-kritis.conf
 
-\textbf{umask} is a mask that \emph{reduces} default permissions for new files.
-Practically, regular files start from \texttt{666}, directories from \texttt{777},
-then reduced by the umask value.
+# install immutable attribute
+sudo chattr +i /etc/app-config-kritis.conf
 
-\begin{table}[htbp]
-    \centering
-    \caption{umask effect on new files and directories}
-    \label{tab:umask-effect}
-    \begin{tblr}{
-        colspec = {lcccc},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1,2} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \SetCell[r=2]{c} \textbf{umask} & \SetCell[c=2]{c} \textbf{New file} & \SetCell[c=2]{c} \textbf{New directory} \\
-    & Octal & Symbolic & Octal & Symbolic \\
-    \texttt{022} & \texttt{644} & \texttt{rw-r--r--} & \texttt{755} & \texttt{rwxr-xr-x} \\
-    \texttt{027} & \texttt{640} & \texttt{rw-r-----} & \texttt{750} & \texttt{rwxr-x---} \\
-    \texttt{077} & \texttt{600} & \texttt{rw-------} & \texttt{700} & \texttt{rwx------} \\
-    \end{tblr}
-\end{table}
+# try deleting (will fail)
+sudo rm /etc/app-config-kritis.conf
+# rm: cannot remove ...: Operation not permitted
 
-\begin{lstlisting}[language=bash, caption={Viewing and changing umask}]
-umask
-umask -S
-umask 027
-echo "umask 027" >> ~/.bashrc
+# see attributes
+lsattr /etc/app-config-kritis.conf
+# output: ----i------------ /etc/app-config-kritis.conf
+
+# revoke immutable attribute
+sudo chattr -i /etc/app-config-kritis.conf
 \end{lstlisting}
 
-\begin{notebox}
-umask never adds execute to regular files. If a file must be executable, use
-\cmd{chmod} explicitly.
-\end{notebox}
+\subsection*{Lab 9.1: Setuid, Sticky Bit, and Shared Directories}
 
-\subsection*{Lab 9.1 --- Permissions}
-
-\textbf{Objective}: read permissions, change them safely, and understand the effects
-of \cmd{chmod}, \cmd{chown}, and \cmd{umask} on real files.
-
-\textbf{Step 1}: Create working directory and two test files.
-
-\begin{lstlisting}[language=bash, caption={Preparing permission test files}]
-mkdir ~/lab-permissions && cd ~/lab-permissions
-echo "secret data" > secret.txt
-echo '#!/bin/bash' > myscript.sh
-echo 'echo Hello' >> myscript.sh
-ls -la
-\end{lstlisting}
-
-Note the initial permissions of both files. Typically new files don't have the execute bit.
-
-\textbf{Step 2}: Make \file{secret.txt} private to owner only.
-
-\begin{lstlisting}[language=bash, caption={Making file private}]
-chmod 600 secret.txt
-ls -l secret.txt
-\end{lstlisting}
-
-Permission \texttt{600} means owner can read and write, while group and others have no access.
-
-\textbf{Step 3}: Make \file{myscript.sh} executable.
-
-\begin{lstlisting}[language=bash, caption={Making script executable}]
-chmod 755 myscript.sh
-ls -l myscript.sh
-./myscript.sh
-\end{lstlisting}
-
-Permission \texttt{755} gives full rights to owner, and read+execute rights to group
-and others. Without the execute bit, script files cannot be run directly.
-
-\textbf{Step 4}: Create shared directory and observe simple SGID effect.
-
-\begin{lstlisting}[language=bash, caption={Shared directory with SGID}]
-mkdir shared-dir
-chmod g+s shared-dir
-ls -ld shared-dir
-\end{lstlisting}
-
-If output shows letter \texttt{s} in the group execute position, SGID is active.
-
-\textbf{Step 5}: Test \cmd{umask} effect on new files.
-
-\begin{lstlisting}[language=bash, caption={Observing umask effect}]
-umask
-umask 027
-touch testfile-027
-ls -l testfile-027
-\end{lstlisting}
-
-\textbf{Analysis}
+Observe how setuid works on system files, then create a shared directory with a sticky bit that protects each user's files.
 
 \begin{enumerate}
-    \item Why can't \file{secret.txt} be read by group and others after \cmd{chmod 600}?
-    \item What's the difference in meaning between \texttt{600} and \texttt{755} for the tested files?
-    \item After \cmd{umask 027}, what permissions are produced for new files, and why not \texttt{777}?
+\item Prepare the working directory and observe the setuid on the system files.
+\begin{lstlisting}[language=bash, caption={Observe setuid on system files}]
+cd ~/lab-os/chapter09-users
+ls -l /usr/bin/passwd /usr/bin/sudo
+# Note: the letter 's' in the owner's execute position
+\end{lstlisting}
+
+\item Create a shared directory with the sticky bit inside the lab directory.
+\begin{lstlisting}[language=bash, caption={Shared directory with sticky bit}]
+mkdir shared-tmp
+chmod 1777 shared-tmp
+ls -ld shared-tmp
+# output should be: drwxrwxrwt ... shared-tmp
+\end{lstlisting}
+
+\textit{Observe:} The letters \texttt{t} at the end of the permission string indicate the sticky bit is active. This means that anyone can create files there, but only the file owner can delete them.
+
+\item Create a directory with SGID to simulate team collaboration.
+\begin{lstlisting}[language=bash, caption={Team directory with SGID}]
+mkdir project-team
+# assign ownership to an existing group (use your own group)
+MYGROUP=$(id -gn)
+chown $USER:$MYGROUP project-team
+chmod 2775 project-team
+ls -ld project-team
+# output should be: drwxrwsr-x ... project-team
+\end{lstlisting}
+
+\textit{Observe:} The letters \texttt{s} in the execute group position mean that the SGID is active. Any files created in this directory will inherit the directory group, not the file creator's primary group.
+
+\item Test by creating a file in the SGID directory.
+\begin{lstlisting}[language=bash, caption={Verify group inheritance}]
+touch project-team/new-file.txt
+ls -l project-team/new-file.txt
+# the file group must be the same as the project-team directory group
+\end{lstlisting}
 \end{enumerate}
 
-\textbf{Challenge}
-
-Change the owner or group of one test file to another account or group available on
-the system, then explain the changes in \cmd{ls -l} output before and after.
+\begin{challengebox}
+Create a complete shared directory scenario: a directory named \texttt{workspace} with an active SGID so that all new files inherit the directory group, as well as a sticky bit so that each user can only delete their own files. Use \cmd{ls -ld} to prove that both bits are active simultaneously. Write down the complete command and explain the octal value you used.
+\end{challengebox}
 
 %% ========================================================================
 \section{Access Control Lists (ACLs)}
 \label{sec:acls}
 %% ========================================================================
 
-Classic Unix permissions work well for most cases, but they only recognize one owner
-and one group. Problems arise when access needs to be given to one specific user
-without changing the file owner and without adding that user to the main group.
+Standard Unix permissions recognize only three entities: owner, group, and all other users. Imagine this situation: financial report files are owned by the \texttt{alice} and \texttt{finance} groups. An IT director named \texttt{bob} needs to read that file for the audit, but you don't want to add \texttt{bob} to the \texttt{finance} group because that would give him access to all of that group's files. With standard permissions, there is no clean solution. This is where ACLs come in.
 
-Common problem example:
+\textit{Access Control List} (ACL) is an additional layer on top of standard Unix permissions. ACLs let you define permissions for specific users or groups individually, without changing the file owner or group membership. There are two types of ACLs: \textit{access ACL} which applies to a specific file or directory, and \textit{default ACL} which is inherited by new files in a directory.
 
-\begin{examplebox}[Why ACL is needed]
-File \file{report.txt} is owned by \texttt{alice} and group \texttt{finance}. User
-\texttt{bob} needs to read the file, but you don't want all other group members to
-get access. ACL allows you to give permission only to \texttt{bob}.
-\end{examplebox}
+On Ubuntu, the \texttt{acl} package is usually available. The two main commands are \cmd{getfacl} to read ACLs and \cmd{setfacl} to modify them.
 
-ACL adds \emph{additional} access rules on top of standard permissions. There are two types:
-
-\begin{description}
-    \item[Access ACL] applies directly to the current file or directory.
-    \item[Default ACL] for directories only, inherited by new content inside.
-\end{description}
-
-\begin{notebox}
-In Ubuntu 22.04, modern filesystems like ext4, XFS, and Btrfs generally support ACL.
-If utilities are not available, install the \texttt{acl} package.
-\end{notebox}
-
-\textbf{Commands Used}
-
-\begin{itemize}
-    \item \texttt{getfacl file}: display complete ACL of file or directory.
-    \item \texttt{setfacl -m ...}: add or modify ACL entry.
-    \item \texttt{setfacl -x ...}: remove one ACL entry.
-    \item \texttt{setfacl -b file}: remove all additional ACLs.
-    \item \texttt{setfacl -d -m ... dir}: set \textit{default ACL} on directory.
-\end{itemize}
-
-\subsection{Step 1: Reading Existing ACLs}
-
-The first command to know is \cmd{getfacl}. Its function is similar to \cmd{ls -l},
-but more detailed.
-
-\begin{lstlisting}[language=bash, caption={Reading basic ACL with getfacl}]
+\begin{lstlisting}[language=bash, caption={Basic ACL installation and checking}]
+# make sure the acl package is available
 sudo apt install -y acl
-getfacl file.txt
 
-# minimal output example
+# create a test file
+echo "Q4 financial report" > report.txt
+chmod 640 report.txt
+
+# read standard ACL (no additional entries yet)
+getfacl report.txt
+# output:
+# file: report.txt
+# owner: alice
+# group: finance
 # user::rw-
 # group::r--
-# other::r--
+# other:::
 \end{lstlisting}
 
-If a file doesn't have additional ACLs yet, \cmd{getfacl} output only shows three
-basic entries equivalent to regular Unix permissions: owner, group, and others.
-Once additional ACLs are applied, you'll see specific user/group entries and often
-a \texttt{mask}.
+When a file has no additional ACLs, \cmd{getfacl} displays only three entries equivalent to standard Unix permissions. The ACL entry format follows the \texttt{tipe:nama:izin} pattern. For example, \texttt{u:bob:r--} means user \texttt{bob} gets read permission, and \texttt{g:audit:rw-} means group \texttt{audit} gets read and write permission.
 
-The most important entry formats:
+\begin{lstlisting}[language=bash, caption={Adding and removing ACL entries}]
+# give user bob read rights
+setfacl -m u:bob:r report.txt
 
-\begin{table}[htbp]
-    \centering
-    \caption{Common ACL entry formats}
-    \label{tab:setfacl-entries}
-    \begin{tblr}{
-        colspec = {lX[l]X[l]},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \textbf{Entry} & \textbf{Example} & \textbf{Meaning} \\
-    \texttt{u::perm} & \texttt{u::rw-} & Owner permission \\
-    \texttt{u:name:perm} & \texttt{u:bob:r--} & ACL for specific user \\
-    \texttt{g::perm} & \texttt{g::r--} & Standard group permission \\
-    \texttt{g:name:perm} & \texttt{g:audit:rw-} & ACL for specific group \\
-    \texttt{o::perm} & \texttt{o::---} & Others permission \\
-    \texttt{m::perm} & \texttt{m::rw-} & ACL mask \\
-    \end{tblr}
-\end{table}
+# grant the audit group read and write rights
+setfacl -m g:audit:rw report.txt
 
-When ACL is active, \cmd{ls -l} displays a \texttt{+} sign at the end of the
-permission string, e.g., \texttt{-rw-r-----+}.
+# look at the results : note the new entries and the mask
+getfacl report.txt
 
-\subsection{Step 2: Adding ACL for One User or Group}
+# ls -l now displays a '+' sign at the end of permissions
+ls -l report.txt
 
-The main command for creating or modifying ACL is \cmd{setfacl}. Start from the
-simplest case: giving read access to one user.
+# delete ACL for bob only
+setfacl -x u:bob report.txt
 
-\begin{lstlisting}[language=bash, caption={Adding ACL gradually}]
-# give bob read permission
-setfacl -m u:bob:r file.txt
-
-# give audit group read-write permission
-setfacl -m g:audit:rw file.txt
-
-# view results
-getfacl file.txt
+# remove all additional ACLs at once
+setfacl -b report.txt
 \end{lstlisting}
 
-How to read it:
+When additional ACLs are installed, Linux automatically creates a \textbf{mask} entry. The mask serves as an effective permission upper limit for all ACL entries except owner and others. If the mask is set to \texttt{r--}, then entry \texttt{g:audit:rw-} will only be effective as \texttt{r--}. The comment \texttt{\#effective:} in the output of \cmd{getfacl} shows the permissions actually apply.
 
-\begin{itemize}
-    \item \texttt{-m} means \emph{modify}: add or change entry;
-    \item \texttt{u:bob:r} means user \texttt{bob} gets read permission;
-    \item \texttt{g:audit:rw} means group \texttt{audit} gets read and write permission.
-\end{itemize}
+\textbf{Default ACL} is very useful for shared project directories. Any new files or subdirectories created in a directory with a default ACL will automatically inherit those ACL rules.
 
-If ACL is no longer needed, remove one entry or all additional entries:
+\begin{lstlisting}[language=bash, caption={Default ACL on project directory}]
+mkdir proyek-data
 
-\begin{lstlisting}[language=bash, caption={Removing ACL}]
-setfacl -x u:bob file.txt
-setfacl -x g:audit file.txt
-setfacl -b file.txt
+# set default ACLs so that new files can be accessed by the developers group
+setfacl -d -m g:developers:rwx proyek-data
+setfacl -d -m u:deploy:r-x proyek-data
+
+# look at the default ACLs on the directory
+getfacl proyek-data
+
+# create a new file and check its ACL
+touch proyek-data/data-baru.csv
+getfacl proyek-data/data-baru.csv
+# new files automatically inherit ACLs from the parent directory
+
+# remove default ACLs on directories
+setfacl -k proyek-data
 \end{lstlisting}
 
-\texttt{-x} removes one specific entry. Option \texttt{-b} removes all additional
-ACLs and returns the file to standard Unix permission model.
+\subsection*{Lab 9.2: Granular ACLs for Collaboration}
 
-\subsection{Step 3: Understanding Mask and Effective Permissions}
-
-Once additional ACL is installed, Linux usually creates a \textbf{mask}. For beginners,
-think of mask as the \emph{upper limit} of permissions that can actually apply to
-certain ACL entries.
-
-\begin{lstlisting}[language=bash, caption={ACL mask and effective permissions}]
-getfacl ~/report.txt
-# user::rw-
-# user:charlie:rwx        #effective:rw-
-# group::r--              #effective:r--
-# group:audit:rw-         #effective:rw-
-# mask::rw-
-# other::---
-
-setfacl -m m::r-- ~/report.txt
-chmod g-w ~/report.txt
-\end{lstlisting}
-
-In the example above, \texttt{user:charlie:rwx} doesn't actually get \texttt{rwx}
-because the mask only allows \texttt{rw-}. That's why \cmd{getfacl} displays the
-comment \texttt{\#effective:rw-}.
-
-Practical rules to remember:
-
-\begin{itemize}
-    \item owner and others are not filtered by mask;
-    \item named user, standard group, and named group can be restricted by mask;
-    \item \cmd{chmod} on ACL files often affects the mask;
-    \item if results are confusing, always check again with \cmd{getfacl}.
-\end{itemize}
-
-\subsection{Step 4: Default ACL for Directories}
-
-After understanding ACL on one file, the next step is automatically inherited ACL.
-This is the function of \textbf{default ACL}. It's very useful for shared project
-directories.
-
-\begin{lstlisting}[language=bash, caption={Default ACL on collaborative directory}]
-mkdir ~/project
-setfacl -d -m g:developers:rwx ~/project
-setfacl -d -m u:deploy:r-x,g:auditors:r-- ~/project
-
-touch ~/project/newfile.txt
-getfacl ~/project/newfile.txt
-
-mkdir ~/project/subdir
-getfacl ~/project/subdir
-
-setfacl -x d:g:developers ~/project
-setfacl -k ~/project
-\end{lstlisting}
-
-Workflow step by step:
+Grant read access to a specific user without changing the file group, then create a directory that passes on ACLs to all new files.
 
 \begin{enumerate}
-    \item add default ACL to directory with option \texttt{-d -m};
-    \item create new file or subdirectory;
-    \item check inherited ACL result with \cmd{getfacl};
-    \item remove default ACL when no longer needed.
+\item Prepare files and verify initial conditions without additional ACLs.
+\begin{lstlisting}[language=bash, caption={The initial state of the file without ACLs}]
+cd ~/lab-os/chapter09-users
+echo "data rahasia proyek" > secret.txt
+chmod 640 secret.txt
+ls -l secret.txt
+getfacl secret.txt
+\end{lstlisting}
+
+\item Add an ACL for one specific user.
+\begin{lstlisting}[language=bash, caption={Adds an ACL for one user}]
+# replace 'yourname' with another user name on the system
+OTHER_USER=$(getent passwd | awk -F: '$3>=1000 && $3!=65534{print $1}' | grep -v "^$(whoami)$" | head -1)
+echo "Other user: $OTHER_USER"
+
+setfacl -m u:${OTHER_USER}:r secret.txt
+ls -l secret.txt
+getfacl secret.txt
+\end{lstlisting}
+
+\textit{Observe:} The \cmd{ls -l} output now displays the \texttt{+} flag at the end of the permission string. The \cmd{getfacl} output displays the new user entry and the \texttt{mask} entry.
+
+\item Create a directory with default ACLs.
+\begin{lstlisting}[language=bash, caption={Default ACL on collaboration directory}]
+mkdir collaboration
+setfacl -d -m u:${OTHER_USER}:rwx collaboration
+getfacl collaboration
+
+# create a new file and check ACL inheritance
+touch collaboration/inherited-file.txt
+getfacl collaboration/inherited-file.txt
+\end{lstlisting}
+
+\textit{Observe:} New files in directory \texttt{collaboration} automatically get the same ACL entry as the default ACL of their parent directory.
+
+\item Delete one ACL entry and verify.
+\begin{lstlisting}[language=bash, caption={Delete a specific ACL entry}]
+setfacl -x u:${OTHER_USER} secret.txt
+getfacl secret.txt
+\end{lstlisting}
 \end{enumerate}
 
-\begin{notebox}
-New files don't inherit execute from default ACL if they're regular files;
-subdirectories still retain execute because \texttt{x} on directories means entry permission.
-\end{notebox}
-
-\subsection*{Lab 9.2 --- ACL}
-
-\textbf{Objective}: understand ACL from scratch: view initial condition, add access
-for one user, then create directory that inherits ACL automatically.
-
-\textbf{Step 1}: Prepare file and view standard permissions without additional ACL.
-
-\begin{lstlisting}[language=bash, caption={Preparing ACL test file}]
-mkdir ~/lab-acl && cd ~/lab-acl
-echo "Important data" > confidential.txt
-chmod 640 confidential.txt
-ls -l confidential.txt
-getfacl confidential.txt
-\end{lstlisting}
-
-At this stage, \cmd{getfacl} only displays three basic entries: owner, group, and
-others. No named user or named group yet.
-
-\textbf{Step 2}: Give read access to one specific user without changing owner or group.
-
-\begin{lstlisting}[language=bash, caption={Adding ACL for one user}]
-setfacl -m u:userA:r confidential.txt
-ls -l confidential.txt
-getfacl confidential.txt
-\end{lstlisting}
-
-Notice two changes:
-\begin{itemize}
-    \item \cmd{ls -l} output shows \texttt{+} sign;
-    \item \cmd{getfacl} output now has entry \texttt{user:userA:r--}.
-\end{itemize}
-
-\textbf{Step 3}: Create shared directory that inherits ACL to new files.
-
-\begin{lstlisting}[language=bash, caption={Default ACL on directory}]
-mkdir shared
-setfacl -d -m u:userA:rwx shared
-setfacl -d -m u:userB:r-x shared
-getfacl shared
-
-touch shared/inherited.txt
-getfacl shared/inherited.txt
-\end{lstlisting}
-
-\textbf{Analysis}
-
-\begin{enumerate}
-    \item Why doesn't \cmd{getfacl confidential.txt} initially display specific users?
-    \item After \cmd{setfacl -m u:userA:r confidential.txt}, what's the difference in
-        \cmd{ls -l} and \cmd{getfacl} output?
-    \item Why does file \texttt{inherited.txt} inherit ACL from directory \texttt{shared}?
-\end{enumerate}
-
-\textbf{Challenge}
-
-Add one more ACL so that group \texttt{readonly-group} can only read
-\file{confidential.txt}. After that, remove ACL for \texttt{userA} and verify the
-final result with \cmd{getfacl}.
+\begin{challengebox}
+Create a directory named \texttt{project-archive} with the following default ACLs: group \texttt{developers} gets read, write, and execute access; group \texttt{auditor} only gets read access. Create several files and subdirectories within them, then verify with \cmd{getfacl} that all new files inherit those rules. For reference Chapter~4: compare this ACL approach with the usual \cmd{chmod} approach and explain the advantages of ACLs in this scenario.
+\end{challengebox}
 
 %% ========================================================================
-\section{User and Group Management}
-\label{sec:user-group-management}
+\section{User Management}
+\label{sec:user-management}
 %% ========================================================================
 
-\textbf{Concept Explanation}
+Linux stores user information in three main files. \file{/etc/passwd} contains basic data such as username, UID, primary GID, home directory, and login shell. This file can be read by all users because many programs require this information. \file{/etc/shadow} stores password hashes and account expiration policies. This file can only be read by \texttt{root} because it contains sensitive cryptographic data. \file{/etc/group} lists all groups and their members.
 
-Linux stores user identity in three files: \file{/etc/passwd} (basic user data,
-readable by everyone), \file{/etc/shadow} (password hash and aging policy, root only),
-and \file{/etc/group} (group definitions). This system separates public information
-from security secrets.
+The single line format in \file{/etc/passwd} looks like this:
 
-\textbf{Main Commands}
-
-\begin{itemize}
-    \item \texttt{useradd}, \texttt{usermod}, \texttt{userdel}: manage user accounts.
-    \item \texttt{groupadd}, \texttt{groupmod}, \texttt{groupdel}: manage groups.
-    \item \texttt{passwd}: change or lock password.
-    \item \texttt{chage}: set password aging policy.
-    \item \texttt{id}, \texttt{groups}: view user and group information.
-\end{itemize}
-
-\subsection{Reading User and Group Information}
-
-\begin{lstlisting}[language=bash, caption={User and group query commands}]
-id alice
-groups alice
-getent passwd alice
-getent group developers
-grep "^alice:" /etc/passwd
-sudo grep "^alice:" /etc/shadow
+\begin{lstlisting}[language=bash, caption={File format /etc/passwd}]
+# name:x:UID:GID:comments:home-directory:shell
+alice:x:1001:1001:Alice Programmer:/home/alice:/bin/bash
 \end{lstlisting}
 
-\begin{notebox}
-\cmd{id} is more accurate than \cmd{grep /etc/group} because it displays all user
-groups, including primary group.
-\end{notebox}
+The second column is always \texttt{x}, indicating that the password hash is stored in \file{/etc/shadow}. UID under 1000 is usually used by system accounts, while UID 1000 and above is for human user accounts.
 
-\subsection{User Lifecycle: Create, Modify, Delete}
+The main commands for user management are \cmd{useradd} to create a new account, \cmd{usermod} to modify, and \cmd{userdel} to delete. The \cmd{passwd} command is used to set or change a password. Use \cmd{id} and \cmd{getent passwd} to read user information.
 
-\begin{lstlisting}[language=bash, caption={User account management}]
-# create user with home directory and shell
-sudo useradd -m -s /bin/bash alice
-sudo passwd alice
+\begin{lstlisting}[language=bash, caption={User account lifecycle}]
+# create a new user with a home directory and a shell
+sudo useradd -m -s /bin/bash student01
+sudo passwd student01
 
-# modify: add group, change shell, lock/unlock
-sudo usermod -aG developers,sudo alice
-sudo usermod -s /bin/zsh alice
-sudo usermod -L alice
-sudo usermod -U alice
+# verify the newly created account
+id student01
+getent passwd student01
+ls -ld /home/student01
 
-# delete user (with or without home directory)
-sudo userdel alice
-sudo userdel -r alice
+# modify: add to additional groups
+sudo usermod -aG sudo student01
+
+# modification: change login shell
+sudo usermod -s /bin/sh student01
+
+# account lock (prevent login)
+sudo usermod -L student01
+sudo passwd -S student01
+# output: student01 L ... (L = locked)
+
+# unlock the account again
+sudo usermod -U student01
+
+# delete the account along with the home directory and mailbox
+sudo userdel -r student01
 \end{lstlisting}
 
-\textbf{Important options}:
-\begin{itemize}
-    \item \texttt{-m}: automatically create home directory
-    \item \texttt{-s}: specify login shell
-    \item \texttt{-aG}: add groups without removing old groups
-    \item \texttt{-L}/\texttt{-U}: lock/unlock account
-    \item \texttt{-r}: remove home directory when deleting user
-\end{itemize}
+Note the \texttt{-aG} option in \cmd{usermod}. The \texttt{-a} option means \textit{append}: add a new group without removing existing group membership. Without \texttt{-a}, the \texttt{-G} option will replace all additional groups at once, which often results in users losing access to previously available services.
 
-\begin{warningbox}
-Use \cmd{usermod -aG}, not \cmd{usermod -G}. Without \texttt{-a}, all old
-supplementary groups will be replaced.
-\end{warningbox}
+The \cmd{who} and \cmd{w} commands are useful for seeing who is currently logged in. \cmd{who} displays a list of active sessions, while \cmd{w} provides more complete information including currently executing commands.
 
-\subsection*{Lab 9.3A --- Creating and Managing Users}
-
-\textbf{Objective}: create new users, modify their properties, and understand the
-difference between \cmd{useradd} and \cmd{usermod} options.
-
-\begin{lstlisting}[language=bash, caption={User management practice}]
-# create two users
-sudo useradd -m -s /bin/bash userA
-sudo useradd -m -s /bin/bash userB
-sudo passwd userA
-sudo passwd userB
-
-# verify
-id userA
-getent passwd userA
-
-# modify userA shell
-sudo usermod -s /bin/zsh userA
-getent passwd userA
-
-# lock and unlock userB
-sudo usermod -L userB
-sudo passwd -S userB
-sudo usermod -U userB
-sudo passwd -S userB
+\begin{lstlisting}[language=bash, caption={Check active user sessions}]
+who
+w
+last | head -20
+# last displays login and logout history
 \end{lstlisting}
 
-\textbf{Questions}:
+\subsection*{Lab 9.3: Creating and Configuring User Accounts}
+
+Create a new user account with complete configuration and verify any changes.
+
 \begin{enumerate}
-    \item What's the difference in \cmd{id userA} output before and after adding groups?
-    \item How does \cmd{passwd -S userB} status change when account is locked?
+\item Create two new user accounts.
+\begin{lstlisting}[language=bash, caption={Create a user account}]
+sudo useradd -m -s /bin/bash labuser01
+sudo useradd -m -s /bin/bash labuser02
+sudo passwd labuser01
+sudo passwd labuser02
+
+# verification
+id labuser01
+getent passwd labuser01
+ls -la /home/labuser01
+\end{lstlisting}
+
+\textit{Observe:} \cmd{useradd -m} creates a home directory automatically by copying the template from \dir{/etc/skel}. All hidden files like \file{.bashrc} and \file{.profile} are already there.
+
+\item Modify account properties.
+\begin{lstlisting}[language=bash, caption={Modify user accounts}]
+# change shelllabuser01
+sudo usermod -s /bin/sh labuser01
+getent passwd labuser01
+
+# add comment (full name)
+sudo usermod -c "Lab User Pertama" labuser01
+getent passwd labuser01
+
+# temporary Labuser02 key
+sudo usermod -L labuser02
+sudo passwd -S labuser02
+\end{lstlisting}
+
+\item Clean the test account when finished.
+\begin{lstlisting}[language=bash, caption={Delete the test account}]
+sudo userdel -r labuser01
+sudo userdel -r labuser02
+# home directory verification is gone
+ls /home/ | grep labuser
+\end{lstlisting}
 \end{enumerate}
 
-\subsection{Group Management}
+\begin{challengebox}
+Create a Bash script (reference Chapter~7) named \texttt{create-bulk-users.sh} that reads a list of names from the text file \texttt{user-list.txt} (one name per line) and creates a user account for each. Each account must be created with a home directory, shell \texttt{/bin/bash}, and added to the group \texttt{students}. Create the group first if it doesn't exist yet. The script should print a success or failure message for each name.
+\end{challengebox}
 
-\begin{lstlisting}[language=bash, caption={Group operations}]
-sudo groupadd developers
-sudo groupadd -g 2000 finance
-sudo groupmod -n devteam developers
+%% ========================================================================
+\section{Group Management}
+\label{sec:group-management}
+%% ========================================================================
+
+Groups in Linux function like divisions in an office. By making users members of the right groups, one permission rule can apply to many people at once. Instead of setting permissions individually for each user, you can create group \texttt{pengembang}, put all the developers in there, and then set project directory permissions for that group.
+
+Each user has one \textit{primary group} logged in \file{/etc/passwd} and \file{/etc/group}. Users can also be members of many \textit{additional groups}. Additional group membership information is stored in \file{/etc/group}.
+
+One line format in \file{/etc/group}:
+
+\begin{lstlisting}[language=bash, caption={File format /etc/group}]
+# group-name:x:GID:member1,member2,...
+developers:x:1050:alice,bob,charlie
+\end{lstlisting}
+
+The main group management commands are \cmd{groupadd} to create a new group, \cmd{groupmod} to change group properties, \cmd{groupdel} to delete, and \cmd{gpasswd} to manage membership.
+
+\begin{lstlisting}[language=bash, caption={Basic operations of group management}]
+# create a new group
+sudo groupadd pengembang
+sudo groupadd -g 2050 desainer
+# the -g option specifies the GID explicitly
+
+# change group name
+sudo groupmod -n devteam pengembang
+
+# add user to group with gpasswd
 sudo gpasswd -a alice devteam
-sudo gpasswd -d alice devteam
-sudo groupdel devteam
+sudo gpasswd -a bob devteam
+
+# remove user from group
+sudo gpasswd -d bob devteam
+
+# view group members
+getent group devteam
+
+# delete group (only if it is not anyone's primary group)
+sudo groupdel desainer
 \end{lstlisting}
 
-\begin{notebox}
-Group changes fully take effect after user logout-login or opening subshell with
-\cmd{newgrp group-name}.
-\end{notebox}
+Once added to a new group, users need to log out and log back in for group changes to take effect in the new session. An alternative without logging out is to use \cmd{newgrp} to open a subshell with a different active group.
 
-\subsection*{Lab 9.3B --- Group Management}
+\begin{lstlisting}[language=bash, caption={Activate a new group without logging out}]
+# view currently active groups
+id
+groups
 
-\textbf{Objective}: create groups, add users to groups, and verify membership.
-
-\begin{lstlisting}[language=bash, caption={Group management practice}]
-# create two groups
-sudo groupadd labgroup
-sudo groupadd readonly-group
-
-# add userA to both groups
-sudo usermod -aG labgroup,readonly-group userA
-
-# add userB only to readonly-group
-sudo usermod -aG readonly-group userB
-
-# verify
-id userA
-id userB
-getent group labgroup
-getent group readonly-group
+# activate a new group in the current session
+newgrp devteam
+# verify changes
+id
+# type 'exit' to return to the previous shell
 \end{lstlisting}
 
-\textbf{Questions}:
+\subsection*{Lab 9.4: Manage Group Membership and Shared Directories}
+
+Create new groups, manage membership, and create shared directories with group ownership.
+
 \begin{enumerate}
-    \item What does \cmd{id userA} display vs \cmd{groups userA}?
-    \item Why is \texttt{-a} in \cmd{usermod -aG} important?
+\item Create test group and user.
+\begin{lstlisting}[language=bash, caption={Create test groups and users}]
+sudo groupadd project-team
+sudo useradd -m -s /bin/bash anggota01
+sudo useradd -m -s /bin/bash anggota02
+sudo passwd anggota01
+sudo passwd anggota02
+\end{lstlisting}
+
+\item Add user to group.
+\begin{lstlisting}[language=bash, caption={Add members to a group}]
+sudo gpasswd -a anggota01 project-team
+sudo gpasswd -a anggota02 project-team
+
+# membership verification
+getent group project-team
+id anggota01
+id anggota02
+\end{lstlisting}
+
+\textit{Observe:} The \cmd{id} command displays all the groups the user belongs to, including primary groups and additional groups. The new group membership is visible in the output of \cmd{id}, but does not take full effect until the next login session.
+
+\item Create a shared directory with team group ownership.
+\begin{lstlisting}[language=bash, caption={Shared directory for project teams}]
+sudo mkdir /srv/project-team
+sudo chown :project-team /srv/project-team
+sudo chmod 2770 /srv/project-team
+ls -ld /srv/project-team
+# output: drwxrws--- ... project-team /srv/project-team
+\end{lstlisting}
+
+\textit{Observe:} The \texttt{2770} permission means the group owner and members can read, write, and enter the directory, while other users have no access at all. The number \texttt{2} in front activates the SGID.
+
+\item Remove member from group and verify.
+\begin{lstlisting}[language=bash, caption={Delete member and verify}]
+sudo gpasswd -d anggota02 project-team
+getent group project-team
+
+# clean it
+sudo userdel -r anggota01
+sudo userdel -r anggota02
+sudo groupdel project-team
+sudo rm -rf /srv/project-team
+\end{lstlisting}
 \end{enumerate}
 
-\subsection{Password Policy and Aging}
-
-\begin{lstlisting}[language=bash, caption={Password policy with chage}]
-# view aging status
-sudo chage -l alice
-
-# set policy: password valid 90 days, warning 14 days before
-sudo chage -M 90 -m 7 -W 14 alice
-
-# lock account 30 days after password expires
-sudo chage -I 30 alice
-
-# set account expiration date
-sudo chage -E 2025-12-31 alice
-
-# force immediate password change
-sudo chage -d 0 alice
-sudo passwd -e alice
-\end{lstlisting}
-
-\begin{table}[htbp]
-    \centering
-    \caption{Most important \cmd{chage} options}
-    \label{tab:chage-options}
-    \begin{tblr}{
-        colspec = {lcX[l]},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \textbf{Option} & \textbf{Name} & \textbf{Meaning} \\
-    \texttt{-l} & list & Display aging status \\
-    \texttt{-M N} & maxdays & Password must be changed every N days \\
-    \texttt{-m N} & mindays & Minimum N days before can change again \\
-    \texttt{-W N} & warndays & Warning N days before expiry \\
-    \texttt{-I N} & inactive & Lock account N days after expiry \\
-    \texttt{-E DATE} & expire & Account expiration \\
-    \end{tblr}
-\end{table}
-
-\subsection*{Lab 9.3C --- Password Aging Policy}
-
-\textbf{Objective}: apply password aging policy and observe its effects.
-
-\begin{lstlisting}[language=bash, caption={Password policy practice}]
-# set aging policy for userA
-sudo chage -M 60 -W 7 -m 1 userA
-sudo chage -l userA
-
-# force userA to change password on first login
-sudo chage -d 0 userA
-
-# lock userB password
-sudo passwd -l userB
-sudo passwd -S userB
-
-# unlock back
-sudo passwd -u userB
-sudo passwd -S userB
-\end{lstlisting}
-
-\textbf{Questions}:
-\begin{enumerate}
-    \item What do the values displayed by \cmd{chage -l userA} mean?
-    \item How can you prove userB is locked from \cmd{passwd -S} output?
-    \item When should you use \cmd{chage -d 0} vs \cmd{passwd -e}?
-\end{enumerate}
-
-\textbf{Challenge}
-
-Create a user named \texttt{intern} that:
-\begin{itemize}
-    \item has shell \texttt{/bin/bash};
-    \item is member of \texttt{labgroup};
-    \item is forced to change password on first login;
-    \item has password expire after 45 days with 7 days warning before.
-\end{itemize}
+\begin{challengebox}
+Create a group called \texttt{penulis} and a group called \texttt{editor}. Add three fictitious users: two to the \texttt{penulis} group and one to both groups at once. Create directory \dir{/srv/majalah} with group ownership \texttt{editor} and active SGID. Set permissions so that group \texttt{editor} can read and write, while group \texttt{penulis} can only read. Use ACLs (from the previous section) to achieve these access rules because standard permissions are not enough for two different groups.
+\end{challengebox}
 
 %% ========================================================================
-\section{sudo and su Configuration}
-\label{sec:sudo-su}
+\section{Sudo configuration}
+\label{sec:sudo-config}
 %% ========================================================================
 
-\textbf{Concept Explanation}
+In the real world, system administrators rarely work directly as \texttt{root}. Instead, they use a regular account and run certain commands with elevated privileges using \cmd{sudo}. Think of \cmd{sudo} like a receptionist in an office who can ask the manager for permission on your behalf to enter a certain room, without having to permanently give you the key to that room.
 
-\subsection{Difference Between \cmd{su} and \cmd{sudo}}
+\cmd{su} (substitute user) is different from \cmd{sudo}. The \cmd{su -} command opens a completely new shell as another user, asking for the target user's password. Meanwhile \cmd{sudo} runs one command with elevated privileges, asks for the user's own password, and logs the activity to the system log.
 
-\cmd{su} switches user identity, while \cmd{sudo} runs specific commands with higher
-privileges based on policy rules.
+\begin{lstlisting}[language=bash, caption={Differences in using su and sudo}]
+# su: switches to full root shell
+su -
+# type the root password, then 'exit' to return
 
-\begin{table}[htbp]
-    \centering
-    \caption{Comparison of \cmd{su} and \cmd{sudo}}
-    \label{tab:su-vs-sudo}
-    \begin{tblr}{
-        colspec = {lX[l]X[l]},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \textbf{Aspect} & \textbf{su} & \textbf{sudo} \\
-    Authentication & Target user's password & Own password \\
-    Scope & Switch fully to another session & Run specific commands \\
-    Logging & Minimal / not default & Recorded in system log \\
-    Granularity & Coarse & Very granular \\
-    Modern practice & More limited & Recommended \\
-    \end{tblr}
-\end{table}
+# su: run one command as another user
+su - alice -c "ls /home/alice"
 
-\begin{notebox}
-In Ubuntu, the root account is usually disabled for direct login; therefore \cmd{sudo}
-becomes the standard administration mechanism.
-\end{notebox}
-
-\textbf{Commands Used}
-
-\begin{itemize}
-    \item \texttt{su - user}: switch to another user with full login environment.
-    \item \texttt{sudo command}: run one command with higher privileges.
-    \item \texttt{sudo -i}: open root shell with login environment.
-    \item \texttt{sudo -l}: view available sudo rights.
-    \item \texttt{visudo}: edit sudoers rules with syntax validation.
-\end{itemize}
-
-\subsection{Basic Usage of \cmd{su} and \cmd{sudo}}
-
-\begin{lstlisting}[language=bash, caption={Most commonly used su and sudo commands}]
-# su
-su - alice
-su - alice -c "ls -la /home/alice"
-
-# sudo
+# sudo: run one command as root
 sudo apt update
-sudo -u alice cat /home/alice/report.txt
+
+# sudo: run commands as a specific user
+sudo -u www-data ls /var/www
+
+# sudo: open root shell with login environment
 sudo -i
-sudo -s
+
+# see what sudo privileges you have
 sudo -l
-sudo -k
-sudo -e /etc/hosts
 \end{lstlisting}
 
-Brief guidelines:
+The rule \cmd{sudo} is stored in \file{/etc/sudoers} and the files in the \dir{/etc/sudoers.d/} directory. Always use the \cmd{visudo} command to edit it because \cmd{visudo} validates the syntax before saving. Syntax errors in the sudoers file can lock administrative access to the system.
 
-\begin{itemize}
-    \item use \cmd{su - user}, not \cmd{su user}, if you must switch sessions;
-    \item use \cmd{sudo -i} for root shell with full login environment;
-    \item use \cmd{sudo -e} or \cmd{sudoedit} to edit system files more securely.
-\end{itemize}
+Best practice is to store additional rules in \dir{/etc/sudoers.d/} rather than editing \file{/etc/sudoers} directly. This makes management and auditing easier.
 
-\subsection{Safe sudoers Configuration}
+The sudoers rule format follows the pattern: \texttt{SIAPA DI-MANA=(SEBAGAI-SIAPA) PERINTAH}
 
-Main sudo configuration is in \file{/etc/sudoers}, but best practice is to store
-additional rules in \dir{/etc/sudoers.d/}.
-
-\begin{warningbox}
-Always edit sudo rules with \cmd{visudo}. Syntax errors can lock you out of
-administrative access to the system.
-\end{warningbox}
-
-Basic rule format:
-
-\begin{center}
-\texttt{WHO\ \ WHERE=(AS\_WHO)\ \ COMMAND}
-\end{center}
-
-\begin{lstlisting}[language=bash, caption={Representative sudoers rule examples}]
-# full access for specific user
+\begin{lstlisting}[language=bash, caption={Example of a representative sudoers rule}]
+# full access without restrictions
 alice ALL=(ALL:ALL) ALL
 
-# apt access without password
-bob ALL=(root) NOPASSWD: /usr/bin/apt
+# run apt without password
+bob ALL=(root) NOPASSWD: /usr/bin/apt update, /usr/bin/apt upgrade
 
-# default Ubuntu sudo group
+# Ubuntu's built-in sudo group/Debian
 %sudo ALL=(ALL:ALL) ALL
 
-# limited permission for nginx service
+# group with limited access to nginx only
 %webadmin ALL=(root) /bin/systemctl start nginx, \
                      /bin/systemctl stop nginx, \
-                     /bin/systemctl restart nginx, \
-                     /bin/systemctl status nginx
+                     /bin/systemctl restart nginx
+
+# users should only view the status of any service
+charlie ALL=(root) /bin/systemctl status *
 \end{lstlisting}
 
-\begin{lstlisting}[language=bash, caption={Managing sudoers files}]
-sudo visudo
-sudo visudo -f /etc/sudoers.d/developers
-sudo visudo -c
-sudo grep sudo /var/log/auth.log | tail -20
+All usage of \cmd{sudo} is logged to \file{/var/log/auth.log} (on Ubuntu). This is important for security audits.
+
+\begin{lstlisting}[language=bash, caption={Reading sudo logs}]
+sudo grep "sudo" /var/log/auth.log | tail -20
+# each log line contains: time, host, user, command executed
 \end{lstlisting}
 
-\subsection*{Lab 9.4 --- sudo Configuration}
+\subsection*{Lab 9.5: Configure Limited sudo Rights}
 
-\textbf{Objective}: create limited sudo rules, verify access rights, and read logs.
-
-\textbf{Step 1}: Create special sudo configuration file for \texttt{userA}.
-
-\begin{lstlisting}[language=bash, caption={Creating separate sudoers file}]
-sudo visudo -f /etc/sudoers.d/lab-userA
-\end{lstlisting}
-
-This command opens a safe editor specifically for new sudoers file. If syntax is wrong,
-\cmd{visudo} will warn before saving.
-
-Fill file with following rules:
-
-\begin{lstlisting}[language=bash, caption={sudo configuration content for userA}]
-userA ALL=(root) NOPASSWD: /usr/bin/apt update, /usr/bin/apt upgrade
-userA ALL=(root) /bin/systemctl status *
-\end{lstlisting}
-
-First line means \texttt{userA} can run two \cmd{apt} commands without password.
-Second line means \texttt{userA} can view any service status, but still follows
-normal authentication policy.
-
-\textbf{Step 2}: Verify active rules and test results.
-
-\begin{lstlisting}[language=bash, caption={Verify sudo rights and log}]
-sudo -l -U userA
-sudo grep "userA" /var/log/auth.log | tail -10
-\end{lstlisting}
-
-\cmd{sudo -l -U userA} is used to check active rules from \texttt{userA} account
-perspective. Log in \file{/var/log/auth.log} helps verify that sudo usage is actually
-recorded.
-
-\textbf{Analysis}
+Create a sudo configuration that only allows certain users to run specific commands.
 
 \begin{enumerate}
-    \item Why are rules stored in \dir{/etc/sudoers.d/}, not directly in \file{/etc/sudoers}?
-    \item Which commands can be run without password, and which still need authentication?
-    \item What information is recorded in sudo log?
+\item Create a test user and custom sudoers configuration file.
+\begin{lstlisting}[language=bash, caption={User setup and sudo configuration}]
+sudo useradd -m -s /bin/bash operator01
+sudo passwd operator01
+
+# create a custom sudoers file in /etc/sudoers.d/
+# IMPORTANT: use visudo with the -f flag for syntax validation
+sudo visudo -f /etc/sudoers.d/operator01
+\end{lstlisting}
+
+The editor will open. Enter the following rule, save, then close:
+
+\begin{lstlisting}[language=bash, caption={Fill in the sudo configuration for operator01}]
+# Allow operator01 to view the status of any service
+operator01 ALL=(root) /bin/systemctl status *
+
+# Allow running apt update without password
+operator01 ALL=(root) NOPASSWD: /usr/bin/apt update
+\end{lstlisting}
+
+\textit{Observe:} If the syntax is incorrect, \cmd{visudo} will warn and offer options to correct or cancel. The file will not be saved until the syntax is correct.
+
+\item Verify registered sudo privileges.
+\begin{lstlisting}[language=bash, caption={Verify sudo rules}]
+sudo -l -U operator01
+# the output will show all permitted commands
+\end{lstlisting}
+
+\item Check the sudo log after testing.
+\begin{lstlisting}[language=bash, caption={Check the sudo activity log}]
+sudo grep "operator01" /var/log/auth.log | tail -10
+\end{lstlisting}
+
+\textit{Observe:} Every use of \cmd{sudo} is recorded complete with time, user name, terminal, and command executed. This is an important audit trail.
+
+\item Clear test configuration.
+\begin{lstlisting}[language=bash, caption={Delete test configuration}]
+sudo rm /etc/sudoers.d/operator01
+sudo userdel -r operator01
+\end{lstlisting}
 \end{enumerate}
 
-\textbf{Challenge}
-
-Add one new rule so \texttt{userA} can run \cmd{/bin/systemctl restart ssh} but
-cannot run \cmd{reboot}.
-
-%% ========================================================================
-\section{Disk Quota}
-\label{sec:disk-quota}
-%% ========================================================================
-
-\textbf{Concept Explanation}
-
-Quota limits disk space usage and/or number of files owned by user or group. Its
-function is simple: prevent one user from consuming all storage resources.
-
-\subsection{Disk Quota Concept}
-\label{sec:disk-quota-konsep}
-
-There are two quota dimensions:
-
-\begin{description}
-    \item[Block quota] limits total disk space used. In Linux, quota tools generally
-        use kilobyte units.
-    \item[Inode quota] limits number of files/directories, regardless of their size.
-\end{description}
-
-Additionally, there are three policy terms that must be understood:
-
-\begin{table}[htbp]
-    \centering
-    \caption{Types of limits in disk quota}
-    \label{tab:quota-limits}
-    \begin{tblr}{
-        colspec = {lQ[2cm,l]X[l]},
-        width = \linewidth,
-        hlines,
-        vlines,
-        row{1} = {font=\bfseries},
-        cells = {font=\small}
-    }
-    \textbf{Type} & \textbf{Applies to} & \textbf{Meaning} \\
-    Soft limit & Blocks and inodes & Can be temporarily exceeded during grace period \\
-    Hard limit & Blocks and inodes & Cannot be exceeded at all \\
-    Grace period & Soft limit & Tolerance time before soft limit is treated like hard limit \\
-    \end{tblr}
-\end{table}
-
-\begin{notebox}
-Inode quota is important when users create very many small files. Disk space may still
-be available, but filesystem inodes can run out first.
-\end{notebox}
-
-\textbf{Commands Used}
-
-\begin{itemize}
-    \item \texttt{quotacheck}: create or update quota database.
-    \item \texttt{quotaon}/\texttt{quotaoff}: enable or disable enforcement.
-    \item \texttt{edquota}: edit quota limits interactively.
-    \item \texttt{setquota}: set quota limits from command line.
-    \item \texttt{quota}, \texttt{repquota}: view quota usage.
-\end{itemize}
-
-\subsection{Enabling Quota}
-
-Quota activation workflow usually consists of four steps:
-
-\begin{enumerate}
-    \item install quota package,
-    \item enable \texttt{usrquota} and/or \texttt{grpquota} options on filesystem,
-    \item create quota database with \cmd{quotacheck},
-    \item enable enforcement with \cmd{quotaon}.
-\end{enumerate}
-
-\begin{lstlisting}[language=bash, caption={Basic quota activation workflow}]
-sudo apt install -y quota quotatool
-
-# /etc/fstab
-# UUID=abc123 /home ext4 defaults,usrquota,grpquota 0 2
-
-sudo mount -o remount /home
-sudo quotacheck -cugm /home
-sudo quotaon -v /home
-sudo repquota -s /home
-\end{lstlisting}
-
-\subsection{Setting and Viewing Quota}
-
-The most important commands are:
-
-\begin{lstlisting}[language=bash, caption={Core quota management commands}]
-# interactive editor
-sudo edquota -u alice
-sudo edquota -g developers
-
-# without editor
-sudo setquota -u alice 1048576 1572864 10000 15000 /home
-
-# view status
-quota -s
-sudo quota -u alice
-sudo repquota -s /home
-
-# grace period
-sudo edquota -t
-\end{lstlisting}
-
-Meaning of arguments in \cmd{setquota -u alice 1048576 1572864 10000 15000 /home}:
-
-\begin{itemize}
-    \item soft block = 1~GB
-    \item hard block = 1.5~GB
-    \item soft inode = 10,000
-    \item hard inode = 15,000
-\end{itemize}
-
-\subsection{Advanced Operations to Know}
-
-\begin{lstlisting}[language=bash, caption={Advanced quota operations}]
-# copy quota from one user to another
-sudo edquota -p alice bob charlie
-
-# send warning email
-sudo warnquota
-
-# turn off quota
-sudo quotaoff -v /home
-\end{lstlisting}
-
-\subsection*{Lab 9.5 --- Disk Quota}
-
-\textbf{Objective}: understand quota flow safely on loopback filesystem without
-modifying main filesystem.
-
-\textbf{Step 1}: Create small filesystem image and mount with quota options.
-
-\begin{lstlisting}[language=bash, caption={Preparing quota test filesystem}]
-sudo dd if=/dev/zero of=/tmp/quota-test.img bs=1M count=100
-sudo mkfs.ext4 /tmp/quota-test.img
-sudo mkdir -p /mnt/quota-test
-sudo mount -o loop,usrquota,grpquota /tmp/quota-test.img /mnt/quota-test
-\end{lstlisting}
-
-Image file is used to make the lab safe: you don't need to modify main filesystem
-like \dir{/home}. Options \texttt{usrquota,grpquota} enable both quota types simultaneously.
-
-\textbf{Step 2}: Create quota database and enable enforcement.
-
-\begin{lstlisting}[language=bash, caption={Initialization and quota activation}]
-sudo quotacheck -cug /mnt/quota-test
-sudo quotaon -v /mnt/quota-test
-sudo repquota /mnt/quota-test
-\end{lstlisting}
-
-\cmd{quotacheck -cug} creates user and group quota database. After that, \cmd{quotaon}
-enables enforcement, and \cmd{repquota} displays initial report.
-
-\textbf{Step 3}: Set quota for test user and observe results.
-
-\begin{lstlisting}[language=bash, caption={Setting quota for userA}]
-sudo edquota -u userA
-# example: soft block 5120, hard block 10240
-sudo repquota /mnt/quota-test
-\end{lstlisting}
-
-Values above use KB units. So \texttt{5120} means about 5 MB, and \texttt{10240}
-means about 10 MB.
-
-\textbf{Step 4}: Clean up test environment after completion.
-
-\begin{lstlisting}[language=bash, caption={Quota test cleanup}]
-sudo quotaoff /mnt/quota-test
-sudo umount /mnt/quota-test
-sudo rm /tmp/quota-test.img
-\end{lstlisting}
-
-\textbf{Analysis}
-
-\begin{enumerate}
-    \item What's the difference between soft limit and hard limit when quota starts being exceeded?
-    \item Why does this lab use loopback filesystem, not directly \dir{/home}?
-    \item From \cmd{repquota} output, what information shows quota is already active?
-\end{enumerate}
-
-\textbf{Challenge}
-
-Try setting new quota for \texttt{userA} with very small inode limit, then explain
-when inode restriction is more important than block restriction.
+\begin{challengebox}
+Create a sudo configuration that gives user \texttt{teknisi} the right to run \cmd{systemctl restart ssh} and \cmd{systemctl reload nginx} without a password, but not to run any other commands with sudo. Verify configuration with \cmd{sudo -l -U teknisi}. Then add one more rule so that \texttt{teknisi} can run \cmd{journalctl -u ssh} as another user. References the sudoers rule format above to determine the proper syntax.
+\end{challengebox}
 
 %% ========================================================================
 \section{Summary}
 \label{sec:file-user-summary}
 %% ========================================================================
 
-This chapter discussed five core concept groups:
+In this chapter, you learned:
 
-\begin{description}
-    \item[Permissions] owner, group, others; \texttt{rwx} permissions; \cmd{chmod},
-        \cmd{chown}, \cmd{chgrp}; special bits; and umask.
-    \item[ACL] extension of Unix permissions for granular per-user or per-group
-        access needs, including directory default ACL and mask.
-    \item[User/Group] user identity stored in \file{/etc/passwd}, \file{/etc/shadow},
-        and \file{/etc/group}; managed with command families \cmd{useradd},
-        \cmd{usermod}, \cmd{userdel}, \cmd{groupadd}, and \cmd{gpasswd}.
-    \item[sudo and su] \cmd{sudo} is a delegation mechanism for administrative rights
-        that is safer and more auditable than \cmd{su}.
-    \item[Disk Quota] block and inode restrictions through soft limit, hard limit,
-        grace period, and commands like \cmd{edquota}, \cmd{setquota}, and \cmd{repquota}.
-\end{description}
+\begin{itemize}[noitemsep,topsep=2pt]
+\item \textbf{Advanced access permissions}: setuid (4xxx) makes the program run as the owner of the file; setgid(2xxx) in the directory passes the group to the new file; sticky bit (1xxx) protects user files from deletion by others in the shared directory.
+\item \textbf{Extended attributes}: \cmd{chattr +i} makes the file unmodifiable even by root; \cmd{lsattr} displays the installed attributes.
+\item \textbf{ACL}: \cmd{getfacl} reads ACL, \cmd{setfacl -m} adds entry, \cmd{setfacl -x} removes one entry, \cmd{setfacl -b} removes all additional ACLs; The default ACL with the \texttt{-d} option is inherited to new files in the directory.
+\item \textbf{User management}: \cmd{useradd -m -s} creates account with home directory; \cmd{usermod -aG} adds a group without deleting the old group; \cmd{userdel -r} deletes the account along with the home directory; information is stored in \file{/etc/passwd} and \file{/etc/shadow}.
+\item \textbf{Group management}: \cmd{groupadd}, \cmd{gpasswd -a/-d} to add and remove members; \cmd{newgrp} activates the new group without logging out; \file{/etc/group} stores the definitions of all groups.
+\item \textbf{Sudo configuration}: rules are stored in \dir{/etc/sudoers.d/} and always edited with \cmd{visudo}; \texttt{NOPASSWD} allows passwordless commands; all activities are recorded in \file{/var/log/auth.log}.
+\end{itemize}
 
 %% ========================================================================
 \section{Exercises}
-\label{sec:file-user-exercises}
+\label{sec:user-group-exercises}
 %% ========================================================================
 
-\begin{exercisebox}[Exercise 9.A --- Audit and Collaboration]
-\begin{enumerate}
-    \item Find active SUID files with \cmd{find / -perm -4000 -type f 2>/dev/null},
-        then explain three files you recognize with their reasons.
-    \item Find \textit{world-writable} directories and determine which are valid and
-        which are risky.
-    \item Design standard permission configuration and ACL for project directory
-        \dir{/srv/webapp} so group \texttt{webapp-team} can write, user
-        \texttt{deploy} can only read, and new files always inherit project group.
-\end{enumerate}
-\end{exercisebox}
+\textbf{General Instructions}: Do all the exercises independently. Note important steps, save screenshots when necessary, then summarize the results as personal documentation.
 
-\begin{exercisebox}[Exercise 9.B --- Account Policy and Quota]
-Write steps to create user \texttt{intern}, add to group \texttt{labgroup},
-force password change every 45 days (warning 7 days), give sudo permission only
-for \cmd{systemctl status}, and set simple space and inode quota on \dir{/home}.
-\end{exercisebox}
+\subsubsection*{Exercise 9.1 Permissions Audit and Collaboration Directory}
+You are tasked with auditing and configuring permissions for a shared project.
+\begin{enumerate}
+\item Find all SUID files on the system with the command \cmd{find / -perm -4000 -type f 2>/dev/null}. Note down at least three files you find and explain why each requires SUID.
+\item Create directory \dir{~/proyek-audit} with the following configuration: SGID active so that all new files inherit the directory group, sticky bit active so that users cannot delete files belonging to others. Verify with \cmd{ls -ld}.
+\item Create at least three files in the directory and verify that the file groups match the directory groups.
+\end{enumerate}
+
+
+\subsubsection*{Exercise 9.2 Configure ACLs for the Development Team}
+Simulate real team access management scenarios.
+\begin{enumerate}
+\item Create three user accounts: \texttt{pemimpin}, \texttt{anggota-a}, and \texttt{pengamat}. Create group \texttt{tim-dev}.
+\item Create directory \dir{~/proyek-tim} and set default ACLs so that: \texttt{pemimpin} gets full access (rwx), \texttt{tim-dev} gets read and write access, \texttt{pengamat} gets read only access.
+\item Create three new files in that directory and verify that each inherits the correct ACL.
+\item Remove access \texttt{pengamat} from one of the files using \cmd{setfacl -x} and verify the results.
+\end{enumerate}
+
+
+\subsubsection*{Exercise 9.3 Account Policies and Restricted sudo}
+Enforce secure account policies and delegate limited administrative rights.
+\begin{enumerate}
+\item Create account \texttt{staf-it} with shell \texttt{/bin/bash} and add it to group \texttt{helpdesk} (create the group first).
+\item Create a file \file{/etc/sudoers.d/staf-it} using \cmd{visudo -f} that allows \texttt{staf-it} to run: \cmd{systemctl status *} (without password), \cmd{apt update} (without password), and \cmd{systemctl restart ssh} (with password).
+\item Verify the configuration with \cmd{sudo -l -U staf-it} and ensure that only those three commands are listed.
+\item Document the differences in rule lines for those that use \texttt{NOPASSWD} and those that don't.
+\end{enumerate}
+
 
 %% ========================================================================

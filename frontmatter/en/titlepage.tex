@@ -3,42 +3,72 @@
 %% ========================================================================
 
 \begin{titlepage}
+    \thispagestyle{empty}
+    \begin{tikzpicture}[remember picture, overlay]
+        \fill[black!8] (current page.north west) rectangle ([yshift=-4.2cm]current page.north east);
+        \draw[line width=1.2pt, black!70]
+            ([xshift=1.4cm,yshift=-1.1cm]current page.north west) --
+            ([xshift=-1.4cm,yshift=-1.1cm]current page.north east);
+        \draw[line width=0.6pt, black!40]
+            ([xshift=1.4cm,yshift=-1.45cm]current page.north west) --
+            ([xshift=-1.4cm,yshift=-1.45cm]current page.north east);
+        \draw[line width=1pt, black!55]
+            ([xshift=1.6cm,yshift=1.6cm]current page.south west) rectangle
+            ([xshift=-1.6cm,yshift=-1.6cm]current page.north east);
+    \end{tikzpicture}
+
+    \vspace*{1.8cm}
+
+    {\small\sffamily\bfseries P O L I N E M A \ \ P R E S S\par}
+    \vspace{1.25cm}
+
+    {\fontsize{28}{32}\selectfont\sffamily\bfseries Mastering Linux\par}
+    \vspace{0.45cm}
+    {\Large\sffamily Understanding Operating Systems for Beginners\par}
+    \vspace{0.7cm}
+    {\normalsize\itshape Linux foundations, command line, processes, memory, services, and system administration\par}
+
+    \vspace{1.5cm}
+
+    \begin{tcolorbox}[
+        enhanced,
+        colback=black!3,
+        colframe=black!55,
+        boxrule=0.7pt,
+        arc=2pt,
+        left=10pt,
+        right=10pt,
+        top=10pt,
+        bottom=10pt,
+        width=1\textwidth,
+        center title,
+        title={\bfseries\sffamily Authors}
+    ]
     \centering
-    \vspace*{2cm}
-
-    % Institution logo (if available)
-    % \includegraphics[width=0.3\textwidth]{logo-polinema.png}\\[1cm]
-
-    % Book Title
-    {\Huge\bfseries Linux Operating Systems\par}
-    \vspace{0.5cm}
-    {\Large A Comprehensive Guide for Students\par}
-    \vspace{2cm}
-
-    % Author Information
-    {\Large\textbf{Author}\par}
-    \vspace{0.5cm}
-    {\large [Full Author Name]\par}
-    \vspace{0.3cm}
-    {\normalsize [Academic Title]\par}
-    {\normalsize [Institution/University]\par}
+    {\large\bfseries Sofyan Noor Arief\par}
+    \vspace{0.16cm}
+    {\large\bfseries Dian Hanifudin Subhi\par}
+    \vspace{0.16cm}
+    {\large\bfseries Muhammad Afif Hendrawan\par}
+    \vspace{0.16cm}
+    {\large\bfseries Irsyad Arif Mashudi\par}
+    \vspace{0.16cm}
+    {\large\bfseries Luqman Affandi\par}
+    \end{tcolorbox}
 
     \vfill
 
-    % Additional Information
-    {\large \textit{Textbook for}\par}
-    {\large \textbf{Operating Systems Course}\par}
-
-    \vfill
-
-    % Publisher Logo (if available)
-    % \includegraphics[width=0.2\textwidth]{logo-publisher.png}\\[0.5cm]
-
-    % Publisher and Year
-    {\large [Publisher Name]\par}
-    {\large [City of Publication] --- \the\year\par}
+    \begin{minipage}{1\textwidth}
+        \centering
+        \rule{0.28\textwidth}{0.6pt}\hspace{0.03\textwidth}\rule{0.28\textwidth}{0.6pt}\par
+        \vspace{0.35cm}
+        {\small\sffamily A practical reference book for learning Linux-based operating systems\par}
+        \vspace{0.75cm}
+        {\normalsize\bfseries Polinema Press\par}
+        {\normalsize Malang \textbullet{} \the\year\par}
+    \end{minipage}
 
 \end{titlepage}
 
-% Blank page behind title page (for two-sided printing)
+% Blank page behind the title page (for two-sided printing)
 \cleardoublepage

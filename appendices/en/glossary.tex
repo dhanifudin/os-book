@@ -6,74 +6,294 @@
 \label{app:glossary}
 
 This appendix contains definitions of technical terms used in this book.
+Main terms are kept in their original language and are italicized when they appear
+inside chapters.
 
 %% ------------------------------------------------------------------------
 \section*{A}
 
 \begin{description}
-    \item[ACL (Access Control List)] A more granular access control mechanism
-          than traditional Unix permissions, allowing access rights configuration
-          for multiple users and groups.
+    \gitem{ACL (Access Control List)}{A more granular access control mechanism
+          than traditional Unix \term{permission}, allowing permissions to be
+          configured for many users and groups.}
 
-    \item[API (Application Programming Interface)] A set of definitions and protocols
-          for building and integrating application software.
+    \gitem{Address space}{The address range visible to a process. In
+          \term{virtual memory}, each process has its own address space that is
+          isolated from other processes.}
+
+    \gitem{API (Application Programming Interface)}{A set of definitions and protocols
+          for building and integrating application software.}
 \end{description}
 
 %% ------------------------------------------------------------------------
 \section*{B}
 
 \begin{description}
-    \item[Bash (Bourne Again Shell)] A command-line shell and programming language
-          that is the default in most Linux distributions.
+    \gitem{Bash (Bourne Again Shell)}{A \term{shell} and \term{command-line}
+          programming language that is the default in many Linux distributions.}
 
-    \item[Bootloader] A program that loads the operating system into memory when
-          the computer is powered on. Examples: GRUB, LILO.
+    \gitem{Base image}{A base image used as the foundation for building
+          another container image.}
+
+    \gitem{Binary}{A compiled program file that is ready to be run by the operating system.
+          Its contents are already in machine code, not \term{source code}.}
+
+    \gitem{Bootloader}{A program that loads the operating system into memory when the computer
+          is turned on. Common examples: GRUB and LILO.}
 \end{description}
 
 %% ------------------------------------------------------------------------
 \section*{C}
 
 \begin{description}
-    \item[CLI (Command Line Interface)] A text-based interface for interacting
-          with the operating system using commands.
+    \gitem{Cache}{High-speed temporary storage that stores frequently accessed data or
+          instructions so that the next process can run faster.}
 
-    \item[Cron] A daemon for scheduling command or script execution at
-          specific times.
+    \gitem{CLI (Command Line Interface)}{A text-based interface for interacting
+          with the operating system using commands.}
+
+    \gitem{Container}{An isolated execution environment at the operating-system level that
+          shares the host kernel, but has its own processes, file system, and configuration.}
+
+    \gitem{Cron}{A \term{daemon} for scheduling command or script execution at
+          specific times.}
 \end{description}
 
 %% ------------------------------------------------------------------------
 \section*{D}
 
 \begin{description}
-    \item[Daemon] A program that runs in the background and has no
-          direct interface with the user.
+    \gitem{Daemon}{A program that runs in the background and usually has no
+          direct interface with the user.}
 
-    \item[Distro (Distribution)] A Linux variant packaged with a kernel,
-          utilities, and specific application software.
+    \gitem{Disk layout}{The arrangement of partitions, \term{filesystem}, and other
+          important areas on a disk or storage device.}
+
+    \gitem{Driver}{A software component that allows the operating system to communicate
+          with specific hardware through a standardized interface.}
+
+    \gitem{Distro (Distribution)}{A Linux variant packaged with a kernel,
+          utilities, and specific application software.}
+
+\gitem{Dockerfile}{A recipe file that contains the steps for building
+          a container \term{image}.}
 \end{description}
 
-%% [Continue for letters E-Z...]
+%% ------------------------------------------------------------------------
+\section*{E}
+
+\begin{description}
+    \gitem{Endpoint}{A communication endpoint where data is sent or received.
+          In networking or IPC contexts, an endpoint is often implemented as a
+          \term{socket}.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{F}
+
+\begin{description}
+    \gitem{File}{A named unit of data stored in a \term{filesystem}. In Linux,
+          a file can be a regular document, configuration, device, or another special form.}
+
+    \gitem{File descriptor}{A small identity number used by the kernel to
+          represent a file, pipe, socket, or other input-output stream currently
+          opened by a process.}
+
+    \gitem{Filesystem}{The structure and rules used by an operating system to
+          store, name, and organize files on storage media.}
+
+    \gitem{Function}{A named block of commands or code that can be called
+          repeatedly to perform a specific task.}
+
+    \gitem{Firmware}{Low-level software embedded in hardware
+          to perform basic functions before the operating system is fully active.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{G}
+
+\begin{description}
+    \gitem{Group}{A collection of user accounts used by Linux to manage shared access
+          permissions for files and system resources.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{H}
+
+\begin{description}
+    \gitem{Host}{The main system where a program, \term{virtual machine}, or
+          \term{container} runs. In networking, host can also mean a machine
+          that has its own address identity.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{I}
+
+\begin{description}
+    \gitem{Image}{A static base template for creating one or more
+          \term{container}. In Docker, an image is built in layers from instructions in a
+          \term{Dockerfile}.}
+
+    \gitem{Init system}{The first system that runs in \term{user space} after
+          the kernel finishes booting. Its task is to start and manage other services.}
+
+    \gitem{Interrupt}{A signal from hardware or software that asks the CPU
+          to pause the current task temporarily to handle a specific event.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{J}
+
+\begin{description}
+    \gitem{Journal}{A structured log recording system, usually referring to logs
+          managed by \term{systemd-journald}.}
+\end{description}
 
 %% ------------------------------------------------------------------------
 \section*{K}
 
 \begin{description}
-    \item[Kernel] The core of an operating system that manages hardware and
-          provides basic services for other software.
+    \gitem{Kernel}{The core of the operating system that manages hardware and provides
+          basic services for other software.}
+
+    \gitem{Kernel space}{An execution area with full privileges where the kernel and
+          some core system components run. Access to hardware is controlled from here.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{L}
+
+\begin{description}
+    \gitem{Latency}{The delay between a request and a response. In operating systems,
+          latency is often used to assess how quickly a system reacts.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{M}
+
+\begin{description}
+    \gitem{Mount}{The process of connecting a \term{filesystem}, partition, or storage
+          device to a directory point so its contents can be accessed from the Linux directory tree.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{O}
+
+\begin{description}
+    \gitem{Override}{A configuration that overrides or replaces a default value without
+          changing the original source file. In \term{systemd}, local overrides are usually
+          stored separately from package-provided units.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{P}
+
+\begin{description}
+    \gitem{Package manager}{Software for installing, updating, removing,
+          and tracking application package dependencies. Examples: \cmd{apt} and \cmd{dpkg}.}
+
+    \gitem{Page fault}{An event that occurs when a process accesses a virtual memory page that
+          is not yet available in RAM, so the kernel must map or load it first.}
+
+    \gitem{Page table}{A data structure used by the kernel to map
+          \term{virtual memory} addresses to physical memory addresses.}
+
+    \gitem{Partition layout}{The arrangement of partitions on a disk, including the order,
+          size, and function of each partition.}
+
+    \gitem{Paging}{A memory management technique that divides virtual and physical memory into
+          small blocks called pages so mapping is more flexible.}
+
+    \gitem{Permission}{The read, write, and execute access rules for files or
+          directories in Linux.}
+
+    \gitem{PID (Process ID)}{A unique identity number assigned by the operating system to
+          each running process.}
+
+    \gitem{Pipeline}{A technique for connecting the output of one command to the input of another
+          command using the \texttt{|} operator.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{R}
+
+\begin{description}
+    \gitem{Redirection}{A technique for redirecting command input or output to a file,
+          device, or another command using operators such as \texttt{>},
+          \texttt{>>}, and \texttt{<}.}
+
+    \gitem{Repository}{A source of software packages that stores metadata and files
+          required by a \term{package manager} for installation and updates.}
+
+    \gitem{Runlevel}{An older concept in traditional init systems for expressing a system
+          operating mode, such as multi-user mode or maintenance mode. In
+          \term{systemd}, this concept has largely been replaced by \term{target}.}
 \end{description}
 
 %% ------------------------------------------------------------------------
 \section*{S}
 
 \begin{description}
-    \item[Shell] A program that provides an interface for users to interact
-          with the operating system.
+    \gitem{Scheduler}{The part of the kernel that determines which process or thread
+          gets a turn using the CPU, when it runs, and for how long.}
 
-    \item[System Call] A programming interface for services provided
-          by the operating system kernel.
+    \gitem{Service}{A program that runs in the background to provide a specific function,
+          such as a web server, SSH, or database.}
 
-    \item[Systemd] A modern init system used to bootstrap user space
-          and manage system services.
+    \gitem{Shared library}{A binary library that can be shared by many programs
+          while they run, so common code does not need to be copied into each \term{binary}.}
+
+    \gitem{Shell}{A program that provides an interface for users to interact
+          with the operating system, either through text commands or scripts.}
+
+    \gitem{Signal}{A short message sent by the kernel or another process to tell
+          a process to stop, pause, continue, or handle a specific event.}
+
+    \gitem{Socket}{A communication point used by processes to exchange data, either
+          over a network or through local interprocess communication.}
+
+    \gitem{Source code}{Program code written by humans in a programming language that
+          must be processed before becoming a runnable \term{binary}.}
+
+    \gitem{Swap}{Disk space used as an extension of RAM when physical memory
+          is not enough to hold all active process needs.}
+
+    \gitem{System call}{The official interface used by programs in \term{user space}
+          to request services from the operating system kernel.}
+
+    \gitem{Systemd}{A modern \term{init system} used to bootstrap
+          \term{user space} and manage system services.}
 \end{description}
 
-%% [Add other terms...]
+%% ------------------------------------------------------------------------
+\section*{T}
+
+\begin{description}
+    \gitem{Throughput}{The amount of work a system can complete in one unit of
+          time, such as requests per second or processes per minute.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{U}
+
+\begin{description}
+    \gitem{Unit}{A configuration object managed by \term{systemd}, such as
+          \texttt{.service}, \texttt{.socket}, \texttt{.mount}, and \texttt{.target}.}
+
+    \gitem{User space}{The execution area where ordinary applications run with limited
+          permissions. Programs here must use a \term{system call} to request kernel services.}
+\end{description}
+
+%% ------------------------------------------------------------------------
+\section*{V}
+
+\begin{description}
+    \gitem{Virtual memory}{A memory abstraction layer that makes each process appear
+          to have its own address space, separate from other processes and from physical memory.}
+
+    \gitem{Virtual machine}{A virtual computer simulated inside a physical computer.
+          It has its own operating system, memory, disk, and virtual devices.}
+
+    \gitem{Volume}{A persistent data storage mechanism for containers that can be
+          mounted from the \term{host} or managed directly by the container runtime.}
+\end{description}

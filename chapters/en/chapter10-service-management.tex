@@ -5,16 +5,673 @@
 \chapter{Service Management}
 \label{ch:service-management}
 
-This chapter discusses the init system in Linux, systemd, managing services,
-creating unit files, and service troubleshooting.
+\chapterhero{magenta}{Understand the life flow of modern Linux services, from systemd units and dependencies to logging and network service hardening.}{\faCogs\quad systemd}{\faCube\quad units}{\faBook\quad journal}
 
-\section{Introduction to Init Systems}
+The server you manage does not stop working when the terminal is closed. There are programs constantly running in the background: accepting SSH connections, serving web requests, logging system activity. These programs are called \term{service}, which are processes that live continuously until they are explicitly terminated or the system is shut down.
+
+The SSH connection you open to the server is processed by a \term{service} named \texttt{sshd} which has been listening on port 22 long before you connected. The web page that appears in the browser comes from the \term{service} web server which is ready to answer since the system starts up. This kind of service is managed by \term{init system}. On Ubuntu 22.04 and other modern Linux distributions, the \term{init system} used is \textbf{systemd}.
+
+Managing \term{service} is one of the most basic tasks of a system administrator. Starting, stopping, enabling at boot, checking status, reading logs when there is a problem: it's all done through one main command called \cmd{systemctl}. This chapter discusses how to master those commands and understand the structure behind them.
+
+\textbf{What You'll Learn}
+
+By the end of this chapter, you will be able to:
+
+\begin{enumerate}
+\item explain the evolution of the init system in Linux and the role of systemd as PID 1;
+\item manage the service lifecycle using \cmd{systemctl} appropriately;
+\item create and modify systemd unit files for custom services;
+\item filter and analyze service logs using \cmd{journalctl};
+\item configure the SSH service as a real example of network service configuration; and
+\item troubleshoot services that fail to start with a structured diagnostic sequence.
+\end{enumerate}
+
+\begin{notebox}
+All practices in this chapter are executed in the \dir{~/lab-os/chapter10-services/} directory.
+\begin{lstlisting}[language=bash]
+mkdir -p ~/lab-os/chapter10-services
+cd ~/lab-os/chapter10-services
+\end{lstlisting}
+\end{notebox}
+
+%% ========================================================================
+\section{Introduction to systemd}
+\label{sec:init-system}
+%% ========================================================================
+
+Once the Linux kernel has finished loading itself, it runs the first process in \term{user space}. This process gets process number (PID) 1 and is responsible for starting all subsequent services: network, logging, printer, web server, database, and so on. This process with PID 1 is called \term{init system}.
+
+Historically, Linux used sequential shell script-based \textbf{SysV init} in directory \dir{/etc/init.d/}. Each service is represented by a script that can be called with the arguments \texttt{start}, \texttt{stop}, or \texttt{restart}. The approach is simple and easy to understand, but slow because the services are executed one by one in sequence.
+
+Ubuntu once used \textbf{Upstart} as a transition, which introduced an event-based approach. Upstart is more flexible than SysV, but its adoption is not widespread throughout the Linux ecosystem.
+
+Today, almost all modern Linux distributions, including Ubuntu 22.04, Debian 12, Fedora, RHEL, and derivatives, use \textbf{systemd}. Systemd introduced several important advances: services run in parallel during boot, dependencies between services are explicitly declared, logging is integrated directly into the system, and all units are managed through a uniform interface.
+
+\begin{lstlisting}[language=bash, caption={Verify init system and analyze boot time}]
+# check PID 1
+ps -p 1 -o pid,comm,args=
+# output: 1 systemd /sbin/init (or /lib/systemd/systemd)
+
+# verify systemd version
+systemctl --version
+
+# service boot time analysis : how long each service takes to start
+systemd-analyze
+systemd-analyze blame
+systemd-analyze blame | head -20
+
+# see boot critical chain
+systemd-analyze critical-chain
+\end{lstlisting}
+
+In systemd, everything that is managed is called \term{unit}. There are several types of \term{unit}, but the most commonly encountered are:
+
+\begin{itemize}
+\item \texttt{.service}: service running as a background process
+\item \texttt{.socket}: \term{endpoint} network or IPC; new related services are executed when there is an incoming connection
+\item \texttt{.timer}: scheduled tasks, a modern alternative to cron
+\item \texttt{.target}: unit grouping, replacing the old \term{runlevel} concept
+\item \texttt{.mount}: systemd managed \term{mount} \term{file system} point
+\end{itemize}
+
+Unit files are stored in several locations with different priorities:
+
+\begin{itemize}
+\item \file{/lib/systemd/system/} or \file{/usr/lib/systemd/system/}: package default units, do not edit directly
+\item \file{/etc/systemd/system/}: custom units and local \term{override}, where you work
+\item \file{~/.config/systemd/user/}: user-level unit, no root rights required
+\end{itemize}
+
+\subsection*{Lab 10.1: Observe Active Services at Boot}
+
+Check the services running on the system and identify the ones that are slowest at boot.
+
+\begin{enumerate}
+\item View all running services.
+\begin{lstlisting}[language=bash, caption={View active services}]
+systemctl list-units --type=service --state=running
+# note how many services are active
+\end{lstlisting}
+
+\textit{Observe:} Each line displays the unit name, active status/tidaknya, status from systemd's point of view, and a brief description.
+
+\item View all existing service units (active or not).
+\begin{lstlisting}[language=bash, caption={View All service Units}]
+systemctl list-unit-files --type=service | head -30
+# enabled = will start automatically at boot
+# disabled = does not start automatically, can be started manually
+# static = cannot be enabled/disable, only called by other services
+\end{lstlisting}
+
+\item Analyze boot times and find the slowest services.
+\begin{lstlisting}[language=bash, caption={Boot time analysis}]
+systemd-analyze
+systemd-analyze blame | head -15
+\end{lstlisting}
+
+\textit{Observe:} The output \cmd{systemd-analyze blame} displays a list of units ordered from oldest to fastest to initialize.
+\end{enumerate}
+
+\begin{challengebox}
+Identify the three services with the longest initialization times using \cmd{systemd-analyze blame}. Use the pipeline from Chapter~3 (\cmd{| sort -rh | head -3}) to speed up the search. For each service, find out its function with \cmd{systemctl cat service-name}. Write down the name of the service, its initialization time, and a brief description of its function.
+\end{challengebox}
+
+%% ========================================================================
 \section{Managing Services with systemctl}
-\section{Creating System Unit Files}
-\section{Service Dependency Management}
-\section{Logging and Monitoring}
-\section{Network Service Configuration}
-\section{Service Automation}
-\section{Troubleshooting}
+\label{sec:systemctl-services}
+%% ========================================================================
+
+\cmd{systemctl} is the only command you need to master to manage services in systemd. This command replaces various old commands such as \cmd{service}, \cmd{chkconfig}, and \cmd{update-rc.d} which used to be spread across various distributions.
+
+There are two dimensions to managing services: \textit{runtime status} (whether the service is running currently) and \textit{boot status} (whether the service will run automatically every time the system boots up). Both are controlled separately.
+
+\begin{lstlisting}[language=bash, caption={Basic systemctl commands for service runtime}]
+# check the complete status of the service
+sudo systemctl status ssh
+
+# start the service that is down
+sudo systemctl start ssh
+
+# stop service
+sudo systemctl stop ssh
+
+# restart: stop then restart
+sudo systemctl restart ssh
+
+# reload: reload the configuration without killing the main process
+sudo systemctl reload ssh
+
+# check if service is running (for scripts)
+systemctl is-active ssh
+# output: active or inactive
+
+# check if the service will start on boot
+systemctl is-enabled ssh
+# output: enabled or disabled
+\end{lstlisting}
+
+The difference between \cmd{restart} and \cmd{reload} is very important in a production environment. \cmd{restart} kills the old process completely and then starts the new one: all active connections are lost. \cmd{reload} asks running processes to reread their configuration without shutting down: active connections are maintained. Not all services support \cmd{reload}; check the documentation first.
+
+To control whether services run automatically on boot, use \cmd{enable} and \cmd{disable}:
+
+\begin{lstlisting}[language=bash, caption={Controls auto-start of services at boot time}]
+# enable the service to start automatically on boot
+sudo systemctl enable ssh
+
+# activate and run it now
+sudo systemctl enable --now ssh
+
+# disable auto-start (service can still be started manually)
+sudo systemctl disable ssh
+
+# deactivate and stop now
+sudo systemctl disable --now ssh
+
+# completely block services : cannot be run manually or automatically
+sudo systemctl mask cups
+# to unblock:
+sudo systemctl unmask cups
+\end{lstlisting}
+
+The \cmd{mask} command is more powerful than \cmd{disable}. When a service is unmasked, systemd redirects its unit file to \file{/dev/null}, so it cannot be run in any way until it is unmasked. This is useful for disabling services you don't want to ever be active, for example a printer service on a server that doesn't have a printer.
+
+The \cmd{systemctl list-units} command helps to see the big picture of services in the system:
+
+\begin{lstlisting}[language=bash, caption={View and filter unit lists}]
+# all service units that are running
+systemctl list-units --type=service --state=running
+
+# all units failed
+systemctl --failed
+
+# all service units and their boot status
+systemctl list-unit-files --type=service
+
+# view a service's dependencies
+systemctl list-dependencies ssh
+\end{lstlisting}
+
+\subsection*{Lab 10.2: Manage SSH Services}
+
+Lab all the basic operations of \cmd{systemctl} on the SSH services available on the system.
+
+\begin{enumerate}
+\item Check the SSH status thoroughly.
+\begin{lstlisting}[language=bash, caption={Checking the status of the SSH service}]
+systemctl status ssh
+systemctl is-active ssh
+systemctl is-enabled ssh
+\end{lstlisting}
+
+\textit{Observe:} The output of \cmd{systemctl status} displays a lot of information: active status of /inactive, main process PID, start time, memory usage, and some recent log lines. This is the first command to run when there is a service problem.
+
+\item Restart and monitor the changes.
+\begin{lstlisting}[language=bash, caption={Restart the service and monitor the status}]
+sudo systemctl restart ssh
+systemctl status ssh
+# Note: Loaded, Active, and Main PID may change after restart
+\end{lstlisting}
+
+\item View SSH dependencies.
+\begin{lstlisting}[language=bash, caption={View SSH service dependencies}]
+systemctl list-dependencies ssh
+# other services that must be active before SSH can run
+\end{lstlisting}
+
+\item Check all failed units in the system.
+\begin{lstlisting}[language=bash, caption={Failed service audit}]
+systemctl --failed
+# if anything, this is a list of services that need attention
+\end{lstlisting}
+\end{enumerate}
+
+\begin{challengebox}
+Create a Bash script (reference Chapter~7) named \texttt{check-services.sh} that checks service status from a text file. The text file \texttt{service-list.txt} contains one service name per line (minimum contents: ssh, cron, rsyslog). The script reads each service name, checks its status with \cmd{systemctl is-active}, then writes a report to file \texttt{service-report.log} with the format: \texttt{[DATE] service-name: ACTIVE/INACTIVE}. Use \cmd{date} to get the date.
+\end{challengebox}
+
+%% ========================================================================
+\section{Create a Custom Unit File}
+\label{sec:unit-files}
+%% ========================================================================
+
+Each service in systemd is represented by a \textit{unit file} with the extension \texttt{.service}. This file is a declaration: what to run, how to run it, when the service should start, and what to do if the service crashes.
+
+A service unit file has three main blocks enclosed in square brackets:
+
+\begin{lstlisting}[language=bash, caption={.service unit file structure}]
+[Unit]
+Description=Nama Deskriptif Layanan
+Documentation=man:nama-program(8)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/aplikasi
+ExecStart=/usr/local/bin/aplikasi --port 8080
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+\end{lstlisting}
+
+The \texttt{[Unit]} block contains metadata and relationships with other units. \texttt{Description} is the name that appears in the output of \cmd{systemctl status}. \texttt{After} states the start sequence: this unit is only started after the mentioned unit is already active. \texttt{Wants} is a weak relation: systemd will try to run the unit, but its failure does not stop this service.
+
+The \texttt{[Service]} block defines how the process is executed. \texttt{ExecStart} is the main command. \texttt{User} and \texttt{Group} define the process identity. \texttt{Restart=on-failure} makes systemd automatically restart the service if the process stops with an error status.
+
+The \texttt{[Install]} block determines how the unit is connected to the boot target. \texttt{WantedBy=multi-user.target} means this service will be enabled as part of multi-user targeting, which is the normal mode of Linux server operation.
+
+The value \texttt{Type} in block \texttt{[Service]} determines how systemd knows when a service is considered "running":
+
+\begin{itemize}
+\item \texttt{simple}: the process in \texttt{ExecStart} is the main process. Most frequently used.
+\item \texttt{forking}: the program on \texttt{ExecStart} forks and the parent terminates. Used by classic daemons.
+\item \texttt{oneshot}: process runs once then stops. Used for initialization scripts.
+\item \texttt{notify}: the process of sending notifications to systemd when it is ready to accept connections.
+\end{itemize}
+
+\subsection*{Lab 10.3: Create a Simple service from a Bash Script}
+
+Create a systemd service that runs a simple Python based HTTP server.
+
+\begin{enumerate}
+\item Prepare the content to be served.
+\begin{lstlisting}[language=bash, caption={Set up directory and service content}]
+cd ~/lab-os/chapter10-services
+mkdir -p situs-demo
+nano situs-demo/index.html
+# Write the contents of the following file
+<!DOCTYPE html>
+<html>
+<body>
+<h1>Hello from a custom systemd service!</h1>
+<p>This service was created in the Chapter 10 lab.</p>
+</body>
+</html>
+\end{lstlisting}
+
+\item Create a wrapper script for an HTTP server.
+\begin{lstlisting}[language=bash, caption={HTTP server script for the service}]
+nano ~/lab-os/chapter10-services/jalankan-server.sh
+# Write the contents of the following file
+# !/bin/bash
+DIREKTORI="$HOME/lab-os/chapter10-services/situs-demo"
+PORT=9090
+echo "Starting server on port $PORT..."
+exec python3 -m http.server $PORT --directory "$DIREKTORI"
+chmod +x ~/lab-os/chapter10-services/jalankan-server.sh
+\end{lstlisting}
+
+\item Create a systemd unit file for this service.
+\begin{lstlisting}[language=bash, caption={Create custom unit files}]
+nano ~/lab-os/chapter10-services/demo-web.service
+# Write the contents of the following file
+[Unit]
+Description=Demo Web Server Chapter 10 Lab
+After=network.target
+
+[Service]
+Type=simple
+User=your-username
+WorkingDirectory=/home/your-username/lab-os/chapter10-services/situs-demo
+ExecStart=/usr/bin/python3 -m http.server 9090
+Restart=on-failure
+RestartSec=3s
+
+[Install]
+WantedBy=multi-user.target
+
+# copy to systemd unit location
+sudo cp ~/lab-os/chapter10-services/demo-web.service /etc/systemd/system/demo-web.service
+# have systemd reread the newly created unit file
+sudo systemctl daemon-reload
+\end{lstlisting}
+
+\textit{Observe:} The \cmd{daemon-reload} command does not restart running services. This command simply tells systemd to reread the unit definition from disk. Must always be run every time a unit file is modified.
+
+\item Run the service and verify.
+\begin{lstlisting}[language=bash, caption={Run and verify custom services}]
+sudo systemctl start demo-web
+systemctl status demo-web
+# try accessing the service
+curl http://localhost:9090
+\end{lstlisting}
+
+\item Test the automatic restart feature.
+\begin{lstlisting}[language=bash, caption={Testing automatic restart}]
+# view the PID of the current process
+systemctl status demo-web | grep "Main PID"
+
+# force stop the process (crash simulation)
+sudo kill -9 $(systemctl show demo-web --property=MainPID --value)
+
+# wait a few seconds then check : systemd should restart it
+sleep 5
+systemctl status demo-web
+# The PID will change as a new process is executed
+\end{lstlisting}
+
+\textit{Observe:} Thanks to \texttt{Restart=on-failure}, systemd automatically restarts the service after an abnormal process shutdown. This is an important feature for production services.
+
+\item Clean up the test service when finished.
+\begin{lstlisting}[language=bash, caption={Clean up the test service}]
+sudo systemctl disable --now demo-web
+sudo rm /etc/systemd/system/demo-web.service
+sudo systemctl daemon-reload
+\end{lstlisting}
+\end{enumerate}
+
+\begin{challengebox}
+Modify the unit file \texttt{demo-web.service} before deleting it: add \texttt{RestartSec=10s} to make the system wait 10 seconds before attempting to restart, and add \texttt{Environment="PORT=9091"} and then modify \texttt{ExecStart} to use that variable. Enable the service with \cmd{enable} and \cmd{WantedBy=multi-user.target}, then test whether the service is active after \cmd{systemctl daemon-reload}. Document differences in behavior compared to previous versions.
+\end{challengebox}
+
+%% ========================================================================
+\section{Logging with journalctl}
+\label{sec:service-logging}
+%% ========================================================================
+
+On systems with SysV init, the service logs are spread across various files in \dir{/var/log/}: \file{syslog}, \file{auth.log}, \file{kern.log}, and individual application-specific files. Searching for a single event involving multiple services means opening multiple files at once. Systemd aggregates all logs into a \term{journal} managed by \texttt{systemd-journald}. One command, \cmd{journalctl}, can access all those logs with various filters.
+
+Journal logs are stored in binary (not plain text), so they are more efficient and support various metadata such as unit names, PIDs, UIDs, priorities and high-precision timestamps. When running \cmd{journalctl}, it reads and displays the logs in easy-to-read text format.
+
+\begin{lstlisting}[language=bash, caption={Journalctl basic commands}]
+# all logs since current boot
+journalctl -b
+
+# log for a specific unit/service
+journalctl -u ssh
+journalctl -u ssh -b
+# -b limits to logs since current boot only
+
+# N last row
+journalctl -u ssh -n 50
+
+# follow logs in real-time (like tail -f)
+journalctl -u ssh -f
+
+# filter by time
+journalctl -u ssh --since "1 hour ago"
+journalctl -u nginx --since "2024-01-15 08:00" --until "2024-01-15 10:00"
+journalctl -u ssh --since today
+
+# filter by priority
+# 0=emerg, 1=alert, 2=crit, 3=err, 4=warning, 5=notice, 6=info, 7=debug
+journalctl -p err
+journalctl -u ssh -p warning
+
+# display without pager (useful for pipelines)
+journalctl -u ssh --no-pager | grep "Failed"
+\end{lstlisting}
+
+By default, the journal is stored only in memory and is lost when the system reboots. To save logs permanently on disk:
+
+\begin{lstlisting}[language=bash, caption={Enable persistent logging}]
+# create a permanent journal storage directory
+sudo mkdir -p /var/log/journal
+sudo systemd-tmpfiles --create --prefix /var/log/journal
+
+# restart journald to apply changes
+sudo systemctl restart systemd-journald
+
+# verify : now there is a directory with the machine name
+ls /var/log/journal/
+\end{lstlisting}
+
+The journal size can be limited so that it does not fill the disk. The configuration is in \file{/etc/systemd/journald.conf}:
+
+\begin{lstlisting}[language=bash, caption={Check journal usage and limits}]
+# see how much space the journal takes up
+journalctl --disk-usage
+
+# delete old logs (keep only 1 week)
+sudo journalctl --vacuum-time=7d
+
+# delete old logs (keep 500 MB max)
+sudo journalctl --vacuum-size=500M
+\end{lstlisting}
+
+\subsection*{Lab 10.4: Filter and Analyze service Logs}
+
+Use various \cmd{journalctl} options to search for specific information in the system log.
+
+\begin{enumerate}
+\item View SSH logs from the last hour.
+\begin{lstlisting}[language=bash, caption={SSH logs of the last hour}]
+journalctl -u ssh --since "1 hour ago" --no-pager
+# if there are no SSH logs, use another active service
+journalctl -u cron --since "1 hour ago" --no-pager
+\end{lstlisting}
+
+\item Filter logs with error priority upwards.
+\begin{lstlisting}[language=bash, caption={Error priority log of the current boot}]
+journalctl -b -p err --no-pager
+# it displays all errors and more serious ones since boot
+\end{lstlisting}
+
+\textit{Observe:} Logs with priority \texttt{err} and above are usually worth paying attention to. Note which service generated the error and read the message.
+
+\item Follow logs in real-time while triggering events.
+\begin{lstlisting}[language=bash, caption={Monitor SSH logs in real-time}]
+# run in the first terminal:
+journalctl -u ssh -f
+
+# in the second terminal, try SSH login to localhost
+# ssh localhost
+# then see what appears in the first terminal
+\end{lstlisting}
+
+\item Extract logs to a file for analysis.
+\begin{lstlisting}[language=bash, caption={Save the log to a file}]
+cd ~/lab-os/chapter10-services
+
+# save all ssh service logs from today to a file
+journalctl -u ssh --since today --no-pager > ssh-log-today.txt
+
+# count the number of log lines
+wc -l ssh-log-today.txt
+
+# if there is, look for lines containing the words "error" or "failed"
+grep -i "error\|failed" ssh-log-today.txt | head -20
+\end{lstlisting}
+\end{enumerate}
+
+\begin{challengebox}
+Extract all logs with error priority (\texttt{-p err}) from the last 24 hours for the SSH service, then save them to \texttt{ssh-errors-24h.txt}. Use the pipeline from Chapter~3 to count the total number of error lines with \cmd{wc -l}, then display the 10 most frequently occurring error messages using \cmd{sort | uniq -c | sort -rn | head -10}. Write down the complete command that you use.
+\end{challengebox}
+
+%% ========================================================================
+\section{Network Services Configuration}
+\label{sec:network-services}
+%% ========================================================================
+
+Network services are a category of services that listen for incoming connections through specific ports. SSH listens on port 22, HTTP on port 80, HTTPS on port 443. Managing network services means ensuring processes are running, ports are open and listening, configurations are as needed, and logs are monitored to detect unauthorized access.
+
+SSH (\textit{Secure Shell}) is the most fundamental service on a Linux server. It allows administrators to manage servers remotely over an encrypted connection. The package that provides SSH server in Ubuntu is \texttt{openssh-server}. The systemd unit name can be \texttt{ssh} or \texttt{sshd} depending on the distribution.
+
+\begin{lstlisting}[language=bash, caption={Manage SSH services}]
+# make sure SSH server is installed
+sudo apt install -y openssh-server
+
+# check status
+systemctl status ssh
+
+# make sure SSH is active and starts automatically on boot
+sudo systemctl enable --now ssh
+
+# verify port 22 is listening
+ss -tlnp | grep :22
+# or
+netstat -tlnp | grep :22
+\end{lstlisting}
+
+The main SSH server configuration is at \file{/etc/ssh/sshd\_config}. Before changing anything, it's important to understand a few key options:
+
+\begin{lstlisting}[language=bash, caption={Important options in sshd\_config}]
+# view active configuration (not comments)
+grep -v "^#" /etc/ssh/sshd_config | grep -v "^$"
+
+# frequently configured options:
+# Port 22 : listening port (change for security)
+# PermitRootLogin no : prohibit logging in directly as root
+# PasswordAuthentication yes : allow login with password (change to no for higher security)
+# PubkeyAuthentication yes : allow login with public key
+# MaxAuthTries 3 : maximum login attempts before the connection is rejected
+# AllowUsers alice bob : only certain users can SSH
+\end{lstlisting}
+
+After changing the SSH configuration, always validate the syntax before restarting the service. Misconfiguration can lock remote access to the server:
+
+\begin{lstlisting}[language=bash, caption={The secure flow changes the SSH configuration}]
+# 1. create a configuration backup before changing
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+
+# 2. change the configuration with the editor
+sudo nano /etc/ssh/sshd_config
+
+# 3. syntax validation : DO NOT skip this step
+sudo sshd -t
+# if there is no output, the syntax is correct
+# If there is an error message, fix it first before continuing
+
+# 4. reload configuration (safer than restart)
+sudo systemctl reload ssh
+# or restart if necessary
+sudo systemctl restart ssh
+
+# 5. Verify the service is still running
+systemctl status ssh
+\end{lstlisting}
+
+Use \cmd{ss} (from Chapter~2) to verify that the service is actually listening on the desired port:
+
+\begin{lstlisting}[language=bash, caption={Verify port with ss}]
+# see all listening TCP ports
+ss -tlnp
+# -t: TCP only
+# -l: only those who are listening (listening)
+# -n: display numbers (do not resolve names)
+# -p: show processes that use the socket
+
+# look for the SSH port specifically
+ss -tlnp | grep ssh
+\end{lstlisting}
+
+\subsection*{Lab 10.5: Configure SSH Server}
+
+Change the SSH port to a non-standard port, validate the configuration, and verify the change with \cmd{ss}.
+
+\begin{enumerate}
+\item Check the current SSH configuration.
+\begin{lstlisting}[language=bash, caption={Check the initial SSH configuration}]
+sudo grep -n "^Port\|^#Port" /etc/ssh/sshd_config
+ss -tlnp | grep ssh
+\end{lstlisting}
+
+\item Make a backup and change the SSH port.
+\begin{lstlisting}[language=bash, caption={backup and change SSH port}]
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup.lab12
+
+# change port from 22 to 2222 (or another unused port)
+sudo sed -i 's/^#Port 22/Port 2222/' /etc/ssh/sshd_config
+# if the Port 22 line is not commented:
+# sudo sed -i 's/^Port 22/Port 2222/' /etc/ssh/sshd_config
+
+# verify changes
+grep "^Port" /etc/ssh/sshd_config
+\end{lstlisting}
+
+\item Validate configuration and restart services.
+\begin{lstlisting}[language=bash, caption={Validate and restart SSH}]
+# MANDATORY: validate syntax before restart
+sudo sshd -t
+echo "sshd -t exit code: $?"
+# code 0 means the syntax is valid
+
+# restart the service
+sudo systemctl restart ssh
+systemctl status ssh
+\end{lstlisting}
+
+\textit{Observe:} The validation step with \cmd{sshd -t} is an important habit. On a production server that can only be accessed via SSH, a configuration error that causes SSH to not restart means you are locked out of the server itself.
+
+\item Verify new port with ss.
+\begin{lstlisting}[language=bash, caption={Verify the new SSH port}]
+ss -tlnp | grep ssh
+# it should show port 2222, not 22
+
+# save the results to an evidence file
+ss -tlnp | grep ssh > ~/lab-os/chapter10-services/bukti-port-ssh.txt
+cat ~/lab-os/chapter10-services/bukti-port-ssh.txt
+\end{lstlisting}
+
+\item Return SSH port to 22 after practice.
+\begin{lstlisting}[language=bash, caption={Restore SSH configuration to port 22}]
+sudo cp /etc/ssh/sshd_config.backup.lab12 /etc/ssh/sshd_config
+sudo sshd -t
+sudo systemctl restart ssh
+ss -tlnp | grep ssh
+# should return to port 22
+\end{lstlisting}
+\end{enumerate}
+
+\begin{challengebox}
+Change the SSH configuration to add two security settings: \texttt{PermitRootLogin no} (prohibit direct root login) and \texttt{MaxAuthTries 3} (maximum three attempts). Do it in a safe order: backup, edit, validate with \cmd{sshd -t}, reload. Verify changes with \cmd{grep -E "PermitRoot|MaxAuth" /etc/ssh/sshd\_config}. Then check the SSH logs to make sure there are no errors after the change with \cmd{journalctl -u ssh -n 20}. References Chapter~2 for use of \cmd{ss} and Chapter~9 for user security.
+\end{challengebox}
+
+%% ========================================================================
 \section{Summary}
+\label{sec:service-summary}
+%% ========================================================================
+
+In this chapter, you learned:
+
+\begin{itemize}[noitemsep,topsep=2pt]
+\item \textbf{Evolution of init systems}: Linux evolved from sequential script-based SysV init, through event-based Upstart, to modern systemd that runs services in parallel with explicit dependency management.
+\item \textbf{Systemd unit type}: \texttt{.service} for background process, \texttt{.socket} for network endpoint, \texttt{.timer} for scheduled task, \texttt{.target} for grouping.
+\item \textbf{systemctl runtime}: \cmd{start}, \cmd{stop}, \cmd{restart}, \cmd{reload}, and \cmd{status} to control running services; \cmd{enable}/\cmd{disable} for auto-start at boot; \cmd{mask}/\cmd{unmask} for total block.
+\item \textbf{Custom unit files}: structures \texttt{[Unit]}, \texttt{[Service]}, \texttt{[Install]}; important fields such as \texttt{ExecStart}, \texttt{Restart=on-failure}, \texttt{RestartSec}, \texttt{User}; always run \cmd{daemon-reload} after changing the unit file.
+\item \textbf{journalctl}: filter logs per unit (\texttt{-u}), per time (\texttt{--since}), per priority (\texttt{-p}), follow mode (\texttt{-f}), and export to file with \texttt{--no-pager}.
+\item \textbf{SSH Configuration}: configuration file in \file{/etc/ssh/sshd\_config}; secure flow change configuration: backup, edit, validate with \cmd{sshd -t}, then reload; verify active port with \cmd{ss -tlnp}.
+\end{itemize}
+
+%% ========================================================================
 \section{Exercises}
+\label{sec:service-exercises}
+%% ========================================================================
+
+\textbf{General Instructions}: Do all the exercises independently. Note important steps, save screenshots when necessary, then summarize the results as personal documentation.
+
+\subsubsection*{Exercise 10.1 service Audit and Boot Analysis}
+Perform a thorough audit of the services running on the system.
+\begin{enumerate}
+\item Run \cmd{systemctl list-units --type=service --state=running} and note all active services. Select three services you are familiar with, check the status of each with \cmd{systemctl status}, and explain their function.
+\item Run \cmd{systemd-analyze blame} and identify the five services with the longest initialization times. Display the results using pipeline: \cmd{systemd-analyze blame | head -5}.
+\item Run \cmd{systemctl --failed} and document the results. If any service fails, find out the cause with \cmd{journalctl -u service-name -n 30}.
+\end{enumerate}
+
+\subsubsection*{Exercise 10.2 Custom Services with Automatic Restart}
+Create a custom systemd service that demonstrates the auto restart feature.
+\begin{enumerate}
+\item Create a Bash script (reference Chapter~7) named \texttt{monitor-disk.sh} that every 30 seconds writes disk usage to a log file. Use \cmd{df -h} and \cmd{date}.
+\item Create unit file \file{/etc/systemd/system/monitor-disk.service} to run the script with configuration: \texttt{Restart=always}, \texttt{RestartSec=5s}, and run as your own user.
+\item Enable and run the service. Verify with \cmd{systemctl status} and make sure you are logged in to the journal.
+\item Simulate a crash by forcibly killing the process (\cmd{kill -9}), waiting 10 seconds, and verifying that the service comes back on automatically.
+\item Purge: disable the service and delete the unit files when finished.
+\end{enumerate}
+
+\subsubsection*{Exercise 10.3 Log Investigation and SSH Security}
+Analyze system logs and improve SSH configuration security.
+\begin{enumerate}
+\item Use \cmd{journalctl -b -p err} to find all errors since the last boot. Save the result to a file and count the number of rows with \cmd{wc -l}.
+\item Make three security changes to \file{/etc/ssh/sshd\_config}: add \texttt{PermitRootLogin no}, \texttt{MaxAuthTries 3}, and \texttt{LoginGraceTime 30}. Follow the safe flow: backup, edit, validate \cmd{sshd -t}, reload.
+\item After reloading, verify three things: the service is still running (\cmd{systemctl status ssh}), the port is still listening (\cmd{ss -tlnp | grep ssh}), and the new configuration is read (\cmd{grep -E "PermitRoot|MaxAuth|GraceTime" /etc/ssh/sshd\_config}).
+\item Restore the SSH configuration to its original state using a backup file.
+\end{enumerate}
+
+%% ========================================================================

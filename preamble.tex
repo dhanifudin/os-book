@@ -238,6 +238,10 @@
     sorting=none
 ]{biblatex}
 \addbibresource{references.bib}
+% biblatex has no indonesian.lbx; map it to english to suppress the
+% "Language 'indonesian' not supported" warning that causes run.xml to
+% oscillate and makes latexmk rerun pdflatex indefinitely.
+\DeclareLanguageMapping{indonesian}{english}
 
 %% ------------------------------------------------------------------------
 %% Matematika

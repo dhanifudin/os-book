@@ -1,19 +1,33 @@
 %% ========================================================================
-%% Chapter 6: Process Management
+%% Chapter 5: Process Management
 %% ========================================================================
 
 \chapter{Process Management}
 \label{ch:process-management}
+
+\chapterhero{red}{Observe how processes are created, scheduled, prioritized, and stopped so you can control system workloads accurately.}{\faTasks\quad process}{\faBell\quad signal}{\faSortAmountDown\quad priority}
 
 This chapter discusses the concepts of processes and threads in Linux, the
 process lifecycle, scheduling, signals, job management, and real-time process
 monitoring. Understanding process management is a core skill for Linux system
 administrators to maintain server performance and stability.
 
+\textbf{What You'll Learn}
+
+By the end of this chapter, you will be able to:
+
+\begin{enumerate}
+    \item explain the concepts of processes and threads and the differences between them in Linux;
+    \item read process status and understand the process lifecycle from creation to completion;
+    \item adjust process priority using \cmd{nice} and \cmd{renice};
+    \item send signals to processes using \cmd{kill}, \cmd{pkill}, and \cmd{killall};
+    \item manage foreground and background jobs using \cmd{fg}, \cmd{bg}, \cmd{jobs}, and \cmd{nohup}.
+\end{enumerate}
+
 \begin{examplebox}[Think of Linux as a busy food stall]
 Imagine a busy food stall. Some customers are eating, some are waiting for
 their order, some are queuing at the counter, and some are having their orders
-taken. Each customer is doing something different at roughly the same time---
+taken. Each customer is doing something different at roughly the same time:
 that is exactly how Linux manages \textbf{processes}.
 
 Every program running on Linux is like a customer: it has its own queue number
@@ -22,7 +36,7 @@ in turns by the cashier (\textbf{CPU}). VIP customers get served faster
 (\textbf{priority}), and if a customer causes trouble, the owner can remove
 them without disturbing the other customers (\textbf{kill signal}).
 
-There is no need to be intimidated by the technical terms---they are just
+There is no need to be intimidated by the technical terms : they are just
 formal names for concepts that are already very familiar in everyday life.
 \end{examplebox}
 
@@ -32,13 +46,13 @@ formal names for concepts that are already very familiar in everyday life.
 
 \subsection{Processes}
 
-Have you ever opened several apps on your smartphone at the same time---for
+Have you ever opened several apps on your smartphone at the same time : for
 example, music keeps playing while you read a chat? That is a real-world
 example of multiple \textbf{processes} running simultaneously. In Linux, the
 concept is exactly the same.
 
 When you run a program, Linux does not simply execute its instructions
-directly. The operating system creates a \textbf{process}---an \textit{instance}
+directly. The operating system creates a \textbf{process} : an \textit{instance}
 of the program being executed, complete with its own memory space, file
 descriptors, and execution state. Every time a program is started, whether
 from the terminal or automatically by the system, Linux creates a new process
@@ -62,7 +76,7 @@ Every process has the following key attributes:
 \subsection{Threads}
 
 Within a single process, it is possible to have multiple execution flows
-running concurrently---these are called \textbf{threads}. Unlike processes,
+running concurrently : these are called \textbf{threads}. Unlike processes,
 threads share memory space and resources with other threads in the same process.
 
 Threads are useful when a program needs to perform multiple tasks in parallel,
@@ -75,7 +89,7 @@ bring down the entire process.
 \begin{examplebox}[Process and Thread Analogy]
   \begin{itemize}
     \item \textbf{Process} = a restaurant with its own kitchen. Two restaurants
-      do not share ingredients---a problem in one restaurant does not affect
+      do not share ingredients : a problem in one restaurant does not affect
       the other.
     \item \textbf{Thread} = chefs working in one shared kitchen. They share
       the same stove and ingredients, making it more efficient, but if one
@@ -83,7 +97,7 @@ bring down the entire process.
   \end{itemize}
 \end{examplebox}
 
-\subsection*{Lab 5.1 --- Viewing Processes and Threads}
+\subsection*{Lab 5.1 : Viewing Processes and Threads}
 
 \begin{enumerate}
   \item Display all running processes:
@@ -129,7 +143,7 @@ pstree -p
 
 A process is not always being actively executed by the CPU throughout its
 lifetime. Processes transition between several states depending on what is
-happening---executing, waiting for I/O, paused, or finished. These states
+happening : executing, waiting for I/O, paused, or finished. These states
 can be seen in the \texttt{STAT} column of \cmd{ps} output.
 
 Knowing the state of a process is very useful for diagnosing problems. A large
@@ -163,8 +177,8 @@ that is not cleaning up its child processes.
 
 Every new process in Linux is born through two steps: \texttt{fork()} and
 \texttt{exec()}. When you type a command in the shell, the shell calls
-\texttt{fork()}---copying itself into a child process. This child process then
-calls \texttt{exec()}---replacing its memory contents with the program to be
+\texttt{fork()} : copying itself into a child process. This child process then
+calls \texttt{exec()} : replacing its memory contents with the program to be
 run.
 
 This two-step approach is not arbitrary. By calling \texttt{fork()} first, the
@@ -184,7 +198,7 @@ ls /does-not-exist ; echo "Exit code: $?" # prints 2
 \end{lstlisting}
 \end{tipbox}
 
-\subsection*{Lab 5.2 --- Observing the Process Lifecycle}
+\subsection*{Lab 5.2 : Observing the Process Lifecycle}
 
 \begin{enumerate}
   \item Create a background process and observe its state:
@@ -221,14 +235,14 @@ echo "Failed: $?"
 
 A single CPU core can only execute one process at a time, yet Linux is capable
 of running hundreds of processes \textit{apparently simultaneously} thanks to
-the \textbf{scheduler}---a kernel component that determines which process gets
+the \textbf{scheduler} : a kernel component that determines which process gets
 CPU time next. Linux uses the CFS (Completely Fair Scheduler), which attempts
 to distribute CPU time fairly among all processes.
 
 The priority of each process is controlled by the \textbf{nice} value, ranging
 from \textbf{-20} (highest priority) to \textbf{+19} (lowest priority), with a
 default of \textbf{0}. Adjusting priority is very useful when you need to ensure
-that important processes---such as a database service---always receive sufficient
+that important processes : such as a database service : always receive sufficient
 CPU time, while preventing heavy processes like backups from degrading overall
 system performance.
 
@@ -255,7 +269,7 @@ nice -n 10 command
 renice -n 15 -p <PID>
 \end{lstlisting}
 
-\subsection*{Lab 5.3 --- Adjusting Process Priority}
+\subsection*{Lab 5.3 : Adjusting Process Priority}
 
 \begin{enumerate}
   \item Run a process with low priority:
@@ -296,14 +310,14 @@ kill %1
 
 \subsection{Signals as a Communication Mechanism}
 
-How do you communicate with a running process---for example to ask it to stop,
-pause, or reload its configuration---without interacting directly with the
+How do you communicate with a running process : for example to ask it to stop,
+pause, or reload its configuration : without interacting directly with the
 program? The answer is \textbf{signals}. A signal is an asynchronous
 notification sent to a process to interrupt its execution and trigger an action.
 Each signal has a name (e.g. SIGTERM) and a number (e.g. 15).
 
 Signals are the only standard way to send instructions to a process from
-outside the process itself---critical for processes running without an
+outside the process itself : critical for processes running without an
 interactive interface, such as background system services.
 
 \begin{table}[htbp]
@@ -313,19 +327,19 @@ interactive interface, such as background system services.
     \hline
     \textbf{Name} & \textbf{No.} & \textbf{Shortcut} & \textbf{Description} \\
     \hline
-    SIGHUP  & 1  & ---                & Reload configuration (hangup) \\
+    SIGHUP  & 1  & :                & Reload configuration (hangup) \\
     SIGINT  & 2  & \keystroke{Ctrl+C} & Stop from keyboard \\
-    SIGKILL & 9  & ---                & Force stop; cannot be caught \\
-    SIGTERM & 15 & ---                & Request graceful stop (default) \\
+    SIGKILL & 9  & :                & Force stop; cannot be caught \\
+    SIGTERM & 15 & :                & Request graceful stop (default) \\
     SIGSTOP & 19 & \keystroke{Ctrl+Z} & Pause process; cannot be caught \\
-    SIGCONT & 18 & ---                & Resume a paused process \\
+    SIGCONT & 18 & :                & Resume a paused process \\
     \hline
   \end{tabular}
 \end{table}
 
 \subsection{The kill, pkill, and pgrep Commands}
 
-Despite its name, \cmd{kill} is not always used to terminate a process---its
+Despite its name, \cmd{kill} is not always used to terminate a process : its
 primary function is to \textit{send a signal} to a process. Without a signal
 argument, \cmd{kill} sends SIGTERM by default. \cmd{pkill} works similarly but
 targets processes by name rather than PID. \cmd{pgrep} is useful for finding
@@ -349,11 +363,11 @@ pkill -9 process-name
 \begin{tipbox}
   Always try \textbf{SIGTERM} first before \textbf{SIGKILL}. SIGTERM gives the
   process a chance to save data and clean up resources before stopping.
-  SIGKILL forcefully terminates the process without any cleanup---risking data
+  SIGKILL forcefully terminates the process without any cleanup : risking data
   corruption or unreleased file locks.
 \end{tipbox}
 
-\subsection*{Lab 5.4 --- Sending Signals to Processes}
+\subsection*{Lab 5.4 : Sending Signals to Processes}
 
 \begin{enumerate}
   \item Create test processes:
@@ -402,8 +416,8 @@ pkill sleep
 \subsection{Foreground and Background}
 
 In the context of a shell, a \textbf{job} is a process managed by that shell.
-Each job can run in the \textbf{foreground}---holding the terminal so you
-cannot type other commands---or in the \textbf{background}---running behind the
+Each job can run in the \textbf{foreground} : holding the terminal so you
+cannot type other commands : or in the \textbf{background} : running behind the
 scenes while the terminal remains free to use.
 
 Append \texttt{\&} to the end of a command to run it in the background. This
@@ -437,7 +451,7 @@ open a new session just to run the next command.
   job 1 has PID 4521.
 \end{notebox}
 
-\subsection*{Lab 5.5 --- Foreground and Background Job Management}
+\subsection*{Lab 5.5 : Foreground and Background Job Management}
 
 \begin{enumerate}
   \item Start three jobs in the background:
@@ -484,7 +498,7 @@ jobs
 
 \cmd{ps} displays a \textit{snapshot} of process states at the moment the
 command is run. Because its output is static, \cmd{ps} is well suited for
-scripting---its output can be further processed with \cmd{grep}, \cmd{awk},
+scripting : its output can be further processed with \cmd{grep}, \cmd{awk},
 or saved to a file for later analysis.
 
 \begin{lstlisting}[language=bash, caption={Variations of ps usage}]
@@ -507,7 +521,7 @@ ps -p 1234 -o pid,ppid,ni,stat,cmd
 While \cmd{ps} only takes a snapshot, \cmd{top} monitors processes in
 \textit{real-time} with a display that refreshes every few seconds. Use
 \cmd{top} when you need to monitor the system live, especially to find
-processes that are suddenly consuming excessive CPU or memory---something a
+processes that are suddenly consuming excessive CPU or memory : something a
 \cmd{ps} snapshot would not capture.
 
 Useful keyboard shortcuts inside \cmd{top}:
@@ -524,7 +538,7 @@ Useful keyboard shortcuts inside \cmd{top}:
 \cmd{htop} is a modern version of \cmd{top} with a coloured display, CPU and
 memory bar graphs, and interactive navigation using both keyboard and mouse.
 The bar graphs make it easy to spot bottlenecks at a glance without having to
-interpret numbers---just look at which bar is full. Press \keystroke{F9} to
+interpret numbers : just look at which bar is full. Press \keystroke{F9} to
 send a signal directly to the selected process without needing to look up its
 PID first.
 
@@ -533,7 +547,7 @@ sudo apt install htop
 htop
 \end{lstlisting}
 
-\subsection*{Lab 5.6 --- Process Monitoring}
+\subsection*{Lab 5.6 : Process Monitoring}
 
 \begin{enumerate}
   \item Find the processes with the highest CPU and memory usage:
@@ -577,7 +591,7 @@ htop
 \begin{itemize}
   \item A \textbf{process} is an instance of a running program with a unique
     PID and a separate memory space. \textbf{Threads} share memory within one
-    process---lighter weight but more susceptible to mutual interference.
+    process : lighter weight but more susceptible to mutual interference.
   \item \textbf{Process lifecycle}: R (running), S (sleeping), D (uninterruptible),
     T (stopped), Z (zombie). Processes are created via \texttt{fork-exec} and
     end with an exit code (0 = success).

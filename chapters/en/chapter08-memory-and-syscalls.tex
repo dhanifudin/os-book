@@ -1,15 +1,17 @@
 %% ========================================================================
-%% Chapter 10: Memory Management & System Calls
+%% Chapter 8: Memory Management and System Call
 %% ========================================================================
-\chapter{Memory Management \& System Calls}
+\chapter{Memory Management and System Call}
 \label{ch:memory-and-syscalls}
 
+\chapterhero{blue}{Connect RAM, swap, and memory pressure concepts with how programs talk to the kernel through system calls and Linux diagnostic tools.}{\faMemory\quad memory}{\faHdd\quad swap}{\faSearch\quad strace}
+
 Imagine your desk. Documents you are actively working on sit on the desk surface
---- this is analogous to \textbf{RAM}. When the desk gets full, some documents
-are moved to a drawer to make room --- this is analogous to \textbf{swap}. If
+: this is analogous to \textbf{RAM}. When the desk gets full, some documents
+are moved to a drawer to make room : this is analogous to \textbf{swap}. If
 all documents end up in the drawer and you keep going back and forth to retrieve
 them, work slows to a crawl. That is a simple picture of how Linux manages memory.
-In this chapter we will also learn about \textbf{system calls} --- the mechanism
+In this chapter we will also learn about \textbf{system calls} : the mechanism
 programs use to request services from the kernel, and put the Bash skills from
 Chapter~7 to work building real monitoring scripts.
 
@@ -38,7 +40,7 @@ mkdir -p ~/lab-os/chapter08-memory
 
 Every program running on Linux gets its own \textit{virtual address space}.
 This means each program behaves as if it has private memory that cannot be
-touched by other programs --- the kernel maps those virtual addresses to physical
+touched by other programs : the kernel maps those virtual addresses to physical
 RAM. The virtual address space is divided into several areas as shown in
 \cref{fig:memory-layout}: the \textbf{Text Segment} holds code instructions
 (read-only), the \textbf{Data Segment} holds global variables, the \textbf{Heap}
@@ -77,7 +79,7 @@ virtual address space, separate from all other processes.}
 
 \begin{notebox}
 Process isolation guarantees system stability. If one program crashes, the damage
-is contained to that process --- other processes continue running normally.
+is contained to that process : other processes continue running normally.
 \end{notebox}
 
 \subsection*{Lab 8.1 Viewing Memory Usage}
@@ -92,7 +94,7 @@ cat /proc/meminfo | head -n 20
 
 The \texttt{free -h} output shows a \texttt{Mem} row (RAM) and a \texttt{Swap}
 row. Key columns: \texttt{total} (total RAM), \texttt{used} (in use), \texttt{free}
-(completely unused), \texttt{available} (truly available for new applications ---
+(completely unused), \texttt{available} (truly available for new applications :
 use this, not \texttt{free}), and \texttt{buff/cache} (file cache reclaimed
 automatically when needed).
 
@@ -124,7 +126,7 @@ Data is divided into fixed-size blocks called \textbf{pages}. The kernel
 automatically moves inactive pages to swap (\textit{swap out}) and loads them back
 when needed (\textit{swap in}), as shown in \cref{fig:virtual-memory}. The command
 \texttt{vmstat 1 5} reports virtual memory statistics every 1 second for 5 samples
---- the \texttt{si} (swap in) and \texttt{so} (swap out) columns are the primary
+: the \texttt{si} (swap in) and \texttt{so} (swap out) columns are the primary
 indicators of paging activity.
 
 \begin{figure}[H]
@@ -163,7 +165,7 @@ RAM) and \texttt{so} (KB/second from RAM to disk).
 
 \textit{Observe:} On a system with adequate RAM, \texttt{si} and \texttt{so} are
 always 0. If both are consistently greater than 0, the system is under serious
-\textit{memory pressure} --- disk access is far slower than RAM so performance
+\textit{memory pressure} : disk access is far slower than RAM so performance
 drops sharply.
 
 \begin{warningbox}
@@ -194,7 +196,7 @@ access is far slower. Swap is a \textit{safety net}, not a replacement for RAM.
 The \texttt{swappiness} parameter (0--100) controls how aggressively the kernel
 uses swap. A high value (60--100, Linux default = 60) means the kernel quickly
 moves data to swap even when RAM is still available. A low value (10--20) means
-the kernel prefers RAM and only uses swap when truly necessary --- recommended for
+the kernel prefers RAM and only uses swap when truly necessary : recommended for
 application servers.
 
 \subsection*{Lab 8.3 Creating and Configuring a Swap File}
@@ -243,7 +245,7 @@ sudo rm /swapfile-chapter08
 
 \begin{challengebox}
 Create a second swap file of 128~MB, activate it, then try three different
-swappiness values (1, 60, 100) --- note what changes in \texttt{swapon --show}
+swappiness values (1, 60, 100) : note what changes in \texttt{swapon --show}
 and \texttt{free -h} each time. Explain: when is swappiness 1 better than 100
 for a web server? Clean up both swap files when done.
 \end{challengebox}
@@ -298,7 +300,7 @@ else
 fi
 echo
 
-echo "--- Top 5 Memory Processes ---"
+echo ": Top 5 Memory Processes :"
 ps aux --sort=-%mem | head -n 6 | tail -n 5
 \end{lstlisting}
 
@@ -313,7 +315,7 @@ bash monitor-memory.sh
 
 \textit{Observe:} The \texttt{awk} command reads column 7 (available) divided by
 column 2 (total) from the \texttt{Mem} row, multiplied by 100 to produce an integer
-percentage. Change \texttt{THRESHOLD} to \texttt{90} and run again --- does the
+percentage. Change \texttt{THRESHOLD} to \texttt{90} and run again : does the
 output change? Why?
 
 \begin{challengebox}
@@ -330,13 +332,13 @@ Run it twice and verify that two separate log files are created.
 \section{System Calls and User-Kernel Interaction}
 
 Imagine a restaurant. You (the program) cannot walk directly into the kitchen
-(the kernel) to cook your own food --- you must order through a waiter (the
+(the kernel) to cook your own food : you must order through a waiter (the
 system call). The waiter relays your order to the kitchen, ensures it is valid,
 and brings the result back to your table.
 
 That is how a system call works: a mechanism for programs in \textit{user space}
 to request services from the kernel. A program cannot directly access hardware,
-the filesystem, or kernel resources --- all requests must go through system calls.
+the filesystem, or kernel resources : all requests must go through system calls.
 The complete flow is shown in \cref{fig:syscall-flow}.
 
 \begin{figure}[H]
@@ -390,7 +392,7 @@ cat app.conf
 \end{lstlisting}
 
 The output \texttt{cat: app.conf: Permission denied} occurs because the system call
-\texttt{openat()} failed --- the kernel rejected the request to open the file
+\texttt{openat()} failed : the kernel rejected the request to open the file
 because no read permission bit (\texttt{r}) is set. Restore permissions with
 \texttt{chmod 644 app.conf}.
 
@@ -426,6 +428,19 @@ and which fail (value \texttt{-1}). Why does \texttt{cat} open more than one fil
 just to display \texttt{/etc/hostname}?
 \end{challengebox}
 
+\section{Summary}
+
+In this chapter, you learned:
+
+\begin{itemize}
+    \item \textbf{Virtual memory architecture}: each process has its own virtual address space, which the kernel maps to physical RAM through the \term{page table}.
+    \item \textbf{Paging activity}: \cmd{vmstat} shows the \texttt{si}/\texttt{so} columns for swap-in and swap-out; high values indicate memory pressure.
+    \item \textbf{Swap configuration}: a swap file is created with \cmd{fallocate}, formatted with \cmd{mkswap}, and enabled with \cmd{swapon}; \texttt{vm.swappiness} controls how aggressively swap is used.
+    \item \textbf{Memory monitoring}: \cmd{free -h}, \cmd{top}/\cmd{htop}, and \cmd{/proc/meminfo} report RAM and swap usage from different viewpoints; Bash scripts can automate periodic checks.
+    \item \textbf{Monitoring scripts}: Bash techniques from Chapter~7, including functions, loops, and \cmd{tee}, can be combined to build \texttt{monitor-memory.sh} with automatic timestamped logs.
+    \item \textbf{System calls}: programs interact with the kernel through system calls; \cmd{strace} displays those calls so you can analyze program behavior and errors.
+\end{itemize}
+
 \section{Lab Assignment}
 
 \textbf{General Instructions}: Complete all tasks in the following directory.
@@ -450,10 +465,10 @@ REPORT="memory-report.txt"
     echo "=== SYSTEM MEMORY REPORT ==="
     date
     echo
-    echo "--- free -h Summary ---"
+    echo ": free -h Summary :"
     free -h
     echo
-    echo "--- /proc/meminfo ---"
+    echo ": /proc/meminfo :"
     cat /proc/meminfo | head -n 20
 } > "$REPORT"
 
@@ -480,7 +495,7 @@ cat top-memory-process.txt
 
 Answer: (1) Which process is at the top? Record \texttt{\%MEM} and \texttt{RSS}.
 (2) Convert \texttt{RSS} to MB. (3) Sum the \texttt{\%MEM} of the top 5 processes
---- what percentage of RAM do they consume together?
+: what percentage of RAM do they consume together?
 
 \subsubsection{Assignment 8.3 Create and Verify a Swap File}
 
@@ -540,7 +555,7 @@ WARN_MEM=false
 WARN_SWAP=0
 
 check_memory() {
-    echo "--- Memory Condition ---"
+    echo ": Memory Condition :"
     free -h
     echo
     AVAIL_PCT=$(free | awk '/Mem/ {printf "%d", $7/$2*100}')
@@ -551,7 +566,7 @@ check_memory() {
 }
 
 check_swap() {
-    echo "--- Swap Usage ---"
+    echo ": Swap Usage :"
     swapon --show 2>/dev/null || echo "No active swap"
     echo
     WARN_SWAP=$(free | awk '/Swap/ {print $3}')
@@ -561,13 +576,13 @@ check_swap() {
 }
 
 check_processes() {
-    echo "--- Top 10 Memory Processes ---"
+    echo ": Top 10 Memory Processes :"
     ps aux --sort=-%mem | head -n 11
     echo
 }
 
 check_paging() {
-    echo "--- Paging Activity (5 samples) ---"
+    echo ": Paging Activity (5 samples) :"
     vmstat 1 5
     echo
 }

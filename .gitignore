@@ -48,3 +48,6 @@ Thumbs.db
 
 # Scratchpad directory
 /tmp/
+
+# AI
+.claude/

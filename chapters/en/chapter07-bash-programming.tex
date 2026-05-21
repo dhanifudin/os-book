@@ -1,15 +1,29 @@
 %% ========================================================================
-%% Chapter 9: Bash Programming
+%% Chapter 7: Bash Programming
 %% ========================================================================
 
 \chapter{Bash Programming}
 \label{ch:bash-programming}
+
+\chapterhero{purple}{Turn manual command sequences into clean, reusable, and safer scripts through Bash functions, validation, and debugging.}{\faFileCode\quad script}{\faPuzzlePiece\quad function}{\faBug\quad debugging}
 
 This chapter covers the fundamentals of Bash programming: creating scripts,
 managing variables, writing control structures, defining functions,
 processing arguments, and debugging. The concepts are compared with Java so
 that students who already know programming can build understanding more
 quickly.
+
+\textbf{What You'll Learn}
+
+By the end of this chapter, you will be able to:
+
+\begin{enumerate}
+    \item create executable Bash scripts with the correct shebang and permissions, and understand the role of exit codes;
+    \item use variables, positional parameters \texttt{\$1}, \texttt{\$\#}, \texttt{\$@}, and Bash arithmetic;
+    \item write \cmd{if}/\cmd{elif}/\cmd{else}, \cmd{for}, \cmd{while}, and \cmd{case} control structures to automate decision logic;
+    \item define shell functions with local variables and separate functions into library files that can be \cmd{source}d;
+    \item debug scripts using \cmd{set -x}, \cmd{set -e}, \cmd{set -u}, and \cmd{trap} for automatic cleanup.
+\end{enumerate}
 
 \begin{examplebox}[Bash as a programming language]
 Imagine that you have already written Java programs. Java has variables,
@@ -20,7 +34,7 @@ a file}, enriched with control logic so it can run automatically without
 human involvement.
 \end{examplebox}
 
-%%---------------------------------------------------------------------
+%%:::::::::::::::::::::::
 \section{Bash Scripting Basics}
 \label{sec:creating-scripts}
 
@@ -104,7 +118,7 @@ chmod +x file-name.sh
 ./file-name.sh
 \end{lstlisting}
 
-\subsection*{Lab 7.1 First Script: System Report}
+\subsection*{Lab 6.1 First Script: System Report}
 
 Objective: create, save, and run your first Bash script.
 
@@ -152,7 +166,7 @@ Modify \texttt{system-report.sh} so that it saves the output to a file named
 Hint: use \texttt{tee}, which was introduced in the previous chapter.
 \end{exercisebox}
 
-%%---------------------------------------------------------------------
+%%:::::::::::::::::::::::
 \section{Variables and Positional Parameters}
 \label{sec:variables-parameters}
 
@@ -227,7 +241,7 @@ Bash, \texttt{\$((10 / 3))} also produces \texttt{3}. Use \texttt{bc} if
 you need decimal precision.
 \end{notebox}
 
-\subsection*{Lab 7.2 System Info Script with Arguments}
+\subsection*{Lab 6.2 System Info Script with Arguments}
 
 Objective: practice variables, command substitution, positional parameters,
 and default values.
@@ -279,7 +293,7 @@ Create a script named \texttt{calculator.sh} that accepts three arguments:
 choose the operation, and validate incomplete arguments.
 \end{exercisebox}
 
-%%---------------------------------------------------------------------
+%%:::::::::::::::::::::::
 \section{Control Structures}
 \label{sec:control-structures}
 
@@ -350,7 +364,7 @@ Bash, \texttt{;;} already stops execution of the current block, so there is no
 fall-through by default.
 \end{notebox}
 
-\subsection*{Lab 7.3 Grading Script and Interactive Menu}
+\subsection*{Lab 6.3 Grading Script and Interactive Menu}
 
 Objective: combine \texttt{if}, \texttt{for}, \texttt{while}, and
 \texttt{case} in one session.
@@ -440,7 +454,7 @@ the number of students in each grade (A, B, C, D, E) using a second
 \texttt{for} loop that iterates over the \texttt{STUDENTS} array.
 \end{exercisebox}
 
-%%---------------------------------------------------------------------
+%%:::::::::::::::::::::::
 \section{Functions in Shell Scripts}
 \label{sec:functions-shell-scripts}
 
@@ -502,7 +516,7 @@ RESULT=$(divide 20 4) && echo "Result: $RESULT"
 divide 10 0 || echo "Exit code: $?"
 \end{lstlisting}
 
-\subsection*{Lab 7.4 Validation Function Library}
+\subsection*{Lab 6.4 Validation Function Library}
 
 Objective: create a function library file that can be loaded
 (\texttt{source}) by other scripts, similar to \textit{import} in Java.
@@ -583,7 +597,7 @@ function should display a question, read Y/N input from the user, return
 function before deleting a file.
 \end{exercisebox}
 
-%%---------------------------------------------------------------------
+%%:::::::::::::::::::::::
 \section{Command-Line Argument Processing}
 \label{sec:argument-processing}
 
@@ -615,7 +629,7 @@ echo "Remain  : $@"
 In \texttt{"vo:"}, the \texttt{:} after a letter means that option requires
 a value (\texttt{-o file-name}), not just a flag (\texttt{-v}).
 
-\subsection*{Lab 7.5 Backup Script with Options}
+\subsection*{Lab 6.5 Backup Script with Options}
 
 Objective: create a script that processes \texttt{getopts} options and
 integrates all the earlier concepts.
@@ -690,7 +704,7 @@ cat ../logs/backup.log
 \end{lstlisting}
 \end{enumerate}
 
-%%---------------------------------------------------------------------
+%%:::::::::::::::::::::::
 \section{Debugging Shell Scripts}
 \label{sec:debugging-script}
 
@@ -732,7 +746,7 @@ echo "Script is running normally"
 cleanup runs even if the script fails partway through.
 \end{notebox}
 
-\subsection*{Lab 7.6 Debugging a Script}
+\subsection*{Lab 6.6 Debugging a Script}
 
 Objective: use debugging techniques to analyze and fix a script.
 
@@ -791,7 +805,7 @@ Fix it by adding:
 Test it with a directory that does not exist.
 \end{exercisebox}
 
-%%---------------------------------------------------------------------
+%%:::::::::::::::::::::::
 \section{Best Practices}
 \label{sec:best-practices}
 
@@ -860,7 +874,7 @@ log_verbose "Arguments: $*"
 log "Done."
 \end{longlisting}
 
-%%---------------------------------------------------------------------
+%%:::::::::::::::::::::::
 \section{Lab Assignments}
 \label{sec:lab-assignment-bash-prog}
 
@@ -881,7 +895,7 @@ line.
     \item Accepts student name and status arguments
       (\texttt{present}/\texttt{excused}/\texttt{absent})
     \item Saves each entry to \texttt{attendance-YYYY-MM-DD.txt} in the format
-      \texttt{[HH:MM] NAME - STATUS}
+      \texttt{[HH : MM] NAME - STATUS}
     \item Supports the \texttt{-r} option to show a recap (count per status)
     \item Supports the \texttt{-h} option to show help
   \end{itemize}
@@ -914,7 +928,7 @@ maintenance.
 \texttt{getopts}, functions with \texttt{local}, \texttt{for},
 \texttt{if}, and \texttt{tee}.
 
-%%---------------------------------------------------------------------
+%%:::::::::::::::::::::::
 \section{Summary}
 \label{sec:summary-bash-prog}
 

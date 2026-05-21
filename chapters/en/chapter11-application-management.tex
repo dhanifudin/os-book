@@ -5,15 +5,717 @@
 \chapter{Application Management}
 \label{ch:application-management}
 
-This chapter discusses package management systems in Linux, software installation,
-compilation from source, containers, and application monitoring.
+\chapterhero{brown}{Manage software from repositories, source compilations, to containers so that application installation and maintenance is more structured.}{\faBoxOpen\quad package}{\faWarehouse\quad repository}{\faCubes\quad containers}
 
-\section{Package Management Systems}
-\section{Software Installation and Updates}
+Installing software on Linux doesn't mean downloading a file from a site, double-clicking, and following a wizard. There is a more structured way: package manager. The \cmd{apt} command simply names the application, downloads the package from a verified repository, checks its authenticity, installs all the required components, and registers everything for easy removal at any time. No need to look anywhere.
+
+Behind that convenient \cmd{apt} service, there is a more fundamental layer called
+\cmd{dpkg}. If \cmd{apt} is a self-service cashier who takes care of everything, then
+\cmd{dpkg} is the warehouse clerk who actually puts the goods onto the shelves. There is
+times when you need to talk directly to the warehouse employee, for example when installing the \texttt{.deb} file that you downloaded yourself from the vendor's site.
+
+This chapter also discusses situations when the application you need is not yet available in any store. In that case, you need to assemble it yourself from raw materials, which in Linux means compiling from \term{source code}. And for applications that require an isolated environment to avoid colliding with systems, container technologies such as Docker and Podman offer a way to encapsulate an application and all its equipment.
+
+\textbf{What You'll Learn}
+
+By the end of this chapter, you will be able to:
+
+\begin{enumerate}
+\item install, update, and remove packages using \cmd{apt} and
+\cmd{dpkg} correctly;
+\item add a third-party \term{repository} with a secure GPG key method;
+\item compile simple programs from \term{source code} using the pattern
+\cmd{./configure}, \cmd{make}, and \cmd{make install};
+\item build and run applications in containers, with Docker
+as a primary example and Podman as a comparable alternative;
+\item monitor the performance of running applications using \cmd{top},
+\cmd{lsof}, and \cmd{ss}.
+\end{enumerate}
+
+\begin{notebox}
+All practices in this chapter are executed in the \dir{~/lab-os/chapter11-apps/} directory.
+\begin{lstlisting}[language=bash]
+mkdir -p ~/lab-os/chapter11-apps
+cd ~/lab-os/chapter11-apps
+\end{lstlisting}
+\end{notebox}
+
+%% ========================================================================
+\section{Package Management with apt}
+\label{sec:apt-package-management}
+%% ========================================================================
+
+The package management system in Ubuntu is built from two layers that work together.
+\cmd{dpkg} is the bottom layer: a low-level tool that directly disassembles
+and install the \texttt{.deb} files into their respective places in the file system. However
+\cmd{dpkg} doesn't care whether all supporting materials are available beforehand
+installation is done.
+
+\cmd{apt} fills that gap. Before installing any packages, \cmd{apt}
+reads the package list from the \term{repository} server, checks all the required dependencies, downloads everything in the correct order, then hands off the physical installation job to \cmd{dpkg}. In daily practice, you almost always interact with \cmd{apt}. The new \cmd{dpkg} is used directly when installing manually downloaded \texttt{.deb} files, or when auditing what is already installed.
+
+Before installing or updating anything, \cmd{apt} needs to refresh the list of packages it has. This list is a catalog containing the latest version of each package from all configured \term{repositories}. Without a list update, \cmd{apt} may still refer to outdated information.
+
+\begin{lstlisting}[language=bash, caption={Updating package and system lists}]
+sudo apt update
+sudo apt upgrade
+sudo apt full-upgrade
+\end{lstlisting}
+
+The \cmd{apt update} command downloads the latest metadata from all \term{repositories}, not the application. \cmd{apt upgrade} then updates all installed packages to the latest version, but will not remove any packages in the process. \cmd{apt full-upgrade} is more aggressive: it may remove old packages if necessary to resolve dependency conflicts when there are major updates.
+
+To install a new package, just state its name. \cmd{apt} will search for everything needed and ask for confirmation before downloading.
+
+\begin{lstlisting}[language=bash, caption={Package installation and removal}]
+sudo apt install tree
+sudo apt install curl wget git
+sudo apt remove tree
+sudo apt purge tree
+sudo apt autoremove
+\end{lstlisting}
+
+The difference between \cmd{remove} and \cmd{purge} is important to understand.
+\cmd{remove} removes \term{binary} and program files, but leaves the files
+configuration in \dir{/etc/}. This is useful if you want to reinstall later with the same configuration. \cmd{purge} deletes everything including configuration. Use \cmd{purge} when you really want to start clean. After removal, \cmd{autoremove} cleans up dependency packages that used to be installed automatically but that no one needs anymore.
+
+Searching and checking package information before installing it is a good habit. \cmd{apt} provides several ways for that.
+
+\begin{lstlisting}[language=bash, caption={Search and check package information}]
+apt search tree
+apt search --names-only tree
+apt show tree
+apt list --installed
+apt list --installed | grep python
+dpkg -l
+dpkg -l | grep "^ii"
+dpkg -L tree
+dpkg -S /bin/ls
+\end{lstlisting}
+
+\cmd{apt search} searches by name and description. Option
+\texttt{--names-only} limits the search to only the package name so
+the result is more focused. \cmd{apt show} displays full details: version, size, description and dependencies. \cmd{dpkg -l} lists all packages with their status, where the prefix \texttt{ii} means fully installed and \texttt{rc} means it has been removed but the configuration is still there. \cmd{dpkg -L} lists all files belonging to a package, and \cmd{dpkg -S} answers the question ``this file is installed by what package?''
+
+\subsection*{Lab 11.1: Install, Verify, and Remove Packages}
+
+The goal of this practice is to understand the complete package life cycle, from discovery to clean removal.
+
+\begin{enumerate}
+\item Make sure the package list is up to date, then look for package information \cmd{tree}:
+\begin{lstlisting}[language=bash, caption={Update and search for package information}]
+cd ~/lab-os/chapter11-apps
+sudo apt update
+apt search --names-only "^tree$"
+apt show tree
+apt depends tree
+\end{lstlisting}
+\textit{Observe:} how many dependencies does \cmd{tree} have? Is all
+is it installed on your system?
+
+\item Install package \cmd{tree} and verify the results:
+\begin{lstlisting}[language=bash, caption={Install and verify the tree package}]
+sudo apt install tree -y
+dpkg -l tree
+dpkg -L tree
+which tree
+tree --version
+tree ~/lab-os/
+\end{lstlisting}
+\textit{Observe:} pay attention to the status column in the \cmd{dpkg -l} output. What is the meaning
+prefix \texttt{ii}?
+
+\item Use \cmd{dpkg -S} to investigate some \term{binary} systems:
+\begin{lstlisting}[language=bash, caption={Search for the package owner of the file}]
+dpkg -S /bin/ls
+dpkg -S /usr/bin/ssh
+dpkg -S $(which tree)
+\end{lstlisting}
+
+\item Remove package \cmd{tree} with purge and verify there are no remains:
+\begin{lstlisting}[language=bash, caption={Remove packages and verify remaining}]
+sudo apt purge tree -y
+sudo apt autoremove -y
+dpkg -l tree
+apt list --installed 2>/dev/null | grep "^tree"
+\end{lstlisting}
+\textit{Observe:} after \cmd{purge}, does the packet status change to
+\texttt{rc} or lost completely?
+\end{enumerate}
+
+\begin{challengebox}
+Search for all installed packages related to Python using a combination
+\cmd{apt list --installed} and \cmd{grep} (from Chapter~2), then display them as well
+version of each package. Save the results to file \file{python-packages.txt} in the lab directory using redirection (from Chapter~3). Count how many total Python packages are installed.
+\end{challengebox}
+
+%% ========================================================================
 \section{Repository Management}
-\section{Compilation from Source Code}
-\section{Containers (Docker, Podman)}
-\section{Dependency Management}
+\label{sec:repository-management}
+%% ========================================================================
+
+\term{Repository} is a server that stores a collection of packages and their metadata.
+Think of \term{repository} like a chain of franchise stores: there are official Ubuntu stores that guarantee the quality of their goods, and there are third-party stores that sell specific products that are not yet available in the official store. You can add third-party stores to your shopping list, but you need to verify that they are trustworthy first.
+
+The \term{repository} configuration is stored in two locations. The main file is
+\file{/etc/apt/sources.list}, and \dir{/etc/apt/sources.list.d/} directories
+contains additional configuration files for each third-party \term{repository}. Memisahkan setiap \term{repository} ke file tersendiri memudahkan pengelolaan karena kamu bisa menghapus satu \term{repository} cukup dengan menghapus satu file.
+
+The format of each row in \file{sources.list} follows a consistent pattern.
+
+\begin{lstlisting}[language=bash, caption={sources.list entry format and examples}]
+# Format: deb [options] URI of component suite
+deb http://archive.ubuntu.com/ubuntu jammy main restricted
+deb http://archive.ubuntu.com/ubuntu jammy universe multiverse
+deb http://archive.ubuntu.com/ubuntu jammy-security main restricted
+
+# Example of a third-party repository with modern signed-by
+deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
+    http://nginx.org/packages/ubuntu jammy nginx
+\end{lstlisting}
+
+Column \texttt{deb} indicates the \term{binary} package. The URI is the address of the \term{repository} server.
+\texttt{jammy} is the codename of Ubuntu 22.04. The component \texttt{main} contains
+officially supported open-source software, \texttt{restricted} contains proprietary \term{drivers} such as NVIDIA, \texttt{universe} contains community-maintained open-source packages, and \texttt{multiverse} contains software that is not completely free.
+
+Adding a third-party \term{repository} requires two important steps: storing that \term{repository} GPG key locally, then registering its \term{repository} with a reference to that key.
+
+\begin{lstlisting}[language=bash, caption={Adding a Third Party repository with Modern Methods}]
+sudo apt install -y curl gnupg2
+
+curl -fsSL https://nginx.org/keys/nginx_signing.key | \
+    sudo gpg --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg
+
+echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
+    http://nginx.org/packages/ubuntu $(lsb_release -cs) nginx" | \
+    sudo tee /etc/apt/sources.list.d/nginx.list
+
+sudo apt update
+apt-cache policy nginx
+\end{lstlisting}
+
+\begin{notebox}
+The old method of using \cmd{apt-key add} has been \emph{deprecated} since Ubuntu 22.04. Keys added the old way apply to all \term{repositories}, not just one. Modern \texttt{signed-by} methods limit the trust of the key to only the \term{repository} in question, making it more secure.
+\end{notebox}
+
+For \term{repository} which comes from the Ubuntu Launchpad (known as a PPA or
+\emph{Personal Package Archive}), there is a more practical command.
+
+\begin{lstlisting}[language=bash, caption={Manage PPAs with add-apt-repository}]
+sudo add-apt-repository ppa:git-core/ppa -y
+sudo apt update
+apt-cache policy git
+
+sudo add-apt-repository --remove ppa:git-core/ppa -y
+sudo apt update
+\end{lstlisting}
+
+The \cmd{add-apt-repository} command takes care of downloading GPG keys and creating configuration files automatically. The \texttt{--remove} option reverses that process. The \cmd{apt-cache policy} command without a package name argument displays all active resources along with their priorities.
+
+\subsection*{Lab 11.2: Add a Third Party repository}
+
+The goal of this practice is to add the \term{repository} PPA, observe the changes, and then clean it again.
+
+\begin{enumerate}
+\item Check the current \term{repository} configuration:
+\begin{lstlisting}[language=bash, caption={Check Active repository}]
+cat /etc/apt/sources.list
+ls -la /etc/apt/sources.list.d/
+apt-cache policy | head -20
+\end{lstlisting}
+\textit{Observe:} how many \term{repository} resources are currently listed?
+
+\item Add the git-core PPA and observe the changes:
+\begin{lstlisting}[language=bash, caption={Added PPA and checked the results}]
+sudo add-apt-repository ppa:git-core/ppa -y
+sudo apt update
+apt-cache policy git
+ls /etc/apt/sources.list.d/ | grep git
+\end{lstlisting}
+\textit{Observe:} on the output \cmd{apt-cache policy git}, how many sources are there
+who offers git packages? Which version will be installed if you run \cmd{apt install git}?
+
+\item Check the configuration file created by \cmd{add-apt-repository}:
+\begin{lstlisting}[language=bash, caption={Checking the new PPA configuration file}]
+cat /etc/apt/sources.list.d/*git*.list 2>/dev/null || \
+    cat /etc/apt/sources.list.d/*git*.sources 2>/dev/null
+ls /usr/share/keyrings/ | grep git
+\end{lstlisting}
+
+\item Remove PPA and verify again:
+\begin{lstlisting}[language=bash, caption={Remove PPA and verify}]
+sudo add-apt-repository --remove ppa:git-core/ppa -y
+sudo apt update
+ls /etc/apt/sources.list.d/ | grep git
+apt-cache policy git
+\end{lstlisting}
+\textit{Observe:} after deletion, is the source from Launchpad still
+appears in the output \cmd{apt-cache policy git}?
+\end{enumerate}
+
+\begin{challengebox}
+Create a Bash script (refer to Chapter~7) named \file{check-repo.sh} in the lab directory that accepts one argument in the form of the URL string \term{repository}. The script checks whether the string already exists in any file within \dir{/etc/apt/sources.list} or \dir{/etc/apt/sources.list.d/}. If it already exists, the script prints a warning message and exits. If not, the script prints a message that \term{repository} is safe to add.
+\end{challengebox}
+
+%% ========================================================================
+\section{Compile from Source Code}
+\label{sec:compile-from-source}
+%% ========================================================================
+
+There are situations where the package you need is not available in any \term{repository}: the version is too new, you need to enable certain features that are not included in the standard build, or you are developing your own program. In that case, compilation from source code is the way to go.
+
+The right analogy is cooking from raw ingredients. Package manager is like ordering ready-made food from a restaurant, compilation of \term{source code} is like cooking yourself from ingredients you choose yourself. The results can be customized, but the process is longer.
+
+The first step is to make sure cooking equipment is available. On Linux, packages
+\texttt{build-essential} is a complete tool that installs the C compiler
+(\cmd{gcc}), C++ compiler (\cmd{g++}), \cmd{make}, and required headers.
+
+\begin{lstlisting}[language=bash, caption={Installing build tools}]
+sudo apt install build-essential -y
+gcc --version
+make --version
+\end{lstlisting}
+
+Most open-source projects use a three-step compilation pattern called autotools. The first step is \cmd{./configure}, which checks the system environment and generates a customized \file{Makefile}. Option
+\texttt{--prefix} determines where the program will be installed after compiling.
+Standard convention uses \dir{/usr/local} for software installed outside the package manager.
+
+\begin{lstlisting}[language=bash, caption={Autotools compilation pattern}]
+./configure --prefix=/usr/local
+./configure --help | grep "with\|without\|enable\|disable"
+
+make
+make -j$(nproc)
+
+sudo make install
+sudo make uninstall
+\end{lstlisting}
+
+The second step is \cmd{make}, which compiles the code into \term{binary}. Option
+\texttt{-j\$(nproc)} runs the compilation in parallel using all
+available CPU cores, speeding up the process significantly. \texttt{\$(nproc)} is a command substitution that returns the number of cores.
+
+The third step, \cmd{sudo make install}, copies the compilation results to the location specified at \cmd{./configure}. Some projects also provide targets
+\texttt{uninstall} to clean installed files.
+
+\begin{tipbox}
+Consider using \cmd{checkinstall} instead of \cmd{make install}. Instead of directly copying the files, \cmd{checkinstall} wraps the results into the \texttt{.deb} package which is then installed via \cmd{dpkg}. The result can be deleted neatly with \cmd{apt remove}, different from the files scattered across
+\dir{/usr/local/} without any notes.
+\end{tipbox}
+
+\subsection*{Lab 11.3: Compile Simple Programs from Source}
+
+The goal of this practice is to understand each step of compiling \term{source code} by compiling a simple C program using a homemade Makefile.
+
+\begin{enumerate}
+\item Verify build tools and create working directory:
+\begin{lstlisting}[language=bash, caption={Preparation of compilation environment}]
+cd ~/lab-os/chapter11-apps
+sudo apt install build-essential -y
+gcc --version
+make --version
+mkdir -p src-compile
+cd src-compile
+\end{lstlisting}
+
+\item Create a simple C program:
+\begin{lstlisting}[language=bash, caption={Creating C Program Source Code}]
+cat > salam.c << 'EOF'
+# include <stdio.h>
+# include <stdlib.h>
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Usage: %s <name>\n", argv[0]);
+        return 1;
+    }
+    printf("Hello, %s! Compiled from source code.\n", argv[1]);
+    return 0;
+}
+EOF
+\end{lstlisting}
+
+\item Compile manually to understand the basic process:
+\begin{lstlisting}[language=bash, caption={Manual compilation with gcc}]
+gcc -Wall -O2 -o salam salam.c
+ls -lh salam
+file salam
+./salam Dunia
+./salam
+\end{lstlisting}
+\textit{Observe:} what is the output of \cmd{file salam}? What does the flag \texttt{-Wall} mean
+and \texttt{-O2}?
+
+\item Create a Makefile to automate the build and install process:
+\begin{lstlisting}[language=bash, caption={Create a Makefile with install and uninstall targets}]
+cat > Makefile << 'EOF'
+PREFIX ?= /usr/local
+CC = gcc
+CFLAGS = -Wall -O2
+
+all: salam
+
+salam: salam.c
+	$(CC) $(CFLAGS) -o salam salam.c
+
+install: salam
+	install -D -m 755 salam $(PREFIX)/bin/salam
+	@echo "Installed to $(PREFIX)/bin/salam"
+
+uninstall:
+	rm -f $(PREFIX)/bin/salam
+	@echo "Removed from $(PREFIX)/bin/salam"
+
+clean:
+	rm -f salam
+
+.PHONY: all install uninstall clean
+EOF
+\end{lstlisting}
+
+\item Run the build and install process:
+\begin{lstlisting}[language=bash, caption={Build and install with Makefile}]
+make clean
+make
+make -n install
+sudo make install
+which salam
+salam Linux
+\end{lstlisting}
+\textit{Observe:} \cmd{make -n} is a dry run showing what
+will do without running it. Compare the output with the command actually executed at \cmd{make install}.
+
+\item Clean up after practice:
+\begin{lstlisting}[language=bash, caption={Uninstall and clean the directory}]
+sudo make uninstall
+ls /usr/local/bin/salam 2>/dev/null || echo "File removed successfully"
+cd ~/lab-os/chapter11-apps
+rm -rf src-compile
+\end{lstlisting}
+\end{enumerate}
+
+\begin{challengebox}
+Create a minimal Makefile for a simple C program that has two \term{source code} files:
+\file{main.c} and \file{utils.c}. Makefile must have target \texttt{all},
+\texttt{install}, \texttt{uninstall}, and \texttt{clean}. Target \texttt{all}
+should compile both files and link them into one \term{binary}. Use the variable \texttt{PREFIX} with the default value \dir{/usr/local} so that the installation location can be changed from the command line with \cmd{make install PREFIX=\$HOME/.local}.
+\end{challengebox}
+
+%% ========================================================================
+\section{Docker containers}
+\label{sec:docker-containers}
+%% ========================================================================
+
+\term{Container} is a way of running applications in an isolated environment.
+Think of \term{container} like a hotel cabin: each guest gets their own room with a lockable door, but all the cabins share the same building foundation. In contrast to a Virtual Machine (VM) which is like building a new building for each guest complete with its own foundation, \term{container} is much more efficient because it shares the host operating system kernel.
+
+Some basic concepts need to be understood before starting to use Docker.
+\term{Image} is a frozen print containing the file system, applications, and all
+its dependencies. \term{Image} is \term{read-only} and does not change after it is created.
+\term{Container} is a running instance of a \term{image}: like
+print a photocopy of the master document. One \term{image} can produce many
+\term{container} that runs at once. \term{Dockerfile} is a recipe
+defines how to build \term{image} step by step.
+
+Docker installation follows the third-party \term{repository} pattern discussed in the previous section.
+
+\begin{lstlisting}[language=bash, caption={Installing Docker Engine on Ubuntu}]
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg
+
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+    sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) \
+  signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io
+sudo systemctl enable --now docker
+docker --version
+\end{lstlisting}
+
+By default, the Docker daemon can only be accessed by root. Adding the user to the \texttt{docker} group allows using Docker without \cmd{sudo}.
+
+\begin{lstlisting}[language=bash, caption={Allows users to use Docker without sudo}]
+sudo usermod -aG docker $USER
+newgrp docker
+docker run hello-world
+\end{lstlisting}
+
+Docker's basic commands follow a consistent pattern. Managing images starts with downloading them from the registry.
+
+\begin{lstlisting}[language=bash, caption={Manage images and run containers}]
+docker pull nginx:alpine
+docker images
+
+docker run -d --name web-test -p 8080:80 nginx:alpine
+docker ps
+docker logs web-test
+docker exec -it web-test /bin/sh
+
+docker stop web-test
+docker rm web-test
+docker rmi nginx:alpine
+\end{lstlisting}
+
+The \texttt{-d} option runs the container in the background (detached). The \texttt{-p 8080:80} option forwards port 8080 on the host to port 80 on the container. Option
+\texttt{--name} gives a name that is easy to remember. \cmd{docker exec -it} command
+opens an interactive shell inside a running container.
+
+To create a custom image, use a Dockerfile. Each line of instructions in a Dockerfile adds a new layer to the image.
+
+\begin{lstlisting}[language=bash, caption={Example Dockerfile and build process}]
+nano Dockerfile
+# Write the contents of the following file
+FROM nginx:alpine
+
+RUN echo "Menambahkan halaman kustom..."
+
+COPY index.html /usr/share/nginx/html/index.html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+
+echo "<h1>Hello from a custom container!</h1>" > index.html
+
+docker build -t web-kustom:1.0 .
+docker images web-kustom
+docker run -d --name test-web -p 8080:80 web-kustom:1.0
+curl http://localhost:8080
+docker stop test-web && docker rm test-web
+\end{lstlisting}
+
+The \texttt{FROM} instruction specifies the base image. \texttt{RUN} runs commands during the build process. \texttt{COPY} copies files from the build directory into the image. \texttt{EXPOSE} documents the port used. \texttt{CMD} defines the default command when the container is run.
+
+\subsection*{Lab 11.4: Run Applications in Containers}
+
+The goal of this practice is to build a Docker image for a static web application and run it with port mapping.
+
+\begin{enumerate}
+\item Create a working directory and HTML files for a static web application:
+\begin{lstlisting}[language=bash, caption={Prepare web application files}]
+cd ~/lab-os/chapter11-apps
+mkdir -p docker-web
+cd docker-web
+
+nano index.html
+# Write the contents of the following file
+<!DOCTYPE html>
+<html lang="id">
+<head><meta charset="UTF-8"><title>Aplikasi Lab Chapter 11</title></head>
+<body>
+  <h1>Manajemen Aplikasi Linux</h1>
+  <p>The container is running correctly.</p>
+  <p>Build time: PLACEHOLDER</p>
+</body>
+</html>
+
+nano about.html
+# Write the contents of the following file
+<!DOCTYPE html>
+<html lang="id">
+<head><meta charset="UTF-8"><title>About</title></head>
+<body><h1>About This Application</h1><p>Created for the Chapter 11 lab.</p></body>
+</html>
+\end{lstlisting}
+
+\item Create Dockerfile:
+\begin{lstlisting}[language=bash, caption={Create Dockerfile for static web}]
+nano Dockerfile
+# Write the contents of the following file
+FROM nginx:alpine
+
+RUN apk add --no-cache tzdata \
+    && cp /usr/share/zoneinfo/Asia/Jakarta /etc/localtime \
+    && echo "Asia/Jakarta" > /etc/timezone \
+    && apk del tzdata
+
+COPY index.html /usr/share/nginx/html/index.html
+COPY about.html /usr/share/nginx/html/about.html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+\end{lstlisting}
+
+\item Build image and run container:
+\begin{lstlisting}[language=bash, caption={Build image and run container}]
+docker build -t lab-web13:1.0 .
+docker images lab-web13
+
+docker run -d --name lab-web13-container -p 8080:80 lab-web13:1.0
+docker ps
+\end{lstlisting}
+\textit{Observe:} what is the size of the resulting image compared to the base image
+\texttt{nginx:alpine}?
+
+\item Verify application is running and check logs:
+\begin{lstlisting}[language=bash, caption={Verify the application and check the logs}]
+curl http://localhost:8080
+curl http://localhost:8080/about.html
+docker logs lab-web13-container
+docker exec -it lab-web13-container ls /usr/share/nginx/html/
+\end{lstlisting}
+\textit{Observe:} each page access via \cmd{curl} produces a new entry
+in the logs. What format do nginx logs look like?
+
+\item Stop the container and clean it:
+\begin{lstlisting}[language=bash, caption={Clean the container and image}]
+docker stop lab-web13-container
+docker rm lab-web13-container
+docker rmi lab-web13:1.0
+cd ~/lab-os/chapter11-apps
+rm -rf docker-web
+\end{lstlisting}
+\end{enumerate}
+
+\begin{challengebox}
+Create a Dockerfile for a static web application that uses volumes for HTML content. Run the container with the \texttt{-v \$(pwd)/html:/usr/share/nginx/html:ro} option so that the contents are loaded from the host directory, not copied into the image. Change the contents of the HTML file in the host directory, reload with \cmd{curl}, and observe that the changes are reflected immediately without needing to rebuild the image. Explain how this approach differs versus \texttt{COPY} in a Dockerfile for development versus production environments.
+\end{challengebox}
+
+%% ========================================================================
 \section{Application Performance Monitoring}
+\label{sec:app-monitoring}
+%% ========================================================================
+
+Installing the app is only half the job. Ensuring applications run healthily and use resources appropriately is ongoing work. Linux provides a series of tools to see what a process is doing: how much CPU and memory it is consuming, what files are being opened, and which network ports are being used.
+
+The \cmd{ps} command is a starting point that is always available. The \cmd{top} and \cmd{htop} commands provide a real-time view that is continuously updated.
+
+\begin{lstlisting}[language=bash, caption={Monitoring processes with ps and top}]
+ps aux
+ps aux | grep nginx
+ps aux --sort=-%mem | head -10
+ps aux --sort=-%cpu | head -10
+
+top
+top -b -n 1 | head -30
+
+htop
+\end{lstlisting}
+
+\cmd{ps aux} displays all processes with columns \texttt{PID}, \texttt{\%CPU},
+\texttt{\%MEM}, \texttt{VSZ} (virtual memory), \texttt{RSS} (physical memory
+actually used), and \texttt{COMMAND}. The \texttt{--sort=\%-mem} option sorts by highest memory usage. Option \texttt{-b -n 1} on
+\cmd{top} produces a single snapshot in batch mode, useful for scripts or
+logging.
+
+To find out what files are being opened by a process, use
+\cmd{lsof} (\emph{list open files}). In Linux, everything is a file:
+including network sockets, pipes, and devices.
+
+\begin{lstlisting}[language=bash, caption={Monitor open files and network connections}]
+sudo lsof -p $(pgrep nginx | head -1)
+sudo lsof -i :80
+sudo lsof -i -nP | grep LISTEN
+
+ss -tlnp
+ss -tlnp | grep :80
+ss -an | grep ESTABLISHED | wc -l
+\end{lstlisting}
+
+\cmd{lsof -p PID} displays all files that a particular process has open. \cmd{lsof
+-i :80} displays processes that use port 80. The \cmd{ss} command is a modern replacement for \cmd{netstat}. Options \texttt{-t} for TCP, \texttt{-l} for listening, \texttt{-n} for number (does not resolve name), \texttt{-p} for process name. The combination \cmd{ss -tlnp} is a quick way to see all currently active ports and the programs holding them.
+
+For in-depth diagnosis cases, \cmd{strace} lets you view each
+\term{system call} that a process calls. This is useful when a program
+failed without a clear error message.
+
+\begin{lstlisting}[language=bash, caption={Deep analysis with strace and ldd}]
+strace ls /tmp 2>&1 | tail -10
+strace -c ls /tmp 2>&1
+
+ldd /usr/bin/ls
+ldd /usr/bin/ls | grep "not found"
+\end{lstlisting}
+
+\cmd{strace -c} summarizes the frequency of each \term{system call} without showing the details,
+useful for quick profiling. \cmd{ldd} displays all the \term{shared libraries} required for a \term{binary}. The output of \texttt{not found} shows a missing \term{shared library}, a common cause of programs failing to run even though it is installed.
+
+\begin{warningbox}
+\cmd{strace} slows down the target process significantly, by 10 to 100
+times slower than normal. Do not use on production servers that are serving high traffic. Use the \texttt{-e trace=} option to limit only relevant system calls, for example \texttt{-e trace=file} to file activity.
+\end{warningbox}
+
+%% ========================================================================
 \section{Summary}
+\label{sec:appmanagement-summary}
+%% ========================================================================
+
+In this chapter, you learned:
+
+\begin{itemize}[noitemsep,topsep=2pt]
+\item \textbf{apt and dpkg}: two layers of Ubuntu package management, where
+\cmd{apt} takes care of automatic dependencies on top of the working \cmd{dpkg}
+directly with file \texttt{.deb}.
+\item \textbf{Package cycle}: installation flow (\cmd{apt install}), verification
+(\cmd{dpkg -l}, \cmd{dpkg -L}), update (\cmd{apt upgrade}), and clean delete (\cmd{apt purge} followed by \cmd{autoremove}).
+\item \textbf{Repository}: configuration in \file{/etc/apt/sources.list} and
+\dir{sources.list.d/}, as well as how to add a third-party \term{repository}
+using the safe \texttt{signed-by} method.
+\item \textbf{Compile from source code}: autotools three-step pattern
+(\cmd{./configure}, \cmd{make}, \cmd{make install}) and creation of Makefiles to automate the build process.
+\item \textbf{Docker}: image and container concepts, image creation with
+Dockerfile, as well as running containers with port mapping and volume.
+\item \textbf{Application monitoring}: tools \cmd{ps}, \cmd{top}, \cmd{lsof},
+\cmd{ss}, \cmd{ldd}, and \cmd{strace} to understand behavior and
+health of running applications.
+\end{itemize}
+
+%% ========================================================================
 \section{Exercises}
+\label{sec:application-exercises}
+%% ========================================================================
+
+\textbf{General Instructions}: Do all the exercises independently. Note important steps, save screenshots when necessary, then summarize the results as personal documentation.
+
+\subsubsection*{Exercise 11.1 package and repository Audit}
+Perform a thorough audit of the condition of the packages on your Ubuntu system.
+\begin{enumerate}
+\item Display the total number of installed packages using \cmd{dpkg -l | grep
+"\^{}ii" | wc -l}.
+\item Search for all installed packages whose names contain the words ``lib'' and
+save the result to file \file{lib-packages.txt} using redirection.
+\item Identify packages that have status \texttt{rc} (remaining configuration)
+with \cmd{dpkg -l | grep "\^{}rc"}. Explain why the package could be in this state.
+\item Check if there are any updates available with \cmd{apt list
+--upgradable 2>/dev/null}. Note how many packages can be updated.
+\end{enumerate}
+
+\subsubsection*{Exercise 11.2 Compilation and Containerization}
+Combine two skills from this chapter: compilation of \term{source code} and Docker.
+\begin{enumerate}
+\item Create a simple C program that prints system information: name \term{host},
+the current date, and a welcome message. Compile using Makefile.
+\item Create a Dockerfile that uses \texttt{ubuntu:22.04} as \term{base image},
+install \texttt{build-essential}, copy \term{source code} into the image, compile in a container on build, and run
+\term{binary} as \texttt{CMD}.
+\item Build the image and run the container. Verify program output
+appears in the terminal.
+\item Check the size of the resulting image with \cmd{docker images}.
+Explain why this image is much larger than \texttt{nginx:alpine}.
+\end{enumerate}
+
+\subsubsection*{Exercise 11.3 Diagnose Application Problems}
+A web server reportedly cannot be started because the port is already in use.
+\begin{enumerate}
+\item Use \cmd{ss -tlnp} to identify all current ports
+active on your system. Note what processes are using ports 80 and 443 if any.
+\item Run the nginx container: \cmd{docker run -d --name test-nginx -p 8080:80
+nginx:alpine}. Then use \cmd{lsof -i :8080} and \cmd{ss -tlnp | grep 8080} to prove port 8080 is in use.
+\item Try running a second nginx container with the same port:
+\cmd{docker run -d --name test-nginx2 -p 8080:80 nginx:alpine}.
+Note the error message that appears.
+\item Write a Bash script \file{check-port.sh} that accepts a port number argument,
+checks whether the port is already in use using \cmd{ss}, and prints an informative message along with the name of the process using it.
+\item Clear: \cmd{docker stop test-nginx \&\& docker rm test-nginx}.
+\end{enumerate}
+
+%% ========================================================================

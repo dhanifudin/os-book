@@ -5,50 +5,372 @@
 \chapter{Linux Command Reference}
 \label{app:command-reference}
 
-This appendix contains a list of commonly used Linux commands with brief explanations
-and usage examples.
+This appendix summarizes the Linux commands used most often throughout the book.
+Use this appendix as a quick guide, then read \cmd{man command-name}
+or \cmd{command-name --help} when you need a more detailed explanation.
 
 %% ------------------------------------------------------------------------
 \section{File System Commands}
 
-\subsection{ls - List Directory Contents}
+\paragraph*{ls: Display Directory Contents}
+\cmd{ls} displays directory contents in various formats.
 \begin{lstlisting}[language=bash]
-ls -la          # List all files with details
-ls -lh          # List with human-readable sizes
-ls -lt          # Sort by modification time
+ls -la
+ls -lh
+ls -lt
 \end{lstlisting}
 
-\subsection{cd - Change Directory}
+\paragraph*{cd: Change Directory}
+\cmd{cd} is used to move from one directory to another.
 \begin{lstlisting}[language=bash]
-cd /path/to/dir # Change to directory
-cd ..           # Move to parent directory
-cd ~            # Move to home directory
-cd -            # Move to previous directory
+cd /etc
+cd ..
+cd ~
+cd -
 \end{lstlisting}
 
-\subsection{pwd - Print Working Directory}
+\paragraph*{pwd: Display the Current Directory}
+\cmd{pwd} displays the path of the current working directory.
 \begin{lstlisting}[language=bash]
-pwd             # Display current directory
+pwd
 \end{lstlisting}
 
-%% [Add more commands here]
+\paragraph*{tree: Display Directory Structure}
+\cmd{tree} displays directory contents as a tree.
+\begin{lstlisting}[language=bash]
+tree
+tree -L 2
+tree ~/lab-os
+\end{lstlisting}
+
+\paragraph*{stat: Display File Metadata}
+\cmd{stat} displays file size, inode, permissions, and timestamps.
+\begin{lstlisting}[language=bash]
+stat report.txt
+stat /etc/passwd
+\end{lstlisting}
 
 %% ------------------------------------------------------------------------
 \section{File Management Commands}
 
-%% [Content will be filled here]
+\paragraph*{cp: Copy Files and Directories}
+\cmd{cp} is used to copy files or directories.
+\begin{lstlisting}[language=bash]
+cp file1.txt salinan.txt
+cp report.txt ~/archive/
+cp -r project/ backup-project/
+\end{lstlisting}
+
+\paragraph*{mv: Move and Rename}
+\cmd{mv} moves a file or changes its name.
+\begin{lstlisting}[language=bash]
+mv draft.txt final.txt
+mv report.txt ~/archive/
+mv gambar/ ~/backup/
+\end{lstlisting}
+
+\paragraph*{rm: Remove Files and Directories}
+\cmd{rm} removes files, and with certain options it can also remove directories.
+\begin{lstlisting}[language=bash]
+rm notes.txt
+rm -r folder-lama/
+rm -rf temporary-cache/
+\end{lstlisting}
+
+\paragraph*{mkdir: Create Directories}
+\cmd{mkdir} creates one or more new directories.
+\begin{lstlisting}[language=bash]
+mkdir archive
+mkdir -p project/{documents,scripts,output}
+mkdir -p ~/lab-os/chapter04-files
+\end{lstlisting}
+
+\paragraph*{touch: Create Empty Files and Change Timestamps}
+\cmd{touch} creates an empty file or updates the timestamp of an existing file.
+\begin{lstlisting}[language=bash]
+touch notes.txt
+touch file1.txt file2.txt
+touch -t 202605091030 report.txt
+\end{lstlisting}
+
+\paragraph*{ln: Create Hard Links and Symbolic Links}
+\cmd{ln} creates a hard link or symbolic link.
+\begin{lstlisting}[language=bash]
+ln sumber.txt salinan-hard.txt
+ln -s /var/log/syslog log-sistem
+ln -s ~/lab-os/chapter04-files project-link
+\end{lstlisting}
+
+\paragraph*{find: Search for Files}
+\cmd{find} searches for files by name, type, size, or time.
+\begin{lstlisting}[language=bash]
+find . -name "*.txt"
+find ~/lab-os -type d
+find /var/log -mtime -1
+\end{lstlisting}
+
+\paragraph*{locate: Search for Files from a Database}
+\cmd{locate} searches for files quickly from an indexed database.
+\begin{lstlisting}[language=bash]
+locate bashrc
+locate nginx.conf
+sudo updatedb
+\end{lstlisting}
+
+\paragraph*{tar: Create and Extract Archives}
+\cmd{tar} is used to create, view, and extract archives.
+\begin{lstlisting}[language=bash]
+tar -czf backup.tar.gz data-source/
+tar -xzf backup.tar.gz
+tar -tf backup.tar.gz
+\end{lstlisting}
+
+\paragraph*{gzip: Compress Files}
+\cmd{gzip} compresses a single file using the gzip format.
+\begin{lstlisting}[language=bash]
+gzip report.log
+gzip -k report.log
+gunzip report.log.gz
+\end{lstlisting}
+
+\paragraph*{zip: Create ZIP Archives}
+\cmd{zip} creates archives in ZIP format.
+\begin{lstlisting}[language=bash]
+zip archive.zip report.txt
+zip -r project.zip project/
+zip -9 hasil.zip data.csv
+\end{lstlisting}
+
+\paragraph*{unzip: Extract ZIP Archives}
+\cmd{unzip} extracts the contents of ZIP archives.
+\begin{lstlisting}[language=bash]
+unzip archive.zip
+unzip archive.zip -d extracted-output/
+unzip -l archive.zip
+\end{lstlisting}
 
 %% ------------------------------------------------------------------------
 \section{Process Management Commands}
 
-%% [Content will be filled here]
+\paragraph*{ps: Display Processes}
+\cmd{ps} displays a snapshot of running processes.
+\begin{lstlisting}[language=bash]
+ps
+ps aux
+ps aux | grep ssh
+\end{lstlisting}
+
+\paragraph*{top: Monitor Processes in Real Time}
+\cmd{top} monitors CPU usage, memory usage, and active processes.
+\begin{lstlisting}[language=bash]
+top
+top -b -n 1
+top -u namauser
+\end{lstlisting}
+
+\paragraph*{htop: Interactive Process Monitoring}
+\cmd{htop} provides a more interactive process display than \cmd{top}.
+\begin{lstlisting}[language=bash]
+htop
+htop -u namauser
+\end{lstlisting}
+
+\paragraph*{kill: Send Signals to Processes}
+\cmd{kill} sends a signal to a process by PID.
+\begin{lstlisting}[language=bash]
+kill 1234
+kill -TERM 1234
+kill -9 1234
+\end{lstlisting}
+
+\paragraph*{pkill: Stop Processes by Name}
+\cmd{pkill} sends a signal to a process by process name.
+\begin{lstlisting}[language=bash]
+pkill firefox
+pkill -f "python3 -m http.server"
+pkill -u namauser bash
+\end{lstlisting}
+
+\paragraph*{jobs: Display Shell Jobs}
+\cmd{jobs} displays jobs currently managed by the current shell.
+\begin{lstlisting}[language=bash]
+jobs
+jobs -l
+\end{lstlisting}
+
+\paragraph*{bg: Run a Job in the Background}
+\cmd{bg} resumes a stopped job in background mode.
+\begin{lstlisting}[language=bash]
+bg
+bg %1
+\end{lstlisting}
+
+\paragraph*{fg: Bring a Job to the Foreground}
+\cmd{fg} moves a background job to the foreground.
+\begin{lstlisting}[language=bash]
+fg
+fg %1
+\end{lstlisting}
+
+\paragraph*{nice: Run a Process with a Specific Priority}
+\cmd{nice} runs a process with a specific CPU priority value.
+\begin{lstlisting}[language=bash]
+nice -n 10 ./proses-berat.sh
+nice -n -5 python3 analisis.py
+\end{lstlisting}
+
+\paragraph*{renice: Change Process Priority}
+\cmd{renice} changes the priority value of a running process.
+\begin{lstlisting}[language=bash]
+renice 5 -p 1234
+sudo renice -10 -p 1234
+\end{lstlisting}
 
 %% ------------------------------------------------------------------------
 \section{Network Commands}
 
-%% [Content will be filled here]
+\paragraph*{ip: Display and Configure Networking}
+\cmd{ip} is used to view network interfaces, addresses, and routes.
+\begin{lstlisting}[language=bash]
+ip addr show
+ip link show
+ip route
+\end{lstlisting}
+
+\paragraph*{ss: Display Sockets and Ports}
+\cmd{ss} displays network connections and active ports.
+\begin{lstlisting}[language=bash]
+ss -tlnp
+ss -an
+ss -tulpn | grep :22
+\end{lstlisting}
+
+\paragraph*{ping: Test Connectivity}
+\cmd{ping} tests whether another host can be reached over the network.
+\begin{lstlisting}[language=bash]
+ping 8.8.8.8
+ping -c 4 google.com
+ping -c 2 localhost
+\end{lstlisting}
+
+\paragraph*{curl: Retrieve Data from a URL}
+\cmd{curl} retrieves data from a URL and is often used to test APIs.
+\begin{lstlisting}[language=bash]
+curl https://example.com
+curl -I https://example.com
+curl -O https://example.com/file.txt
+\end{lstlisting}
+
+\paragraph*{wget: Download Files}
+\cmd{wget} is used to download files from the web or FTP.
+\begin{lstlisting}[language=bash]
+wget https://example.com/file.iso
+wget -c https://example.com/file.iso
+wget -O salinan.html https://example.com
+\end{lstlisting}
+
+\paragraph*{dig: Check DNS}
+\cmd{dig} checks DNS resolution and domain records.
+\begin{lstlisting}[language=bash]
+dig example.com
+dig example.com MX
+dig @8.8.8.8 example.com
+\end{lstlisting}
+
+\paragraph*{scp: Copy Files over SSH}
+\cmd{scp} copies files between hosts through an SSH connection.
+\begin{lstlisting}[language=bash]
+scp file.txt user@server:/home/user/
+scp user@server:/var/log/syslog .
+scp -r project/ user@server:/home/user/
+\end{lstlisting}
+
+\paragraph*{ssh: Access a Remote Host}
+\cmd{ssh} opens a secure shell session to another host.
+\begin{lstlisting}[language=bash]
+ssh user@server
+ssh -p 2222 user@server
+ssh -i ~/.ssh/id_ed25519 user@server
+\end{lstlisting}
 
 %% ------------------------------------------------------------------------
 \section{System Commands}
 
-%% [Content will be filled here]
+\paragraph*{uname: Display Kernel Information}
+\cmd{uname} displays kernel and system architecture information.
+\begin{lstlisting}[language=bash]
+uname -a
+uname -r
+uname -m
+\end{lstlisting}
+
+\paragraph*{df: Display File System Capacity}
+\cmd{df} displays the capacity and usage of mounted file systems.
+\begin{lstlisting}[language=bash]
+df -h
+df -T
+df -h /home
+\end{lstlisting}
+
+\paragraph*{du: Display Directory Size}
+\cmd{du} calculates the size of files or directories.
+\begin{lstlisting}[language=bash]
+du -sh ~/lab-os
+du -h --max-depth=1 /var/log
+du -sh *
+\end{lstlisting}
+
+\paragraph*{free: Display Memory Usage}
+\cmd{free} displays RAM and swap usage.
+\begin{lstlisting}[language=bash]
+free -h
+free -m
+watch -n 1 free -h
+\end{lstlisting}
+
+\paragraph*{uptime: Display System Uptime}
+\cmd{uptime} displays how long the system has been active and the average load.
+\begin{lstlisting}[language=bash]
+uptime
+uptime -p
+uptime -s
+\end{lstlisting}
+
+\paragraph*{journalctl: Read systemd Logs}
+\cmd{journalctl} reads logs managed by the systemd journal.
+\begin{lstlisting}[language=bash]
+journalctl -b
+journalctl -u ssh
+journalctl -u nginx -n 50
+\end{lstlisting}
+
+\paragraph*{systemctl: Manage Services}
+\cmd{systemctl} manages systemd services and units.
+\begin{lstlisting}[language=bash]
+systemctl status ssh
+sudo systemctl restart nginx
+systemctl list-units --type=service
+\end{lstlisting}
+
+\paragraph*{lsblk: Display Block Devices}
+\cmd{lsblk} displays disks, partitions, and mount points.
+\begin{lstlisting}[language=bash]
+lsblk
+lsblk -f
+lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINT
+\end{lstlisting}
+
+\paragraph*{mount: Mount a File System}
+\cmd{mount} attaches a file system to a mount point.
+\begin{lstlisting}[language=bash]
+mount | grep /dev/sdb1
+sudo mount /dev/sdb1 /mnt/data
+sudo mount -o ro /dev/sdb1 /mnt/data
+\end{lstlisting}
+
+\paragraph*{umount: Unmount a Mounted File System}
+\cmd{umount} detaches a file system from a mount point.
+\begin{lstlisting}[language=bash]
+sudo umount /mnt/data
+sudo umount /dev/sdb1
+\end{lstlisting}

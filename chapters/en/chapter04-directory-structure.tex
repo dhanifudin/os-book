@@ -1,947 +1,401 @@
 %% ========================================================================
-%% Chapter 5: Directory Structure & File Operations on Linux
-%% Target: Ubuntu Server 22.04
+%% chapter04-directory-structure.tex
+%% Directory Structure and File Operations
 %% ========================================================================
 
-\chapter{Directory Structure and File Operations on Linux}
+\chapter{Directory Structure and File Operations}
 \label{ch:filesystem-ops}
 
-This chapter discusses the Linux directory structure based on the
-\textit{Filesystem Hierarchy Standard} (FHS), the types of files in Linux
-(regular, directory, symlink, and device files), file system navigation via the
-command line, advanced file operations related to permissions and ownership
-(\texttt{chmod}, \texttt{chown}, \texttt{chgrp}), hard links and symbolic
-links, file searching with \texttt{find} and \texttt{locate}, and archiving
-and compression (\texttt{tar}, \texttt{gzip}, \texttt{zip}). The module is
-designed for Ubuntu Server 22.04 lab sessions with a hands-on approach:
-concept, output verification, easy scenarios, and real-world scenarios
-commonly encountered by server administrators.
+\chapterhero{orange}{Explore the Linux file system structure, understand file types and links, then master searching and archiving for daily work.}{\faFolderOpen\quad FHS}{\faLink\quad symbolic link}{\faArchive\quad archive}
+
+The system you installed in Chapter~1 already contains thousands of files spread across hundreds of directories. This is not disorder. It is a pattern standardized by the Linux community. An administrator who is familiar with Ubuntu can quickly find configuration files on a Debian machine they have never touched, because both follow the same layout rules.
+
+The Linux \term{filesystem} is not a pile of files placed randomly. Every directory has a defined role. Application configuration files live in \dir{/etc/}, system activity records are stored in \dir{/var/log/}, and programs executable by all users are in \dir{/bin/}. Once you know these rules, finding files in Linux becomes fast and systematic, not guesswork.
+
+In addition to directory layout, Linux distinguishes files by type: regular files, directories, symbolic links, device files, and more. These differences are not just labels. They determine how the system treats each object. Understanding them helps you diagnose access problems, design tidy project folder structures, and work with Linux systems more confidently.
+
+\textbf{What You'll Learn}
+
+By the end of this chapter, you will be able to:
+
+\begin{enumerate}
+    \item explain the function of major directories in the Linux file system hierarchy;
+    \item distinguish Linux file types based on the first character in \cmd{ls -l} output;
+    \item explain the difference between hard links and symbolic links and create them with the correct commands;
+    \item search for files by name, type, size, and modification time using \cmd{find} and \cmd{locate};
+    \item create, inspect, and extract compressed archives with \cmd{tar} and \cmd{gzip}.
+\end{enumerate}
+
+\begin{notebox}
+All labs in this chapter use the directory \dir{~/lab-os/chapter04-files/}.
+Create this directory before starting:
+\begin{lstlisting}[language=bash]
+mkdir -p ~/lab-os/chapter04-files
+cd ~/lab-os/chapter04-files
+\end{lstlisting}
+\end{notebox}
 
 % ------------------------------------------------------------------------
-\section{Filesystem Hierarchy Standard (FHS) in Linux}
+\section{Filesystem Hierarchy Standard}
 \label{sec:fhs}
 
-\subsection*{Concept Overview}
-Linux organises files and folders in a hierarchical structure rooted at
-\texttt{/}. On a server, knowing \textit{"what goes where"} is a basic skill:
-configuration lives in \texttt{/etc}, logs are mostly under \texttt{/var/log},
-user home directories are in \texttt{/home}, and hardware is represented as
-files under \texttt{/dev}. The relevant Unix/Linux principle is
-\textit{everything is a file}: not only regular files, but also devices
-(\texttt{/dev}) and system/process information (\texttt{/proc}, \texttt{/sys})
-are treated like files.
+Linux organizes all files in a single directory tree that starts from the root, \dir{/}. There is no ``drive C'' or ``drive D'' concept as in Windows. All storage devices, partitions, and even network \term{filesystem} instances are mounted into the same tree. The standard that governs this layout is called the \textit{Filesystem Hierarchy Standard} (FHS).
 
-\begin{tipbox}
-A useful mindset for server administration:
-\textit{``configuration is a file'', ``logs are files'', ``devices are files''}.
-Therefore, most troubleshooting ends up at \texttt{cat}, \texttt{less},
-\texttt{grep}, and \texttt{ls -l}.
-\end{tipbox}
+The main Unix principle to remember is: \textit{everything is a file}. This does not apply only to text documents. Hardware such as hard disks is represented as files in \dir{/dev/}. Information about running processes can be read like files in \dir{/proc/}. Understanding this principle opens a new way to see how Linux works.
 
-\subsection*{Key directories (brief + function)}
+Here are the major directories you need to know. Linux administrators memorize these naturally through daily use.
+
 \begin{itemize}
-    \item \texttt{/} : root of the entire filesystem.
-    \item \texttt{/bin} : essential programs for all users (e.g. \texttt{ls}, \texttt{cp}, \texttt{mv}).
-    \item \texttt{/sbin} : essential administration programs (often requires \texttt{sudo}).
-    \item \texttt{/etc} : system configuration (generally plain-text files).
-    \item \texttt{/var} : frequently changing data (logs, cache, spool). Common: \texttt{/var/log}.
-    \item \texttt{/home} : user home directories.
-    \item \texttt{/root} : home directory for the \texttt{root} user.
-    \item \texttt{/tmp} : temporary files (often cleaned automatically).
-    \item \texttt{/usr} : userland applications and libraries (sub: \texttt{/usr/bin}, \texttt{/usr/sbin}).
-    \item \texttt{/opt} : third-party/optional applications (often used for custom app deployments).
-    \item \texttt{/srv} : data for server services (e.g. web/app).
-    \item \texttt{/dev} : \textit{device nodes} (disks, ttys, etc.).
-    \item \texttt{/proc}, \texttt{/sys} : \textit{virtual filesystems} from the kernel (process/system status).
-    \item \texttt{/mnt}, \texttt{/media} : temporary/removable mount points.
+    \item \dir{/} : the starting point of the entire hierarchy. All other directories come from here.
+    \item \dir{/bin/} : essential programs needed by all users, such as \cmd{ls}, \cmd{cp}, \cmd{mv}, and \cmd{bash}.
+    \item \dir{/sbin/} : system administration programs, such as \cmd{fdisk} and \cmd{iptables}. These usually require \cmd{sudo}.
+    \item \dir{/etc/} : all system configuration files. They are text-based, so they can be read with an ordinary editor.
+    \item \dir{/home/} : each user's personal directory. User \texttt{alice} has \dir{/home/alice/}.
+    \item \dir{/root/} : the personal directory for the \texttt{root} user. It is separated from \dir{/home/} for security.
+    \item \dir{/var/} : data that keeps changing while the system runs. The most important subdirectory is \dir{/var/log/}, which stores system logs.
+    \item \dir{/tmp/} : temporary files. Usually cleared automatically when the system restarts.
+    \item \dir{/usr/} : programs and \term{shared library} files for users. \dir{/usr/bin/} contains most applications you install.
+    \item \dir{/opt/} : third-party applications installed independently outside the package manager.
+    \item \dir{/dev/} : device files. \file{/dev/sda} is the first hard disk, and \file{/dev/tty} is a terminal.
+    \item \dir{/proc/} : a virtual filesystem from the kernel. Reading it gives information about processes and current kernel configuration.
+    \item \dir{/sys/} : another virtual \term{filesystem} from the kernel, containing hardware and \term{driver} information.
+    \item \dir{/mnt/} and \dir{/media/} : mount points for external devices such as USB drives or additional partitions.
 \end{itemize}
 
-\subsection*{Lab 4.1 --- FHS Tour: Explore the System (Easy)}
-\textbf{Objective:} identify key directories and distinguish configuration,
-logs, and user data.
+\subsection*{Lab 4.1: Explore Major Directories}
+
+The goal of this lab is to train your eyes to recognize standard Linux directories and directly find important configuration files.
 
 \begin{enumerate}
-    \item Check your current location and display the root contents:
-\begin{lstlisting}[language=bash, caption={Viewing the root filesystem and its contents}]
-pwd
+    \item Display the root directory contents and notice names you already know:
+\begin{lstlisting}[language=bash, caption={Viewing the root filesystem contents}]
 ls -lah /
 \end{lstlisting}
+    \textit{Observe:} Notice the first column of each line. The character \texttt{d} marks a directory, while \texttt{l} marks a symbolic link.
 
-    \item View the contents of the configuration and log directories (briefly):
-\begin{lstlisting}[language=bash, caption={Inspecting /etc and /var/log}]
-ls -lah /etc | head
-ls -lah /var/log | head
+    \item View the three directories administrators visit most often:
+\begin{lstlisting}[language=bash, caption={Inspecting /etc, /var/log, and /home}]
+ls /etc | head -20
+ls /var/log | head -20
+ls /home
 \end{lstlisting}
 
-    \item (Optional) Install \texttt{tree} for a visual hierarchy:
-\begin{lstlisting}[language=bash, caption={Installing tree and displaying the folder structure}]
-sudo apt update
-sudo apt install -y tree
-tree -L 2 /
+    \item Read CPU information directly from the kernel virtual filesystem:
+\begin{lstlisting}[language=bash, caption={Reading system information from /proc}]
+cat /proc/cpuinfo | head -20
+cat /proc/meminfo | head -10
 \end{lstlisting}
-\end{enumerate}
+    \textit{Notice:} Files in \dir{/proc/} feel like ordinary files, but their contents are generated directly by the kernel, not stored on disk.
 
-\begin{warningbox}
-Do not run \texttt{tree /} without a depth limit on a real server --- the
-output can be enormous. Use \texttt{-L} to limit the depth.
-\end{warningbox}
-
-\subsection*{Lab 4.2 --- Audit Configuration and Service Log Locations (Real-World)}
-\textbf{Scenario:} an admin is asked to check the SSH configuration and look
-for access indicators in the logs.
-
-\textbf{Objective:} practise locating standard configuration files and reading
-logs safely.
-
-\begin{enumerate}
-    \item Verify the SSH configuration file:
-\begin{lstlisting}[language=bash, caption={Checking the SSH configuration}]
-ls -lah /etc/ssh/
-sudo test -f /etc/ssh/sshd_config \
-  && echo "sshd_config found" \
-  || echo "sshd_config not found"
-\end{lstlisting}
-
-    \item Read the first lines of the configuration (without editing):
-\begin{lstlisting}[language=bash, caption={Reading configuration safely}]
-sudo head -n 30 /etc/ssh/sshd_config
-\end{lstlisting}
-
-    \item View recent activity in the authentication log:
-\begin{lstlisting}[language=bash, caption={Viewing the authentication log}]
-ls -lah /var/log/ | grep -E "auth|secure" || true
-sudo tail -n 50 /var/log/auth.log
-\end{lstlisting}
-
-    \item (Optional) Filter important events:
-\begin{lstlisting}[language=bash, caption={Filtering important events in auth.log}]
-sudo grep \
- -E "Failed password|Accepted password|Invalid user" \
- /var/log/auth.log | tail -n 30
+    \item Identify three important configuration files in \dir{/etc/}:
+\begin{lstlisting}[language=bash, caption={Finding important configuration files with grep}]
+ls /etc | grep -E "^(hostname|hosts|passwd|group|fstab)$"
+cat /etc/hostname
 \end{lstlisting}
 \end{enumerate}
+
+\begin{challengebox}
+Use a combination of \cmd{ls} and \cmd{grep}, which you learned in Chapter~2, to find three configuration files in \dir{/etc/} whose names contain \texttt{ssh}. After finding them, display the first 10 lines of each file using \cmd{head}. Document the commands you used and write a short function for each file.
+\end{challengebox}
 
 % ------------------------------------------------------------------------
-\section{File Types in Linux (Regular, Directory, Symlink, Device)}
+\section{File Types in Linux}
 \label{sec:filetypes}
 
-\subsection*{Concept Overview}
-In Linux, a ``file'' is not just a document. From the output of \texttt{ls -l},
-the first character indicates the type:
+When you run \cmd{ls -l}, the first character on each line is not decoration. It tells you the file type. Linux recognizes seven file types, and distinguishing them matters because the system behaves differently for each type.
+
+Here are the file type marker characters you will often see:
+
 \begin{itemize}
-    \item \texttt{-} : regular file
-    \item \texttt{d} : directory
-    \item \texttt{l} : symbolic link
-    \item \texttt{b} : block device (disk/partition)
-    \item \texttt{c} : character device (tty/serial)
-    \item \texttt{p} : FIFO (named pipe)
-    \item \texttt{s} : socket
+    \item \texttt{-} : regular file. Text documents, images, and program \term{binary} files all belong to this category.
+    \item \texttt{d} : directory. A container that can hold files and other directories.
+    \item \texttt{l} : symbolic link. A shortcut that points to another file or directory.
+    \item \texttt{b} : block device file. An example is a hard disk partition such as \file{/dev/sda1}.
+    \item \texttt{c} : character device file. An example is the terminal \file{/dev/tty}.
+    \item \texttt{p} : named pipe. Used for inter-process communication.
+    \item \texttt{s} : socket. Used for network communication or local inter-process communication.
 \end{itemize}
 
-\subsection*{Commands used}
-\begin{itemize}
-    \item \texttt{ls -l} / \texttt{ls -lah}: view file types and permissions.
-    \item \texttt{stat <file>}: detailed metadata (inode, size, timestamps, permissions).
-    \item \texttt{file <file>}: guess the content type (ASCII text, image, ELF binary, etc.).
-\end{itemize}
+Besides \cmd{ls -l}, two other commands are very useful for inspecting files. The \cmd{stat} command displays complete file metadata: size, hard link count, inode, last access time, modification time, and permissions in both octal and symbolic notation. The \cmd{file} command guesses a file's content type based on its contents, not its extension. This is useful when you find a file without an extension and want to know whether it is text, \term{binary}, or something else.
 
-\subsection*{Lab 4.3 --- Reading File Types from ls -l Output (Easy)}
-\textbf{Objective:} distinguish regular files, directories, symlinks, and device files.
+\subsection*{Lab 4.2: Identify Different File Types}
+
+The goal of this lab is to distinguish file types from \cmd{ls -l} output and understand how to read file metadata thoroughly.
 
 \begin{enumerate}
-    \item Create the lab workspace:
-\begin{lstlisting}[language=bash, caption={Creating the workspace for this chapter}]
-mkdir -p ~/lab-os/chapter04
-cd ~/lab-os/chapter04
-pwd
+    \item Create several files of different types in the working directory:
+\begin{lstlisting}[language=bash, caption={Creating a regular file and directory}]
+cd ~/lab-os/chapter04-files
+mkdir -p type-practice
+echo "text file contents" > type-practice/notes.txt
+mkdir type-practice/subfolder
+ln -s type-practice/notes.txt type-practice/shortcut.txt
+ls -lah type-practice/
+\end{lstlisting}
+    \textit{Observe:} Notice the first character on each line. \texttt{-} is for \file{notes.txt}, \texttt{d} is for \file{subfolder}, and \texttt{l} is for \file{shortcut.txt}. On the symbolic link line, you can also see where it points.
+
+    \item Use \cmd{stat} to view complete metadata for a regular file:
+\begin{lstlisting}[language=bash, caption={Viewing complete metadata with stat}]
+stat type-practice/notes.txt
 \end{lstlisting}
 
-    \item Create example files and directories:
-\begin{lstlisting}[language=bash, caption={Creating a regular file and example directory}]
-mkdir -p data
-echo "hello server" > data/hello.txt
-ls -lah
-ls -lah data
+    \item Use \cmd{file} to identify content type based on file contents:
+\begin{lstlisting}[language=bash, caption={Detecting file type with file}]
+file type-practice/notes.txt
+file type-practice/subfolder
+file type-practice/shortcut.txt
+file /bin/ls
 \end{lstlisting}
+    \textit{Notice:} See how \cmd{file} describes \file{/bin/ls} as an \textit{ELF executable}, not merely a ``file''. This helps when you encounter files without extensions.
 
-    \item Create a simple symlink:
-\begin{lstlisting}[language=bash, caption={Creating a symlink}]
-ln -s data/hello.txt hello-link.txt
-ls -lah
-\end{lstlisting}
-
-    \item Inspect metadata:
-\begin{lstlisting}[language=bash, caption={Inspecting file metadata}]
-stat data/hello.txt | head -n 20
-file data/hello.txt
+    \item View block and character device files in \dir{/dev/}:
+\begin{lstlisting}[language=bash, caption={Viewing device files in /dev}]
+ls -lah /dev/tty /dev/null /dev/zero
+ls -lah /dev/sd* 2>/dev/null | head -5
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Lab 4.4 --- Reading Device Files and Virtual FS (Real-World)}
-\textbf{Scenario:} an admin needs to distinguish device nodes (block vs char)
-and virtual files from the kernel.
-
-\textbf{Objective:} recognise \texttt{/dev} (device nodes), \texttt{/proc} and
-\texttt{/sys} (virtual filesystems).
-
-\begin{enumerate}
-    \item Identify block devices and character devices:
-\begin{lstlisting}[language=bash, caption={Block vs character device}]
-ls -l /dev/sd* 2>/dev/null | head -n 10
-ls -l /dev/tty
-\end{lstlisting}
-
-    \item Show that \texttt{/proc} contains process information (virtual):
-\begin{lstlisting}[language=bash, caption={Reading system information from /proc}]
-ls -lah /proc | head
-cat /proc/cpuinfo | head -n 20
-\end{lstlisting}
-
-    \item Use \texttt{file} to distinguish content types:
-\begin{lstlisting}[language=bash, caption={Testing content type with file}]
-file /dev/tty
-file /proc/cpuinfo
-\end{lstlisting}
-\end{enumerate}
-
-\begin{warningbox}
-Do not write arbitrarily to \texttt{/dev/*} or \texttt{/proc/*}. Many entries
-are sensitive and can affect the system.
-\end{warningbox}
-
-% ------------------------------------------------------------------------
-\section{File System Navigation via the Command Line}
-\label{sec:navigasi}
-
-\subsection*{Concept Overview}
-On Ubuntu Server, the terminal is the primary administration interface. Navigation
-skills --- finding file locations, moving between directories, and reading
-structures --- are the foundation for all advanced tasks.
-
-\subsection*{Commands used}
-\begin{itemize}
-    \item \texttt{pwd}: display the current working directory.
-    \item \texttt{ls}: list directory contents (common options: \texttt{-l}, \texttt{-a}, \texttt{-h}).
-    \item \texttt{cd}: change directory.
-    \item \texttt{pushd}/\texttt{popd}: directory stack navigation (convenient for switching back and forth).
-\end{itemize}
-
-\subsection*{Lab 4.5 --- Safe and Efficient Navigation (Easy)}
-\textbf{Objective:} practise absolute paths, relative paths, and \texttt{pushd/popd}.
-
-\begin{enumerate}
-    \item Move to root, then return to home:
-\begin{lstlisting}[language=bash, caption={Absolute path vs returning to home}]
-cd /
-pwd
-cd ~
-pwd
-\end{lstlisting}
-
-    \item Practise relative paths:
-\begin{lstlisting}[language=bash, caption={Relative paths in the workspace}]
-cd ~/lab-os/chapter04
-mkdir -p a/b/c
-cd a/b
-pwd
-cd ../..
-pwd
-\end{lstlisting}
-
-    \item Use \texttt{pushd/popd} to switch between directories:
-\begin{lstlisting}[language=bash, caption={Directory stack navigation}]
-pushd /etc
-pwd
-popd
-pwd
-\end{lstlisting}
-\end{enumerate}
-
-\begin{warningbox}
-The command \texttt{rm -rf} deletes directories and their contents without
-confirmation. During lab sessions, use \texttt{rm -ri} or verify the path
-carefully first.
-\end{warningbox}
-
-\subsection*{Lab 4.6 --- Locating Configuration Files from Service Output (Real-World)}
-\textbf{Scenario:} you are asked to find the service unit location and related
-configuration file.
-
-\textbf{Objective:} use navigation together with reading common system paths on
-a server.
-
-\begin{enumerate}
-    \item View SSH status and location hints:
-\begin{lstlisting}[language=bash, caption={Tracing service information via systemctl}]
-systemctl status ssh --no-pager | head -n 30
-\end{lstlisting}
-
-    \item Display the service unit file:
-\begin{lstlisting}[language=bash, caption={Finding the service unit file}]
-systemctl cat ssh --no-pager | head -n 80
-\end{lstlisting}
-
-    \item Navigate quickly to the configuration directory:
-\begin{lstlisting}[language=bash, caption={Navigating to the SSH configuration directory}]
-cd /etc/ssh
-pwd
-ls -lah | head
-\end{lstlisting}
-\end{enumerate}
-
-% ------------------------------------------------------------------------
-\section{Advanced File Operations: chmod, chown, chgrp}
-\label{sec:perm-owner}
-
-\subsection*{Concept Overview}
-Access control in Linux is built from three components:
-\begin{itemize}
-    \item \textbf{Permissions} for the \textit{owner}, \textit{group}, and \textit{others}
-    \item \textbf{Ownership}: \textit{user owner} and \textit{group owner}
-    \item \textbf{The execute bit on directories}: on a directory, \texttt{x} means
-          ``allowed to enter/traverse the directory''.
-\end{itemize}
-
-\subsection*{Reading permissions: rwx for user/group/others}
-Example \texttt{ls -l} output:
-\begin{center}
-\texttt{-rwxr-x---}
-\end{center}
-Meaning:
-\begin{itemize}
-    \item Character 1: file type (\texttt{-}, \texttt{d}, \texttt{l}, etc.)
-    \item Next 3: \textbf{owner} (user)
-    \item Next 3: \textbf{group}
-    \item Last 3: \textbf{others}
-\end{itemize}
-
-\subsubsection*{Meaning of r/w/x on files vs directories}
-\begin{itemize}
-    \item \textbf{Regular file}:
-    \begin{itemize}
-        \item \texttt{r}: allowed to read the file contents
-        \item \texttt{w}: allowed to modify the file contents
-        \item \texttt{x}: allowed to execute the file as a program/script
-    \end{itemize}
-    \item \textbf{Directory}:
-    \begin{itemize}
-        \item \texttt{r}: allowed to list the file names (e.g. \texttt{ls})
-        \item \texttt{w}: allowed to create/delete/rename entries in the directory
-        \item \texttt{x}: allowed to enter (\texttt{cd}) and access files inside
-    \end{itemize}
-\end{itemize}
-
-\begin{warningbox}
-A directory without \texttt{x} can still have its names listed (if \texttt{r}
-is set), but cannot be entered or accessed. Conversely, a directory with
-\texttt{x} but without \texttt{r} can be accessed if you know the exact
-filename.
-\end{warningbox}
-
-\subsection{chmod: Octal Notation}
-\label{subsec:chmod-octal}
-
-Each permission is represented as an octal digit (0--7). Each triad
-(\textit{user/group/others}) is calculated by summing the bit values:
-
-\begin{center}
-\begin{tabular}{ccc}
-    \textbf{r} (read) & \textbf{w} (write) & \textbf{x} (execute) \\
-    4                 & 2                  & 1                    \\
-\end{tabular}
-\end{center}
-
-Sum the active bit values to get the octal digit for each triad. Three octal
-digits combined form the complete permission, for example \texttt{755} means
-user=7, group=5, others=5.
-
-\begin{table}[htbp]
-    \centering
-    \caption{Octal notation to permission conversion table}
-    \begin{tabular}{cll}
-        \hline
-        \textbf{Digit} & \textbf{Permission} & \textbf{Description} \\
-        \hline
-        0 & \texttt{-{}-{}-} & No access at all \\
-        1 & \texttt{-{}-x} & Execute only (enter directory) \\
-        2 & \texttt{-w-} & Write only \\
-        3 & \texttt{-wx} & Write and execute \\
-        4 & \texttt{r-{}-} & Read only \\
-        5 & \texttt{r-x} & Read and execute \\
-        6 & \texttt{rw-} & Read and write \\
-        7 & \texttt{rwx} & Read, write, and execute (full access) \\
-        \hline
-    \end{tabular}
-\end{table}
-
-Usage examples:
-\begin{itemize}
-    \item \texttt{chmod 755 file} $\rightarrow$ owner \texttt{rwx} (7), group \texttt{r-x} (5), others \texttt{r-x} (5)
-    \item \texttt{chmod 640 file} $\rightarrow$ owner \texttt{rw-} (6), group \texttt{r--} (4), others \texttt{---} (0)
-    \item \texttt{chmod 600 file} $\rightarrow$ owner \texttt{rw-} (6), group \texttt{---} (0), others \texttt{---} (0)
-\end{itemize}
-
-\subsection*{chmod: symbolic notation}
-\begin{itemize}
-    \item Target: \texttt{u} (user), \texttt{g} (group), \texttt{o} (others), \texttt{a} (all)
-    \item Operator: \texttt{+} (add), \texttt{-} (remove), \texttt{=} (set exactly)
-\end{itemize}
-
-Examples:
-\begin{itemize}
-    \item \texttt{chmod u+x script.sh} (add execute for owner)
-    \item \texttt{chmod go-rw file} (remove read+write for group and others)
-\end{itemize}
-
-\subsection*{Special bits: setuid, setgid, sticky}
-In addition to the three main triads, there are special bits:
-\begin{itemize}
-    \item \textbf{setuid (4xxx)}: program runs with the file owner's privileges (usually root). Example: \texttt{/usr/bin/passwd}.
-    \item \textbf{setgid (2xxx)}:
-    \begin{itemize}
-        \item on a file: runs with the file's group
-        \item on a directory: new files inherit the directory's group (\textit{important for shared folders})
-    \end{itemize}
-    \item \textbf{sticky bit (1xxx)} on a directory: only the file owner (or root) may delete files in that directory.
-          Example: \texttt{/tmp}.
-\end{itemize}
-
-\subsection*{Ownership: chown and chgrp}
-\begin{itemize}
-    \item \texttt{chown user file} changes the user owner
-    \item \texttt{chown user:group file} changes both user and group at once
-    \item \texttt{chgrp group file} changes the group
-\end{itemize}
-
-\begin{tipbox}
-Access problems on a server are often not because a file is ``missing'', but
-because ownership or permissions are incorrect. Make it a habit to verify with
-\texttt{ls -l} and \texttt{stat}.
-\end{tipbox}
-
-\subsection*{Lab 4.7 --- Basic Permissions on Files and Directories (Easy)}
-\textbf{Objective:} observe the difference in meaning of \texttt{x} on a file
-vs a directory, and practise octal conversion.
-
-\begin{enumerate}
-    \item Prepare test objects:
-\begin{lstlisting}[language=bash, caption={Setting up permission test objects}]
-cd ~/lab-os/chapter04
-mkdir -p permtest/dirA
-echo "hello" > permtest/fileA.txt
-ls -ld permtest permtest/dirA
-ls -l permtest/fileA.txt
-\end{lstlisting}
-
-    \item Change the file permission to \texttt{640} and verify:
-\begin{lstlisting}[language=bash, caption={chmod on a file using octal}]
-chmod 640 permtest/fileA.txt
-ls -l permtest/fileA.txt
-\end{lstlisting}
-
-    \item Change the directory permission to \texttt{700}, then try to access it:
-\begin{lstlisting}[language=bash, caption={chmod on a directory and testing access}]
-chmod 700 permtest/dirA
-ls -ld permtest/dirA
-cd permtest/dirA
-pwd
-cd -
-\end{lstlisting}
-
-    \item Experiment: remove \texttt{x} from the directory and observe the effect:
-\begin{lstlisting}[language=bash, caption={Testing the effect of removing x from a directory}]
-chmod 600 permtest/dirA
-ls -ld permtest/dirA
-cd permtest/dirA 2>/dev/null \
- || echo "Failed: no execute (x) on the directory"
-\end{lstlisting}
-\end{enumerate}
-
-\subsection*{Lab 4.8 --- Shared Project Folder + Sticky Bit (Real-World)}
-\textbf{Scenario:} a shared project folder where group members can collaborate,
-new files inherit the group, and users cannot accidentally delete each other's
-files.
-
-\textbf{Objective:} apply \texttt{chgrp}, \texttt{chmod 2xxx}, and sticky bit
-on a collaborative directory.
-
-\begin{enumerate}
-    \item Create the group and project folder:
-\begin{lstlisting}[language=bash, caption={Creating the group and project folder}]
-sudo groupadd project 2>/dev/null \
-  || echo "group project already exists"
-sudo usermod -aG project $USER
-sudo mkdir -p /srv/project-gamma
-sudo chgrp project /srv/project-gamma
-\end{lstlisting}
-
-    \item Apply setgid so new files inherit the group, and restrict others:
-\begin{lstlisting}[language=bash, caption={Setgid on the project directory}]
-sudo chmod 2770 /srv/project-gamma
-ls -ld /srv/project-gamma
-\end{lstlisting}
-
-    \item Apply the sticky bit so users cannot delete each other's files:
-\begin{lstlisting}[language=bash, caption={Sticky bit on the collaborative directory}]
-sudo chmod +t /srv/project-gamma
-ls -ld /srv/project-gamma
-\end{lstlisting}
-
-    \item Test file creation (note: group membership may require re-login):
-\begin{lstlisting}[language=bash, caption={Testing collaborative access}]
-touch /srv/project-gamma/test-$USER.txt 2>/dev/null \
-  || echo "If it fails: re-login or run newgrp"
-ls -l /srv/project-gamma | head
-\end{lstlisting}
-\end{enumerate}
-
-\begin{exercisebox}[4.1]
-Determine the chmod number for:
-\begin{enumerate}
-    \item File: owner \texttt{rw-}, group \texttt{r--}, others \texttt{---}
-    \item Shared directory: owner+group \texttt{rwx}, others \texttt{---}, new files inherit the group (setgid)
-    \item Directory like \texttt{/tmp}: everyone can create files, but cannot delete files belonging to other users (sticky bit)
-\end{enumerate}
-\end{exercisebox}
+\begin{challengebox}
+Create a symbolic link named \file{home-link} in \dir{~/lab-os/chapter04-files/} that points to your home directory (\dir{~/}). Verify that the link works by running \cmd{ls -la home-link/} and comparing the result with \cmd{ls -la ~/}. Then use \cmd{stat} to check whether the inode of \file{home-link} and \dir{~/} is the same or different. Explain why the result looks that way.
+\end{challengebox}
 
 % ------------------------------------------------------------------------
 \section{Hard Links and Symbolic Links}
 \label{sec:links}
 
-\subsection*{Concept Overview}
-A link is a way to create an ``alternative name'' for a file.
-\begin{itemize}
-    \item \textbf{Hard link} (\texttt{ln}): points to the same inode. Deleting the original name does not remove the data as long as another hard link exists.
-    \item \textbf{Symbolic link} / symlink (\texttt{ln -s}): a small file that points to a target path. If the target is moved or deleted, the symlink becomes \textit{broken}.
-\end{itemize}
+In Linux, one piece of data can have more than one name. This is the basic idea of a \textit{link}. Think of a book in a library. You can place one index card that points directly to the book, or create a copy of the catalog entry elsewhere that still refers to the same physical book. These two approaches correspond to a \textit{hard link} and a \textit{symbolic link}.
 
-\subsection*{Commands used}
-\begin{itemize}
-    \item \texttt{ln}, \texttt{ln -s}: create links.
-    \item \texttt{ls -li}: display inode numbers and link counts.
-    \item \texttt{stat}: verify inodes and metadata.
-\end{itemize}
+A \textbf{hard link} is an additional name that points to the same inode as the original file. As long as at least one hard link remains, the file data stays on disk. Because they share an inode, content changes through one name are immediately visible through the other names. Hard links can generally only be created for regular files and cannot cross different filesystems.
 
-\subsection*{Lab 4.9 --- Testing Hard Links vs Symlinks (Easy)}
-\textbf{Objective:} observe the difference in inodes and the effect of deletion.
+A \textbf{symbolic link}, or \textit{symlink}, is different. It is not an additional name for the same inode. It is a small file containing the target path. Because of that, a symlink can point to a directory, can cross filesystems, and can become a \textit{broken link} if the target is deleted or moved.
+
+The command \cmd{ln source target} creates a hard link, while \cmd{ln -s source target} creates a symbolic link. Use \cmd{ls -li} to view inode numbers and verify whether two names share the same inode.
+
+\subsection*{Lab 4.3: Compare Hard Links and Symbolic Links}
+
+The goal of this lab is to understand the difference between hard links and symbolic links through inodes, file content changes, and behavior when the original target is deleted.
 
 \begin{enumerate}
-    \item Prepare a file:
-\begin{lstlisting}[language=bash, caption={Creating a source file}]
-cd ~/lab-os/chapter04
-echo "version1" > target.txt
+    \item Prepare one source file and create two link types:
+\begin{lstlisting}[language=bash, caption={Creating a hard link and symbolic link}]
+cd ~/lab-os/chapter04-files
+mkdir -p link-practice
+echo "initial version" > link-practice/notes.txt
+ln link-practice/notes.txt link-practice/notes-hard.txt
+ln -s link-practice/notes.txt link-practice/notes-soft.txt
+ls -li link-practice/
+\end{lstlisting}
+    \textit{Observe:} \file{notes.txt} and \file{notes-hard.txt} should have the same inode number. The symlink has a different inode and shows an arrow toward its target.
+
+    \item Change file contents through the hard link, then read from the original name:
+\begin{lstlisting}[language=bash, caption={Changing contents through a hard link}]
+echo "added through hard link" >> link-practice/notes-hard.txt
+cat link-practice/notes.txt
 \end{lstlisting}
 
-    \item Create a hard link and a symlink:
-\begin{lstlisting}[language=bash, caption={Creating a hard link and symlink}]
-ln target.txt hardlink.txt
-ln -s target.txt symlink.txt
-ls -li target.txt hardlink.txt symlink.txt
+    \item Change the original target and read contents through the symlink:
+\begin{lstlisting}[language=bash, caption={Reading a target through a symbolic link}]
+echo "added through original target" >> link-practice/notes.txt
+cat link-practice/notes-soft.txt
 \end{lstlisting}
 
-    \item Delete the original file and check the effect:
-\begin{lstlisting}[language=bash, caption={Deleting the target and checking the links}]
-rm target.txt
-ls -li hardlink.txt symlink.txt
-cat hardlink.txt
-cat symlink.txt \
-  || echo "symlink is broken because the target is gone"
+    \item Delete the original file, then observe both links:
+\begin{lstlisting}[language=bash, caption={Deleting the original target}]
+rm link-practice/notes.txt
+ls -li link-practice/
+cat link-practice/notes-hard.txt
+cat link-practice/notes-soft.txt
 \end{lstlisting}
+    \textit{Notice:} The hard link can still be read because it still points to the same inode. The symlink fails because its target path no longer exists.
 \end{enumerate}
 
-\begin{warningbox}
-Hard links are generally not used for directories (restricted to prevent
-structural loops). For a ``shortcut'' to a directory, use a symlink instead.
-\end{warningbox}
-
-\subsection*{Lab 4.10 --- Symlink for Application Version Deployment (Real-World)}
-\textbf{Scenario:} a common deployment pattern --- separate versioned
-application folders with \texttt{current} as a symlink pointing to the active
-version.
-
-\textbf{Objective:} understand why symlinks are very useful for quick rollbacks.
-
-\begin{enumerate}
-    \item Create the version structure:
-\begin{lstlisting}[language=bash, caption={Creating dummy application versions}]
-cd ~/lab-os/chapter04
-mkdir -p app/releases/v1 app/releases/v2 app/shared
-echo "APP_VERSION=v1" > app/releases/v1/.env
-echo "APP_VERSION=v2" > app/releases/v2/.env
-\end{lstlisting}
-
-    \item Create a \texttt{current} symlink pointing to the active version:
-\begin{lstlisting}[language=bash, caption={Creating the current symlink}]
-ln -s releases/v1 app/current
-ls -lah app
-cat app/current/.env
-\end{lstlisting}
-
-    \item Simulate an upgrade and rollback by simply switching the symlink:
-\begin{lstlisting}[language=bash, caption={Switching versions via symlink}]
-rm app/current
-ln -s releases/v2 app/current
-cat app/current/.env
-
-rm app/current
-ln -s releases/v1 app/current
-cat app/current/.env
-\end{lstlisting}
-\end{enumerate}
+\begin{challengebox}
+Create one file named \file{report.txt}, then create a hard link and a symbolic link for that file. Use \cmd{ls -li} to compare the inodes of all three names. After that, delete the original file and explain why one link still works while the other does not.
+\end{challengebox}
 
 % ------------------------------------------------------------------------
-\section{File Searching with find and locate}
+\section{File Search}
 \label{sec:search}
 
-\subsection*{Concept Overview}
-On a server, you often need to search for:
-\begin{itemize}
-    \item configuration files (\texttt{*.conf}), logs, or large files consuming disk space
-    \item files with problematic permissions
-    \item files modified within a specific time range (for debugging)
-\end{itemize}
+Over time, a Linux system can contain thousands of files in hundreds of directories. When you need to find one configuration file or search for all large logs, browsing directories one by one is not realistic. This is where search commands matter.
 
-\subsection*{Commands used}
-\begin{itemize}
-    \item \texttt{find}: real-time search (accurate, flexible).
-    \item \texttt{locate}: database-based search (fast, requires database update).
-\end{itemize}
+The \cmd{find} command searches directly in the filesystem in real time. You can set search criteria such as file name, type, size, last modification time, and even permissions. After finding matching files, \cmd{find} can directly run a specific command on each result using the \texttt{-exec} option. This flexibility makes \cmd{find} one of the most powerful commands in Linux.
 
-\subsection*{Lab 4.11 --- Basic find: Name, Type, Size (Easy)}
-\textbf{Objective:} search for files by name, type, and size.
+The \cmd{locate} command works differently. It searches a prebuilt index database created by \cmd{updatedb}. The result is very fast because it does not need to scan the filesystem directly. The weakness is clear: if a new file was created after the database was last updated, \cmd{locate} will not find it. Use \cmd{locate} when you need a quick answer and the file you are looking for was not just created.
+
+Two additional commands are useful for finding programs: \cmd{which} displays the full location of a program in \var{PATH}, and \cmd{whereis} displays the location of a program's \term{binary}, manual pages, and source code.
+
+\subsection*{Lab 4.4: Search for Files with Specific Criteria}
+
+The goal of this lab is to use \cmd{find} with different criteria to find files efficiently and combine it with redirection techniques from Chapter~3.
 
 \begin{enumerate}
-    \item Find all \texttt{.txt} files in the workspace:
-\begin{lstlisting}[language=bash, caption={find by name and type}]
-cd ~/lab-os/chapter04
-find . -type f -name "*.txt"
+    \item Create several test files with different names and sizes:
+\begin{lstlisting}[language=bash, caption={Creating test files for search}]
+cd ~/lab-os/chapter04-files
+mkdir -p data-cari/logs data-cari/config data-cari/scripts
+echo "isi log kecil" > data-cari/logs/app.log
+echo "isi log besar" > data-cari/logs/error.log
+yes "log line panjang" | head -5000 > data-cari/logs/access.log
+echo "host=localhost" > data-cari/config/app.conf
+echo '#!/bin/bash' > data-cari/scripts/backup.sh
 \end{lstlisting}
 
-    \item Find files larger than 1 MB (common troubleshooting example):
-\begin{lstlisting}[language=bash, caption={find by file size}]
-find ~ -type f -size +1M 2>/dev/null | head
+    \item Find all \file{.log} files inside the experiment directory:
+\begin{lstlisting}[language=bash, caption={Searching for files by name}]
+find data-cari -type f -name "*.log"
+\end{lstlisting}
+    \textit{Observe:} The \texttt{-type f} option limits the search to regular files and ignores directories. The \texttt{-name} option accepts patterns with the wildcard \texttt{*}.
+
+    \item Find files larger than 10 KB:
+\begin{lstlisting}[language=bash, caption={Searching for files by size}]
+find data-cari -type f -size +10k
+\end{lstlisting}
+
+    \item Find all \file{.log} files larger than 1 MB in \dir{/var/log/} and save the results to a file using redirection:
+\begin{lstlisting}[language=bash, caption={Finding large logs and saving results}]
+find /var/log -type f -name "*.log" -size +1M 2>/dev/null \
+    > ~/lab-os/chapter04-files/log-besar.txt
+cat ~/lab-os/chapter04-files/log-besar.txt
+\end{lstlisting}
+    \textit{Notice:} The pattern \texttt{2>/dev/null} discards ``Permission denied'' error messages that appear when \cmd{find} tries to enter inaccessible directories. You learned this redirection technique in Chapter~3.
+
+    \item Use \cmd{find} with \texttt{-exec} to display the size of each found file:
+\begin{lstlisting}[language=bash, caption={Running a command on each found file}]
+find data-cari -type f -name "*.log" -exec ls -lh {} \;
+\end{lstlisting}
+
+    \item Use \cmd{which} and \cmd{whereis} to find program locations:
+\begin{lstlisting}[language=bash, caption={Finding program locations}]
+which ls
+which bash
+whereis grep
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Lab 4.12 --- Real-World find: System Configuration Scan (Advanced/Real-World)}
-\textbf{Scenario:} search for \texttt{*.conf} configuration files across the
-entire system, suppressing permission errors for clean output.
-
-\textbf{Objective:} use \texttt{find} on the root filesystem and manage errors
-with redirection.
-
-\begin{lstlisting}[language=bash, caption={Scanning *.conf without flooding permission errors}]
-sudo find / -type f -name "*.conf" 2>/dev/null \
-  | head -n 30
-\end{lstlisting}
-
-\begin{tipbox}
-The pattern \texttt{2>/dev/null} is used very often when scanning the entire
-system, because many directories simply cannot be read by a regular user.
-\end{tipbox}
-
-\subsection*{Lab 4.13 --- locate + updatedb (Easy)}
-\textbf{Objective:} use the index database for fast searches.
-
-\begin{enumerate}
-    \item Ensure \texttt{plocate} is available:
-\begin{lstlisting}[language=bash, caption={Installing the locate tool}]
-sudo apt update
-sudo apt install -y plocate \
-  || sudo apt install -y mlocate
-\end{lstlisting}
-
-    \item Update the database (requires root), then search:
-\begin{lstlisting}[language=bash, caption={Updating the locate database and searching}]
-sudo updatedb
-locate sshd_config | head
-\end{lstlisting}
-\end{enumerate}
-
-\begin{warningbox}
-\texttt{locate} is not always real-time. If a file was just created and has not
-yet been indexed, the result may be empty until \texttt{updatedb} is run.
-\end{warningbox}
-
-\subsection*{Lab 4.14 --- Auditing Problematic Permissions with find (Real-World)}
-\textbf{Scenario:} an admin wants to find files/directories that are ``too
-open'' (world-writable), or setuid/setgid files, for a light security audit.
-
-\textbf{Objective:} locate objects that are risky from a permissions
-perspective.
-
-\begin{enumerate}
-    \item Find world-writable directories in home:
-\begin{lstlisting}[language=bash, caption={Finding world-writable directories}]
-find ~ -type d -perm -0002 2>/dev/null | head -n 30
-\end{lstlisting}
-
-    \item Find world-writable files:
-\begin{lstlisting}[language=bash, caption={Finding world-writable files}]
-find ~ -type f -perm -0002 2>/dev/null | head -n 30
-\end{lstlisting}
-
-    \item (Optional) Find setuid/setgid files:
-\begin{lstlisting}[language=bash, caption={Auditing setuid/setgid on the system (requires sudo)}]
-sudo find / -type f -perm -4000 2>/dev/null \
-  | head -n 30   # setuid
-sudo find / -type f -perm -2000 2>/dev/null \
-  | head -n 30   # setgid
-\end{lstlisting}
-\end{enumerate}
-
-\begin{warningbox}
-Do not arbitrarily change permissions on system setuid/setgid files. This lab
-is for identification purposes only.
-\end{warningbox}
+\begin{challengebox}
+Use \cmd{find} to search for all \file{.log} files in \dir{/var/log/} larger than 1 MB. Redirect the results to a file named \file{log-report.txt} in \dir{~/lab-os/chapter04-files/}. Make sure permission errors are ignored using \texttt{2>/dev/null}. Then use \cmd{grep}, from Chapter~2, and \cmd{wc -l} to count how many large log files were found. Write the count as a comment under your command.
+\end{challengebox}
 
 % ------------------------------------------------------------------------
-\section{File Compression and Archiving (tar, gzip, zip)}
+\section{Compression and Archiving}
 \label{sec:archive}
 
-\subsection*{Concept Overview}
-An \textbf{archive} combines multiple files/folders into a single package.
-\textbf{Compression} reduces the size of the data. On a server, the common
-combination is:
+When you need to send dozens of files to a teammate or save a backup of a directory before making major changes, packaging all files into one bundle is the right step. This process is called archiving. When that bundle is also reduced in size, the process is called compression.
+
+In Linux, \cmd{tar} is the main command for archiving. The name \texttt{tar} comes from \textit{tape archive}, because it was once used to store data on magnetic tape. Now \cmd{tar} is used to combine many files and directories into one \texttt{.tar} file. By default, \texttt{.tar} is not compressed. It only combines files. To compress at the same time, add the \texttt{-z} flag so \cmd{tar} automatically uses \cmd{gzip}, producing a \texttt{.tar.gz} file.
+
+Here are the most commonly used \cmd{tar} flags:
+
 \begin{itemize}
-    \item \texttt{tar} to archive a folder
-    \item \texttt{gzip} (or \texttt{bzip2}/\texttt{xz}) to compress the archive
-    \item \texttt{zip} for cross-OS exchange (Windows/macOS) or specific needs
+    \item \texttt{-c} : create a new archive
+    \item \texttt{-x} : extract archive contents
+    \item \texttt{-t} : list archive contents without extracting
+    \item \texttt{-f file} : specify the archive filename, always required
+    \item \texttt{-v} : display processed filenames, verbose mode
+    \item \texttt{-z} : use gzip compression, for \texttt{.tar.gz}
+    \item \texttt{-C directory} : extract to a specific directory
 \end{itemize}
 
-\subsection*{tar: most commonly used flags}
-\begin{itemize}
-    \item \texttt{-c} : create an archive
-    \item \texttt{-x} : extract an archive
-    \item \texttt{-t} : list contents (view without extracting)
-    \item \texttt{-f <file>} : archive filename (required when using a file)
-    \item \texttt{-v} : verbose (show files being processed)
-    \item \texttt{-C <dir>} : extract/work from a specific directory
-    \item \texttt{-z} : use gzip (\texttt{.tar.gz / .tgz})
-    \item \texttt{-J} : use xz (\texttt{.tar.xz}) --- stronger compression, slower
-\end{itemize}
+The \cmd{gzip} command works on a single file: it compresses one file into \texttt{.gz} and by default deletes the original file. Use the \texttt{-k} flag to keep the original file, and the \texttt{-d} flag for decompression, equivalent to \cmd{gunzip}.
 
-Quick examples:
-\begin{itemize}
-    \item Create: \texttt{tar -czvf backup.tar.gz folder/}
-    \item List contents: \texttt{tar -tzvf backup.tar.gz}
-    \item Extract: \texttt{tar -xzvf backup.tar.gz -C /destination}
-\end{itemize}
+The \cmd{zip} command is useful when you need to share archives with Windows or macOS users, because the \texttt{.zip} format is supported natively by all popular operating systems. Use \cmd{zip -r} to archive a directory recursively, and \cmd{unzip -l} to view archive contents without extracting them.
 
-\subsection*{gzip: important flags}
-\begin{itemize}
-    \item \texttt{-k} : keep the original file (do not delete the source)
-    \item \texttt{-d} : decompress (gunzip)
-    \item \texttt{-1} to \texttt{-9} : compression level (1 fastest, 9 maximum)
-\end{itemize}
-Note: \texttt{gzip} works on a \textbf{single file}. For folders, usually
-\texttt{tar} first, then \texttt{gzip}.
+\subsection*{Lab 4.5: Create and Extract Archives}
 
-\subsection*{zip/unzip: important flags}
-\begin{itemize}
-    \item \texttt{zip -r} : recursive for folders
-    \item \texttt{zip -9} : maximum compression (slower)
-    \item \texttt{unzip -l} : list zip contents without extracting
-    \item \texttt{unzip -d <dir>} : extract to a specific directory
-\end{itemize}
-
-\subsection*{Lab 4.15 --- Archive the Workspace: tar + gzip (Easy)}
-\textbf{Objective:} create a \texttt{.tar.gz}, inspect its contents, then
-extract it.
+The goal of this lab is to create compressed archives, inspect their contents, and extract them to a different location.
 
 \begin{enumerate}
-    \item Create a compressed archive of the workspace:
-\begin{lstlisting}[language=bash, caption={Creating a tar.gz}]
-cd ~/lab-os
-tar -czvf chapter04-backup.tar.gz chapter04
-ls -lah chapter04-backup.tar.gz
+    \item Create a directory structure with several files to archive:
+\begin{lstlisting}[language=bash, caption={Preparing a directory to archive}]
+cd ~/lab-os/chapter04-files
+mkdir -p proyek/src proyek/config proyek/docs
+echo "# Main code" > proyek/src/main.sh
+echo "PORT=8080" > proyek/config/app.conf
+echo "# Documentation" > proyek/docs/readme.txt
+ls -lR proyek/
 \end{lstlisting}
 
-    \item List the archive contents without extracting:
-\begin{lstlisting}[language=bash, caption={Listing tar.gz contents}]
-tar -tzvf chapter04-backup.tar.gz | head -n 30
+    \item Create a compressed archive from the \dir{proyek/} directory:
+\begin{lstlisting}[language=bash, caption={Creating a .tar.gz archive}]
+tar -czvf proyek-backup.tar.gz proyek/
+ls -lah proyek-backup.tar.gz
+\end{lstlisting}
+    \textit{Observe:} The \texttt{-v} flag displays every file added to the archive. Compare the compressed archive size with the original directory size.
+
+    \item View archive contents without extracting:
+\begin{lstlisting}[language=bash, caption={Viewing archive contents without extraction}]
+tar -tzvf proyek-backup.tar.gz
 \end{lstlisting}
 
-    \item Extract to a test folder:
-\begin{lstlisting}[language=bash, caption={Extracting tar.gz to a specific folder}]
-mkdir -p ~/lab-os/restore-test
-tar -xzvf chapter04-backup.tar.gz \
-  -C ~/lab-os/restore-test
-ls -lah ~/lab-os/restore-test/chapter04 | head
+    \item Extract the archive to a new directory:
+\begin{lstlisting}[language=bash, caption={Extracting an archive to another directory}]
+mkdir -p hasil-ekstrak
+tar -xzvf proyek-backup.tar.gz -C hasil-ekstrak/
+ls -lR hasil-ekstrak/
+\end{lstlisting}
+
+    \item Compress a single file using \cmd{gzip} while keeping the original file:
+\begin{lstlisting}[language=bash, caption={Single-file compression with gzip}]
+yes "log line" | head -10000 > long-notes.txt
+ls -lah long-notes.txt
+gzip -k long-notes.txt
+ls -lah long-notes.txt long-notes.txt.gz
+\end{lstlisting}
+    \textit{Observe:} Compare the original file size with the compressed version. What percentage of space did you save?
+
+    \item Create a ZIP archive for cross-operating-system compatibility:
+\begin{lstlisting}[language=bash, caption={Creating a ZIP archive}]
+zip -r proyek.zip proyek/
+unzip -l proyek.zip | head -15
 \end{lstlisting}
 \end{enumerate}
 
-\subsection*{Lab 4.16 --- System Configuration Backup (Subset) + Validation (Real-World)}
-\textbf{Scenario:} before making configuration changes on a server, an admin
-creates a backup of a subset of \texttt{/etc} and stores it in a backup folder.
-
-\textbf{Objective:} create a tidy, verifiable archive without flooding
-permission errors.
-
-\begin{enumerate}
-    \item Prepare the backup folder:
-\begin{lstlisting}[language=bash, caption={Creating the backup folder}]
-mkdir -p ~/backup
-\end{lstlisting}
-
-    \item Create a backup of important configuration and verify the size:
-\begin{lstlisting}[language=bash, caption={Backing up important configuration with tar.gz}]
-sudo tar -czvf ~/backup/etc-core-$(date +%F).tar.gz \
-  /etc/ssh /etc/hosts /etc/netplan /etc/systemd \
-  2>/dev/null
-ls -lah ~/backup/etc-core-*.tar.gz
-\end{lstlisting}
-
-    \item Validate the backup contents (without extracting):
-\begin{lstlisting}[language=bash, caption={Validating backup contents}]
-tar -tzvf ~/backup/etc-core-$(date +%F).tar.gz \
-  | head -n 40
-\end{lstlisting}
-
-    \item Test restore to a safe directory (do not overwrite the live system):
-\begin{lstlisting}[language=bash, caption={Test restore to a sandbox folder}]
-mkdir -p ~/backup/restore-sandbox
-tar -xzvf ~/backup/etc-core-$(date +%F).tar.gz \
-  -C ~/backup/restore-sandbox
-ls -lah ~/backup/restore-sandbox/etc | head -n 20
-\end{lstlisting}
-\end{enumerate}
-
-\begin{tipbox}
-The ``backup of important subset'' pattern is safer than archiving all of
-\texttt{/etc}, and is more realistic for everyday administration.
-\end{tipbox}
-
-\subsection*{Lab 4.17 --- gzip for a Single File (Easy)}
-\textbf{Objective:} understand gzip as a single-file compressor, and the effect
-of \texttt{-k} and the compression level.
-
-\begin{enumerate}
-    \item Create a simple large test file:
-\begin{lstlisting}[language=bash, caption={Creating a large test file}]
-cd ~/lab-os/chapter04
-yes "logline" | head -n 200000 > biglog.txt
-ls -lah biglog.txt
-\end{lstlisting}
-
-    \item Compress with gzip and keep the original file:
-\begin{lstlisting}[language=bash, caption={gzip with keep}]
-gzip -k -9 biglog.txt
-ls -lah biglog.txt biglog.txt.gz
-\end{lstlisting}
-
-    \item Decompress:
-\begin{lstlisting}[language=bash, caption={Decompress gzip}]
-gzip -d -k biglog.txt.gz
-ls -lah biglog.txt biglog.txt.gz
-\end{lstlisting}
-\end{enumerate}
-
-\subsection*{Lab 4.18 --- zip for Cross-OS Distribution (Real-World)}
-\textbf{Scenario:} you need to send a backup/restore folder to a Windows or
-macOS user.
-
-\begin{enumerate}
-    \item Ensure zip/unzip is installed:
-\begin{lstlisting}[language=bash, caption={Installing zip/unzip}]
-sudo apt update
-sudo apt install -y zip unzip
-\end{lstlisting}
-
-    \item Create a recursive zip and inspect its contents:
-\begin{lstlisting}[language=bash, caption={Creating a zip and listing without extracting}]
-cd ~/backup
-zip -r -9 restore-sandbox.zip restore-sandbox
-unzip -l restore-sandbox.zip | head -n 30
-\end{lstlisting}
-
-    \item Extract to a new folder:
-\begin{lstlisting}[language=bash, caption={Extracting the zip to the target folder}]
-mkdir -p ~/backup/unzip-test
-unzip restore-sandbox.zip -d ~/backup/unzip-test
-ls -lah ~/backup/unzip-test | head
-\end{lstlisting}
-\end{enumerate}
+\begin{challengebox}
+Archive the entire \dir{~/lab-os/chapter04-files/} directory into a file named \file{chapter04-backup.tar.gz} stored in \dir{~/lab-os/}. After finishing, use \cmd{tar -tzvf} to verify the archive contents and make sure all subdirectories and files are included. Then use a pipe (\texttt{|}) to count how many files are inside the archive with \cmd{wc -l}. You learned this pipe technique in Chapter~3.
+\end{challengebox}
 
 % ------------------------------------------------------------------------
 \section{Summary}
 \label{sec:summary-filesystem}
 
-\begin{itemize}
-    \item The Linux structure is rooted at \texttt{/} and follows FHS conventions: configuration in \texttt{/etc}, logs in \texttt{/var/log}, home directories in \texttt{/home}.
-    \item Linux has many file types: regular, directory, symlink, and device files (\texttt{/dev}) and virtual filesystems (\texttt{/proc}, \texttt{/sys}).
-    \item Terminal navigation (\texttt{pwd}, \texttt{ls}, \texttt{cd}, \texttt{pushd/popd}) is the foundation of server administration.
-    \item Access control is built from permissions (\texttt{chmod}) and ownership (\texttt{chown}/\texttt{chgrp}); shared folders are a real-world scenario frequently encountered.
-    \item Hard links share an inode; symlinks point to a target path and are ideal for deploy/rollback patterns.
-    \item \texttt{find} is flexible for real-time searches; \texttt{locate} is fast but depends on a database.
-    \item Simple backups are commonly done with \texttt{tar.gz}; \texttt{gzip} handles single files; \texttt{zip} is convenient for cross-OS exchange.
+In this chapter, you learned:
+
+\begin{itemize}[noitemsep,topsep=2pt]
+    \item \textbf{FHS hierarchy}: Linux organizes all files in one directory tree rooted at \dir{/}. Each directory has a specific function: \dir{/etc/} for configuration, \dir{/var/log/} for logs, and \dir{/home/} for user data.
+    \item \textbf{File types}: The first character in \cmd{ls -l} output determines the file type. Seven major types include regular files (\texttt{-}), directories (\texttt{d}), symbolic links (\texttt{l}), and device files (\texttt{b}, \texttt{c}).
+    \item \textbf{Links}: Hard links point to the same inode as the original file, while symbolic links point to a target path. The \cmd{ln} and \cmd{ln -s} commands create them.
+    \item \textbf{File search}: The \cmd{find} command searches directly in the filesystem using criteria such as name, type, size, and modification time. The \cmd{locate} command searches quickly using an index database that must be updated periodically.
+    \item \textbf{Compression and archiving}: The \cmd{tar} command combines many files into one archive. With the \texttt{-z} flag, \cmd{tar} also compresses using \cmd{gzip}. The \texttt{.zip} format is useful for sharing files across operating systems.
 \end{itemize}
 
 % ------------------------------------------------------------------------
-\section{Exercises and Independent Tasks}
+\section{Lab Assignment}
 \label{sec:exercises-filesystem}
 
-\subsection*{A. Conceptual Exercises}
-\begin{exercisebox}[4.A]
-Choose 8 directories from the FHS list (\texttt{/etc, /var, /home, /tmp, /usr,
-/opt, /srv, /dev, /proc, /sys}) and explain the function of each in 1--2
-sentences.
-\end{exercisebox}
+\textbf{General Instructions}: Complete all exercises independently. Record important steps, save screenshots when needed, and summarize the results as personal documentation.
 
-\begin{exercisebox}[4.B]
-Explain the difference between a hard link and a symlink, then give one
-realistic use case for each.
-\end{exercisebox}
+\subsubsection*{Lab Assignment 4.1 File System Mapping}
+Run \cmd{ls -lah /} and choose eight directories from the output. For each directory, write its function in one sentence and give one real file example inside it, verified with \cmd{ls}. Include screenshot evidence for each directory you choose.
 
-\subsection*{B. Lab Exercises (Easy--Intermediate)}
-\begin{exercisebox}[4.C]
-Create the folder \texttt{\~/lab-os/chapter04-exercises} containing:
-\begin{itemize}
-    \item 3 text files, 1 subfolder, and 1 symlink pointing to one of the files.
-\end{itemize}
-Show proof with \texttt{ls -lah} and \texttt{ls -li}.
-\end{exercisebox}
 
-\begin{exercisebox}[4.D]
-Set the permissions of \texttt{report.txt} so that the owner can read and
-write, the group can only read, and others have no access. Write the command
-and verify with \texttt{ls -l}.
-\end{exercisebox}
+\subsubsection*{Lab Assignment 4.2 Hard Link and Symbolic Link}
+Create one file \file{sumber.txt} in \dir{~/lab-os/chapter04-tugas/}. Then:
+\begin{enumerate}
+    \item create one hard link named \file{sumber-hard.txt};
+    \item create one symbolic link named \file{sumber-soft.txt};
+    \item prove with \cmd{ls -li} which names share an inode;
+    \item change file contents through the hard link, then display the contents from all three names;
+    \item delete \file{sumber.txt} and explain the state of the two remaining links.
+\end{enumerate}
+Include all commands and a summary of your observations.
 
-\begin{exercisebox}[4.E]
-Use \texttt{find} to locate the 20 largest files in \texttt{/var/log}. If
-permission errors appear, discard them with \texttt{2>/dev/null}. Display the
-first 20 lines of output.
-\end{exercisebox}
 
-\subsection*{C. Lab Exercises (Real-World)}
-\begin{exercisebox}[4.F --- Admin Case 1]
-You are asked to create the folder \texttt{/srv/data-share} for a team (group
-\texttt{project}) with the following rules:
-\begin{itemize}
-\item all group members can create and edit files
-\item new files inherit the folder's group (setgid)
-\item other users cannot access the folder
-\item users cannot delete files belonging to other users in that folder (sticky bit)
-\end{itemize}
-Write the commands and show proof with \texttt{ls -ld}.
-\end{exercisebox}
-
-\begin{exercisebox}[4.G --- Admin Case 2]
-You are asked to gather troubleshooting evidence:
-\begin{itemize}
-\item copy the last 100 lines of \texttt{/var/log/auth.log} to a file in your home directory
-\item compress that file to \texttt{.gz} without deleting the original
-\item archive the evidence folder into a \texttt{tar.gz}
-\end{itemize}
-Write all commands and display the final \texttt{ls -lah} output.
-\end{exercisebox}
-
-\subsection*{Reference (Manual Pages)}
-\begin{itemize}
-    \item \texttt{man hier}, \texttt{man ls}, \texttt{man stat}, \texttt{man file}
-    \item \texttt{man chmod}, \texttt{man chown}, \texttt{man chgrp}, \texttt{man umask}
-    \item \texttt{man ln}
-    \item \texttt{man find}, \texttt{man locate}, \texttt{man updatedb}
-    \item \texttt{man tar}, \texttt{man gzip}, \texttt{man zip}, \texttt{man unzip}
-\end{itemize}
+\subsubsection*{Lab Assignment 4.3 Search and Archiving}
+Complete the following steps in order and document the results:
+\begin{enumerate}
+    \item Use \cmd{find} to search for all \file{.conf} files in \dir{/etc/} smaller than 5 KB. Redirect the results to \file{config-kecil.txt} and discard permission errors.
+    \item Count how many files were found using \cmd{wc -l}.
+    \item Archive the entire \dir{~/lab-os/chapter04-tugas/} directory into \file{chapter04-tugas.tar.gz}.
+    \item Verify the archive contents with \cmd{tar -tzvf} and count the number of files inside it using a pipe to \cmd{wc -l}.
+\end{enumerate}
