@@ -13,7 +13,7 @@ keras, membagi waktu prosesor di antara banyak tugas, dan memastikan setiap apli
 mendapat ruang memori yang aman. Program itu adalah \textbf{sistem operasi}. Tanpa
 sistem operasi, setiap program harus menulis sendiri kode untuk berbicara dengan kartu
 jaringan, layar, dan disk: pendekatan yang tidak efisien dan hampir mustahil diterapkan
-secara luas.
+secara luas~\cite{silberschatz2018operating, ward2021how}.
 
 Buku ini menggunakan Linux sebagai media pembelajaran. Linux menjalankan lebih dari 90
 persen server di internet, seluruh 500 superkomputer terkencang di dunia, dan sebagian
@@ -285,13 +285,13 @@ seperti yang ada sekarang. Tonggak utamanya diringkas pada \cref{tab:os-history}
             menggunakan kartu plong (punch card), tanpa interaksi pengguna langsung \\
         1969: Lahirnya Unix &
             Ken Thompson dan Dennis Ritchie di Bell Labs menciptakan Unix: sederhana,
-            portabel, dan ditulis dalam bahasa C dengan filosofi \textit{do one thing well} \\
+            portabel, dan ditulis dalam bahasa C dengan filosofi \textit{do one thing well}~\cite{ritchie1974unix} \\
         1980-an: Era PC &
             MS-DOS (1981) untuk IBM PC; Apple Macintosh (1984) memperkenalkan antarmuka
             grafis; Windows 1.0 (1985) hadir sebagai lapisan di atas DOS \\
         1991: Linux &
             Linus Torvalds dari Finlandia merilis kernel Linux 0.01 sebagai perangkat
-            lunak bebas dan terbuka; kompatibel dengan Unix \\
+            lunak bebas dan terbuka; kompatibel dengan Unix~\cite{torvalds1991linux} \\
         1993: Windows NT &
             Microsoft merilis Windows NT dengan arsitektur kernel hibrida khusus untuk
             pasar korporat dan enterprise \\
@@ -308,8 +308,9 @@ Unix menjadi fondasi hampir semua sistem operasi modern. Linux diturunkan dari f
 Unix, macOS dibangun di atas kernel berbasis Unix, dan Android menggunakan kernel Linux.
 Perdebatan terkenal tahun 1992 antara Andrew Tanenbaum (pencipta MINIX, pendukung
 mikrokernel) dan Linus Torvalds (pendukung desain monolitik) memperlihatkan bahwa kedua
-pendekatan memiliki tempatnya masing-masing. Linux mendominasi server dengan desain
-monolitik-modular, sementara QNX dengan mikrokernel mendominasi sistem otomotif.
+pendekatan memiliki tempatnya masing-masing~\cite{tanenbaum2014modern}. Linux mendominasi
+server dengan desain monolitik-modular, sementara QNX dengan mikrokernel mendominasi
+sistem otomotif.
 
 \section{Mengapa Linux?}
 \label{sec:why-linux}
@@ -318,13 +319,13 @@ Linux dipilih sebagai platform utama dalam buku ini karena beberapa alasan yang 
 praktis dan relevan dengan industri:
 
 \begin{enumerate}
-    \item \textbf{Gratis dan terbuka.} Kode sumber Linux tersedia untuk siapa saja.
+    \item \textbf{Gratis dan terbuka.} Kode sumber Linux tersedia untuk siapa saja~\cite{kernelorg2024}.
     Tidak ada biaya lisensi. Setiap bagian sistem dapat dipelajari langsung dari
     kodenya sendiri.
 
     \item \textbf{Dominasi di server dan cloud.} Lebih dari 90 persen server web di
     internet menjalankan Linux. Platform cloud besar seperti AWS, Google Cloud, dan Azure
-    menggunakan Linux sebagai sistem operasi utama mereka.
+    menggunakan Linux sebagai sistem operasi utama mereka~\cite{linuxfoundation2024}.
 
     \item \textbf{Konsep yang dapat dipindahkan.} Keterampilan Linux berlaku di semua
     sistem berbasis Unix, termasuk macOS dan BSD. Menguasai Linux berarti memiliki

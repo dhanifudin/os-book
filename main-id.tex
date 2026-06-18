@@ -199,10 +199,15 @@
 \backmatter
 
 % Daftar Pustaka
-\nocite{*}
 \printbibliography[heading=bibintoc, title={Daftar Pustaka}]
 
 % Indeks (imakeidx adds it to TOC via the `intoc` option)
 \printindex
+
+% Biodata Penulis
+\input{frontmatter/id/biodata}
+
+% Sinopsis (sampul belakang)
+\input{frontmatter/id/synopsis}
 
 \end{document}
